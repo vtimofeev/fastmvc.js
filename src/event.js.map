@@ -1,0 +1,1 @@
+{"version":3,"file":"event.js","sources":["event.ts"],"names":["fastmvc","fastmvc.Event","fastmvc.Event.constructor"],"mappings":"AAAA,IAAO,OAAO;AAWb,CAXD,UAAO,OAAO;IAEVA;QAAAC;;AAOCA,QALGA,qBAAoCA,aAAaA;AAACA,QAClDA,qBAAoCA,aAAaA;AAACA,QAClDA,kBAAiCA,UAAUA;AAACA,QAC5CA,qBAAoCA,aAAaA;AAACA,QAClDA,qBAAoCA,aAAaA;AAACA,QACtDA;AAACA,IAADA,CAACA,IAAAD;IAPDA,sBAOCA;AAELA,CAACA,6BAAA"}

@@ -5,7 +5,7 @@ module fastmvc
         private _name:string;
         private _type:string;
 
-        constructor(facade:fastmvc.Facade, name:string, type:string = null)
+        constructor(name:string, type:string = null)
         {
             this._facade = facade;
             this._name = name;
@@ -16,6 +16,11 @@ module fastmvc
         {
             return this._facade;
         }
+        public facade(value:fastmvc.Facade)
+        {
+            this._facade = value;
+        }
+
 
         public name():string
         {
@@ -29,13 +34,13 @@ module fastmvc
 
         public sendEvent(name:string, data:any = null):void
         {
-            var e = { name: name, data: data, target: this}
-            this._facade.eventHandler(e);
+            var e = { name: name, data: data, target: this };
+            if(this._facade) this._facade.eventHandler(e);
         }
 
         public log(message:string, level?:number):void
         {
-            this._facade.log(this._name, message, level);
+            if(this._facade) this._facade.log(this._name, message, level);
         }
 
         public registerHandler():void

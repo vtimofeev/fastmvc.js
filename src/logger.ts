@@ -36,7 +36,7 @@ module fastmvc
             return this._modules;
         }
 
-        public saveLog(name:string, message:string, level?:number = 0):void {
+        public saveLog(name:string, message:string, level?:number):void {
             var data = {name: name, message: message, level:level, date: new Date() };
 
             this._data.push(data);
@@ -47,7 +47,7 @@ module fastmvc
             }
 
             if(this._modules.indexOf(name) === -1)
-            {
+                        {
                 this._modules.push(name);
             }
 

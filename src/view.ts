@@ -3,23 +3,40 @@ module fastmvc
     export class ViewGroup  extends View{
     }
 
-    export class View extends  fastmvc.Notifier {
+    export class View extends  fastmvc.Notifier implements  IView {
         private _mediator:any;
+        private _$base:any;
 
-        constructor(mediator:fastmvc.Mediator, name:string)
+        constructor(name:string, $base:any)
         {
-            super(null, name, fastmvc.TYPE_VIEW);
-            this._mediator = mediator;
+            super(name, fastmvc.TYPE_VIEW);
+            this._$base = $base;
         }
 
-        render():void
+        public mediator(value:fastmvc.Mediator)
         {
+            this._mediator = value;
         }
 
         sendEvent(name:string, data:any = null, global:bool = false)
         {
-            this._mediator.internalHandler({name: name, data: data, global: global, target:this});
+            if(this._mediator) this._mediator.internalHandler({name: name, data: data, global: global, target:this});
         }
+
+        // Override events
+        public render():void
+        {
+        }
+
+        public eventHandler(e:any):void
+        {
+        }
+    }
+
+    export interface IView
+    {
+        render():void;
+        eventHandler(e:any):void;
     }
 
 }

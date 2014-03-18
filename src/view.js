@@ -17,17 +17,25 @@ var fastmvc;
 
     var View = (function (_super) {
         __extends(View, _super);
-        function View(mediator, name) {
-            _super.call(this, null, name, fastmvc.TYPE_VIEW);
-            this._mediator = mediator;
+        function View(name, $base) {
+            _super.call(this, name, fastmvc.TYPE_VIEW);
+            this._$base = $base;
         }
-        View.prototype.render = function () {
+        View.prototype.mediator = function (value) {
+            this._mediator = value;
         };
 
         View.prototype.sendEvent = function (name, data, global) {
             if (typeof data === "undefined") { data = null; }
             if (typeof global === "undefined") { global = false; }
-            this._mediator.internalHandler({ name: name, data: data, global: global, target: this });
+            if (this._mediator)
+                this._mediator.internalHandler({ name: name, data: data, global: global, target: this });
+        };
+
+        View.prototype.render = function () {
+        };
+
+        View.prototype.eventHandler = function (e) {
         };
         return View;
     })(fastmvc.Notifier);

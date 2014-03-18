@@ -1,8 +1,8 @@
 module fastmvc
 {
-    public static const TYPE_MEDIATOR:string = 'mediator';
-    public static const TYPE_MODEL:string = 'model';
-    public static const TYPE_VIEW:string = 'view';
+    export var TYPE_MEDIATOR:string = 'mediator';
+    export var TYPE_MODEL:string = 'model';
+    export var TYPE_VIEW:string = 'view';
 
     export class Facade {
         private _name:string = '';
@@ -11,7 +11,6 @@ module fastmvc
         private _log:fastmvc.Logger;
         private static _facades = [];
 
-
         constructor(name:string) {
             this._name = name;
             this._log = new fastmvc.Logger(this, 'Log');
@@ -19,6 +18,8 @@ module fastmvc
         }
 
         public register(object:any):void {
+            object.facade = this;
+
             if (this._objects.indexOf(object) < 0) {
                 this._objects.push(object);
                 if (object && object.events()) {
@@ -34,6 +35,16 @@ module fastmvc
                     }
                 }
             }
+        }
+
+        public getObject(name:String):any
+        {
+            for (var i in this._objects)
+            {
+                var object = this._objects[i];
+                if(object && object.name === name) return object;
+            }
+            return null;
         }
 
         public eventHandler(e:any):void {

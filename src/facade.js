@@ -1,17 +1,62 @@
 var fastmvc;
 (function (fastmvc) {
+    fastmvc.TYPE_MEDIATOR = 'mediator';
+    fastmvc.TYPE_MODEL = 'model';
+    fastmvc.TYPE_VIEW = 'view';
+
     var Facade = (function () {
-        function Facade() {
+        function Facade(name) {
+            this._name = '';
             this._objects = [];
+            this._events = {};
+            this._name = name;
+            this._log = new fastmvc.Logger(this, 'Log');
+            Facade._facades.push(name);
         }
         Facade.prototype.register = function (object) {
+            object.facade = this;
+
             if (this._objects.indexOf(object) < 0) {
                 this._objects.push(object);
+                if (object && object.events()) {
+                    var events = object.events();
+                    for (var i in events) {
+                        var event = events[i];
+                        if (this._events[event]) {
+                            this._events[event].push(object);
+                        } else {
+                            this._events[event] = [object];
+                        }
+                    }
+                }
             }
         };
 
-        Facade.prototype.eventHandler = function (e) {
+        Facade.prototype.getObject = function (name) {
+            for (var i in this._objects) {
+                var object = this._objects[i];
+                if (object && object.name === name)
+                    return object;
+            }
+            return null;
         };
+
+        Facade.prototype.eventHandler = function (e) {
+            var objects = this._events[e.name];
+            for (var i in objects) {
+                var object = objects[i];
+                object.eventHandler(e);
+            }
+        };
+
+        Facade.prototype.log = function (message, level) {
+            this._log.saveLog(name, message, level);
+        };
+
+        Facade.prototype.log = function (name, message, level) {
+            this._log.saveLog(name, message, level);
+        };
+        Facade._facades = [];
         return Facade;
     })();
     fastmvc.Facade = Facade;

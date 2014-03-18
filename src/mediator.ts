@@ -3,9 +3,12 @@ module fastmvc
     export class Mediator extends fastmvc.Notifier implements IMediator {
         private _view:any;
 
-        constructor(facade:fastmvc.Facade, name:string, view:any = null) {
-            super(facade, name, fastmvc.TYPE_MEDIATOR);
-            this._view = view;
+        constructor(name:string, view:fastmvc.View = null) {
+            super(name, fastmvc.TYPE_MEDIATOR);
+            if(view) {
+                this._view = view;
+                view.mediator(this);
+            }
         }
 
         public events():any {
@@ -21,7 +24,7 @@ module fastmvc
             }
         }
 
-        public eventHandler(e:any):void {
+        private eventHandler(e:any):void {
             switch(e.target.type)
             {
                 case fastmvc.TYPE_MEDIATOR:
@@ -36,13 +39,13 @@ module fastmvc
             }
         }
 
-        private modelEventHandler(e:any):void {
+        public modelEventHandler(e:any):void {
         }
 
-        private mediatorEventHandler(e:any):void {
+        public mediatorEventHandler(e:any):void {
         }
 
-        private viewEventHandler(e:any):void {
+        public viewEventHandler(e:any):void {
         }
     }
 

@@ -8,10 +8,13 @@ var fastmvc;
 (function (fastmvc) {
     var Mediator = (function (_super) {
         __extends(Mediator, _super);
-        function Mediator(facade, name, view) {
+        function Mediator(name, view) {
             if (typeof view === "undefined") { view = null; }
-            _super.call(this, facade, name, fastmvc.TYPE_MEDIATOR);
-            this._view = view;
+            _super.call(this, name, fastmvc.TYPE_MEDIATOR);
+            if (view) {
+                this._view = view;
+                view.mediator(this);
+            }
         }
         Mediator.prototype.events = function () {
             return [];
