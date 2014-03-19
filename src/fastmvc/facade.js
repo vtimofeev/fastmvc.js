@@ -12,7 +12,7 @@ var fastmvc;
             this._objects = [];
             this._events = {};
             this._name = name;
-            this._log = new fastmvc.Logger(this, 'Log');
+            this._logger = new fastmvc.Logger(this, 'Log');
             this.log('Start ' + name + ', fastmvc ' + fastmvc.VERSION);
             Facade._facades.push(name);
         }
@@ -37,6 +37,10 @@ var fastmvc;
             }
         };
 
+        Facade.prototype.getLogger = function () {
+            return this._logger;
+        };
+
         Facade.prototype.getObject = function (name) {
             for (var i in this._objects) {
                 var object = this._objects[i];
@@ -59,7 +63,7 @@ var fastmvc;
         };
 
         Facade.prototype.saveLog = function (name, message, level) {
-            this._log.saveLog(name, message, level);
+            this._logger.saveLog(name, message, level);
         };
         Facade._facades = [];
         return Facade;

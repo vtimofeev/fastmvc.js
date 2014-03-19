@@ -12,6 +12,7 @@ var tests;
 
             this.facade.register(new fastmvc.Model('TestModel'));
             this.facade.register(new TestMediator(this.facade, TestMediator.NAME, new TestView($('#content'))));
+            this.facade.getLogger().setFilter(['TestMediator', 'TestView']);
 
             var model = this.facade.getObject('TestModel');
             model.setData({ info: 'test1' });
@@ -55,7 +56,7 @@ var tests;
     var TestViewEvent = (function () {
         function TestViewEvent() {
         }
-        TestViewEvent.SEARCH_CLICK = 'searchClick';
+        TestViewEvent.SEARCH_CHANGE = 'searchChange';
         TestViewEvent.SEARCH_KEYPRESS = 'searchKeyPress';
         TestViewEvent.ADD_CLICK = 'addClick';
         TestViewEvent.REMOVE_CLICK = 'addClick';
@@ -67,7 +68,7 @@ var tests;
         function TestView($base) {
             _super.call(this, TestView.NAME, $base);
             this.eventHandlers = {
-                'keyup #searchInput': TestViewEvent.SEARCH_CLICK,
+                'keyup #searchInput': TestViewEvent.SEARCH_CHANGE,
                 'click #addButton': TestViewEvent.ADD_CLICK
             };
         }
@@ -79,7 +80,7 @@ var tests;
         TestView.prototype.eventHandler = function (name, e) {
             _super.prototype.eventHandler.call(this, name, e);
             switch (name) {
-                case TestViewEvent.SEARCH_CLICK:
+                case TestViewEvent.SEARCH_CHANGE:
                     break;
                 case TestViewEvent.ADD_CLICK:
                     break;

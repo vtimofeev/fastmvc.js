@@ -6,7 +6,7 @@ module fastmvc {
 
         constructor(facade:fastmvc.Facade, name:string) {
             super(name);
-            super.facade(facade);
+            this.setFacade(facade);
         }
 
         public config(value:any):void {
@@ -21,19 +21,15 @@ module fastmvc {
             this._config.console = value;
         }
 
-        public filtres(value:any):void {
-            this._config.filtres = value;
-        }
-
-        public filtres():any {
-            this._config.filtres;
+        public setFilter(value:any):void {
+            this._config.filter = value;
         }
 
         public modules():any {
             return this._modules;
         }
 
-        public saveLog(name:string, message:string, level?:number = 0):void {
+        public saveLog(name:string, message:string, level:number = 0):void {
             var data = {name: name, message: message, level: level, date: new Date() };
 
             this._data.push(data);
@@ -50,14 +46,17 @@ module fastmvc {
             // send log event
 
             // exit if it has filters and has no the name in the array
-            if (this._config && this._config.filtres && this._config.filtres.length && this._config.filtres.indexOf(name) === -1) return;
+            if (this._config && this._config.filter && this._config.filter.length && this._config.filter.indexOf(name) === -1) {
+
+                return;
+            }
 
             // console
             if (this._config && this._config.console && console) {
                 console.log('[' + name + '] ' + level + ' ' + message);
             }
 
-            this.sendEvent('log', data);
+            //this.sendEvent('log', data);
             return;
         }
 

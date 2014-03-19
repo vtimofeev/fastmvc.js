@@ -15,7 +15,6 @@ var fastmvc;
         }
         Model.prototype.setData = function (value) {
             this._data = value;
-            this.log('Set ' + JSON.stringify(value));
             this.sendEvent(fastmvc.Event.MODEL_CREATE, this.data());
             this.sendEvent(fastmvc.Event.MODEL_CHANGE, this.data());
         };

@@ -13,13 +13,13 @@ module fastmvc
         private _name:string = '';
         private _objects:any = [];
         private _events:any = {};
-        private _log:fastmvc.Logger;
+        private _logger:fastmvc.Logger;
         private static _facades = [];
 
 
         constructor(name:string) {
             this._name = name;
-            this._log = new fastmvc.Logger(this, 'Log');
+            this._logger = new fastmvc.Logger(this, 'Log');
             this.log('Start ' + name + ', fastmvc ' + fastmvc.VERSION);
             Facade._facades.push(name);
         }
@@ -45,6 +45,11 @@ module fastmvc
                     }
                 }
             }
+        }
+
+        public getLogger():fastmvc.Logger
+        {
+            return this._logger;
         }
 
         public getObject(name:String):any
@@ -73,7 +78,7 @@ module fastmvc
 
         public saveLog(name:string, message:string, level?:number)
         {
-            this._log.saveLog(name, message, level);
+            this._logger.saveLog(name, message, level);
         }
 
 

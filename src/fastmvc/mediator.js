@@ -31,7 +31,7 @@ var fastmvc;
         };
 
         Mediator.prototype.eventHandler = function (e) {
-            this.log('Handled ' + e.name + ', ' + e.target.type());
+            this.log('Handled ' + e.name + ' from ' + e.target.name() + ":" + e.target.type());
             switch (e.target.type()) {
                 case fastmvc.TYPE_MEDIATOR:
                     this.mediatorEventHandler(e);

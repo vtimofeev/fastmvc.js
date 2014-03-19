@@ -27,7 +27,7 @@ module fastmvc
         }
 
         private eventHandler(e:any):void {
-            this.log('Handled ' + e.name + ', ' + e.target.type());
+            this.log('Handled ' + e.name + ' from '  + e.target.name() + ":" + e.target.type() );
             switch(e.target.type())
             {
                 case fastmvc.TYPE_MEDIATOR:

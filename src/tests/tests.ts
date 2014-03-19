@@ -15,6 +15,7 @@ module tests
 
             this.facade.register(new fastmvc.Model('TestModel'))
             this.facade.register(new TestMediator(this.facade, TestMediator.NAME, new TestView($('#content'))));
+            this.facade.getLogger().setFilter(['TestMediator', 'TestView'])
 
             var model:fastmvc.Model = this.facade.getObject('TestModel');
             model.setData({info:'test1'});
@@ -54,7 +55,7 @@ module tests
 
     class TestViewEvent
     {
-        static SEARCH_CLICK = 'searchClick';
+        static SEARCH_CHANGE = 'searchChange';
         static SEARCH_KEYPRESS = 'searchKeyPress';
         static ADD_CLICK = 'addClick';
         static REMOVE_CLICK = 'addClick';
@@ -64,7 +65,7 @@ module tests
     {
         public static NAME:string = 'TestView';
         public eventHandlers:any = {
-            'keyup #searchInput': TestViewEvent.SEARCH_CLICK,
+            'keyup #searchInput': TestViewEvent.SEARCH_CHANGE,
             'click #addButton': TestViewEvent.ADD_CLICK
         };
 
@@ -83,7 +84,7 @@ module tests
             super.eventHandler(name, e);
             switch(name)
             {
-                case TestViewEvent.SEARCH_CLICK:
+                case TestViewEvent.SEARCH_CHANGE:
                     break;
                 case TestViewEvent.ADD_CLICK:
                     break;

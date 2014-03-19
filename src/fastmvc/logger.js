@@ -13,7 +13,7 @@ var fastmvc;
             this._data = [];
             this._config = { filter: [], length: 100000, console: true };
             this._modules = [];
-            _super.prototype.facade.call(this, facade);
+            this.setFacade(facade);
         }
         Logger.prototype.config = function (value) {
             this._config = value;
@@ -27,12 +27,8 @@ var fastmvc;
             this._config.console = value;
         };
 
-        Logger.prototype.filtres = function (value) {
-            this._config.filtres = value;
-        };
-
-        Logger.prototype.filtres = function () {
-            this._config.filtres;
+        Logger.prototype.setFilter = function (value) {
+            this._config.filter = value;
         };
 
         Logger.prototype.modules = function () {
@@ -53,14 +49,14 @@ var fastmvc;
                 this._modules.push(name);
             }
 
-            if (this._config && this._config.filtres && this._config.filtres.length && this._config.filtres.indexOf(name) === -1)
+            if (this._config && this._config.filter && this._config.filter.length && this._config.filter.indexOf(name) === -1) {
                 return;
+            }
 
             if (this._config && this._config.console && console) {
                 console.log('[' + name + '] ' + level + ' ' + message);
             }
 
-            this.sendEvent('log', data);
             return;
         };
         return Logger;
