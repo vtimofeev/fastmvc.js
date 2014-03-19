@@ -9,12 +9,18 @@ var tests;
     var TestApp = (function () {
         function TestApp() {
             this.facade = new fastmvc.Facade(TestApp.NAME);
+
             this.facade.register(new fastmvc.Model('TestModel'));
-            this.facade.register(new TestMediator(TestMediator.NAME, new TestView($('#content'))));
+            this.facade.register(new TestMediator(this.facade, TestMediator.NAME, new TestView($('#content'))));
+
+            var model = this.facade.getObject('TestModel');
+            model.setData({ info: 'test1' });
+            model.setData({ info: 'test2' });
         }
         TestApp.NAME = 'testapp';
         return TestApp;
     })();
+    tests.TestApp = TestApp;
 
     var TestMediator = (function (_super) {
         __extends(TestMediator, _super);
@@ -26,15 +32,21 @@ var tests;
         };
 
         TestMediator.prototype.modelEventHandler = function (e) {
-        };
+            var view = this.view();
 
-        TestMediator.prototype.internalEventHandler = function (e) {
             switch (e.name) {
-                case TestViewEvent.ADD_CLICK:
-                    return;
-                case TestViewEvent.SEARCH_CLICK:
+                case fastmvc.Event.MODEL_CHANGE:
+                    view.data = e.data;
+                    view.render();
                     return;
             }
+        };
+
+        TestMediator.prototype.internalHandler = function (e) {
+            _super.prototype.internalHandler.call(this, e);
+            var model = this.facade().getObject('TestModel');
+            model.setData({ 'data': e.data.currentTarget.value });
+            this.log('Internal handler ' + e.name);
         };
         TestMediator.NAME = 'TestMediator';
         return TestMediator;
@@ -52,17 +64,34 @@ var tests;
 
     var TestView = (function (_super) {
         __extends(TestView, _super);
-        function TestView(name, $base) {
-            _super.call(this, name, $base);
+        function TestView($base) {
+            _super.call(this, TestView.NAME, $base);
             this.eventHandlers = {
-                'keyup keypress #searchInput': TestViewEvent.SEARCH_CLICK,
+                'keyup #searchInput': TestViewEvent.SEARCH_CLICK,
                 'click #addButton': TestViewEvent.ADD_CLICK
             };
         }
         TestView.prototype.render = function () {
+            this.log('Render');
+            $('#modelContent').html(JSON.stringify(this.data));
+        };
+
+        TestView.prototype.eventHandler = function (name, e) {
+            _super.prototype.eventHandler.call(this, name, e);
+            switch (name) {
+                case TestViewEvent.SEARCH_CLICK:
+                    break;
+                case TestViewEvent.ADD_CLICK:
+                    break;
+            }
+            return;
         };
         TestView.NAME = 'TestView';
         return TestView;
     })(fastmvc.View);
 })(tests || (tests = {}));
+
+$(function ready() {
+    document.app = new tests.TestApp();
+});
 //@ sourceMappingURL=tests.js.map

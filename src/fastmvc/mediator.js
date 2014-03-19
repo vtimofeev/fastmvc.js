@@ -8,12 +8,14 @@ var fastmvc;
 (function (fastmvc) {
     var Mediator = (function (_super) {
         __extends(Mediator, _super);
-        function Mediator(name, view) {
+        function Mediator(facade, name, view) {
             if (typeof view === "undefined") { view = null; }
             _super.call(this, name, fastmvc.TYPE_MEDIATOR);
+            this.setFacade(facade);
             if (view) {
                 this._view = view;
                 view.mediator(this);
+                view.delegateEventHandlers(true);
             }
         }
         Mediator.prototype.events = function () {
@@ -29,7 +31,8 @@ var fastmvc;
         };
 
         Mediator.prototype.eventHandler = function (e) {
-            switch (e.target.type) {
+            this.log('Handled ' + e.name + ', ' + e.target.type());
+            switch (e.target.type()) {
                 case fastmvc.TYPE_MEDIATOR:
                     this.mediatorEventHandler(e);
                     break;
@@ -40,6 +43,10 @@ var fastmvc;
                     this.viewEventHandler(e);
                     break;
             }
+        };
+
+        Mediator.prototype.view = function () {
+            return this._view;
         };
 
         Mediator.prototype.modelEventHandler = function (e) {

@@ -13,8 +13,9 @@ var fastmvc;
             _super.call(this, name);
             this._data = data;
         }
-        Model.prototype.data = function (value) {
+        Model.prototype.setData = function (value) {
             this._data = value;
+            this.log('Set ' + JSON.stringify(value));
             this.sendEvent(fastmvc.Event.MODEL_CREATE, this.data());
             this.sendEvent(fastmvc.Event.MODEL_CHANGE, this.data());
         };

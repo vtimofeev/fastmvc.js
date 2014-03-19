@@ -7,20 +7,19 @@ module fastmvc
 
         constructor(name:string, type:string = null)
         {
-            this._facade = facade;
             this._name = name;
             this._type = type?type:fastmvc.TYPE_MODEL;
+        }
+
+        public setFacade(value:fastmvc.Facade):void
+        {
+            this._facade = value;
         }
 
         public facade():fastmvc.Facade
         {
             return this._facade;
         }
-        public facade(value:fastmvc.Facade)
-        {
-            this._facade = value;
-        }
-
 
         public name():string
         {
@@ -35,12 +34,14 @@ module fastmvc
         public sendEvent(name:string, data:any = null):void
         {
             var e = { name: name, data: data, target: this };
+            this.log('Send event ' + name);
             if(this._facade) this._facade.eventHandler(e);
         }
 
         public log(message:string, level?:number):void
         {
-            if(this._facade) this._facade.log(this._name, message, level);
+            // log messages
+            if(this._facade) this._facade.saveLog(this.name(), message, level);
         }
 
         public registerHandler():void

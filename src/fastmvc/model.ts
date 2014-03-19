@@ -7,8 +7,9 @@ module fastmvc {
             this._data = data;
         }
 
-        public data(value:any):void {
+        public setData(value:any):void {
             this._data = value;
+            this.log('Set ' + JSON.stringify(value));
             this.sendEvent(fastmvc.Event.MODEL_CREATE, this.data());
             this.sendEvent(fastmvc.Event.MODEL_CHANGE, this.data());
         }

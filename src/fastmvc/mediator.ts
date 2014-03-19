@@ -3,11 +3,13 @@ module fastmvc
     export class Mediator extends fastmvc.Notifier implements IMediator {
         private _view:any;
 
-        constructor(name:string, view:fastmvc.View = null) {
+        constructor(facade:fastmvc.Facade, name:string, view:fastmvc.View = null) {
             super(name, fastmvc.TYPE_MEDIATOR);
+            this.setFacade(facade);
             if(view) {
                 this._view = view;
                 view.mediator(this);
+                view.delegateEventHandlers(true);
             }
         }
 
@@ -25,7 +27,8 @@ module fastmvc
         }
 
         private eventHandler(e:any):void {
-            switch(e.target.type)
+            this.log('Handled ' + e.name + ', ' + e.target.type());
+            switch(e.target.type())
             {
                 case fastmvc.TYPE_MEDIATOR:
                     this.mediatorEventHandler(e);
@@ -37,6 +40,11 @@ module fastmvc
                     this.viewEventHandler(e);
                     break;
             }
+        }
+
+        public view():fastmvc.View
+        {
+            return this._view;
         }
 
         public modelEventHandler(e:any):void {

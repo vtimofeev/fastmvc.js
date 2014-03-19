@@ -9,10 +9,11 @@ var fastmvc;
     var Logger = (function (_super) {
         __extends(Logger, _super);
         function Logger(facade, name) {
-            _super.call(this, facade, name);
+            _super.call(this, name);
             this._data = [];
             this._config = { filter: [], length: 100000, console: true };
             this._modules = [];
+            _super.prototype.facade.call(this, facade);
         }
         Logger.prototype.config = function (value) {
             this._config = value;
@@ -20,6 +21,10 @@ var fastmvc;
 
         Logger.prototype.config = function () {
             this._config;
+        };
+
+        Logger.prototype.console = function (value) {
+            this._config.console = value;
         };
 
         Logger.prototype.filtres = function (value) {
@@ -35,6 +40,7 @@ var fastmvc;
         };
 
         Logger.prototype.saveLog = function (name, message, level) {
+            if (typeof level === "undefined") { level = 0; }
             var data = { name: name, message: message, level: level, date: new Date() };
 
             this._data.push(data);
@@ -47,14 +53,14 @@ var fastmvc;
                 this._modules.push(name);
             }
 
-            if (this._config) {
-                var filtres = this._config.filtres;
-                if (filtres && filtres.length) {
-                    if (filtres.indexOf(name) === -1)
-                        return;
-                }
-                this.sendEvent('log', data);
+            if (this._config && this._config.filtres && this._config.filtres.length && this._config.filtres.indexOf(name) === -1)
+                return;
+
+            if (this._config && this._config.console && console) {
+                console.log('[' + name + '] ' + level + ' ' + message);
             }
+
+            this.sendEvent('log', data);
             return;
         };
         return Logger;

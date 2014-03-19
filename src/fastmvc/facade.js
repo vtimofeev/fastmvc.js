@@ -1,5 +1,7 @@
 var fastmvc;
 (function (fastmvc) {
+    fastmvc.VERSION = '0.0.2';
+
     fastmvc.TYPE_MEDIATOR = 'mediator';
     fastmvc.TYPE_MODEL = 'model';
     fastmvc.TYPE_VIEW = 'view';
@@ -11,17 +13,20 @@ var fastmvc;
             this._events = {};
             this._name = name;
             this._log = new fastmvc.Logger(this, 'Log');
+            this.log('Start ' + name + ', fastmvc ' + fastmvc.VERSION);
             Facade._facades.push(name);
         }
         Facade.prototype.register = function (object) {
-            object.facade = this;
+            object.setFacade(this);
+            this.log('Register ' + object.name());
 
             if (this._objects.indexOf(object) < 0) {
                 this._objects.push(object);
-                if (object && object.events()) {
+                if (object && ('events' in object)) {
                     var events = object.events();
                     for (var i in events) {
                         var event = events[i];
+                        this.log('Add event listener ' + object.name());
                         if (this._events[event]) {
                             this._events[event].push(object);
                         } else {
@@ -35,7 +40,7 @@ var fastmvc;
         Facade.prototype.getObject = function (name) {
             for (var i in this._objects) {
                 var object = this._objects[i];
-                if (object && object.name === name)
+                if (object && object.name() === name)
                     return object;
             }
             return null;
@@ -50,10 +55,10 @@ var fastmvc;
         };
 
         Facade.prototype.log = function (message, level) {
-            this._log.saveLog(name, message, level);
+            this.saveLog(this._name, message, level);
         };
 
-        Facade.prototype.log = function (name, message, level) {
+        Facade.prototype.saveLog = function (name, message, level) {
             this._log.saveLog(name, message, level);
         };
         Facade._facades = [];
