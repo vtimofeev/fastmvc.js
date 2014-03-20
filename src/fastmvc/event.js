@@ -8,8 +8,9 @@ var fastmvc;
         Event.MODEL_ADD = 'modelAdd';
         Event.MODEL_UPDATE = 'modelUpdate';
         Event.MODEL_REMOVE = 'modelRemove';
+        Event.MODEL_VALIDATE = 'modelValidate';
         return Event;
     })();
     fastmvc.Event = Event;
 })(fastmvc || (fastmvc = {}));
-//@ sourceMappingURL=event.js.map
+//# sourceMappingURL=event.js.map

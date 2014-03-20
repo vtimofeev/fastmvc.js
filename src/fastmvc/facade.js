@@ -70,4 +70,4 @@ var fastmvc;
     })();
     fastmvc.Facade = Facade;
 })(fastmvc || (fastmvc = {}));
-//@ sourceMappingURL=facade.js.map
+//# sourceMappingURL=facade.js.map

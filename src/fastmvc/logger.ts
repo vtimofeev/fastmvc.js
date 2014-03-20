@@ -9,12 +9,8 @@ module fastmvc {
             this.setFacade(facade);
         }
 
-        public config(value:any):void {
+        public setConfig(value:any):void {
             this._config = value;
-        }
-
-        public config():any {
-            this._config;
         }
 
         public console(value:boolean):any {

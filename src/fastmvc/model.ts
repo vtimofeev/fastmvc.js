@@ -1,6 +1,7 @@
 module fastmvc {
     export class Model extends fastmvc.Notifier {
         private _data:any;
+        private _validator:any;
 
         constructor(name:string, data:any = null) {
             super(name);
@@ -13,9 +14,26 @@ module fastmvc {
             this.sendEvent(fastmvc.Event.MODEL_CHANGE, this.data());
         }
 
+        public setValidator(value:any):void {
+             this._validator = value;
+        }
+
         public data():any {
             return this._data;
         }
+
+        public validate(value:any, key?:string):boolean
+        {
+            var result = false;
+            var error = {};
+
+            if(!this._validator) result = true;
+            else result = this._validator(value, key, this, error);
+
+            this.sendEvent(fastmvc.Event.MODEL_VALIDATE, result, null, error);
+            return result;
+        }
+
 
         public add(value:any, key?:string):boolean {
             var data:any = this._data;
@@ -49,7 +67,7 @@ module fastmvc {
             {
                 var index:number = data.indexOf(value);
                 if(index > -1) {
-                    data.splice(index)
+                    data.splice(index, 1)
                     result = true;
                 }
             }

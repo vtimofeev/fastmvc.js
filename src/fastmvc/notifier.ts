@@ -1,3 +1,5 @@
+///<
+
 module fastmvc
 {
     export class Notifier implements INotifier{
@@ -31,9 +33,9 @@ module fastmvc
             return this._type;
         }
 
-        public sendEvent(name:string, data:any = null):void
+        public sendEvent(name:string, data:any = null, sub:string = null, error:any = null):void
         {
-            var e = { name: name, data: data, target: this };
+            var e = { name: name, sub:sub, data: data, error: error, target: this };
             this.log('Send event ' + name);
             if(this._facade) this._facade.eventHandler(e);
         }

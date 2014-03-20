@@ -1,3 +1,6 @@
+///<reference path='notifier.ts'/>
+///<reference path='facade.ts'/>
+///<reference path='view.ts'/>
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -8,16 +11,43 @@ var fastmvc;
 (function (fastmvc) {
     var Mediator = (function (_super) {
         __extends(Mediator, _super);
-        function Mediator(facade, name, view) {
-            if (typeof view === "undefined") { view = null; }
+        function Mediator(facade, name, views) {
+            if (typeof views === "undefined") { views = null; }
             _super.call(this, name, fastmvc.TYPE_MEDIATOR);
             this.setFacade(facade);
-            if (view) {
-                this._view = view;
-                view.mediator(this);
-                view.delegateEventHandlers(true);
-            }
+            this.initViews(views);
         }
+        Mediator.prototype.initViews = function (views) {
+            if (views) {
+                if (views.length) {
+                    for (var i in views) {
+                        this.initView(views[i]);
+                    }
+
+                    this.views = views;
+                } else {
+                    this.initView(views);
+                    this.views = [views];
+                }
+            } else {
+                this.log('Has no views on init');
+            }
+        };
+
+        Mediator.prototype.initView = function (view) {
+            this.log('Init view ' + view.name());
+            view.mediator(this);
+            view.delegateEventHandlers(true);
+        };
+
+        Mediator.prototype.getView = function (name) {
+            for (var i in this.views) {
+                if (this.views[i].name() == name)
+                    return this.views[i];
+            }
+            return null;
+        };
+
         Mediator.prototype.events = function () {
             return [];
         };
@@ -45,10 +75,6 @@ var fastmvc;
             }
         };
 
-        Mediator.prototype.view = function () {
-            return this._view;
-        };
-
         Mediator.prototype.modelEventHandler = function (e) {
         };
 
@@ -61,4 +87,4 @@ var fastmvc;
     })(fastmvc.Notifier);
     fastmvc.Mediator = Mediator;
 })(fastmvc || (fastmvc = {}));
-//@ sourceMappingURL=mediator.js.map
+//# sourceMappingURL=mediator.js.map

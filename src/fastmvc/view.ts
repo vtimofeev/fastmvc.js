@@ -1,14 +1,22 @@
+///<reference path='notifier.ts'/>
+///<reference path='facade.ts'/>
+///<reference path='mediator.ts'/>
+
 declare var $:any;
 declare var _:any;
 
 module fastmvc {
-
     export class View extends fastmvc.Notifier implements IView {
         private static delegateEventSplitter = /^(\S+)\s*(.*)$/;
         private _mediator:any;
         public $base:any;
         public eventHandlers:any = {};
         public data:any;
+
+        public filter:any;
+        public sorter:any;
+        public normalizator:any;
+
 
         constructor(name:string, $base:any) {
             super(name, fastmvc.TYPE_VIEW);
@@ -20,7 +28,7 @@ module fastmvc {
 
             this.log('Events: ' + (JSON.stringify(this.eventHandlers)));
 
-            for (var commonHandlerData:string in this.eventHandlers) {
+            for (var commonHandlerData in this.eventHandlers) {
                 var eventName:string = this.eventHandlers[commonHandlerData];
                 var match:any = commonHandlerData.match(View.delegateEventSplitter);
                 var handledEvents:string = match[1];
@@ -55,10 +63,14 @@ module fastmvc {
             this._mediator = value;
         }
 
-        public sendEvent(name:string, data:any = null, global:bool = false) {
+        public sendEvent(name:string, data:any = null, sub:string = null, error:any = null, global:boolean = false):void {
             if (this._mediator) this._mediator.internalHandler({name: name, data: data, global: global, target: this});
         }
 
+        public getProcessedData()
+        {
+            return this.data;
+        }
         // Overrided method
         // Render
         public render():void {

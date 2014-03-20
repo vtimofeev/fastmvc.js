@@ -1,9 +1,13 @@
+///<reference path='notifier.ts'/>
+///<reference path='facade.ts'/>
+///<reference path='mediator.ts'/>
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
     d.prototype = new __();
 };
+
 var fastmvc;
 (function (fastmvc) {
     var View = (function (_super) {
@@ -24,13 +28,14 @@ var fastmvc;
                 var handledEvents = match[1];
                 var selector = match[2];
 
+                // add handlers
                 if (init) {
                     this.log('Add listeners [' + handledEvents + '] of the [' + selector + ']');
-                    var eventClosure = (function (name) {
+                    var eventClosure = function (name) {
                         return function (e) {
                             _t.eventHandler(name, e);
                         };
-                    })(eventName);
+                    }(eventName);
                     if (selector === '') {
                         this.$base.on(handledEvents, eventClosure);
                     } else {
@@ -54,16 +59,26 @@ var fastmvc;
             this._mediator = value;
         };
 
-        View.prototype.sendEvent = function (name, data, global) {
+        View.prototype.sendEvent = function (name, data, sub, error, global) {
             if (typeof data === "undefined") { data = null; }
+            if (typeof sub === "undefined") { sub = null; }
+            if (typeof error === "undefined") { error = null; }
             if (typeof global === "undefined") { global = false; }
             if (this._mediator)
                 this._mediator.internalHandler({ name: name, data: data, global: global, target: this });
         };
 
+        View.prototype.getProcessedData = function () {
+            return this.data;
+        };
+
+        // Overrided method
+        // Render
         View.prototype.render = function () {
         };
 
+        // Overrided method
+        // Handler
         View.prototype.eventHandler = function (name, e) {
             this.log('event ' + name);
             this.sendEvent(name, e);
@@ -73,4 +88,4 @@ var fastmvc;
     })(fastmvc.Notifier);
     fastmvc.View = View;
 })(fastmvc || (fastmvc = {}));
-//@ sourceMappingURL=view.js.map
+//# sourceMappingURL=view.js.map

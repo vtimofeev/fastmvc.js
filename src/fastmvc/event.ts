@@ -7,6 +7,7 @@ module fastmvc
         public static MODEL_ADD:string = 'modelAdd';
         public static MODEL_UPDATE:string = 'modelUpdate';
         public static MODEL_REMOVE:string = 'modelRemove';
+        public static MODEL_VALIDATE:string = 'modelValidate';
     }
 
 }

@@ -19,8 +19,25 @@ var fastmvc;
             this.sendEvent(fastmvc.Event.MODEL_CHANGE, this.data());
         };
 
+        Model.prototype.setValidator = function (value) {
+            this._validator = value;
+        };
+
         Model.prototype.data = function () {
             return this._data;
+        };
+
+        Model.prototype.validate = function (value, key) {
+            var result = false;
+            var error = {};
+
+            if (!this._validator)
+                result = true;
+            else
+                result = this._validator(value, key, this, error);
+
+            this.sendEvent(fastmvc.Event.MODEL_VALIDATE, result, null, error);
+            return result;
         };
 
         Model.prototype.add = function (value, key) {
@@ -52,7 +69,7 @@ var fastmvc;
             } else {
                 var index = data.indexOf(value);
                 if (index > -1) {
-                    data.splice(index);
+                    data.splice(index, 1);
                     result = true;
                 }
             }
@@ -87,4 +104,4 @@ var fastmvc;
     })(fastmvc.Notifier);
     fastmvc.Model = Model;
 })(fastmvc || (fastmvc = {}));
-//@ sourceMappingURL=model.js.map
+//# sourceMappingURL=model.js.map

@@ -15,12 +15,8 @@ var fastmvc;
             this._modules = [];
             this.setFacade(facade);
         }
-        Logger.prototype.config = function (value) {
+        Logger.prototype.setConfig = function (value) {
             this._config = value;
-        };
-
-        Logger.prototype.config = function () {
-            this._config;
         };
 
         Logger.prototype.console = function (value) {
@@ -41,6 +37,7 @@ var fastmvc;
 
             this._data.push(data);
 
+            // clean logs
             if (this._data.length > this._config.length * 2) {
                 this._data.length = this._data.slice(this._config.length);
             }
@@ -49,18 +46,22 @@ var fastmvc;
                 this._modules.push(name);
             }
 
+            // send log event
+            // exit if it has filters and has no the name in the array
             if (this._config && this._config.filter && this._config.filter.length && this._config.filter.indexOf(name) === -1) {
                 return;
             }
 
+            // console
             if (this._config && this._config.console && console) {
                 console.log('[' + name + '] ' + level + ' ' + message);
             }
 
+            //this.sendEvent('log', data);
             return;
         };
         return Logger;
     })(fastmvc.Notifier);
     fastmvc.Logger = Logger;
 })(fastmvc || (fastmvc = {}));
-//@ sourceMappingURL=logger.js.map
+//# sourceMappingURL=logger.js.map

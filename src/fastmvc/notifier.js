@@ -1,3 +1,4 @@
+///<
 var fastmvc;
 (function (fastmvc) {
     var Notifier = (function () {
@@ -22,15 +23,18 @@ var fastmvc;
             return this._type;
         };
 
-        Notifier.prototype.sendEvent = function (name, data) {
+        Notifier.prototype.sendEvent = function (name, data, sub, error) {
             if (typeof data === "undefined") { data = null; }
-            var e = { name: name, data: data, target: this };
+            if (typeof sub === "undefined") { sub = null; }
+            if (typeof error === "undefined") { error = null; }
+            var e = { name: name, sub: sub, data: data, error: error, target: this };
             this.log('Send event ' + name);
             if (this._facade)
                 this._facade.eventHandler(e);
         };
 
         Notifier.prototype.log = function (message, level) {
+            // log messages
             if (this._facade)
                 this._facade.saveLog(this.name(), message, level);
         };
@@ -44,4 +48,4 @@ var fastmvc;
     })();
     fastmvc.Notifier = Notifier;
 })(fastmvc || (fastmvc = {}));
-//@ sourceMappingURL=notifier.js.map
+//# sourceMappingURL=notifier.js.map

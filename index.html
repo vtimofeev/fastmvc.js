@@ -42,7 +42,23 @@
         </div>
     </div>
     <div id="modelContent"></div>
+    <div id="listModelContent"></div>
 </div>
+
+
+<script type="text/html" id='template'>
+    <ul>
+        <%
+        for (var i in data)
+        {
+        var item = data[i];
+        %>
+        <li data-id='<%= i %>' class='enable-default'>
+        <span class="default"><%= item.data %></span><span class="edit"><input type="text" class="edit" value="<%= item.data %>"/></span>
+        </li>
+        <% } %>
+    </ul>
+</script>
 
 </body>
 </html>
