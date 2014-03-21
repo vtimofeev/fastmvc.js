@@ -5,9 +5,15 @@ module help
     export class Application
     {
         facade:fastmvc.Facade;
-        errorsData:any = {
-            '': '',
-            '': ''
+        problemsData:any = {
+            'p0': 'Частые буферизации',
+            'p1': 'Потеря соединения',
+            'p2':'',
+            '':'',
+            '':'',
+            '':'',
+            '':''
+
         }
 
         constructor()

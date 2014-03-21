@@ -3,7 +3,12 @@ var help;
 (function (help) {
     var Application = (function () {
         function Application() {
-            this.errorsData = {
+            this.problemsData = {
+                'p0': 'Частые буферизации',
+                'p1': 'Потеря соединения',
+                'p2': '',
+                '': '',
+                '': '',
                 '': '',
                 '': ''
             };

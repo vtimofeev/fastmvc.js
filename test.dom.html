@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+
+    <script src="js/underscore.js"></script>
+    <script src="js/jquery-1.10.2.js"></script>
+    <script src="js/basis-template-1.0.js"></script>
+
+    <style>
+        .divblock
+        {
+            width: 100px;
+            height: 100px;
+            float:left;
+            border: 2px dashed #000000;
+            background-color: #EFEFEF;
+            margin-top: 10px;
+            margin-left: 10px;
+            font-family: Trebuchet, "Trebuchet MS";
+            font-size: 20px;
+
+        }
+
+        .divblock ul
+        {
+            padding: 0px;
+            margin: 0px;
+            list-style: none;
+            width: 50px;
+            height: 15px;
+            font-size: 10pt;
+        }
+    </style>
+
+</head>
+<body>
+<div id="content"></div>
+<script type="text/basis-template" id='template'>
+    <div class="divblock">
+        <div>{data}</div>
+        <ul>
+            <li>Info 1</li>
+            <li>Info 2</li>
+            <li>Info 3</li>
+        </ul>
+    </div>
+</script>
+<script>
+    var size = 10000;
+    var time = new Date().getTime();
+
+    function printTime (m)
+    {
+        var difTime= new Date().getTime() - time;
+        var result = 'Time ' + m +  ' elapsed ' + difTime;
+
+        if (window.console) console.log(result);
+        else alert(result);
+
+        time = new Date().getTime();
+    }
+
+    function getElement(value)
+    {
+        var e = document.createElement('div');
+        var ee = document.createElement('div');
+        var e1 = document.createElement('ul');
+        var e21 = document.createElement('li');
+        var e22 = document.createElement('li');
+        var e23 = document.createElement('li');
+        e23.innerHTML = e22.innerHTML = e21.innerHTML = 'Info 1';
+
+        e1.appendChild(e21);
+        e1.appendChild(e22);
+        e1.appendChild(e23);
+
+        e.className = 'divblock';
+        ee.innerHTML = value;
+        //e.innerHTML = value;
+
+
+        ee.className = 'ee';
+        e.appendChild(ee);
+        e.appendChild(e1);
+
+        return e;
+    }
+
+    var domElement = getElement('[data]');
+
+
+    function getJquery()
+    {
+        return '<div class="divblock"><div>Test' + i + '</div><ul ><li>Info 1</li><li>Info 2</li><li>Info 3</li></ul></div>';
+    }
+
+    var content = document.getElementById('content');
+    var $content = $('#content');
+
+    printTime('Start');
+
+
+
+    // basis
+    var btmpl = bt('id:template');
+    var items = [];
+
+    for(var i = 0; i < size; i++)
+    {
+        var ex = btmpl.createInstance();
+        //items.push(ex);
+        ex.set('data', 'Test ' + i);
+        content.appendChild(ex.element);
+    }
+
+    //items[0].set('data', 'TestNull');
+
+    printTime('createBasis2');
+
+    content.innerHTML = '';
+    printTime('clear');
+
+
+    for(var i = 0; i < size; i++)
+    {
+        content.appendChild(getElement('Test ' + i));
+    }
+
+    printTime('createDom2');
+    content.innerHTML = '';
+    printTime('clear');
+
+
+    for(var i = 0; i < size; i++)
+    {
+        var e = domElement.cloneNode(true);
+        e.children[0].innerHTML = 'Test ' + i;
+        content.appendChild(e);
+    }
+
+    printTime('createDom');
+    //alert('next');
+    content.innerHTML = '';
+    printTime('clear');
+
+    for(var i = 0; i < size; i++)
+    {
+        $content.append(getJquery());
+    }
+
+    printTime('createJquery');
+    content.innerHTML = '';
+    printTime('clear');
+
+    for(var i = 0; i < size; i++)
+    {
+        $content.append(getJquery());
+    }
+
+    printTime('createJquery2');
+
+
+</script>
+
+</body>
+</html>
