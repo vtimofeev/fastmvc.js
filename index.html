@@ -29,6 +29,7 @@
 
     <script src="src/tests/tests.js"></script>
 
+    <script src="js/basis-template-1.0.js"></script>
 </head>
 <body>
 <div id="content">
@@ -38,7 +39,6 @@
             <a id='addButton' class="btn add-btn"><i class="icon-plus-sign"></i></a>
             <a id='removeButton' class="btn remove-btn"><i class="icon-minus-sign"></i></a>
             <a id='closeButton' class="close-btn"><i class="icon-remove-circle"></i></a>
-
         </div>
     </div>
     <div id="modelContent"></div>
@@ -54,10 +54,19 @@
         var item = data[i];
         %>
         <li data-id='<%= i %>' class='enable-default'>
-        <span class="default"><%= item.data %></span><span class="edit"><input type="text" class="edit" value="<%= item.data %>"/></span>
+            <span class="default"><%= item.data %></span>
+            <span class="edit"><input type="text" class="edit" value="<%= item.data %>"/></span>
         </li>
         <% } %>
     </ul>
+</script>
+
+<script type="text/basis" id='template.basis'>
+    <li data-id='{data.index}' class='{data.enable}'>
+            <span class="default" event-dblclick='item-dblclick'>{data.data}</span>
+            <span class="edit"><input type="text" class="edit" value="{data.data}" event-keypress='item-change'/></span>
+    </li>
+
 </script>
 
 </body>

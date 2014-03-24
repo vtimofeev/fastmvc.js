@@ -130,30 +130,25 @@ module tests
             'keyup #searchInput': TestViewEvent.SEARCH_CHANGE,
             'click #addButton': TestViewEvent.ADD_CLICK
         };
+        public template:any;
+        public templateData:any = [];
+        public container:any;
 
         constructor($base:any)
         {
             super(TestView.NAME, $base);
+            this.template = bt('id:template.basis');
+            this.container = document.getElementById('content');
         }
-
-        set Data(value:any)
-        {
-            this.data = value;
-        }
-
-        get Data():any
-        {
-            return this.data;
-        }
-
-
 
         public render()
         {
-            this.Data = [1,2,3];
-            var data = this.Data;
-            this.log('Render');
-            $('#modelContent').html(JSON.stringify(this.data));
+            for (var i in this.data)
+            {
+                var instance = this.template.createInstance();
+                container.append(instance);
+
+            }
         }
 
         public eventHandler(name:string, e:any):void {

@@ -120,24 +120,15 @@ var tests;
                 'keyup #searchInput': TestViewEvent.SEARCH_CHANGE,
                 'click #addButton': TestViewEvent.ADD_CLICK
             };
+            this.templateData = [];
+            this.template = bt('id:template.basis');
+            this.container = document.getElementById('content');
         }
-
-        Object.defineProperty(TestView.prototype, "Data", {
-            get: function () {
-                return this.data;
-            },
-            set: function (value) {
-                this.data = value;
-            },
-            enumerable: true,
-            configurable: true
-        });
-
         TestView.prototype.render = function () {
-            this.Data = [1, 2, 3];
-            var data = this.Data;
-            this.log('Render');
-            $('#modelContent').html(JSON.stringify(this.data));
+            for (var i in this.data) {
+                var instance = this.template.createInstance();
+                container.append(instance);
+            }
         };
 
         TestView.prototype.eventHandler = function (name, e) {
