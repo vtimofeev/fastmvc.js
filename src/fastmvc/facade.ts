@@ -1,6 +1,6 @@
 module fastmvc
 {
-    export var VERSION:string = '0.0.2';
+    export var VERSION:string = '0.1.0';
 
     export var TYPE_MEDIATOR:string = 'mediator';
     export var TYPE_MODEL:string = 'model';
@@ -8,8 +8,6 @@ module fastmvc
 
 
     export class Facade {
-
-
         private _name:string = '';
         private _objects:any = [];
         private _events:any = {};
@@ -80,7 +78,5 @@ module fastmvc
         {
             this._logger.saveLog(name, message, level);
         }
-
-
     }
 }

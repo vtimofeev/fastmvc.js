@@ -34,7 +34,7 @@
 <body>
 <div id="content">
     <div class="input-append">
-        <div class="btn-group" id="search">
+        <div class="btn-group" id="search" data-view='TestView'>
             <input id="searchInput" type="text" placeholder="Искать…">
             <a id='addButton' class="btn add-btn"><i class="icon-plus-sign"></i></a>
             <a id='removeButton' class="btn remove-btn"><i class="icon-minus-sign"></i></a>
@@ -42,7 +42,11 @@
         </div>
     </div>
     <div id="modelContent"></div>
-    <div id="listModelContent"></div>
+    <div id="listModelContent" data-view='TestListView'>
+        <div class="Class1">{data.content}</div>
+        <div class="Class2">{data.result}</div>
+        <div></div>
+    </div>
 </div>
 
 
@@ -66,7 +70,6 @@
             <span class="default" event-dblclick='item-dblclick'>{data.data}</span>
             <span class="edit"><input type="text" class="edit" value="{data.data}" event-keypress='item-change'/></span>
     </li>
-
 </script>
 
 </body>

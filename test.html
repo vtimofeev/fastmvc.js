@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="js/jquery-1.10.2.js"></script>
+    <style>
+        .test {
+            background-color: #EFCFFF;
+            border: 1px #000000 dashed;
+        }
+
+        .item
+        {
+            list-style: none;
+            background-color: #EFBBDD;
+
+        }
+    </style>
+</head>
+
+<body>
+<div id="content"></div>
+<a href="#" onclick="addBindedElement(container, data); return false;">add</a>
+<a href="#" onclick="change(); return false;">update</a>
+
+<script>
+    var data = {data:123, nodes: []};
+    var container = document.getElementById('content');
+
+    function change()
+    {
+        'use strict';
+        //const test = 1;
+        //test = 2;
+
+        data.data = Math.random();
+
+        for (var i in data.nodes)
+        {
+
+            data.nodes[i].nodeValue = data.data;
+        }
+    }
+
+    function addBindedElement(container, object)
+    {
+        //const test = 1;
+        //test = 2;
+
+
+        var div = document.createElement('div');
+        var div1 = document.createElement('div');
+        var div2 = document.createElement('div');
+        div1.innerHTML = 'any text';
+        div2.innerHTML = 'any text 222';
+        var text = document.createTextNode(object.data);
+        object.nodes.push(text);
+
+        div.appendChild(text);
+        div.appendChild(div1);
+        div.appendChild(div2);
+        container.appendChild(div);
+    }
+
+    /*
+    var time = (new Date()).getTime();
+    var size = 2000;
+    function diffTime(m) {
+        var result = (new Date()).getTime() - time;
+        console.log('Diff ' + m + ', ' + result);
+        time = new Date().getTime();
+        return;
+    }
+
+    function getContent(value) {
+        return '<div class="test" style="width:' + 100 + 'px;height:' + Math.round(Math.random()*100 + 100) + 'px;background-color:#EFEFEF;border: 1px; margin-left: 10px; margin-top: 10px;"><ul>' + '<li class="item">' + value + '</li>' + '<li class="item">' + value + '</li>' + '<li class="item">' + value + '</li>' + '</ul></div>';
+    }
+
+    $ct = $('#content');
+
+    for (var i = 0; i < size; i++) {
+        var content = getContent(i);
+        $ct.append("<div id='div" + i + "'>" + content + "</div>");
+    }
+
+    diffTime('Create');
+
+    for (var i = 0; i < size; i++) {
+        var content = getContent(i);
+        $('#div' + i).html(content);
+    }
+
+    diffTime('Update');
+
+
+    for (var i = 0; i < size; i++) {
+        var content = getContent(i);
+        $('#div' + i).html(content);
+    }
+
+    diffTime('Update');
+    */
+
+
+</script>
+
+</body>
+</html>
