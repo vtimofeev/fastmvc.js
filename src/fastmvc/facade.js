@@ -1,6 +1,6 @@
 var fastmvc;
 (function (fastmvc) {
-    fastmvc.VERSION = '0.0.2';
+    fastmvc.VERSION = '0.1.0';
 
     fastmvc.TYPE_MEDIATOR = 'mediator';
     fastmvc.TYPE_MODEL = 'model';
