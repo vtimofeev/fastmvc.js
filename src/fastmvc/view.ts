@@ -17,10 +17,10 @@ module fastmvc {
         public sorter:any;
         public normalizator:any;
 
-
         constructor(name:string, $base:any) {
             super(name, fastmvc.TYPE_VIEW);
             this.$base = $base;
+
         }
 
         public delegateEventHandlers(init:boolean) {

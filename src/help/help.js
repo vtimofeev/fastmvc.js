@@ -5,6 +5,7 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
+
 var help;
 (function (help) {
     var Application = (function () {
@@ -29,15 +30,6 @@ var help;
         return ApplicationMediator;
     })(fastmvc.Mediator);
 
-    var FormView = (function (_super) {
-        __extends(FormView, _super);
-        function FormView() {
-            _super.call(this, FormView.NAME, $('body'));
-        }
-        FormView.NAME = 'FormView';
-        return FormView;
-    })(fastmvc.View);
-
     var ApplicationView = (function (_super) {
         __extends(ApplicationView, _super);
         function ApplicationView() {
@@ -47,13 +39,13 @@ var help;
         return ApplicationView;
     })(fastmvc.View);
 
-    var TVView = (function (_super) {
-        __extends(TVView, _super);
-        function TVView() {
-            _super.call(this, TVView.NAME, $('body'));
+    var TVScheduleView = (function (_super) {
+        __extends(TVScheduleView, _super);
+        function TVScheduleView() {
+            _super.call(this, TVScheduleView.NAME, $('body'));
         }
-        TVView.NAME = 'TVView';
-        return TVView;
+        TVScheduleView.NAME = 'TVView';
+        return TVScheduleView;
     })(fastmvc.View);
 
     var EnvironmentView = (function (_super) {
@@ -65,34 +57,47 @@ var help;
         return EnvironmentView;
     })(fastmvc.View);
 
-    var CDNModel = (function (_super) {
-        __extends(CDNModel, _super);
-        function CDNModel() {
-            _super.call(this, CDNModel.NAME);
+    var FormView = (function (_super) {
+        __extends(FormView, _super);
+        function FormView() {
+            _super.call(this, FormView.NAME, $('body'));
         }
-        CDNModel.NAME = 'CDNModel';
-        return CDNModel;
+        FormView.prototype.show = function (value) {
+        };
+
+        FormView.prototype.validate = function () {
+            return false;
+        };
+        FormView.NAME = 'FormView';
+        return FormView;
+    })(fastmvc.View);
+
+    var TVSheduleModel = (function (_super) {
+        __extends(TVSheduleModel, _super);
+        function TVSheduleModel() {
+            _super.apply(this, arguments);
+        }
+        TVSheduleModel.NAME = 'TVScheduleModel';
+        return TVSheduleModel;
     })(fastmvc.Model);
 
     var UserModel = (function (_super) {
         __extends(UserModel, _super);
         function UserModel() {
             _super.call(this, UserModel.NAME);
-            this.default();
         }
-        UserModel.prototype.default = function () {
-            _super.prototype.setData.call(this, { name: 'Имя', email: '', phone: '', ua: '', playerEnvironment: '', player: '', ip: '', problem: '', problemText: '' });
+        UserModel.prototype.setData = function (value) {
+            _super.prototype.setData.call(this, value);
         };
         UserModel.NAME = 'UserModel';
         return UserModel;
     })(fastmvc.Model);
-    help.UserModel = UserModel;
 
     var problems = {
-        'p0': 'Частые буферизации и потеря соединения',
-        'p1': 'Трансляция не запускается',
-        'p2': 'Отображается черный экран, звук есть',
-        'p3': 'Другое'
+        '0': 'Частые буферизации и потеря соединения',
+        '1': 'Трансляция не запускается',
+        '2': 'Отображается черный экран, звук есть',
+        '3': 'Другое'
     };
 })(help || (help = {}));
 //# sourceMappingURL=help.js.map

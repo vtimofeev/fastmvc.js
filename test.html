@@ -3,7 +3,7 @@
 <head lang="en">
     <meta charset="UTF-8">
     <title></title>
-    <script src="js/jquery-1.10.2.js"></script>
+
     <style>
         .test {
             background-color: #EFCFFF;
@@ -17,14 +17,69 @@
 
         }
     </style>
+
+    <script src="js/underscore.js"></script>
+    <script src="js/jquery-1.10.2.js"></script>
+    <script src="js/basis-template-1.0.js"></script>
+
 </head>
 
 <body>
 <div id="content"></div>
+Form
+<div id="form-content"></div>
+
+<script type="text/basis-template" id='form-template'>
+<div>
+    <form>
+        {nameValid} <input{inputName} name="name" value="{name}" placeholder="Name" event-keydown="key"/>
+        {emailValid} <input{inputEmail} name="email" value="{email}" placeholder="Name" />
+        <button event-click="validate">Submit</button>
+    </form>
+</div>
+</script>
+
 <a href="#" onclick="addBindedElement(container, data); return false;">add</a>
 <a href="#" onclick="change(); return false;">update</a>
 
 <script>
+
+    var btform = bt('id:form-template');
+    function onForm(name, event){
+        alert(name);// + ',' + event.name + ', ' + event.target + ', ' + event.target.container +  '!');
+
+    }
+
+    var cform = btform.createInstance(null, onForm);
+    var cform2 = btform.createInstance(null, onForm);
+
+    var dataInput = {name:'', email:'', nameValid:'start', emailValid:'start', test: 'test1', eventname: 'key-123'};
+
+    cform.inputName.container = cform;
+    cform.inputName.dataset({test: 1});
+    alert(cform.inputName.dataset(test))
+    cform2.inputName.container = cform2;
+
+    _.forEach(dataInput , function(v,k) {cform.set(k,v); });
+    _.forEach(dataInput , function(v,k) {cform2.set(k,v); });
+
+    cform.inputName.value = 123;
+    //cform.test.value = 123;
+    //cform.get('test').value = 123;
+
+    formContainer = document.getElementById('form-content');
+    formContainer.appendChild(cform.element);
+    formContainer.appendChild(cform2.element);
+
+    //cform.test.value = 123123123;
+
+
+
+
+    var items = [];
+
+
+
     var data = {data:123, nodes: []};
     var container = document.getElementById('content');
 

@@ -146,7 +146,7 @@ module tests
             for (var i in this.data)
             {
                 var instance = this.template.createInstance();
-                container.append(instance);
+                this.container.append(instance);
 
             }
         }

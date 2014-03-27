@@ -1,9 +1,13 @@
 ///<reference path='../fastmvc/references.ts'/>
 
+declare var $;
+declare var _;
+declare var window:Window;
+declare var document:Document;
+
 module help {
     export class Application {
         facade:fastmvc.Facade;
-
         constructor() {
             this.facade = new fastmvc.Facade('HelpApplication');
         }
@@ -24,19 +28,6 @@ module help {
 
     }
 
-    class FormView extends fastmvc.View {
-        static NAME:string  = 'FormView';
-
-        inputName:HTMLElement ;
-
-
-        constructor()
-        {
-            super(FormView.NAME, $('body'));
-        }
-    }
-
-
     class ApplicationView extends fastmvc.View {
         static NAME:string  = 'ApplicationView';
 
@@ -46,14 +37,13 @@ module help {
         }
     }
 
-    class TVView extends fastmvc.View {
+    class TVScheduleView extends fastmvc.View {
         static NAME:string  = 'TVView';
 
         constructor()
         {
-            super(TVView.NAME, $('body'));
+            super(TVScheduleView.NAME, $('body'));
         }
-
     }
 
     class EnvironmentView extends fastmvc.View {
@@ -65,34 +55,89 @@ module help {
         }
     }
 
+    class FormView extends fastmvc.View
+    {
+        static NAME:string  = 'FormView';
+
+        inputName:HTMLElement;
 
 
-    class CDNModel extends fastmvc.Model {
-        static NAME:string = 'CDNModel';
-
-        constructor() {
-            super(CDNModel.NAME);
+        constructor()
+        {
+            super(FormView.NAME, $('body'));
         }
+
+        public show(value:Boolean)
+        {
+        }
+
+        public validate():boolean
+        {
+            return false;
+        }
+
+
     }
 
 
-    export class UserModel extends fastmvc.Model {
-        static NAME:string = 'UserModel';
+    class TVSheduleModel extends fastmvc.Model
+    {
+        static NAME:string  = 'TVScheduleModel';
 
-        default() {
-            super.setData({ name: 'Имя', email: '', phone: '', ua: '', playerEnvironment: '', player: '', ip: '', problem: '', problemText: '' });
-        }
+
+    }
+
+    class UserModel extends fastmvc.Model {
+        static NAME:string = 'UserModel';
 
         constructor() {
             super(UserModel.NAME);
-            this.default();
+        }
+
+        setData(value:IUserData)
+        {
+            super.setData(value);
         }
     }
 
+    interface ITVScheduleProgram
+    {
+        title:string;
+        geo:string;
+        age:string;
+        time:number;
+    }
+
+    interface IUserData
+    {
+        userId:string;
+        name:string;
+        email:string;
+        problem:string;
+        description?:string;
+    }
+
+    interface IEnvironmentData
+    {
+        playerMode:string;
+        playerVersion:string;
+        fpVersion?:string;
+
+        ip:string;
+
+        ua:string;
+
+        country:string;
+        city:string;
+        region:string;
+        provider:string;
+    }
+
+
     var problems:any = {
-        'p0': 'Частые буферизации и потеря соединения',
-        'p1': 'Трансляция не запускается',
-        'p2': 'Отображается черный экран, звук есть',
-        'p3': 'Другое'
+        '0': 'Частые буферизации и потеря соединения',
+        '1': 'Трансляция не запускается',
+        '2': 'Отображается черный экран, звук есть',
+        '3': 'Другое'
     }
 }
