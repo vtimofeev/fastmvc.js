@@ -1,11 +1,10 @@
-///<
-
 module fastmvc
 {
     export class Notifier implements INotifier{
         private _facade:fastmvc.Facade;
         private _name:string;
         private _type:string;
+        private _listeners:any;
 
         constructor(name:string, type:string = null)
         {
@@ -38,6 +37,7 @@ module fastmvc
             var e = { name: name, sub:sub, data: data, error: error, target: this };
             this.log('Send event ' + name);
             if(this._facade) this._facade.eventHandler(e);
+            if(this._listeners && this._listeners.length) this.sendToListners(name, data);
         }
 
         public log(message:string, level?:number):void
@@ -53,6 +53,29 @@ module fastmvc
         public removeHandler():void
         {
         }
+
+        public addListener(object:any, handler:any):void
+        {
+            if(!this._listeners) this._listeners = [];
+            this._listeners.push({'object': object, 'handler': handler});
+        }
+
+        public removeListener(object:any, handler:any):void
+        {
+        }
+
+        public removeAllListeners():void
+        {
+        }
+
+        public sendToListners(event, data)
+        {
+            for (var i in this._listeners)
+            {
+                var lo:any = this._listeners[i];
+                (lo.handler).apply(lo.object, [event, data]);
+            }
+        }
     }
 
     export interface INotifier
@@ -63,6 +86,4 @@ module fastmvc
         registerHandler():void;
         removeHandler():void;
     }
-
-
 }

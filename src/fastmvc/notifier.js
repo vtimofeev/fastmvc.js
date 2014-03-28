@@ -1,4 +1,3 @@
-///<
 var fastmvc;
 (function (fastmvc) {
     var Notifier = (function () {
@@ -31,6 +30,8 @@ var fastmvc;
             this.log('Send event ' + name);
             if (this._facade)
                 this._facade.eventHandler(e);
+            if (this._listeners && this._listeners.length)
+                this.sendToListners(name, data);
         };
 
         Notifier.prototype.log = function (message, level) {
@@ -43,6 +44,25 @@ var fastmvc;
         };
 
         Notifier.prototype.removeHandler = function () {
+        };
+
+        Notifier.prototype.addListener = function (object, handler) {
+            if (!this._listeners)
+                this._listeners = [];
+            this._listeners.push({ 'object': object, 'handler': handler });
+        };
+
+        Notifier.prototype.removeListener = function (object, handler) {
+        };
+
+        Notifier.prototype.removeAllListeners = function () {
+        };
+
+        Notifier.prototype.sendToListners = function (event, data) {
+            for (var i in this._listeners) {
+                var lo = this._listeners[i];
+                (lo.handler).apply(lo.object, [event, data]);
+            }
         };
         return Notifier;
     })();

@@ -84,7 +84,7 @@ var tests;
 
                     model.setData(data);
                     if (e.data.keyCode === 13) {
-                        listModel.add(data);
+                        //listModel.add(data);
                     }
                     break;
                 case TestListView.EVENT_LI_DBL_CLICK:
@@ -93,7 +93,6 @@ var tests;
                     var item = e.target.data[Number(id)];
                     this.log('Selected: ' + JSON.stringify(item));
                     model.setData(item);
-                    listModel.remove(item);
 
                     break;
             }
@@ -147,7 +146,7 @@ var tests;
         };
         TestView.NAME = 'TestView';
         return TestView;
-    })(fastmvc.View);
+    })(fastmvc.BTView);
 
     var TestListView = (function (_super) {
         __extends(TestListView, _super);
@@ -202,6 +201,6 @@ var tests;
 })(tests || (tests = {}));
 
 $(function ready() {
-    document.app = new tests.TestApp();
+    //document.app = new tests.TestApp();
 });
 //# sourceMappingURL=tests.js.map

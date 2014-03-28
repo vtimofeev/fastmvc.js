@@ -37,14 +37,39 @@ module help {
         }
     }
 
-    class TVScheduleView extends fastmvc.View {
-        static NAME:string  = 'TVView';
+    class TVScheduleView extends fastmvc.BTView {
+        static NAME:string  = 'TVScheduleView';
+
+        items:Array<TVScheduleItemView>;
 
         constructor()
         {
             super(TVScheduleView.NAME, $('body'));
         }
+
+        init():void
+        {
+            super.init();
+        }
+
+        createItems():void
+        {
+
+        }
+
     }
+
+    class TVScheduleItemView extends fastmvc.BTView {
+        static NAME:string  = 'TVScheduleItemView';
+
+        constructor()
+        {
+            super(TVScheduleView.NAME, $('body'));
+        }
+
+
+    }
+
 
     class EnvironmentView extends fastmvc.View {
         static NAME:string  = 'EnvironmentView';
@@ -55,17 +80,26 @@ module help {
         }
     }
 
-    class FormView extends fastmvc.View
+    class FormView extends fastmvc.BTView
     {
         static NAME:string  = 'FormView';
 
-        inputName:HTMLElement;
-
+        nameInput:HTMLElement;
+        emailInput:HTMLElement;
+        problemSelect:HTMLElement;
+        problemTextarea:HTMLElement;
 
         constructor()
         {
             super(FormView.NAME, $('body'));
         }
+
+        public init()
+        {
+            super.init(['nameInput', 'emailInput', 'problemSelect', 'problemTextarea']);
+
+        }
+
 
         public show(value:Boolean)
         {
@@ -75,16 +109,27 @@ module help {
         {
             return false;
         }
-
-
     }
-
 
     class TVSheduleModel extends fastmvc.Model
     {
         static NAME:string  = 'TVScheduleModel';
 
+        constructor() {
+            super(TVSheduleModel.NAME);
+        }
 
+        public load(url)
+        {
+        }
+
+        successLoadHandler(value:any)
+        {
+        }
+
+        faultLoadHandler(value:any)
+        {
+        }
     }
 
     class UserModel extends fastmvc.Model {

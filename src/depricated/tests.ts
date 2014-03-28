@@ -2,6 +2,7 @@
 
 declare var $:any;
 declare var _:any;
+declare var document:Document;
 
 module tests
 {
@@ -96,7 +97,7 @@ module tests
                     model.setData(data);
                     if(e.data.keyCode === 13)
                     {
-                        listModel.add(data);
+                        //listModel.add(data);
                     }
                     break;
                 case TestListView.EVENT_LI_DBL_CLICK:
@@ -105,7 +106,7 @@ module tests
                         var item = e.target.data[Number(id)];
                         this.log('Selected: ' + JSON.stringify(item));
                         model.setData(item);
-                        listModel.remove(item);
+                        //listModel.remove(item);
 
                     break;
 
@@ -123,7 +124,7 @@ module tests
         static REMOVE_CLICK:string = 'addClick';
     }
 
-    class TestView extends fastmvc.View implements fastmvc.IView
+    class TestView extends fastmvc.BTView implements fastmvc.IView
     {
         public static NAME:string = 'TestView';
         public eventHandlers:any = {
@@ -147,7 +148,6 @@ module tests
             {
                 var instance = this.template.createInstance();
                 this.container.append(instance);
-
             }
         }
 
@@ -236,7 +236,7 @@ module tests
 }
 
 $(function ready() {
-    document.app = new tests.TestApp();
+    //document.app = new tests.TestApp();
 });
 
 

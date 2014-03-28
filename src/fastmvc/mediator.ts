@@ -36,7 +36,7 @@ module fastmvc {
         private initView(view:fastmvc.View) {
             this.log('Init view ' + view.name());
             view.mediator(this);
-            view.delegateEventHandlers(true);
+            view.init();
         }
 
         public getView(name:string):fastmvc.View

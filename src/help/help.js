@@ -44,9 +44,24 @@ var help;
         function TVScheduleView() {
             _super.call(this, TVScheduleView.NAME, $('body'));
         }
-        TVScheduleView.NAME = 'TVView';
+        TVScheduleView.prototype.init = function () {
+            _super.prototype.init.call(this);
+        };
+
+        TVScheduleView.prototype.createItems = function () {
+        };
+        TVScheduleView.NAME = 'TVScheduleView';
         return TVScheduleView;
-    })(fastmvc.View);
+    })(fastmvc.BTView);
+
+    var TVScheduleItemView = (function (_super) {
+        __extends(TVScheduleItemView, _super);
+        function TVScheduleItemView() {
+            _super.call(this, TVScheduleView.NAME, $('body'));
+        }
+        TVScheduleItemView.NAME = 'TVScheduleItemView';
+        return TVScheduleItemView;
+    })(fastmvc.BTView);
 
     var EnvironmentView = (function (_super) {
         __extends(EnvironmentView, _super);
@@ -62,6 +77,10 @@ var help;
         function FormView() {
             _super.call(this, FormView.NAME, $('body'));
         }
+        FormView.prototype.init = function () {
+            _super.prototype.init.call(this, ['nameInput', 'emailInput', 'problemSelect', 'problemTextarea']);
+        };
+
         FormView.prototype.show = function (value) {
         };
 
@@ -70,13 +89,21 @@ var help;
         };
         FormView.NAME = 'FormView';
         return FormView;
-    })(fastmvc.View);
+    })(fastmvc.BTView);
 
     var TVSheduleModel = (function (_super) {
         __extends(TVSheduleModel, _super);
         function TVSheduleModel() {
-            _super.apply(this, arguments);
+            _super.call(this, TVSheduleModel.NAME);
         }
+        TVSheduleModel.prototype.load = function (url) {
+        };
+
+        TVSheduleModel.prototype.successLoadHandler = function (value) {
+        };
+
+        TVSheduleModel.prototype.faultLoadHandler = function (value) {
+        };
         TVSheduleModel.NAME = 'TVScheduleModel';
         return TVSheduleModel;
     })(fastmvc.Model);

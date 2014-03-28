@@ -37,7 +37,7 @@ var fastmvc;
         Mediator.prototype.initView = function (view) {
             this.log('Init view ' + view.name());
             view.mediator(this);
-            view.delegateEventHandlers(true);
+            view.init();
         };
 
         Mediator.prototype.getView = function (name) {
