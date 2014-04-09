@@ -1,4 +1,4 @@
-///<reference path='../fastmvc/references.ts'/>
+///<reference path='../fmvc/references.ts'/>
 
 declare var $:any;
 declare var _:any;
@@ -8,10 +8,10 @@ module tests {
 
     export class TestApp {
         static NAME:string = 'testapp';
-        facade:fastmvc.Facade;
+        facade:fmvc.Facade;
 
         constructor() {
-            this.facade = new fastmvc.Facade(TestApp.NAME);
+            this.facade = new fmvc.Facade(TestApp.NAME);
             //this.facade.getLogger().setFilter(['TestMediator', 'TestView'])
 
 
@@ -32,14 +32,14 @@ module tests {
         }
     }
 
-    class TestModel extends fastmvc.Model {
+    class TestModel extends fmvc.Model {
         public static NAME:string = 'TestModel';
         constructor(data:any) {
             super(TestModel.NAME, data)
         }
     }
 
-    class TestListModel extends fastmvc.ModelList {
+    class TestListModel extends fmvc.ModelList {
         public static NAME:string = 'TestListModel';
 
         constructor(data:any) {
@@ -47,21 +47,21 @@ module tests {
         }
     }
 
-    class TestMediator extends fastmvc.Mediator {
+    class TestMediator extends fmvc.Mediator {
         public static NAME:string = 'TestMediator';
 
-        constructor(facade:fastmvc.Facade, views:any) {
+        constructor(facade:fmvc.Facade, views:any) {
             super(facade, TestMediator.NAME, views);
         }
 
         events():any {
-            return[fastmvc.Event.MODEL_CHANGE];
+            return[fmvc.Event.MODEL_CHANGE];
         }
 
         modelEventHandler(e:any) {
             var name:string = e.target.name();
             switch (e.name) {
-                case fastmvc.Event.MODEL_CHANGE:
+                case fmvc.Event.MODEL_CHANGE:
                     switch (name) {
                         case TestModel.NAME:
                             break;
@@ -76,10 +76,10 @@ module tests {
         }
     }
 
-    class TestView extends fastmvc.BTView implements fastmvc.IView {
+    class TestView extends fmvc.BasisView implements fmvc.IView {
         public static NAME:string = 'TestView';
 
-        constructor(base:HTMLElement, model:fastmvc.Model) {
+        constructor(base:HTMLElement, model:fmvc.Model) {
             super(TestView.NAME, base);
             this.data = model;
         }
@@ -89,6 +89,9 @@ module tests {
             super.init();
             this.data.setData({name: 'Test', value:2});
             this.data.setData({value:43});
+            this.data.setData({value:48});
+
+            this.destroy();
         }
 
         public eventHandler(name:string, e:any):void {
@@ -96,12 +99,13 @@ module tests {
         }
     }
 
-    class TestListView extends fastmvc.BTView implements fastmvc.IView {
+    class TestListView extends fmvc.BasisView implements fmvc.IView {
         public static NAME:string = 'TestListView';
 
-        private views:any = [];
+        private views:any = ['content'];
+        private content:HTMLElement;
 
-        constructor(base:any, model:fastmvc.ModelList) {
+        constructor(base:any, model:fmvc.ModelList) {
             super(TestListView.NAME, base);
             this.data = model;
         }
@@ -113,11 +117,12 @@ module tests {
 
             for (var i in models)
             {
-                var model:fastmvc.Model = models[i];
+                var model:fmvc.Model = models[i];
 
                 var view = new TestListItemView(this.base, model);
                 view.mediator(this._mediator);
                 view.init();
+
 
                 this.log('Create element ' + view + ', ' + model);
                 this.views.push[view];
@@ -129,10 +134,11 @@ module tests {
 
         public eventHandler(name:string, e:any):void {
             super.eventHandler(name, e);
+
         }
     }
 
-    class TestListItemView extends fastmvc.BTView implements fastmvc.IView {
+    class TestListItemView extends fmvc.BasisView implements fmvc.IView {
         public static NAME:string = 'TestListItemView';
 
         constructor(base:any, model:any) {
@@ -142,7 +148,20 @@ module tests {
 
         public eventHandler(name:string, e:any):void {
             super.eventHandler(name, e);
+
+            switch(name)
+            {
+                case 'update':
+                    this.data.setData({'name' : 'Hello333', 'value': (new Date().getTime())});
+                    break;
+            }
         }
+
+        public test()
+        {
+            console.log('in child');
+        }
+
     }
 }
 

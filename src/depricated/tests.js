@@ -1,4 +1,4 @@
-///<reference path='../fastmvc/references.ts'/>
+///<reference path='../fmvc/references.ts'/>
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -10,7 +10,7 @@ var tests;
 (function (tests) {
     var TestApp = (function () {
         function TestApp() {
-            this.facade = new fastmvc.Facade(TestApp.NAME);
+            this.facade = new fmvc.Facade(TestApp.NAME);
 
             //this.facade.getLogger().setFilter(['TestMediator', 'TestView'])
             this.facade.register(new TestModel());
@@ -29,7 +29,7 @@ var tests;
         }
         TestModel.NAME = 'TestModel';
         return TestModel;
-    })(fastmvc.Model);
+    })(fmvc.Model);
 
     var TestListModel = (function (_super) {
         __extends(TestListModel, _super);
@@ -38,7 +38,7 @@ var tests;
         }
         TestListModel.NAME = 'TestListModel';
         return TestListModel;
-    })(fastmvc.Model);
+    })(fmvc.Model);
 
     var TestMediator = (function (_super) {
         __extends(TestMediator, _super);
@@ -46,14 +46,14 @@ var tests;
             _super.call(this, facade, TestMediator.NAME, views);
         }
         TestMediator.prototype.events = function () {
-            return [fastmvc.Event.MODEL_CHANGE];
+            return [fmvc.Event.MODEL_CHANGE];
         };
 
         TestMediator.prototype.modelEventHandler = function (e) {
             var name = e.target.name();
 
             switch (e.name) {
-                case fastmvc.Event.MODEL_CHANGE:
+                case fmvc.Event.MODEL_CHANGE:
                     switch (name) {
                         case TestModel.NAME:
                             var view = this.getView(TestView.NAME);
@@ -99,7 +99,7 @@ var tests;
         };
         TestMediator.NAME = 'TestMediator';
         return TestMediator;
-    })(fastmvc.Mediator);
+    })(fmvc.Mediator);
 
     var TestViewEvent = (function () {
         function TestViewEvent() {
@@ -146,7 +146,7 @@ var tests;
         };
         TestView.NAME = 'TestView';
         return TestView;
-    })(fastmvc.BTView);
+    })(fmvc.BTView);
 
     var TestListView = (function (_super) {
         __extends(TestListView, _super);
@@ -197,7 +197,7 @@ var tests;
         TestListView.EVENT_LI_DBL_CLICK = 'liDblClick';
         TestListView.EVENT_LI_EDIT_KEY = 'liEditKey';
         return TestListView;
-    })(fastmvc.View);
+    })(fmvc.View);
 })(tests || (tests = {}));
 
 $(function ready() {

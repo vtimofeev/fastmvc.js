@@ -4,8 +4,8 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-var fastmvc;
-(function (fastmvc) {
+var fmvc;
+(function (fmvc) {
     var Logger = (function (_super) {
         __extends(Logger, _super);
         function Logger(facade, name) {
@@ -53,15 +53,16 @@ var fastmvc;
             }
 
             // console
-            if (this._config && this._config.console && console) {
+            if (this._config && this._config.console && ('console' in window)) {
                 console.log('[' + name + '] ' + level + ' ' + message);
             }
 
-            //this.sendEvent('log', data);
+            // log
+            this.sendEvent('log', data, null, null, false);
             return;
         };
         return Logger;
-    })(fastmvc.Notifier);
-    fastmvc.Logger = Logger;
-})(fastmvc || (fastmvc = {}));
+    })(fmvc.Notifier);
+    fmvc.Logger = Logger;
+})(fmvc || (fmvc = {}));
 //# sourceMappingURL=logger.js.map

@@ -1,5 +1,5 @@
-var fastmvc;
-(function (fastmvc) {
+var fmvc;
+(function (fmvc) {
     var Event = (function () {
         function Event() {
         }
@@ -11,6 +11,6 @@ var fastmvc;
         Event.MODEL_VALIDATE = 'modelValidate';
         return Event;
     })();
-    fastmvc.Event = Event;
-})(fastmvc || (fastmvc = {}));
+    fmvc.Event = Event;
+})(fmvc || (fmvc = {}));
 //# sourceMappingURL=event.js.map

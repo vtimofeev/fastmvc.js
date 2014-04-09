@@ -1,10 +1,10 @@
-var fastmvc;
-(function (fastmvc) {
+var fmvc;
+(function (fmvc) {
     var Notifier = (function () {
         function Notifier(name, type) {
             if (typeof type === "undefined") { type = null; }
             this._name = name;
-            this._type = type ? type : fastmvc.TYPE_MODEL;
+            this._type = type ? type : fmvc.TYPE_MODEL;
         }
         Notifier.prototype.setFacade = function (value) {
             this._facade = value;
@@ -22,12 +22,14 @@ var fastmvc;
             return this._type;
         };
 
-        Notifier.prototype.sendEvent = function (name, data, sub, error) {
+        Notifier.prototype.sendEvent = function (name, data, sub, error, log) {
             if (typeof data === "undefined") { data = null; }
             if (typeof sub === "undefined") { sub = null; }
             if (typeof error === "undefined") { error = null; }
+            if (typeof log === "undefined") { log = true; }
             var e = { name: name, sub: sub, data: data, error: error, target: this };
-            this.log('Send event ' + name);
+            if (log)
+                this.log('Send event ' + name);
             if (this._facade)
                 this._facade.eventHandler(e);
             if (this._listeners && this._listeners.length)
@@ -66,6 +68,6 @@ var fastmvc;
         };
         return Notifier;
     })();
-    fastmvc.Notifier = Notifier;
-})(fastmvc || (fastmvc = {}));
+    fmvc.Notifier = Notifier;
+})(fmvc || (fmvc = {}));
 //# sourceMappingURL=notifier.js.map

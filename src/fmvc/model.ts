@@ -1,5 +1,5 @@
-module fastmvc {
-    export class Model extends fastmvc.Notifier {
+module fmvc {
+    export class Model extends fmvc.Notifier {
         private _data:any;
         private _validator:any;
 
@@ -9,9 +9,17 @@ module fastmvc {
         }
 
         public setData(value:any):void {
-            this._data = value;
+            //this._data = value;
             var data = this.getData();
-            this.sendEvent(fastmvc.Event.MODEL_CHANGE, data);
+
+            if (data) {
+                for(var i in value) data[i] = value[i];
+            }
+            else {
+                this._data = value;
+            }
+
+            this.sendEvent(fmvc.Event.MODEL_CHANGE, data);
         }
 
         public getData():any {
@@ -29,7 +37,7 @@ module fastmvc {
 
             if(!this._validator) result = true;
             else result = this._validator(value, this, error);
-            this.sendEvent(fastmvc.Event.MODEL_VALIDATE, result, null, error);
+            this.sendEvent(fmvc.Event.MODEL_VALIDATE, result, null, error);
             return result;
         }
 
@@ -40,7 +48,7 @@ module fastmvc {
 
     }
 
-    export class ModelList extends fastmvc.Notifier {
+    export class ModelList extends fmvc.Notifier {
         private _data:any;
 
         constructor(name:string, data:any = null) {
@@ -54,7 +62,7 @@ module fastmvc {
             {
                 this._data.push(this.createModel(value[i]));
             }
-            this.sendEvent(fastmvc.Event.MODEL_CHANGE, this.data());
+            this.sendEvent(fmvc.Event.MODEL_CHANGE, this.data());
         }
 
         public getData():any
@@ -72,8 +80,8 @@ module fastmvc {
         }
 
         public add(value:any):boolean {
-            this._data.push(value);
-            this.sendEvent(fastmvc.Event.MODEL_CHANGE, this.getData());
+            this._data.push(this.createModel(value));
+            this.sendEvent(fmvc.Event.MODEL_CHANGE, this.getData());
             return true;
         }
 
@@ -87,7 +95,7 @@ module fastmvc {
                 result = true;
             }
 
-            this.sendEvent(fastmvc.Event.MODEL_CHANGE, this.getData());
+            this.sendEvent(fmvc.Event.MODEL_CHANGE, this.getData());
             return result;
         }
 
@@ -103,7 +111,7 @@ module fastmvc {
                 result = true;
             }
 
-            this.sendEvent(fastmvc.Event.MODEL_CHANGE, this.getData());
+            this.sendEvent(fmvc.Event.MODEL_CHANGE, this.getData());
             return result;
         }
 

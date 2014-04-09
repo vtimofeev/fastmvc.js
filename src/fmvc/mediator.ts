@@ -1,14 +1,14 @@
 ///<reference path='notifier.ts'/>
 ///<reference path='facade.ts'/>
-///<reference path='view.ts'/>
+///<reference path='basisView.ts'/>
 
 
-module fastmvc {
-    export class Mediator extends fastmvc.Notifier implements IMediator {
+module fmvc {
+    export class Mediator extends fmvc.Notifier implements IMediator {
         private views:any;
 
-        constructor(facade:fastmvc.Facade, name:string, views:any = null) {
-            super(name, fastmvc.TYPE_MEDIATOR);
+        constructor(facade:fmvc.Facade, name:string, views:any = null) {
+            super(name, fmvc.TYPE_MEDIATOR);
             this.setFacade(facade);
             this.initViews(views);
         }
@@ -33,13 +33,13 @@ module fastmvc {
             }
         }
 
-        private initView(view:fastmvc.View) {
+        private initView(view:fmvc.View) {
             this.log('Init view ' + view.name());
-            view.mediator(this);
+            view.setMediator(this);
             view.init();
         }
 
-        public getView(name:string):fastmvc.View
+        public getView(name:string):any
         {
             for(var i in this.views) { if(this.views[i].name() == name) return this.views[i]; }
             return null;
@@ -61,13 +61,13 @@ module fastmvc {
         public eventHandler(e:any):void {
             this.log('Handled ' + e.name + ' from ' + e.target.name() + ":" + e.target.type());
             switch (e.target.type()) {
-                case fastmvc.TYPE_MEDIATOR:
+                case fmvc.TYPE_MEDIATOR:
                     this.mediatorEventHandler(e);
                     break;
-                case fastmvc.TYPE_MODEL:
+                case fmvc.TYPE_MODEL:
                     this.modelEventHandler(e);
                     break;
-                case fastmvc.TYPE_VIEW:
+                case fmvc.TYPE_VIEW:
                     this.viewEventHandler(e);
                     break;
             }
@@ -85,9 +85,9 @@ module fastmvc {
 
     export interface IMediator {
         events():any;
-        eventHandler(e:any):void;
-        getView(name:string):fastmvc.View;
         internalHandler(e:any):void;
+        eventHandler(e:any):void;
+        getView(name:string):any;
     }
 }
 

@@ -1,4 +1,4 @@
-module fastmvc
+module fmvc
 {
     export class Event
     {

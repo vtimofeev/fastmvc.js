@@ -1,7 +1,7 @@
-module fastmvc
+module fmvc
 {
     export class Notifier implements INotifier{
-        private _facade:fastmvc.Facade;
+        private _facade:fmvc.Facade;
         private _name:string;
         private _type:string;
         private _listeners:any;
@@ -9,15 +9,15 @@ module fastmvc
         constructor(name:string, type:string = null)
         {
             this._name = name;
-            this._type = type?type:fastmvc.TYPE_MODEL;
+            this._type = type?type:fmvc.TYPE_MODEL;
         }
 
-        public setFacade(value:fastmvc.Facade):void
+        public setFacade(value:fmvc.Facade):void
         {
             this._facade = value;
         }
 
-        public facade():fastmvc.Facade
+        public facade():fmvc.Facade
         {
             return this._facade;
         }
@@ -32,10 +32,10 @@ module fastmvc
             return this._type;
         }
 
-        public sendEvent(name:string, data:any = null, sub:string = null, error:any = null):void
+        public sendEvent(name:string, data:any = null, sub:string = null, error:any = null, log:boolean = true):void
         {
-            var e = { name: name, sub:sub, data: data, error: error, target: this };
-            this.log('Send event ' + name);
+            var e = {name: name, sub:sub, data: data, error: error, target: this};
+            if(log) this.log('Send event ' + name);
             if(this._facade) this._facade.eventHandler(e);
             if(this._listeners && this._listeners.length) this.sendToListners(name, data);
         }
@@ -44,6 +44,7 @@ module fastmvc
         {
             // log messages
             if(this._facade) this._facade.saveLog(this.name(), message, level);
+            return void;
         }
 
         public registerHandler():void
@@ -60,7 +61,13 @@ module fastmvc
             this._listeners.push({'object': object, 'handler': handler});
         }
 
-        public removeListener(object:any, handler:any):void
+        public bind(bind:boolean, object:any, handler?:any)
+        {
+            if(bind) this.addListener(object, handler);
+            else this.removeListener(object, handler);
+        }
+
+        public removeListener(object:any, handler?:any):void
         {
         }
 
@@ -78,10 +85,17 @@ module fastmvc
         }
     }
 
+    export interface IEvent
+    {
+        name:string;
+        data:any;
+    }
+
+
     export interface INotifier
     {
         name():string;
-        facade():fastmvc.Facade;
+        facade():fmvc.Facade;
         sendEvent(name:string, data:any):void;
         registerHandler():void;
         removeHandler():void;

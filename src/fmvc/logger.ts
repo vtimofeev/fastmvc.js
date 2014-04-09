@@ -1,10 +1,10 @@
-module fastmvc {
-    export class Logger extends fastmvc.Notifier {
+module fmvc {
+    export class Logger extends fmvc.Notifier {
         private _data:any = [];
         private _config:any = {filter: [], length: 100000, console: true};
         private _modules:any = [];
 
-        constructor(facade:fastmvc.Facade, name:string) {
+        constructor(facade:fmvc.Facade, name:string) {
             super(name);
             this.setFacade(facade);
         }
@@ -43,16 +43,16 @@ module fastmvc {
 
             // exit if it has filters and has no the name in the array
             if (this._config && this._config.filter && this._config.filter.length && this._config.filter.indexOf(name) === -1) {
-
                 return;
             }
 
             // console
-            if (this._config && this._config.console && console) {
+            if (this._config && this._config.console && ('console' in window)) {
                 console.log('[' + name + '] ' + level + ' ' + message);
             }
 
-            //this.sendEvent('log', data);
+            // log
+            this.sendEvent('log', data, null, null, false);
             return;
         }
 

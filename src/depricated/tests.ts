@@ -1,4 +1,4 @@
-///<reference path='../fastmvc/references.ts'/>
+///<reference path='../fmvc/references.ts'/>
 
 declare var $:any;
 declare var _:any;
@@ -10,11 +10,11 @@ module tests
     export class TestApp
     {
         static NAME:string = 'testapp';
-        facade:fastmvc.Facade;
+        facade:fmvc.Facade;
 
         constructor()
         {
-            this.facade = new fastmvc.Facade(TestApp.NAME);
+            this.facade = new fmvc.Facade(TestApp.NAME);
             //this.facade.getLogger().setFilter(['TestMediator', 'TestView'])
 
             this.facade.register(new TestModel());
@@ -23,7 +23,7 @@ module tests
         }
     }
 
-    class TestModel extends fastmvc.Model
+    class TestModel extends fmvc.Model
     {
         public static NAME:string = 'TestModel';
         constructor()
@@ -32,7 +32,7 @@ module tests
         }
     }
 
-    class TestListModel extends fastmvc.Model
+    class TestListModel extends fmvc.Model
     {
         public static NAME:string = 'TestListModel';
         constructor()
@@ -41,18 +41,18 @@ module tests
         }
     }
 
-    class TestMediator extends fastmvc.Mediator
+    class TestMediator extends fmvc.Mediator
     {
         public static NAME:string = 'TestMediator';
 
-        constructor(facade:fastmvc.Facade, views:any)
+        constructor(facade:fmvc.Facade, views:any)
         {
             super(facade, TestMediator.NAME, views);
         }
 
         events():any
         {
-            return[fastmvc.Event.MODEL_CHANGE];
+            return[fmvc.Event.MODEL_CHANGE];
         }
 
         modelEventHandler(e:any)
@@ -61,18 +61,18 @@ module tests
 
             switch(e.name)
             {
-                case fastmvc.Event.MODEL_CHANGE:
+                case fmvc.Event.MODEL_CHANGE:
 
                     switch(name)
                     {
                         case TestModel.NAME:
-                            var view:fastmvc.View = this.getView(TestView.NAME);
+                            var view:fmvc.View = this.getView(TestView.NAME);
                             view.data = e.data;
                             view.render();
                             break;
 
                         case TestListModel.NAME:
-                            var view:fastmvc.View = this.getView(TestListView.NAME);
+                            var view:fmvc.View = this.getView(TestListView.NAME);
                             view.data = e.data;
                             view.render();
                             break;
@@ -85,8 +85,8 @@ module tests
         internalHandler(e:any):void {
             super.internalHandler(e);
             this.log('Internal handler ' + e.name);
-            var model:fastmvc.Model = this.facade().getObject('TestModel');
-            var listModel:fastmvc.Model = this.facade().getObject('TestListModel');
+            var model:fmvc.Model = this.facade().getObject('TestModel');
+            var listModel:fmvc.Model = this.facade().getObject('TestListModel');
 
 
             switch(e.name)
@@ -124,7 +124,7 @@ module tests
         static REMOVE_CLICK:string = 'addClick';
     }
 
-    class TestView extends fastmvc.BTView implements fastmvc.IView
+    class TestView extends fmvc.BTView implements fmvc.IView
     {
         public static NAME:string = 'TestView';
         public eventHandlers:any = {
@@ -146,7 +146,7 @@ module tests
         {
             for (var i in this.data)
             {
-                var instance = this.template.createInstance();
+                var instance = this.template.createTemplateInstance();
                 this.container.append(instance);
             }
         }
@@ -169,7 +169,7 @@ module tests
         }
     }
 
-    class TestListView extends fastmvc.View implements fastmvc.IView
+    class TestListView extends fmvc.View implements fmvc.IView
     {
         public static NAME:string = 'TestListView';
 

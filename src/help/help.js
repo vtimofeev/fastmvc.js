@@ -1,4 +1,4 @@
-///<reference path='../fastmvc/references.ts'/>
+///<reference path='../fmvc/references.ts'/>
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -10,7 +10,7 @@ var help;
 (function (help) {
     var Application = (function () {
         function Application() {
-            this.facade = new fastmvc.Facade('HelpApplication');
+            this.facade = new fmvc.Facade('HelpApplication');
         }
         return Application;
     })();
@@ -28,7 +28,7 @@ var help;
         };
         ApplicationMediator.NAME = 'ApplicationMediator';
         return ApplicationMediator;
-    })(fastmvc.Mediator);
+    })(fmvc.Mediator);
 
     var ApplicationView = (function (_super) {
         __extends(ApplicationView, _super);
@@ -37,7 +37,7 @@ var help;
         }
         ApplicationView.NAME = 'ApplicationView';
         return ApplicationView;
-    })(fastmvc.View);
+    })(fmvc.View);
 
     var TVScheduleView = (function (_super) {
         __extends(TVScheduleView, _super);
@@ -52,7 +52,7 @@ var help;
         };
         TVScheduleView.NAME = 'TVScheduleView';
         return TVScheduleView;
-    })(fastmvc.BTView);
+    })(fmvc.BasisView);
 
     var TVScheduleItemView = (function (_super) {
         __extends(TVScheduleItemView, _super);
@@ -61,7 +61,7 @@ var help;
         }
         TVScheduleItemView.NAME = 'TVScheduleItemView';
         return TVScheduleItemView;
-    })(fastmvc.BTView);
+    })(fmvc.BasisView);
 
     var EnvironmentView = (function (_super) {
         __extends(EnvironmentView, _super);
@@ -70,15 +70,16 @@ var help;
         }
         EnvironmentView.NAME = 'EnvironmentView';
         return EnvironmentView;
-    })(fastmvc.View);
+    })(fmvc.View);
 
     var FormView = (function (_super) {
         __extends(FormView, _super);
         function FormView() {
             _super.call(this, FormView.NAME, $('body'));
+            this.items = ['nameInput', 'emailInput', 'problemSelect', 'problemTextarea'];
         }
         FormView.prototype.init = function () {
-            _super.prototype.init.call(this, ['nameInput', 'emailInput', 'problemSelect', 'problemTextarea']);
+            _super.prototype.init.call(this);
         };
 
         FormView.prototype.show = function (value) {
@@ -89,7 +90,7 @@ var help;
         };
         FormView.NAME = 'FormView';
         return FormView;
-    })(fastmvc.BTView);
+    })(fmvc.BasisView);
 
     var TVSheduleModel = (function (_super) {
         __extends(TVSheduleModel, _super);
@@ -106,7 +107,7 @@ var help;
         };
         TVSheduleModel.NAME = 'TVScheduleModel';
         return TVSheduleModel;
-    })(fastmvc.Model);
+    })(fmvc.Model);
 
     var UserModel = (function (_super) {
         __extends(UserModel, _super);
@@ -118,7 +119,7 @@ var help;
         };
         UserModel.NAME = 'UserModel';
         return UserModel;
-    })(fastmvc.Model);
+    })(fmvc.Model);
 
     var problems = {
         '0': 'Частые буферизации и потеря соединения',

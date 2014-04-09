@@ -5,4 +5,5 @@
 ///<reference path='model.ts'/>
 ///<reference path='mediator.ts'/>
 ///<reference path='view.ts'/>
-
+///<reference path='basisView.ts'/>
+//# sourceMappingURL=references.js.map

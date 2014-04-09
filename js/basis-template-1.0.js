@@ -315,8 +315,8 @@
                                     var context = this.context;
                                     var bindings = this.bindings;
                                     var bindingInterface = this.bindingInterface;
-                                    tmpl = template.createInstance(context, null, function onRebuild() {
-                                        tmpl = newAttach.tmpl = template.createInstance(context, null, onRebuild, bindings, bindingInterface);
+                                    tmpl = template.createTemplateInstance(context, null, function onRebuild() {
+                                        tmpl = newAttach.tmpl = template.createTemplateInstance(context, null, onRebuild, bindings, bindingInterface);
                                         tmpl.element.toString = function() {
                                             return value.value;
                                         };
@@ -2160,7 +2160,7 @@
                         });
                     }
                 }
-                this.createInstance = funcs.createInstance;
+                this.createInstance = funcs.createTemplateInstance;
                 this.clearInstance = funcs.destroyInstance;
                 this.getBinding = function() {
                     return {

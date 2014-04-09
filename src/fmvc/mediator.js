@@ -1,19 +1,19 @@
 ///<reference path='notifier.ts'/>
 ///<reference path='facade.ts'/>
-///<reference path='view.ts'/>
+///<reference path='basisView.ts'/>
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-var fastmvc;
-(function (fastmvc) {
+var fmvc;
+(function (fmvc) {
     var Mediator = (function (_super) {
         __extends(Mediator, _super);
         function Mediator(facade, name, views) {
             if (typeof views === "undefined") { views = null; }
-            _super.call(this, name, fastmvc.TYPE_MEDIATOR);
+            _super.call(this, name, fmvc.TYPE_MEDIATOR);
             this.setFacade(facade);
             this.initViews(views);
         }
@@ -63,13 +63,13 @@ var fastmvc;
         Mediator.prototype.eventHandler = function (e) {
             this.log('Handled ' + e.name + ' from ' + e.target.name() + ":" + e.target.type());
             switch (e.target.type()) {
-                case fastmvc.TYPE_MEDIATOR:
+                case fmvc.TYPE_MEDIATOR:
                     this.mediatorEventHandler(e);
                     break;
-                case fastmvc.TYPE_MODEL:
+                case fmvc.TYPE_MODEL:
                     this.modelEventHandler(e);
                     break;
-                case fastmvc.TYPE_VIEW:
+                case fmvc.TYPE_VIEW:
                     this.viewEventHandler(e);
                     break;
             }
@@ -84,7 +84,7 @@ var fastmvc;
         Mediator.prototype.viewEventHandler = function (e) {
         };
         return Mediator;
-    })(fastmvc.Notifier);
-    fastmvc.Mediator = Mediator;
-})(fastmvc || (fastmvc = {}));
+    })(fmvc.Notifier);
+    fmvc.Mediator = Mediator;
+})(fmvc || (fmvc = {}));
 //# sourceMappingURL=mediator.js.map

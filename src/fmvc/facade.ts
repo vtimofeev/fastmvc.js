@@ -1,24 +1,23 @@
-module fastmvc
+module fmvc
 {
-    export var VERSION:string = '0.1.0';
+    export var VERSION:string = '0.2.1';
 
     export var TYPE_MEDIATOR:string = 'mediator';
     export var TYPE_MODEL:string = 'model';
     export var TYPE_VIEW:string = 'view';
 
-
     export class Facade {
         private _name:string = '';
         private _objects:any = [];
         private _events:any = {};
-        private _logger:fastmvc.Logger;
+        private _logger:fmvc.Logger;
         private static _facades = [];
 
 
         constructor(name:string) {
             this._name = name;
-            this._logger = new fastmvc.Logger(this, 'Log');
-            this.log('Start ' + name + ', fastmvc ' + fastmvc.VERSION);
+            this._logger = new fmvc.Logger(this, 'Log');
+            this.log('Start ' + name + ', fmvc ' + fmvc.VERSION);
             Facade._facades.push(name);
         }
 
@@ -45,7 +44,7 @@ module fastmvc
             }
         }
 
-        public getLogger():fastmvc.Logger
+        public getLogger():fmvc.Logger
         {
             return this._logger;
         }
@@ -60,11 +59,11 @@ module fastmvc
             return null;
         }
 
-        public eventHandler(e:any):void {
+        public eventHandler(e:IEvent):void {
             var objects:any = this._events[e.name];
             for (var i in objects)
             {
-                var object:fastmvc.IMediator = objects[i];
+                var object:fmvc.IMediator = objects[i];
                 object.eventHandler(e);
             }
         }

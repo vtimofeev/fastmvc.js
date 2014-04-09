@@ -4,8 +4,8 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-var fastmvc;
-(function (fastmvc) {
+var fmvc;
+(function (fmvc) {
     var Model = (function (_super) {
         __extends(Model, _super);
         function Model(name, data) {
@@ -14,9 +14,17 @@ var fastmvc;
             this._data = data;
         }
         Model.prototype.setData = function (value) {
-            this._data = value;
+            //this._data = value;
             var data = this.getData();
-            this.sendEvent(fastmvc.Event.MODEL_CHANGE, data);
+
+            if (data) {
+                for (var i in value)
+                    data[i] = value[i];
+            } else {
+                this._data = value;
+            }
+
+            this.sendEvent(fmvc.Event.MODEL_CHANGE, data);
         };
 
         Model.prototype.getData = function () {
@@ -35,15 +43,15 @@ var fastmvc;
                 result = true;
             else
                 result = this._validator(value, this, error);
-            this.sendEvent(fastmvc.Event.MODEL_VALIDATE, result, null, error);
+            this.sendEvent(fmvc.Event.MODEL_VALIDATE, result, null, error);
             return result;
         };
 
         Model.prototype.destroy = function () {
         };
         return Model;
-    })(fastmvc.Notifier);
-    fastmvc.Model = Model;
+    })(fmvc.Notifier);
+    fmvc.Model = Model;
 
     var ModelList = (function (_super) {
         __extends(ModelList, _super);
@@ -58,7 +66,7 @@ var fastmvc;
             for (var i in value) {
                 this._data.push(this.createModel(value[i]));
             }
-            this.sendEvent(fastmvc.Event.MODEL_CHANGE, this.data());
+            this.sendEvent(fmvc.Event.MODEL_CHANGE, this.data());
         };
 
         ModelList.prototype.getData = function () {
@@ -74,8 +82,8 @@ var fastmvc;
         };
 
         ModelList.prototype.add = function (value) {
-            this._data.push(value);
-            this.sendEvent(fastmvc.Event.MODEL_CHANGE, this.getData());
+            this._data.push(this.createModel(value));
+            this.sendEvent(fmvc.Event.MODEL_CHANGE, this.getData());
             return true;
         };
 
@@ -89,7 +97,7 @@ var fastmvc;
                 result = true;
             }
 
-            this.sendEvent(fastmvc.Event.MODEL_CHANGE, this.getData());
+            this.sendEvent(fmvc.Event.MODEL_CHANGE, this.getData());
             return result;
         };
 
@@ -104,7 +112,7 @@ var fastmvc;
                 result = true;
             }
 
-            this.sendEvent(fastmvc.Event.MODEL_CHANGE, this.getData());
+            this.sendEvent(fmvc.Event.MODEL_CHANGE, this.getData());
             return result;
         };
 
@@ -118,7 +126,7 @@ var fastmvc;
             return -1;
         };
         return ModelList;
-    })(fastmvc.Notifier);
-    fastmvc.ModelList = ModelList;
-})(fastmvc || (fastmvc = {}));
+    })(fmvc.Notifier);
+    fmvc.ModelList = ModelList;
+})(fmvc || (fmvc = {}));
 //# sourceMappingURL=model.js.map

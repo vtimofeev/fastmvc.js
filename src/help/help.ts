@@ -1,4 +1,4 @@
-///<reference path='../fastmvc/references.ts'/>
+///<reference path='../fmvc/references.ts'/>
 
 declare var $;
 declare var _;
@@ -7,16 +7,16 @@ declare var document:Document;
 
 module help {
     export class Application {
-        facade:fastmvc.Facade;
+        facade:fmvc.Facade;
         constructor() {
-            this.facade = new fastmvc.Facade('HelpApplication');
+            this.facade = new fmvc.Facade('HelpApplication');
         }
     }
 
-    class ApplicationMediator extends fastmvc.Mediator {
+    class ApplicationMediator extends fmvc.Mediator {
         static NAME:string = 'ApplicationMediator';
 
-        constructor(facade:fastmvc.Facade) {
+        constructor(facade:fmvc.Facade) {
             super(facade, ApplicationMediator.NAME);
         }
 
@@ -28,7 +28,7 @@ module help {
 
     }
 
-    class ApplicationView extends fastmvc.View {
+    class ApplicationView extends fmvc.View {
         static NAME:string  = 'ApplicationView';
 
         constructor()
@@ -37,7 +37,7 @@ module help {
         }
     }
 
-    class TVScheduleView extends fastmvc.BTView {
+    class TVScheduleView extends fmvc.BasisView {
         static NAME:string  = 'TVScheduleView';
 
         items:Array<TVScheduleItemView>;
@@ -54,24 +54,20 @@ module help {
 
         createItems():void
         {
-
         }
 
     }
 
-    class TVScheduleItemView extends fastmvc.BTView {
+    class TVScheduleItemView extends fmvc.BasisView {
         static NAME:string  = 'TVScheduleItemView';
 
         constructor()
         {
             super(TVScheduleView.NAME, $('body'));
         }
-
-
     }
 
-
-    class EnvironmentView extends fastmvc.View {
+    class EnvironmentView extends fmvc.View {
         static NAME:string  = 'EnvironmentView';
 
         constructor()
@@ -80,9 +76,10 @@ module help {
         }
     }
 
-    class FormView extends fastmvc.BTView
+    class FormView extends fmvc.BasisView
     {
         static NAME:string  = 'FormView';
+        items:any = ['nameInput', 'emailInput', 'problemSelect', 'problemTextarea'];
 
         nameInput:HTMLElement;
         emailInput:HTMLElement;
@@ -96,8 +93,7 @@ module help {
 
         public init()
         {
-            super.init(['nameInput', 'emailInput', 'problemSelect', 'problemTextarea']);
-
+            super.init();
         }
 
 
@@ -111,7 +107,7 @@ module help {
         }
     }
 
-    class TVSheduleModel extends fastmvc.Model
+    class TVSheduleModel extends fmvc.Model
     {
         static NAME:string  = 'TVScheduleModel';
 
@@ -132,7 +128,7 @@ module help {
         }
     }
 
-    class UserModel extends fastmvc.Model {
+    class UserModel extends fmvc.Model {
         static NAME:string = 'UserModel';
 
         constructor() {

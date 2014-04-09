@@ -1,10 +1,10 @@
-var fastmvc;
-(function (fastmvc) {
-    fastmvc.VERSION = '0.1.0';
+var fmvc;
+(function (fmvc) {
+    fmvc.VERSION = '0.2.1';
 
-    fastmvc.TYPE_MEDIATOR = 'mediator';
-    fastmvc.TYPE_MODEL = 'model';
-    fastmvc.TYPE_VIEW = 'view';
+    fmvc.TYPE_MEDIATOR = 'mediator';
+    fmvc.TYPE_MODEL = 'model';
+    fmvc.TYPE_VIEW = 'view';
 
     var Facade = (function () {
         function Facade(name) {
@@ -12,8 +12,8 @@ var fastmvc;
             this._objects = [];
             this._events = {};
             this._name = name;
-            this._logger = new fastmvc.Logger(this, 'Log');
-            this.log('Start ' + name + ', fastmvc ' + fastmvc.VERSION);
+            this._logger = new fmvc.Logger(this, 'Log');
+            this.log('Start ' + name + ', fmvc ' + fmvc.VERSION);
             Facade._facades.push(name);
         }
         Facade.prototype.register = function (object) {
@@ -68,6 +68,6 @@ var fastmvc;
         Facade._facades = [];
         return Facade;
     })();
-    fastmvc.Facade = Facade;
-})(fastmvc || (fastmvc = {}));
+    fmvc.Facade = Facade;
+})(fmvc || (fmvc = {}));
 //# sourceMappingURL=facade.js.map
