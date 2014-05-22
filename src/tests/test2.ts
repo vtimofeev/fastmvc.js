@@ -80,18 +80,19 @@ module tests {
         public static NAME:string = 'TestView';
 
         constructor(base:HTMLElement, model:fmvc.Model) {
-            super(TestView.NAME, base);
-            this.data = model;
+            super(TestView.NAME, base, null, model);
         }
 
         public init()
         {
             super.init();
+            this.getModel().setData({name: 'Test', value:2})
+            /*
             this.data.setData({name: 'Test', value:2});
             this.data.setData({value:43});
             this.data.setData({value:48});
-
-            this.destroy();
+             this.destroy();
+            */
         }
 
         public eventHandler(name:string, e:any):void {
@@ -99,19 +100,19 @@ module tests {
         }
     }
 
-    class TestListView extends fmvc.BasisView implements fmvc.IView {
+    class TestListView extends fmvc.BasisListView implements fmvc.IView {
         public static NAME:string = 'TestListView';
 
         private views:any = ['content'];
         private content:HTMLElement;
 
         constructor(base:any, model:fmvc.ModelList) {
-            super(TestListView.NAME, base);
-            this.data = model;
+            super(TestListView.NAME, base, null, model);
         }
 
         public init() {
-            //super.init();
+            super.init();
+            /*
             var models = this.data.getData();
             alert('init');
 
@@ -127,9 +128,7 @@ module tests {
                 this.log('Create element ' + view + ', ' + model);
                 this.views.push[view];
             }
-        }
-
-        public render() {
+            */
         }
 
         public eventHandler(name:string, e:any):void {
