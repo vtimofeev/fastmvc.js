@@ -13,10 +13,14 @@ module fmvc {
 
         public set data(value:Object):void {
             var data = this._data;
+            var changedFields:Array<string> = null;
+
             var hasChanges:boolean = false;
             if (data) {
                 for(var i in value) {
                     if(data[i] != value[i]) {
+                        if(!changedFields) changedFields = [];
+                        changedFields.push(i);
                         hasChanges = true;
                         data[i] = value[i];
                     }
