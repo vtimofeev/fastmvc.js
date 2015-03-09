@@ -1,42 +1,60 @@
 module fmvc {
     export class Model extends fmvc.Notifier {
-        private _data:any;
-        private _validator:any;
+        private _data:Object;
+        private _isEvents:boolean;
+        private _validators:Array<Validator>;
 
-        constructor(name:string, data:any = null) {
+        constructor(name:string, data:Object = {}, isEvents:boolean = true) {
             super(name);
             this._data = data;
+            this._isEvents = isEvents;
+            if(isEvents) this.sendEvent(fmvc.Event.MODEL_CREATE, this.data);
         }
 
-        public setData(value:any):void {
-            //this._data = value;
-            var data = this.getData();
-
+        public set data(value:Object):void {
+            var data = this._data;
+            var hasChanges:boolean = false;
             if (data) {
-                for(var i in value) data[i] = value[i];
-            }
-            else {
-                this._data = value;
+                for(var i in value) {
+                    if(data[i] != value[i]) {
+                        hasChanges = true;
+                        data[i] = value[i];
+                    }
+                }
             }
 
-            this.sendEvent(fmvc.Event.MODEL_CHANGE, data);
+            if(hasChanges && this._isEvents) this.sendEvent(fmvc.Event.MODEL_CHANGE, this._data);
         }
 
-        public getData():any {
+        public get data():any {
             return this._data;
         }
 
-        public setValidator(value:any):void {
-             this._validator = value;
+        public addValidator(value:Validator):void {
+            this._validators = this._validators?this._validators:[];
+            if(this._validators.indexOf(value) >= 0) throw 'Cant add validator to model';
+            this._validators.push(value);
         }
 
-        public validate(value:any):boolean
+        public removeValidator(value:Validator):void {
+            var index = this._validators ? this._validators.indexOf(value) : -1;
+            if (index >= 0) this._validators.splice(index, 1);
+        }
+
+        public validate(value:Object):boolean
         {
             var result = false;
             var error = {};
 
-            if(!this._validator) result = true;
-            else result = this._validator(value, this, error);
+            for(var i in this._validators) {
+                var validator:Validator = this._validators[i];
+                value = validator.execute(value)
+                if(!value) {
+                    result = false;
+                    break;
+                }
+            }
+
             this.sendEvent(fmvc.Event.MODEL_VALIDATE, result, null, error);
             return result;
         }
@@ -49,14 +67,14 @@ module fmvc {
     }
 
     export class ModelList extends fmvc.Notifier {
-        private _data:any;
+        private _items:Array<Model>;
 
         constructor(name:string, data:any = null) {
             super(name);
             this.setData(data);
         }
 
-        public setData(value:any):void {
+        public set data(value:any):void {
             if(!this._data) this._data = [];
             for (var i in value)
             {
@@ -79,7 +97,7 @@ module fmvc {
             return this._data;
         }
 
-        public add(value:any):boolean {
+        public add(value:Validator):boolean {
             this._data.push(this.createModel(value));
             this.sendEvent(fmvc.Event.MODEL_CHANGE, this.getData());
             return true;
@@ -125,6 +143,20 @@ module fmvc {
             }
             return -1;
         }
+    }
 
+
+    export class Validator {
+        name:string = null;
+        fnc:Function = null;
+
+        constructor(name:string, fnc:Function) {
+            this.name  = name;
+            this.fnc = fnc;
+        }
+
+        execute(data:any):any {
+            this.fnc.call(data, data);
+        }
     }
 }
