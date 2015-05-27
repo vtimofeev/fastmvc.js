@@ -1,3 +1,4 @@
+///<reference path='./d.ts'/>
 module fmvc
 {
     export class Notifier implements INotifier{
@@ -12,22 +13,22 @@ module fmvc
             this._type = type?type:fmvc.TYPE_MODEL;
         }
 
-        public setFacade(value:fmvc.Facade):void
+        public set facade(value:fmvc.Facade)
         {
             this._facade = value;
         }
 
-        public facade():fmvc.Facade
+        public get facade():fmvc.Facade
         {
             return this._facade;
         }
 
-        public name():string
+        public get name():string
         {
             return this._name;
         }
 
-        public type():string
+        public get type():string
         {
             return this._type;
         }
@@ -43,8 +44,7 @@ module fmvc
         public log(message:string, level?:number):void
         {
             // log messages
-            if(this._facade) this._facade.saveLog(this.name(), message, level);
-            return void;
+            if(this._facade) this._facade.sendLog(this.name, message, level);
         }
 
         public registerHandler():void
@@ -94,8 +94,9 @@ module fmvc
 
     export interface INotifier
     {
-        name():string;
-        facade():fmvc.Facade;
+        name:string;
+        type:string;
+        facade:fmvc.Facade;
         sendEvent(name:string, data:any):void;
         registerHandler():void;
         removeHandler():void;

@@ -4,42 +4,29 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
+///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
     var View = (function (_super) {
         __extends(View, _super);
-        function View(name, $base) {
+        function View(name, $root) {
             _super.call(this, name, fmvc.TYPE_VIEW);
             this.eventHandlers = {};
-            this.items = [];
-            this.$base = $base;
+            this.$root = $root;
         }
-        View.prototype.setData = function (data) {
-            this.data = data;
-            this.render();
-        };
-
-        View.prototype.getData = function () {
-            return this.data;
-        };
-
         // Overrided method
         // Init
         View.prototype.init = function (items) {
             this.delegateEventHandlers(true);
         };
-
         View.prototype.delegateEventHandlers = function (init) {
             var _t = this;
-
             this.log('Events: ' + (JSON.stringify(this.eventHandlers)));
-
             for (var commonHandlerData in this.eventHandlers) {
                 var eventName = this.eventHandlers[commonHandlerData];
                 var match = commonHandlerData.match(View.delegateEventSplitter);
                 var handledEvents = match[1];
                 var selector = match[2];
-
                 // add handlers
                 if (init) {
                     this.log('Add listeners [' + handledEvents + '] of the [' + selector + ']');
@@ -49,57 +36,90 @@ var fmvc;
                         };
                     }(eventName);
                     if (selector === '') {
-                        this.$base.on(handledEvents, eventClosure);
-                    } else {
-                        this.$base.on(handledEvents, selector, eventClosure);
+                        this.$root.on(handledEvents, eventClosure);
                     }
-                } else {
+                    else {
+                        this.$root.on(handledEvents, selector, eventClosure);
+                    }
+                }
+                else {
                     if (selector === '') {
-                        this.$base.off(handledEvents);
-                    } else {
-                        this.$base(selector).on(handledEvents, selector);
+                        this.$root.off(handledEvents);
+                    }
+                    else {
+                        this.$root(selector).on(handledEvents, selector);
                     }
                 }
             }
         };
-
         View.prototype.log = function (message, level) {
             if (this._mediator)
-                this._mediator.facade().saveLog(this.name(), message, level);
+                this._mediator.facade.sendLog(this.name, message, level);
         };
-
         View.prototype.sendEvent = function (name, data, sub, error, global) {
-            if (typeof data === "undefined") { data = null; }
-            if (typeof sub === "undefined") { sub = null; }
-            if (typeof error === "undefined") { error = null; }
-            if (typeof global === "undefined") { global = false; }
+            if (data === void 0) { data = null; }
+            if (sub === void 0) { sub = null; }
+            if (error === void 0) { error = null; }
+            if (global === void 0) { global = false; }
             if (this._mediator)
                 this._mediator.internalHandler({ name: name, data: data, global: global, target: this });
         };
-
-        View.prototype.mediator = function (value) {
-            this._mediator = value;
-        };
-
-        View.prototype.getProcessedData = function () {
-            return this.data;
-        };
-
+        Object.defineProperty(View.prototype, "mediator", {
+            get: function () {
+                return this._mediator;
+            },
+            set: function (value) {
+                this._mediator = value;
+            },
+            enumerable: true,
+            configurable: true
+        });
         // Overrided method
         // Render
         View.prototype.render = function () {
         };
-
         // Overrided method
         // Handler
-        View.prototype.eventHandler = function (name, e) {
+        View.prototype.viewEventsHandler = function (name, e) {
             this.log('event ' + name);
             this.sendEvent(name, e);
         };
-
+        View.prototype.eventHandler = function (name, e) {
+            this.viewEventsHandler(name, e);
+        };
+        View.prototype.add = function (value) {
+        };
+        View.prototype.remove = function (value) {
+        };
+        View.prototype.removeAt = function (value) {
+        };
+        Object.defineProperty(View.prototype, "model", {
+            get: function () {
+                return this._model;
+            },
+            /////////////////////////////////////////////////////////////////////////////
+            // Model related methods
+            /////////////////////////////////////////////////////////////////////////////
+            set: function (data) {
+                this._model = data;
+                this.render();
+            },
+            enumerable: true,
+            configurable: true
+        });
+        View.prototype.setModel = function (value, events) {
+            if (events === void 0) { events = false; }
+            this.model = value;
+            if (events)
+                this.model.addListener(this, this.modelHandler);
+        };
+        View.prototype.modelHandler = function (name, e) {
+        };
         // Overrided method
         // Destroy
         View.prototype.destroy = function () {
+            if (this.model)
+                this.model.removeListener(this);
             this.delegateEventHandlers(false);
         };
         View.delegateEventSplitter = /^(\S+)\s*(.*)$/;

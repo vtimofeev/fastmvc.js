@@ -1,6 +1,8 @@
+///<reference path='./d.ts'/>
+
 module fmvc
 {
-    export var VERSION:string = '0.2.1';
+    export var VERSION:string = '0.6.1';
 
     export var TYPE_MEDIATOR:string = 'mediator';
     export var TYPE_MODEL:string = 'model';
@@ -22,8 +24,8 @@ module fmvc
         }
 
         public register(object:any):void {
-            object.setFacade(this);
-            this.log('Register ' + object.name())
+            object.facade(this);
+            this.log('Register ' + object.name);
 
             if (this._objects.indexOf(object) < 0) {
 
@@ -32,7 +34,7 @@ module fmvc
                     var events = object.events();
                     for (var i in events) {
                         var event:string = events[i];
-                        this.log('Add event listener ' + object.name());
+                        this.log('Add event listener ' + object.name);
                         if (this._events[event]) {
                             this._events[event].push(object);
                         }
@@ -54,7 +56,7 @@ module fmvc
             for (var i in this._objects)
             {
                 var object = this._objects[i];
-                if(object && object.name() === name) return object;
+                if(object && object.name === name) return object;
             }
             return null;
         }
@@ -70,10 +72,10 @@ module fmvc
 
         public log(message:string, level?:number)
         {
-            this.saveLog(this._name, message, level);
+            this.sendLog(this._name, message, level);
         }
 
-        public saveLog(name:string, message:string, level?:number)
+        public sendLog(name:string, message:string, level?:number)
         {
             this._logger.saveLog(name, message, level);
         }

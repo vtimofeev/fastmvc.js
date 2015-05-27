@@ -1,9 +1,0 @@
-#bin
-web*
-MediaS*
-.svn*
-.idea*
-Test*
-temp*
-OSMFPlayer/?smfPlayer.iml
-HTMLLiveProject/.idea/workspace.xml

@@ -55,13 +55,13 @@ module tests {
         }
 
         events():any {
-            return[fmvc.Event.MODEL_CHANGE];
+            return[fmvc.Event.MODEL_CHANGED];
         }
 
         modelEventHandler(e:any) {
             var name:string = e.target.name();
             switch (e.name) {
-                case fmvc.Event.MODEL_CHANGE:
+                case fmvc.Event.MODEL_CHANGED:
                     switch (name) {
                         case TestModel.NAME:
                             break;

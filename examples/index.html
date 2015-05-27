@@ -19,19 +19,16 @@
 
     <script src="js/underscore.js"></script>
     <script src="js/jquery-1.10.2.js"></script>
+    <script src="../src/fmvc/notifier.js"></script>
+    <script src="../src/fmvc/event.js"></script>
+    <script src="../src/fmvc/facade.js"></script>
+    <script src="../src/fmvc/logger.js"></script>
+    <script src="../src/fmvc/mediator.js"></script>
+    <script src="../src/fmvc/model.js"></script>
+    <script src="../src/fmvc/view.js"></script>
 
-    <!--
-    <script src="src/fmvc/notifier.js"></script>
-    <script src="src/fmvc/event.js"></script>
-    <script src="src/fmvc/facade.js"></script>
-    <script src="src/fmvc/logger.js"></script>
-    <script src="src/fmvc/mediator.js"></script>
-    <script src="src/fmvc/model.js"></script>
-    <script src="src/fmvc/view.js"></script>
-    <script src="src/fmvc/basisView.js"></script>
-    -->
-    v<script src="builds/fmvc.min.js"></script>
-    <script src="src/tests/test2.js"></script>
+    <script src="src/tests/tests.js"></script>
+
     <script src="js/basis-template-1.0.js"></script>
 </head>
 <body>
@@ -44,9 +41,7 @@
             <a id='closeButton' class="close-btn"><i class="icon-remove-circle"></i></a>
         </div>
     </div>
-    <div id="testViewContent">testViewContent</div>
-    <div id="testListViewContent">testListViewContent</div>
-
+    <div id="modelContent"></div>
     <div id="listModelContent" data-view='TestListView'>
         <div class="Class1">{data.content}</div>
         <div class="Class2">{data.result}</div>
@@ -54,21 +49,28 @@
     </div>
 </div>
 
+
+<script type="text/html" id='template'>
+    <ul>
+        <%
+        for (var i in data)
+        {
+        var item = data[i];
+        %>
+        <li data-id='<%= i %>' class='enable-default'>
+            <span class="default"><%= item.data %></span>
+            <span class="edit"><input type="text" class="edit" value="<%= item.data %>"/></span>
+        </li>
+        <% } %>
+    </ul>
+</script>
+
 <script type="text/basis" id='template.basis'>
     <li data-id='{data.index}' class='{data.enable}'>
             <span class="default" event-dblclick='item-dblclick'>{data.data}</span>
             <span class="edit"><input type="text" class="edit" value="{data.data}" event-keypress='item-change'/></span>
     </li>
 </script>
-
-<script type="text/basis-template" id="template-TestView">
-    <div event-click="divClick">{name} : {value}</div>
-</script>
-
-<script type="text/basis-template" id='template-TestListItemView'>
-    <div{content} event-click="update">Item = {name} : {value}</div>
-</script>
-
 
 </body>
 </html>

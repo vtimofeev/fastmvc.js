@@ -1,15 +1,12 @@
-///<reference path='notifier.ts'/>
-///<reference path='facade.ts'/>
-///<reference path='basisView.ts'/>
-
+///<reference path='./d.ts'/>
 
 module fmvc {
     export class Mediator extends fmvc.Notifier implements IMediator {
         private views:any;
 
-        constructor(facade:fmvc.Facade, name:string, views:any = null) {
+        constructor(facade:fmvc.Facade, name:string, views:fmvc.View[] = null) {
             super(name, fmvc.TYPE_MEDIATOR);
-            this.setFacade(facade);
+            this.facade = facade;
             this.initViews(views);
         }
 
@@ -34,8 +31,8 @@ module fmvc {
         }
 
         private initView(view:fmvc.View) {
-            this.log('Init view ' + view.name());
-            view.setMediator(this);
+            this.log('Init view ' + view.name);
+            view.mediator = this;
             view.init();
         }
 
@@ -51,7 +48,7 @@ module fmvc {
 
         public internalHandler(e:any):void {
             if (e && e.global) {
-                this.facade().eventHandler(e);
+                this.facade.eventHandler(e);
             }
             else {
                 this.eventHandler(e);
@@ -59,7 +56,7 @@ module fmvc {
         }
 
         public eventHandler(e:any):void {
-            this.log('Handled ' + e.name + ' from ' + e.target.name() + ":" + e.target.type());
+            this.log('Handled ' + e.name + ' from ' + e.target.name + ":" + e.target.type);
             switch (e.target.type()) {
                 case fmvc.TYPE_MEDIATOR:
                     this.mediatorEventHandler(e);

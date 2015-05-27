@@ -1,3 +1,5 @@
+///<reference path='./d.ts'/>
+
 module fmvc {
     export class Logger extends fmvc.Notifier {
         private _data:any = [];
@@ -6,7 +8,7 @@ module fmvc {
 
         constructor(facade:fmvc.Facade, name:string) {
             super(name);
-            this.setFacade(facade);
+            this.facade = facade;
         }
 
         public setConfig(value:any):void {
@@ -40,7 +42,6 @@ module fmvc {
             }
 
             // send log event
-
             // exit if it has filters and has no the name in the array
             if (this._config && this._config.filter && this._config.filter.length && this._config.filter.indexOf(name) === -1) {
                 return;

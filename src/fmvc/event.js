@@ -3,12 +3,12 @@ var fmvc;
     var Event = (function () {
         function Event() {
         }
-        Event.MODEL_CHANGE = 'modelChange';
-        Event.MODEL_CREATE = 'modelCreate';
-        Event.MODEL_ADD = 'modelAdd';
-        Event.MODEL_UPDATE = 'modelUpdate';
-        Event.MODEL_REMOVE = 'modelRemove';
-        Event.MODEL_VALIDATE = 'modelValidate';
+        Event.MODEL_CHANGED = 'model.changed';
+        Event.MODEL_CREATED = 'model.created';
+        Event.MODEL_VALIDATED = 'model.validated';
+        Event.MODEL_ADDED = 'model.added';
+        Event.MODEL_UPDATED = 'model.updated';
+        Event.MODEL_DELETED = 'model.deleted';
         return Event;
     })();
     fmvc.Event = Event;

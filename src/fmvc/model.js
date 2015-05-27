@@ -4,129 +4,87 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
+///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
     var Model = (function (_super) {
         __extends(Model, _super);
-        function Model(name, data) {
-            if (typeof data === "undefined") { data = null; }
+        function Model(name, data, isEvents) {
+            if (data === void 0) { data = {}; }
+            if (isEvents === void 0) { isEvents = true; }
             _super.call(this, name);
             this._data = data;
+            this._isEvents = isEvents;
+            if (isEvents)
+                this.sendEvent(fmvc.Event.MODEL_CREATED, this.data);
         }
-        Model.prototype.setData = function (value) {
-            //this._data = value;
-            var data = this.getData();
-
-            if (data) {
-                for (var i in value)
-                    data[i] = value[i];
-            } else {
-                this._data = value;
-            }
-
-            this.sendEvent(fmvc.Event.MODEL_CHANGE, data);
+        Object.defineProperty(Model.prototype, "data", {
+            get: function () {
+                return this._data;
+            },
+            set: function (value) {
+                var data = this._data;
+                var changedFields = null;
+                var hasChanges = false;
+                if (data) {
+                    for (var i in value) {
+                        if (data[i] != value[i]) {
+                            if (!changedFields)
+                                changedFields = [];
+                            changedFields.push(i);
+                            hasChanges = true;
+                            data[i] = value[i];
+                        }
+                    }
+                }
+                if (hasChanges && this._isEvents)
+                    this.sendEvent(fmvc.Event.MODEL_CHANGED, this._data);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Model.prototype.addValidator = function (value) {
+            this._validators = this._validators ? this._validators : [];
+            if (this._validators.indexOf(value) >= 0)
+                throw 'Cant add validator to model';
+            this._validators.push(value);
         };
-
-        Model.prototype.getData = function () {
-            return this._data;
+        Model.prototype.removeValidator = function (value) {
+            var index = this._validators ? this._validators.indexOf(value) : -1;
+            if (index >= 0)
+                this._validators.splice(index, 1);
         };
-
-        Model.prototype.setValidator = function (value) {
-            this._validator = value;
-        };
-
         Model.prototype.validate = function (value) {
             var result = false;
             var error = {};
-
-            if (!this._validator)
-                result = true;
-            else
-                result = this._validator(value, this, error);
-            this.sendEvent(fmvc.Event.MODEL_VALIDATE, result, null, error);
+            for (var i in this._validators) {
+                var validator = this._validators[i];
+                value = validator.execute(value);
+                if (!value) {
+                    result = false;
+                    break;
+                }
+            }
+            this.sendEvent(fmvc.Event.MODEL_VALIDATED, result, null, error);
             return result;
         };
-
         Model.prototype.destroy = function () {
         };
         return Model;
     })(fmvc.Notifier);
     fmvc.Model = Model;
-
-    var ModelList = (function (_super) {
-        __extends(ModelList, _super);
-        function ModelList(name, data) {
-            if (typeof data === "undefined") { data = null; }
-            _super.call(this, name);
-            this.setData(data);
+    var Validator = (function () {
+        function Validator(name, fnc) {
+            this.name = null;
+            this.fnc = null;
+            this.name = name;
+            this.fnc = fnc;
         }
-        ModelList.prototype.setData = function (value) {
-            if (!this._data)
-                this._data = [];
-            for (var i in value) {
-                this._data.push(this.createModel(value[i]));
-            }
-            this.sendEvent(fmvc.Event.MODEL_CHANGE, this.data());
+        Validator.prototype.execute = function (data) {
+            this.fnc.call(data, data);
         };
-
-        ModelList.prototype.getData = function () {
-            return this._data;
-        };
-
-        ModelList.prototype.createModel = function (value) {
-            return new Model(this.name + '-item', value);
-        };
-
-        ModelList.prototype.data = function () {
-            return this._data;
-        };
-
-        ModelList.prototype.add = function (value) {
-            this._data.push(this.createModel(value));
-            this.sendEvent(fmvc.Event.MODEL_CHANGE, this.getData());
-            return true;
-        };
-
-        ModelList.prototype.remove = function (value) {
-            var data = this._data;
-            var result = false;
-            var index = data.indexOf(value);
-
-            if (index > -1) {
-                data.splice(index, 1);
-                result = true;
-            }
-
-            this.sendEvent(fmvc.Event.MODEL_CHANGE, this.getData());
-            return result;
-        };
-
-        ModelList.prototype.update = function (value) {
-            var data = this._data;
-
-            var result = false;
-            var index = this.getIndexOfModelData(value);
-
-            if (index > -1) {
-                data[index].setData(value);
-                result = true;
-            }
-
-            this.sendEvent(fmvc.Event.MODEL_CHANGE, this.getData());
-            return result;
-        };
-
-        ModelList.prototype.getIndexOfModelData = function (value) {
-            for (var i in this._data) {
-                var model = this._data[i];
-                console.log('Check ' + model.getData() + ', ' + value);
-                if (model.getData() === value)
-                    return Number(i);
-            }
-            return -1;
-        };
-        return ModelList;
-    })(fmvc.Notifier);
-    fmvc.ModelList = ModelList;
+        return Validator;
+    })();
+    fmvc.Validator = Validator;
 })(fmvc || (fmvc = {}));
 //# sourceMappingURL=model.js.map

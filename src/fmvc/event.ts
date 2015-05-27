@@ -2,12 +2,13 @@ module fmvc
 {
     export class Event
     {
-        public static MODEL_CHANGE:string = 'modelChange';
-        public static MODEL_CREATE:string = 'modelCreate';
-        public static MODEL_ADD:string = 'modelAdd';
-        public static MODEL_UPDATE:string = 'modelUpdate';
-        public static MODEL_REMOVE:string = 'modelRemove';
-        public static MODEL_VALIDATE:string = 'modelValidate';
+        public static MODEL_CHANGED:string = 'model.changed';
+        public static MODEL_CREATED:string = 'model.created';
+        public static MODEL_VALIDATED:string = 'model.validated';
+
+        public static MODEL_ADDED:string = 'model.added';
+        public static MODEL_UPDATED:string = 'model.updated';
+        public static MODEL_DELETED:string = 'model.deleted';
     }
 
 }
