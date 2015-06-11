@@ -1,0 +1,13 @@
+<f:style src="./userview.styl"/>
+
+<div className="UserView" extend="fmvc.View" createStates="hover,selected,disabled" selected="{selected}" style="background-color:blue;top:{top}px;" onkeydown="changeName"
+    class="userview userview-{selected} userview-{disabled} userview-{hover}">
+    <div>F: {data.firstname}</div>
+    <div>S: {data.secondname}</div>
+    <div>A: {data.age}</div>
+
+<input type="text" value="{data.value}" onkeydown="changeValue" onkeyup="changeValue" />
+<div link="close" class="close" states="hover,touch" style="background-color:red">{closeText}</div>
+
+<!-- Comment -->
+</div>

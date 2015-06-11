@@ -12,21 +12,44 @@ var fmvc;
         function ViewList(name, $root) {
             _super.call(this, name, $root);
         }
-        Object.defineProperty(ViewList.prototype, "modelList", {
-            get: function () {
-                return this._modelList;
-            },
+        Object.defineProperty(ViewList.prototype, "childrenConstructor", {
             set: function (value) {
-                this._modelList = value;
+                this.ChildrenConstructor = value;
             },
             enumerable: true,
             configurable: true
         });
-        ViewList.prototype.listAdd = function (view) {
+        Object.defineProperty(ViewList.prototype, "dataset", {
+            get: function () {
+                return this._dataset;
+            },
+            set: function (value) {
+                this._dataset = value;
+                this.invalidate(8);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        ViewList.prototype.applyChildrenState = function (name, value) {
+            if (!this.avaibleInheritedStates || this.avaibleInheritedStates.indexOf(name) === -1)
+                return;
+            this.forEachChild(function (view, index) { this.applyViewState(name, value, view, index); });
         };
-        ViewList.prototype.listRemove = function (view) {
+        ViewList.prototype.applyViewState = function (name, value, view, index) {
+            view.setState(name, value);
         };
-        ViewList.prototype.listRemoveAt = function (view) {
+        ViewList.prototype.updateChildren = function () {
+            if (!this.inDocument)
+                return;
+            var children = this.removeAllChildren() || [];
+            _.each(this.dataset, function (value, index) {
+                var view = children[index] || new this.ChildrenConstructor();
+                view.data = value;
+                _.each(this.avaibleInheritedStates, function (name) { view.setState(name, this.getState(name)); }, this);
+                if (!view.inDocument) {
+                    this.addChild(view);
+                }
+            }, this);
         };
         return ViewList;
     })(fmvc.View);

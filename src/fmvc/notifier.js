@@ -4,6 +4,7 @@ var fmvc;
     var Notifier = (function () {
         function Notifier(name, type) {
             if (type === void 0) { type = null; }
+            this._disposed = false;
             this._name = name;
             this._type = type ? type : fmvc.TYPE_MODEL;
         }
@@ -12,7 +13,14 @@ var fmvc;
                 return this._facade;
             },
             set: function (value) {
-                this._facade = value;
+                if (value) {
+                    this._facade = value;
+                    this.registerHandler();
+                }
+                else {
+                    this.removeHandler();
+                    this._facade = value;
+                }
             },
             enumerable: true,
             configurable: true
@@ -20,6 +28,13 @@ var fmvc;
         Object.defineProperty(Notifier.prototype, "name", {
             get: function () {
                 return this._name;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Notifier.prototype, "disposed", {
+            get: function () {
+                return this._disposed;
             },
             enumerable: true,
             configurable: true
@@ -56,7 +71,7 @@ var fmvc;
         Notifier.prototype.addListener = function (object, handler) {
             if (!this._listeners)
                 this._listeners = [];
-            this._listeners.push({ 'object': object, 'handler': handler });
+            this._listeners.push({ target: object, handler: handler });
         };
         Notifier.prototype.bind = function (bind, object, handler) {
             if (bind)
@@ -65,14 +80,27 @@ var fmvc;
                 this.removeListener(object, handler);
         };
         Notifier.prototype.removeListener = function (object, handler) {
+            var deleted = 0;
+            this._listeners.forEach(function (lo, i) {
+                if (lo.target === object) {
+                    this.splice(i - deleted, 1);
+                    deleted++;
+                }
+            }, this._listeners);
         };
         Notifier.prototype.removeAllListeners = function () {
+            this._listeners = null;
         };
         Notifier.prototype.sendToListners = function (event, data) {
-            for (var i in this._listeners) {
-                var lo = this._listeners[i];
-                (lo.handler).apply(lo.object, [event, data]);
-            }
+            this._listeners.forEach(function (lo) {
+                if (!lo.target.disposed)
+                    (lo.handler).apply(lo.target, [event, data]);
+            });
+        };
+        Notifier.prototype.dispose = function () {
+            this.facade = null;
+            this._listeners = null;
+            this._disposed = true;
         };
         return Notifier;
     })();

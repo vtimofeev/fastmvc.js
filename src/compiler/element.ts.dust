@@ -1,0 +1,1 @@
+{@select key="{type}"}{@eq value="text"}document.createTextNode('{data}'){/eq}{@eq value="tag"}document.createElement('{name}'){/eq}{@eq value="comment"}document.createComment('{data}'){/eq}{@none}null{/none}{/select}

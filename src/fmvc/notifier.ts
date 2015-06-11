@@ -5,7 +5,8 @@ module fmvc
         private _facade:fmvc.Facade;
         private _name:string;
         private _type:string;
-        private _listeners:any;
+        private _listeners:IListener[];
+        private _disposed:boolean = false;
 
         constructor(name:string, type:string = null)
         {
@@ -15,7 +16,14 @@ module fmvc
 
         public set facade(value:fmvc.Facade)
         {
-            this._facade = value;
+            if(value) {
+                this._facade = value;
+                this.registerHandler();
+            }
+            else {
+                this.removeHandler();
+                this._facade = value;
+            }
         }
 
         public get facade():fmvc.Facade
@@ -26,6 +34,11 @@ module fmvc
         public get name():string
         {
             return this._name;
+        }
+
+        public get disposed():boolean
+        {
+            return this._disposed;
         }
 
         public get type():string
@@ -55,10 +68,10 @@ module fmvc
         {
         }
 
-        public addListener(object:any, handler:any):void
+        public addListener(object:INotifier, handler:Function):void
         {
             if(!this._listeners) this._listeners = [];
-            this._listeners.push({'object': object, 'handler': handler});
+            this._listeners.push({target: object, handler: handler});
         }
 
         public bind(bind:boolean, object:any, handler?:any)
@@ -67,22 +80,37 @@ module fmvc
             else this.removeListener(object, handler);
         }
 
-        public removeListener(object:any, handler?:any):void
+        public removeListener(object:INotifier, handler?:Function):void
         {
+            var deleted:number = 0;
+            this._listeners.forEach(function(lo:IListener, i:number) {
+                if(lo.target === object) { this.splice(i - deleted, 1); deleted++; }
+            }, this._listeners);
         }
 
         public removeAllListeners():void
         {
+            this._listeners = null;
         }
 
         public sendToListners(event, data)
         {
-            for (var i in this._listeners)
-            {
-                var lo:any = this._listeners[i];
-                (lo.handler).apply(lo.object, [event, data]);
-            }
+            this._listeners.forEach(function(lo:IListener) {
+                if(!lo.target.disposed) (lo.handler).apply(lo.target, [event, data]);
+            });
         }
+
+        public dispose():void {
+            this.facade = null;
+            this._listeners = null;
+            this._disposed = true;
+        }
+
+    }
+
+    export interface IListener {
+        target:INotifier;
+        handler:Function;
     }
 
     export interface IEvent
@@ -96,9 +124,11 @@ module fmvc
     {
         name:string;
         type:string;
+        disposed:boolean;
         facade:fmvc.Facade;
         sendEvent(name:string, data:any):void;
         registerHandler():void;
         removeHandler():void;
+        dispose():void;
     }
 }

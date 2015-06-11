@@ -1,4 +1,6 @@
 ///<reference path='./d.ts'/>
+
+
 module fmvc {
     export class ModelList extends fmvc.Notifier {
         private _data:Array<Model>;
@@ -25,7 +27,7 @@ module fmvc {
             return new Model(this.name + '-item', value);
         }
 
-        public add(value:Validator):boolean {
+        public add(value:any):boolean {
             this._data.push(this.createModel(value));
             this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
             return true;

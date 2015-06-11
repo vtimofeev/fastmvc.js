@@ -1,0 +1,39 @@
+///<reference path='../../src/fmvc/d.ts'/>
+/* start object */
+
+module ui {
+  export class {className} extends {?extend}{extend}{:else}fmvc.View{/extend}
+  {
+    {#links}
+    public {name}:Element;
+    {/links}
+
+    constructor(name:string, $root:any) {
+       super(name, $root);
+      /* create states */
+      {?createStates}this.createStates({createStates|js|s});{/createStates}
+    }
+
+    createDom() {
+      this.element = this.templateElement;
+      {#links}
+      this.{name} = this.elementPaths[{value|js|s}];
+      {/links}
+
+      this.childrenContainer = this.childrenContainer || this.element;
+    }
+
+    public isDynamicStylesEnabled(value?:boolean):boolean {
+         if(_.isBoolean(value)) {className}.__isDynamicStylesEnabled = value;
+            return {className}.__isDynamicStylesEnabled;
+    }
+
+    public get jsTemplate():fmvc.IRootDomObject {
+          return {className}.__jsTemplate;
+    }
+    private static __isDynamicStylesEnabled:boolean = false;
+    private static __jsTemplate:fmvc.IRootDomObject = {.|js|s};
+  }
+
+}
+
