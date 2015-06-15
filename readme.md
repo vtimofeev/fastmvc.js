@@ -23,15 +23,16 @@
 Шаблоны описываются в html подобном виде и компилируются в TypeScript - JavaScript, для дальнейшего расширения функционала при необходимости.
 
 Возможности:
-*Включение классов состояний в зависимости от состояния элемента.
-*Событий для каждого элемента dom.
-*Ссылки на элементы.
-*Модель состояний как дефолтных так и кастомных, расширяющих dom без перерендеринга view целиком.
-*Односторонний биндинг.
-*Двусторонний биндинг.
-*i18n.
+* Включение классов состояний в зависимости от состояния элемента.
+* Событий для каждого элемента dom.
+* Ссылки на элементы.
+* Модель состояний как дефолтных так и кастомных, расширяющих dom без перерендеринга view целиком.
+* Односторонний биндинг.
+* Двусторонний биндинг.
+* i18n.
+* Stylus компиляция и встраивание стилей в компонент.
 
-`
-<div class='baseStyle baseStyle-{selected} baseStyle-{disabled}' onAction='actionEventNameHere'>{i18n.title}: <b link='name'>{data.name as NAME, data.gender as GENDER|i18n.name}<b></div>
-`
+
+    <div class='baseStyle baseStyle-{selected} baseStyle-{disabled}' onAction='actionEventNameHere'>{i18n.title}: <b link='name'>{data.name as NAME, data.gender as GENDER|i18n.name}<b></div>
+
 
