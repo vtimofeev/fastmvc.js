@@ -1,5 +1,6 @@
 ///<reference path='./d.ts'/>
 module fmvc {
+
     export var State = {
         SELECTED: 'selected',
         HOVERED: 'hovered',
@@ -22,7 +23,7 @@ module fmvc {
 
         public  dynamicPropertyValue:{[name:string]:any} = {}; // те которые были установлены
         public  elementPaths:{[name:string]:Element} = {};
-        public  handlers:any;
+        private handlers:{[id:string]:string} = {};
 
         // Invalidate properties
         private _invalidateTimeout:number = 0;
@@ -32,11 +33,13 @@ module fmvc {
 
         // States object (view support multistates)
         private _states:{[id:string]:any};
+        private _locale:string = 'ru';
 
         private parentView:fmvc.View;
         private parentElement:Element;
         private linkedViews:fmvc.View[];
         private childrenViews:fmvc.View[];
+
 
         // Elements
         public  element:Element; // root element
@@ -44,6 +47,7 @@ module fmvc {
 
         constructor(name:string, $root:any) {
             super(name, fmvc.TYPE_VIEW);
+            _.bindAll(this, 'getDataStringValue', 'applyEventHandlers');
             this.$root = $root;
             this.init();
             this.invalidateHandler = this.invalidateHandler.bind(this);
@@ -65,6 +69,7 @@ module fmvc {
 
         public updateChildren() {
         }
+
         //------------------------------------------------------------------------------------------------
         // Dom
         //------------------------------------------------------------------------------------------------
@@ -74,17 +79,19 @@ module fmvc {
             this.childrenContainer = this.element;
         }
 
-        public createElementPathLinks(element, data, root) {
-            if (!data.path) return;
+        /*
+         public createElementPathLinks(element, data, root) {
+         if (!data.path) return;
 
-            var path = data.path.split(',');
-            path.splice(0, 1);
-            this.elementPaths[data.path] = this.getElementByPath(element, path, root);
-            ////console.log('Create path for ' , data.path, this.elementPaths[data.path]);
-            _.each(data.children, function (data) {
-                this.createElementPathLinks(element, data);
-            }, this);
-        }
+         var path = data.path.split(',');
+         path.splice(0, 1);
+         this.elementPaths[data.path] = this.getElementByPath(element, path, root);
+         ////console.log('Create path for ' , data.path, this.elementPaths[data.path]);
+         _.each(data.children, function (data) {
+         this.createElementPathLinks(element, data);
+         }, this);
+         }
+         */
 
         public createStates(states:string[]):void {
             this._states = {};
@@ -100,7 +107,23 @@ module fmvc {
             _.each(this._states, function (stateValue:any, stateName:string) {
                 if (this.dynamicProperties[stateName] && stateValue != this.dynamicPropertyValue[stateName]) this.updateDynamicProperty(stateName, stateValue);
             }, this);
+            this.updateI18N();
             this.updateData();
+        }
+
+        public updateI18N():void {
+            if (!this.dynamicProperties) return;
+            if (!this.i18n) return;
+
+            _.each(this.i18n, function (value:any, name:string) {
+                if (_.isObject(value)) {
+                } else {
+                    var prefix:string = 'i18n.';
+                    this.dynamicProperties[prefix + name] ? this.updateDynamicProperty(prefix + name, value) : null;
+                }
+            }, this);
+
+
         }
 
         public updateData():void {
@@ -117,38 +140,60 @@ module fmvc {
 
         // @todo
         private getStyleValue(name:string) {
-
         }
 
         public getClassStringValue(propertyName, propertyValue, templateString):string {
-            if(_.isBoolean(propertyValue)) {
+            if (_.isBoolean(propertyValue)) {
                 return templateString.replace('{' + propertyName + '}', propertyName);
             } else {
                 return templateString.replace('{' + propertyName + '}', propertyValue);
             }
         }
 
-        public getDataStringValue(propertyName, propertyValue, templateString):string {
-            return templateString.replace('{' + propertyName + '}', propertyValue);
+        public getDataStringValue(propertyName, propertyValue, templateStringOrObject):string {
+            if (_.isString(templateStringOrObject)) {
+                return templateStringOrObject.replace('{' + propertyName + '}', propertyValue);
+            }
+            else if (_.isObject(templateStringOrObject)) {
+                return this.getDataObjectValue(propertyName, propertyValue, templateStringOrObject);
+            }
+        }
+
+        public getDataObjectValue(propertyName, propertyValue, templateObject:any):string {
+            if (templateObject.method === 'i18n') {
+                if (!this.i18n[templateObject.name]) return 'Error:View.getDataObjectValue has no i18n property';
+
+                var data:any = {};
+                _.each(templateObject.args, function (value, key) {
+                    if (value) data[key] = this.data[value.replace('data.', '')];
+                }, this);
+                var result = this.getFormattedMessage(this.i18n[templateObject.name], data);
+                return templateObject.source.replace('{replace}', result);
+            }
         }
 
         public updatePaths(paths, type, name, value, GetValue:Function, each:Boolean) {
             _.each(paths, function (valueOrValues:any, path:string) {
                 var r = '';
-                if(_.isString(valueOrValues)) {
+                if (_.isString(valueOrValues)) {
                     var result = GetValue(name, value, valueOrValues);
                     r += result;
-                    if(each) this.updatePathProperty(path, type, value, result);
+                    if (each) this.updatePathProperty(path, type, value, result);
                 }
-                else {
+                else if (_.isArray(valueOrValues)) {
                     _.each(valueOrValues, function (stringValue) {
                         var result = GetValue(name, value, stringValue);
                         r += result;
-                        if(each) this.updatePathProperty(path, type, value, stringValue);
+                        if (each) this.updatePathProperty(path, type, value, stringValue);
                     }, this);
                 }
+                else if (_.isObject(valueOrValues)) {
+                    var result = GetValue(name, value, valueOrValues);
+                    r += result;
+                    if (each) this.updatePathProperty(path, type, value, result);
+                }
 
-                if(!each) this.updatePathProperty(path, type, value, r);
+                if (!each) this.updatePathProperty(path, type, value, r);
             }, this);
 
         }
@@ -156,7 +201,7 @@ module fmvc {
         public updateDynamicProperty(name:string, value:any) {
             var domPropsObject = this.dynamicProperties[name];
             this.dynamicPropertyValue[name] = value;
-            if(!domPropsObject) return;
+            if (!domPropsObject) return;
 
             //console.log('Update dyn prop: ', domPropsObject, name, value);
             _.each(domPropsObject, function (pathsAndValues:any, type:string) {
@@ -232,6 +277,8 @@ module fmvc {
         //------------------------------------------------------------------------------------------------
 
         public enterDocument() {
+            if (this._inDocument) return;
+
             this._inDocument = true;
             if (!this.isDynamicStylesEnabled()) this.enableDynamicStyle(true);
 
@@ -245,15 +292,116 @@ module fmvc {
                 this.element.addEventListener('click', ()=>t.setState('selected', !t.getState('selected')));
             }
 
+            this.enterDocumentElement(this.jsTemplate, this.elementPaths);
+        }
 
-            this.delegateEventHandlers(true);
+        public applyEventHandlers(e:any) {
+            var name = this.handlers[e.target][e.type];
+
+            if(name === 'stopPropagation') {
+                e.stopPropagation();
+            } else {
+                if(name.indexOf(',')) {
+                    var commands = name.split(',');
+                    if(commands[0] === 'set') {
+                        var objectTo = commands[1].split('.');
+                        var objectProperty = objectTo[1].trim();
+                        if(this._data) {
+                            console.log('Before change ', this._data, objectProperty, e.target.value);
+                            this._data[objectProperty] = e.target.value;
+                            console.log('After change ', this._data, objectProperty, e.target.value);
+                        }
+                    }
+                }
+            }
+
+            this.elementEventHandler(name, e);
+        }
+
+        // @to override with custom actions
+        // if(name==='any') make something
+        // if(name==='exit') make exit
+        public elementEventHandler(name:string, e:any) {
+            console.log('Event to handle ', name);
+        }
+
+        public enterDocumentElement(value:IDomObject, object:any):any {
+            if (!value || !object) return;
+
+            var e:Element = object[value.path];
+
+            if (value.type === DomObjectType.TAG) {
+                console.log('EnterDocument ', value.tagName, value.path);
+                _.each(value.children, function (child:IDomObject, index) {
+                    var result = this.enterDocumentElement(child, object);
+                }, this);
+
+                // add global handlers if not exist
+                if(value.handlers) {
+                    _.each(value.handlers, function (name:string, eventType:string) {
+                        if (!this.handlers[e] || !this.handlers[e][eventType]) {
+                            if (!this.handlers[e]) this.handlers[e] = {};
+                            this.handlers[e][eventType] = name;
+                            console.log('add listener ', eventType);
+                            e.addEventListener(eventType, this.applyEventHandlers);
+                        }
+                    }, this);
+                }
+
+
+            }
+        }
+
+        public applyChangeStateElement(value:IDomObject, object:any):any {
+            if (!value || !object) return;
+            var e:Element = object[value.path];
+            if(e) {
+                _.each(value.children, function (child:IDomObject, index) {
+                    this.applyChangeStateElement(child, object);
+                }, this);
+            }
+
+            var isStated = !!value.states;
+            if(!isStated) return;
+
+
+            var isIncluded = value.states ? this.isStateEnabled(value.states) : true;
+            var isEnabled = (e.nodeType === 1);
+            //console.log('path, included, enabled ', value.tagName, value.path, isIncluded, isEnabled);
+
+            if(isIncluded && !isEnabled) {
+                var newElement = this.getElement(value, object);
+                var parentNode = e.parentNode;
+                //console.log('Replace node on Real ');
+                parentNode.replaceChild(newElement,e);
+                object[value.path] = newElement;
+                this.enterDocumentElement(value, object);
+            }
+            else if(!isIncluded && isEnabled) {
+                var newElement = this.getElement(value, object);
+                var parentNode = e.parentNode;
+                //console.log('Replace node on Comment ');
+                parentNode.replaceChild(newElement,e);
+                object[value.path] = newElement;
+            } else {
+                //console.log('Nothing replace');
+            }
         }
 
 
         public exitDocument() {
             this._inDocument = false;
-
             this.delegateEventHandlers(false);
+        }
+
+        public getFormattedMessage(value:string, data?:any):string {
+            View.__formatter[value] = View.__formatter[value] ? View.__formatter[value] : this.getCompiledFormatter(value);
+            return <string> (View.__formatter[value](data));
+        }
+
+        public getCompiledFormatter(value:string):Function {
+            View.__messageFormat[this.locale] = View.__messageFormat[this.locale] ? View.__messageFormat[this.locale] : new MessageFormat(this.locale);
+            return View.__messageFormat[this.locale].compile(value);
         }
 
         private delegateEventHandlers(init:boolean):void {
@@ -310,6 +458,7 @@ module fmvc {
             this._states[name] = value;
             this.applyState(name, value);
             this.applyChildrenState(name, value);
+            this.applyChangeStateElement(this.jsTemplate, this.elementPaths);
         }
 
         public getState(name:string):any {
@@ -328,7 +477,11 @@ module fmvc {
         }
 
         public get avaibleInheritedStates():string[] {
-            return this._avaibleInheritedStates?this._avaibleInheritedStates:(this._avaibleInheritedStates = _.filter(_.map(this._states, function(v,k) { return k; }), function(k) { return this.inheritedStates.indexOf(k) > -1; }, this), this);
+            return this._avaibleInheritedStates ? this._avaibleInheritedStates : (this._avaibleInheritedStates = _.filter(_.map(this._states, function (v, k) {
+                return k;
+            }), function (k) {
+                return this.inheritedStates.indexOf(k) > -1;
+            }, this), this);
         }
 
         public get inheritedStates():string[] {
@@ -369,7 +522,7 @@ module fmvc {
             //console.log('invalid ' , this._invalidate , this._inDocument);
             if (!this._invalidate || !this._inDocument) return;
 
-            if(this._invalidate&1) this.updateData();
+            if (this._invalidate & 1) this.updateData();
             this._invalidate = 0;
         }
 
@@ -396,7 +549,7 @@ module fmvc {
         //------------------------------------------------------------------------------------------------
 
         public forEachChild(value:Function) {
-            if(!this.childrenViews || !this.childrenViews.length);
+            if (!this.childrenViews || !this.childrenViews.length);
             _.each(this.childrenViews, value, this);
         }
 
@@ -442,6 +595,7 @@ module fmvc {
             return this._model;
         }
 
+
         public setModelWithListener(value:fmvc.Model) {
             this.model = value;
             this.model.bind(true, this, this.modelHandler);
@@ -450,6 +604,19 @@ module fmvc {
         public modelHandler(name:string, data:any):void {
             this.log('modelHandler ' + name);
             this.invalidate(1);
+        }
+
+
+        public set locale(value:string) {
+            this._locale = value;
+        }
+
+        public get locale():string {
+            return this._locale;
+        }
+
+        public get i18n():any {
+            return null;
         }
 
         //------------------------------------------------------------------------------------------------
@@ -485,7 +652,7 @@ module fmvc {
         /* Overrided by generator */
 
         public get dynamicProperties():IDynamicSummary {
-            return this.jsTemplate?this.jsTemplate.dynamicSummary:null;
+            return this.jsTemplate ? this.jsTemplate.dynamicSummary : null;
         }
 
         public isDynamicStylesEnabled(value?:boolean):boolean {
@@ -508,7 +675,7 @@ module fmvc {
         }
 
         public get dynamicStyle():string {
-            return this.jsTemplate?this.jsTemplate.css:null;
+            return this.jsTemplate ? this.jsTemplate.css : null;
         }
 
         public get templateElement():Element {
@@ -516,17 +683,30 @@ module fmvc {
             return this.getElement(this.jsTemplate, this.elementPaths);
         }
 
+        public isStateEnabled(states:string[]):boolean {
+            var statesLength = states.length;
+            for(var i = 0; i < statesLength; i++) {
+                var stateValue = states[i];
+                return _.isArray(stateValue)?this.getState(stateValue[0]) === stateValue[1]:!!this.getState(states[i]);
+            }
+            return false;
+        }
+
         public getElement(value:IDomObject, object:any):Element {
             var e:Element = null;
-            if(value.type === DomObjectType.TAG) {
+            var isIncluded = value.states ? this.isStateEnabled(value.states) : true;
+
+            if (isIncluded && value.type === DomObjectType.TAG) {
                 e = document.createElement(value.tagName);
-                _.each(value.staticAttributes, function(v) { e.setAttribute(v.name, v.value); })
-                _.each(value.children, function(child:IDomObject, index) {
+                _.each(value.staticAttributes, function (v) {
+                    e.setAttribute(v.name, v.value);
+                });
+                _.each(value.children, function (child:IDomObject, index) {
                     var ce = this.getElement(child, object);
-                    if(ce) e.appendChild(ce);
+                    if (ce) e.appendChild(ce);
                 }, this);
             }
-            else if(value.type === DomObjectType.TEXT) e = document.createTextNode(value.data || '');
+            else if (value.type === DomObjectType.TEXT) e = document.createTextNode(value.data || '');
             else e = document.createComment(value.path);
             object[value.path] = e;
             return e;
@@ -543,12 +723,11 @@ module fmvc {
 
 
         private static __isDynamicStylesEnabled:boolean = false;
-        private static __dynamicStyle:string = null;
-        private static __dynamicStyleElement:Element = null;
-        private static __dynamicProperties:{[name:string]:{[propertyType:string]:{[path:string]:string[]}}} = null;
-        private static __element:Element = null;
         private static __jsTemplate:any = null;
-        private static __className:string = 'ViewClassName';
+        private static __formatter:{[value:string]:Function} = {};
+        private static __messageFormat:{[locale:string]:any} = {};
+
+        private static __className:string = 'View';
         private static __inheritedStates:string[] = [State.DISABLED];
     }
 
@@ -602,7 +781,6 @@ module fmvc {
         handlers?:{[event:string]:string};
         children?:IDomObject[];
     }
-
 
 
 }

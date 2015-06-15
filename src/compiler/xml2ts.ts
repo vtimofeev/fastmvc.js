@@ -43,7 +43,10 @@ module xml2ns {
     const EVENT_KEYS = {
         ONKEYDOWN: 'onkeydown',
         ONKEYUP: 'onkeyup',
-        ONACTION: 'onaction'
+        ONACTION: 'onaction',
+        ONCLICK: 'onclick',
+        ONMOUSEOVER: 'onmouseover',
+        ONMOUSEOUT: 'onmouseout'
     };
 
     const DOM_KEYS:string[] = [KEYS.VALUE, KEYS.HREF, KEYS.STYLE, KEYS.CLASS, KEYS.CHECKED, KEYS.DISABLED, KEYS.SELECTED, KEYS.FOCUSED];
@@ -82,6 +85,7 @@ module xml2ns {
     interface IRootDomObject extends IDomObject {
         className:string;
         css?:string;
+        i18n?:any;
         links?:{[name:string]:string/* path */}[];
         dynamicSummary?:IDynamicSummary;
     }
@@ -108,6 +112,7 @@ module xml2ns {
 
         staticAttributes?:INameValue[];
 
+        links?:any;
         handlers?:{[event:string]:string};
         children?:IDomObject[];
     }
@@ -177,6 +182,7 @@ module xml2ns {
             var rootJs:any = null;
             var rootDom:IRootDomObject = null;
             var styleJs:any = null;
+            var i18nJs:any = null;
 
             _.each(resultHtmlJs, function (value:string, index:number) {
                 if (value.type === 'tag' && value.name.indexOf('f:') === -1) {
@@ -185,10 +191,18 @@ module xml2ns {
                 else if (value.name === 'f:style') {
                     styleJs = value;
                 }
+                else if (value.name === 'f:i18n') {
+                    var i18nPath = path.normalize(__dirname + '/' + t.srcIn + '/' + value.attribs.src)
+                    i18nJs = require(i18nPath);
+                    console.log('i18n ' , i18nJs);
+                }
             });
+
+            console.log(util.inspect(rootJs, {depth: 5}));
 
             rootDom = Xml2TsUtils.recreateJsNode(rootJs, 0);
             rootDom.className = path.basename(fileName).replace(path.extname(fileName), '');
+            if (i18nJs) rootDom.i18n = i18nJs;
 
             async.series(
                 [
@@ -226,7 +240,7 @@ module xml2ns {
     }
 
     class Xml2TsUtils {
-        public static MATCH_REGEXP:RegExp = /\{([A-Za-z0-9\.]+)\}/;
+        public static MATCH_REGEXP:RegExp = /\{([\@A-Za-z\, \|0-9\.]+)\}/;
 
         public static jsonReplacer(key:string, value:any):any {
             //console.log(key, _.isString(value));
@@ -238,12 +252,14 @@ module xml2ns {
                 case KEYS.STYLE:
                     return Xml2TsUtils.getDynamicValues(key, value, ';');
                 case KEYS.DATA:
-                    Xml2TsUtils.getDynamicValues(key, value, null);
+                    return Xml2TsUtils.getDynamicValues(key, value, null);
+                case KEYS.STATES:
+                    return _.map(value.split(','), function(value) { return value.indexOf('=')>-1?value.split('='):value });
                 default:
                 {
-                    if (key in EVENT_KEYS)return {event: key.replace('on', null), value: value};
+                    if (key in EVENT_KEYS) return value;// {event: key.replace('on', null), value: value};
                     else  {
-                        console.log('Check replacer dynamic ' , key , _.isString(value) , ALLOWED_KEYS.indexOf(key) );
+                        //console.log('Check replacer dynamic ' , key , _.isString(value) , ALLOWED_KEYS.indexOf(key) );
                         return (_.isString(value) && ALLOWED_KEYS.indexOf(key) > -1 ) ? Xml2TsUtils.getDynamicValues(key, value) : value
                     }
                 }
@@ -251,36 +267,79 @@ module xml2ns {
         }
 
         public static getDynamicValues(key:string, value:any, delimiter?:string) {
+            //console.log('Check for ' , key, value);
             if (!_.isString(value)) return value;
 
             var values:any[] = delimiter !== null ? (value.split(delimiter ? delimiter : ' ')) : [value];
             var dynamicValues:{[property:string]:string} = null;
             var staticValues:string[] = null;
+            var boundValues:string[] = null;
 
             _.each(values, function (v) {
                 var matches = v.match(Xml2TsUtils.MATCH_REGEXP);
                 if (matches && matches.length === 2) {
                     var matchValue = matches[1];
-                    if (!dynamicValues) dynamicValues = {};
-                    if (!dynamicValues[matchValue]) dynamicValues[matchValue] = [v];
-                    else dynamicValues[matchValue].push(v);
+                    var filterResult = null;
+
+                    //console.log('Check dv of ' , matchValue);
+                    if(matchValue.indexOf('|') > -1) {
+                        var dataAndFilters = matchValue.split('|');
+                        var firstFilter = dataAndFilters[1].split('.');
+                        filterResult = {args: {}, method: firstFilter[0].trim(), name: firstFilter[1].trim(), source: v.replace(matches[0], '{replace}') };
+
+                        var dataFields = dataAndFilters[0].split(',');
+                        _.each(dataFields, function(dataFieldContent) {
+                            var content = dataFieldContent.split('as');
+                            var dataPropName = content[0].trim();
+                            filterResult.args[content[1]?content[1].trim():'VALUE'] = dataPropName;
+
+                            if (!dynamicValues) dynamicValues = {};
+                            if (!dynamicValues[dataPropName]) dynamicValues[dataPropName] = [filterResult];
+                            else dynamicValues[dataPropName].push(filterResult);
+                        });
+
+                        //console.log('It has matched filter ' , filterResult);
+                    }
+                    else if(matchValue.indexOf('@') > -1) {
+                        var cleanMatchValue:string = matchValue.replace('@', '');
+                        var cleanResultValue:string = '{' + cleanMatchValue + '}';
+
+                        if (!dynamicValues) dynamicValues = {};
+                        if (!dynamicValues[cleanMatchValue]) dynamicValues[cleanMatchValue] = [cleanResultValue];
+                        else dynamicValues[cleanMatchValue].push(cleanResultValue);
+
+                        if (!boundValues) boundValues = {};
+                        if (!boundValues[cleanMatchValue]) boundValues[cleanMatchValue] = cleanResultValue;
+                    }
+                    else {
+                        if (!dynamicValues) dynamicValues = {};
+                        if (!dynamicValues[matchValue]) dynamicValues[matchValue] = [v];
+                        else dynamicValues[matchValue].push(v);
+                    }
+
+
                 } else {
                     if (!staticValues) staticValues = [];
                     staticValues.push(v);
                 }
             });
 
-            //console.log('Has dynamic for ' , key, !!dynamicValues);
-            if (dynamicValues) return {static: staticValues, dynamic: dynamicValues };
-            return value;
+            if (dynamicValues) {
+                //console.log('Return dynamic for ' , key, dynamicValues);
+                return {static: staticValues, dynamic: dynamicValues, bounds: boundValues };
+            } else {
+                console.log('Return static for ', key, value);
+                return value;
+            }
         }
 
         public static getStaticValueOfDynamicObject(value:any, delimiter:string):string {
-            return _.isObject(value) && value.static ? value.static.join(' ') : _.isString(value) ? value : null;
+            delimiter = delimiter?delimiter:' ';
+            return _.isObject(value) && value.static ? value.static.join(delimiter) : _.isString(value) ? value : null;
         }
 
         public static extendDynamicSummary(dynamic:IDynamicSummary, dynamicName:string, domName:string, elementPath:string, values:string[]) {
-            //console.log('ex2ds ' , dynamicName, domName, elementPath);
+            console.log('[ex2ds] ' , dynamicName, domName, elementPath, values);
             if (!dynamic[dynamicName]) dynamic[dynamicName] = {};
             if (!dynamic[dynamicName][domName]) dynamic[dynamicName][domName] = {};
             if (!dynamic[dynamicName][domName][elementPath]) dynamic[dynamicName][domName][elementPath] = (values.length === 1) ? values[0] : values;
@@ -288,7 +347,7 @@ module xml2ns {
 
         public static recreateJsNode(data:any, path:string, rootObject:IRootDomObject):IDomObject {
             var a:any = data.attribs;
-            var object:IDomObject = {path: path, type: data.type, staticAttributes: [], children: [], links: []};
+            var object:IDomObject = {path: path, type: data.type, data: data.data, staticAttributes: [], children: [], links: [], handlers: {}, bounds: {}};
             if (!rootObject) {
                 rootObject = object;
                 rootObject.dynamicSummary = {};
@@ -300,11 +359,17 @@ module xml2ns {
                 if (a.link) rootObject.links.push(Xml2TsUtils.getNameValue(a.link, path));
                 if (a.extend) object.extend = a.extend;
                 if (a.createStates) object.createStates = a.createStates.split(',');
+                if (a.states) object.states = a.states;
             }
 
-            // create static attributes
+            // handlers, create static attributes
             _.each(a, function (value:string, key:any) {
                 console.log('Check: ', key, value);
+                if (_.values(EVENT_KEYS).indexOf(key) > -1) {
+                    console.log('--- Handler ' , key, value);
+                    object.handlers[key.replace('on','')] = value;
+                }
+
                 if (DOM_KEYS.indexOf(key) < 0) return;
                 var result = null;
                 switch (key) {
@@ -321,7 +386,14 @@ module xml2ns {
                     _.each(value.dynamic, function (dynamicValueArray, dynamicName) {
                         Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, dynamicName, key, path, dynamicValueArray);
                     });
+
+                    _.each(value.bounds, function (boundValue, boundObject) {
+                       object.bounds[key] = {};
+                       object.bounds[key][boundObject] = boundValue;
+                       object.handlers['change'] = 'set,' + boundObject + ',' + boundValue;
+                    });
                 }
+
                 if (result) object.staticAttributes.push(Xml2TsUtils.getNameValue(key, result));
             });
 
@@ -341,8 +413,8 @@ module xml2ns {
             if (object.staticAttributes.length === 0) delete object.staticAttributes;
             if (object.children.length === 0) delete object.children;
             if (object.links.length === 0) delete object.links;
-
-
+            if (_.keys(object.handlers).length === 0) delete  object.handlers;
+            if (_.keys(object.bounds).length === 0) delete  object.bounds;
 
             return object;
         }

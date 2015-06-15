@@ -9,5 +9,6 @@
 ///<reference path='./mediator.ts'/>
 
 ///<reference path='../../../DefinitelyTyped/lodash/lodash.d.ts'/>
+declare var MessageFormat:any;
 
 

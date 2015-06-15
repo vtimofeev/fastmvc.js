@@ -27,6 +27,9 @@ module fmvc {
                     }
                 }
             }
+            else {
+                this._data = value;
+            }
 
             if(hasChanges && this._isEvents) this.sendEvent(fmvc.Event.MODEL_CHANGED, this._data);
         }

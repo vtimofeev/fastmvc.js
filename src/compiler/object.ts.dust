@@ -19,7 +19,6 @@ module ui {
       {#links}
       this.{name} = this.elementPaths[{value|js|s}];
       {/links}
-
       this.childrenContainer = this.childrenContainer || this.element;
     }
 
@@ -27,6 +26,11 @@ module ui {
          if(_.isBoolean(value)) {className}.__isDynamicStylesEnabled = value;
             return {className}.__isDynamicStylesEnabled;
     }
+
+    public get i18n():any {
+       return this.jsTemplate.i18n?this.jsTemplate.i18n[this.locale]:null;
+    }
+
 
     public get jsTemplate():fmvc.IRootDomObject {
           return {className}.__jsTemplate;

@@ -1,13 +1,19 @@
 <f:style src="./userview.styl"/>
+<f:i18n src="./userview.i18n.js"/>
 
-<div className="UserView" extend="fmvc.View" createStates="hover,selected,disabled" selected="{selected}" style="background-color:blue;top:{top}px;" onkeydown="changeName"
+<div className="UserView" extend="fmvc.View" createStates="hover,selected,disabled" selected="{selected}" style="background-color:blue;color: red; top:{top}px;"
     class="userview userview-{selected} userview-{disabled} userview-{hover}">
     <div>F: {data.firstname}</div>
     <div>S: {data.secondname}</div>
     <div>A: {data.age}</div>
-
-<input type="text" value="{data.value}" onkeydown="changeValue" onkeyup="changeValue" />
-<div link="close" class="close" states="hover,touch" style="background-color:red">{closeText}</div>
+    <div>{i18n.template}</div>
+    <div>{data.firstname|i18n.template}</div>
+    <div>Hello man ! Yo Yo {data.age as AGE, data.firstname as FIRST|i18n.template}</div>
+    <div onmouseover="overText" onmouseout="outText">{data.age as AGE, data.firstname as FIRST|i18n.template2}</div>
+    <div>123</div>
+    <input states="selected" type="text" value="{@data.value}" onkeydown="changeValueOnKeyUp" onkeyup="changeValueOnKeyDown" onclick="stopPropagation" />
+    <div link="close" class="close" states="hover,touch" style="background-color:red">Close Text get from ...</div>
+    <div link="close" class="close" states="selected,custom=one" style="">Close Text get from ...</div>
 
 <!-- Comment -->
 </div>

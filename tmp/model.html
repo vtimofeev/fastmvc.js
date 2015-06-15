@@ -26,33 +26,26 @@
     var data = [
         {firstname: 'Vasya', secondname: 'Timofeev', age: 33, value: 100}
     ];
-    var str = '';
 
-    _.each(_.range(0,1000), function(value) {
-        data = data.concat([{firstname: 'User ' + value , secondname: 'Second', age: 20 + value, value: value}]);
-        str += '<div class="userview userview-disabled" style="background-color: blue;"><div>' + 'User view ' + value + '</div><div>' + value + '</div><div>' + 20 + value + '</div></div>';
-    });
+    var model = new fmvc.Model('UserView', data, true);
+    var facade = new fmvc.Facade('App.UserView');
 
-    //alert(data.length);
+    facade.register(model);
 
-    var start = Date.now();
+    var view = new ui.UserView();
+    view.setState('selected', true);
+    view.setState('disabled', true);
+    view.model = model;
 
-
-    var listView = new fmvc.ViewList('userview.list');
-    listView.createStates(['selected', 'disabled']);
-    listView.childrenConstructor = ui.UserView;
-    listView.dataset = data;
-    listView.setState('selected', true);
-    listView.setState('disabled', true);
-    listView.render(document.getElementById('userView'));
+    view.render(document.getElementById('userView'));
 
     console.log('summary', Date.now() - start);
 
 
     /*
-    var d = document.getElementById('userView');
-    d.innerHTML = str;
-    */
+     var d = document.getElementById('userView');
+     d.innerHTML = str;
+     */
 
     alert(Date.now() - start);
 </script>
