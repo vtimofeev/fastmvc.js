@@ -32,7 +32,8 @@
 * i18n.
 * Stylus компиляция и встраивание стилей в компонент.
 
-
-    <div class='baseStyle baseStyle-{selected} baseStyle-{disabled}' onAction='actionEventNameHere'>{i18n.title}: <b link='name'>{data.name as NAME, data.gender as GENDER|i18n.name}<b></div>
+```html
+<div class='baseStyle baseStyle-{selected} baseStyle-{disabled}' onAction='actionEventNameHere'>{i18n.title}: <b link='name'>{data.name as NAME, data.gender as GENDER|i18n.name}<b></div>
+```
 
 
