@@ -15,11 +15,10 @@ module fmvc
         private _logger:fmvc.Logger;
         private static _facades = [];
 
-
         constructor(name:string) {
             this._name = name;
-            this._logger = new fmvc.Logger(this, 'Log');
-            this.log('Start ' + name + ', fmvc ' + fmvc.VERSION);
+            //this._logger = new fmvc.Logger(this, 'Log');
+            //this.log('Start ' + name + ', fmvc ' + fmvc.VERSION);
             Facade._facades.push(name);
         }
 

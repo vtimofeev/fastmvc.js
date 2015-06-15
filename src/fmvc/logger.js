@@ -1,4 +1,3 @@
-///<reference path='./d.ts'/>
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -14,6 +13,7 @@ var fmvc;
             this._data = [];
             this._config = { filter: [], length: 100000, console: true };
             this._modules = [];
+            console.log('Construct facade logger ');
             this.facade = facade;
         }
         Logger.prototype.setConfig = function (value) {

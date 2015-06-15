@@ -11,8 +11,8 @@ module ui {
         }
         createDom() {
             this.element = this.templateElement;
-            this.close = this.elementPaths["0,19"];
             this.close = this.elementPaths["0,21"];
+            this.close = this.elementPaths["0,23"];
             this.childrenContainer = this.childrenContainer || this.element;
         }
         public isDynamicStylesEnabled(value ? : boolean): boolean {
@@ -224,7 +224,13 @@ module ui {
                 "children": [{
                     "path": "0,15,0",
                     "type": "text",
-                    "data": "123"
+                    "data": {
+                        "static": null,
+                        "dynamic": {
+                            "data.value": ["The value is {data.value}"]
+                        },
+                        "bounds": null
+                    }
                 }],
                 "tagName": "div"
             }, {
@@ -233,6 +239,25 @@ module ui {
                 "data": "\n    "
             }, {
                 "path": "0,17",
+                "type": "tag",
+                "children": [{
+                    "path": "0,17,0",
+                    "type": "text",
+                    "data": {
+                        "static": null,
+                        "dynamic": {
+                            "data.coordinates.x": ["Cooridnates {data.coordinates.x} & {data.coordinates.y}"]
+                        },
+                        "bounds": null
+                    }
+                }],
+                "tagName": "div"
+            }, {
+                "path": "0,18",
+                "type": "text",
+                "data": "\n    "
+            }, {
+                "path": "0,19",
                 "type": "tag",
                 "handlers": {
                     "change": "set,data.value,{data.value}",
@@ -248,27 +273,6 @@ module ui {
                 "tagName": "input",
                 "states": ["selected"]
             }, {
-                "path": "0,18",
-                "type": "text",
-                "data": "\n    "
-            }, {
-                "path": "0,19",
-                "type": "tag",
-                "staticAttributes": [{
-                    "name": "class",
-                    "value": "close"
-                }, {
-                    "name": "style",
-                    "value": "background-color:red"
-                }],
-                "children": [{
-                    "path": "0,19,0",
-                    "type": "text",
-                    "data": "Close Text get from ..."
-                }],
-                "tagName": "div",
-                "states": ["hover", "touch"]
-            }, {
                 "path": "0,20",
                 "type": "text",
                 "data": "\n    "
@@ -278,6 +282,9 @@ module ui {
                 "staticAttributes": [{
                     "name": "class",
                     "value": "close"
+                }, {
+                    "name": "style",
+                    "value": "background-color:red"
                 }],
                 "children": [{
                     "path": "0,21,0",
@@ -285,26 +292,44 @@ module ui {
                     "data": "Close Text get from ..."
                 }],
                 "tagName": "div",
-                "states": ["selected", ["custom", "one"]]
+                "states": ["hover", "touch"]
             }, {
                 "path": "0,22",
                 "type": "text",
-                "data": "\n\n"
+                "data": "\n    "
             }, {
                 "path": "0,23",
+                "type": "tag",
+                "staticAttributes": [{
+                    "name": "class",
+                    "value": "close"
+                }],
+                "children": [{
+                    "path": "0,23,0",
+                    "type": "text",
+                    "data": "Close Text get from ..."
+                }],
+                "tagName": "div",
+                "states": ["selected", ["custom", "one"]]
+            }, {
+                "path": "0,24",
+                "type": "text",
+                "data": "\n\n"
+            }, {
+                "path": "0,25",
                 "type": "comment",
                 "data": " Comment "
             }, {
-                "path": "0,24",
+                "path": "0,26",
                 "type": "text",
                 "data": "\n"
             }],
             "links": [{
                 "name": "close",
-                "value": "0,19"
+                "value": "0,21"
             }, {
                 "name": "close",
-                "value": "0,21"
+                "value": "0,23"
             }],
             "dynamicSummary": {
                 "selected": {
@@ -395,8 +420,16 @@ module ui {
                     }
                 },
                 "data.value": {
+                    "data": {
+                        "0,15,0": "The value is {data.value}"
+                    },
                     "value": {
-                        "0,17": "{data.value}"
+                        "0,19": "{data.value}"
+                    }
+                },
+                "data.coordinates.x": {
+                    "data": {
+                        "0,17,0": "Cooridnates {data.coordinates.x} & {data.coordinates.y}"
                     }
                 }
             },

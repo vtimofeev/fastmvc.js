@@ -108,7 +108,7 @@ module fmvc {
                 if (this.dynamicProperties[stateName] && stateValue != this.dynamicPropertyValue[stateName]) this.updateDynamicProperty(stateName, stateValue);
             }, this);
             this.updateI18N();
-            this.updateData();
+            //this.updateData();
         }
 
         public updateI18N():void {
@@ -126,13 +126,16 @@ module fmvc {
 
         }
 
-        public updateData():void {
-            if (!this.dynamicProperties) return;
-            if (!this.data) return;
-            _.each(this.data, function (value:any, name:string) {
-                if (_.isObject(value)) {
+        public updateData(data, prefix = 'data.', depth:number = 0):void {
+            if (!this.dynamicProperties || !data || !depth) return;
+            depth--;
+
+            _.each(data, function (value:any, name:string) {
+                var nextPrefix = prefix + name + '.';
+                if (_.isObject(value) && depth) {
+                    this.updateData(value,  nextPrefix , depth );
                 } else {
-                    var prefix = 'data.';
+                    console.log('Set data ' , prefix + name);
                     this.dynamicProperties[prefix + name] ? this.updateDynamicProperty(prefix + name, value) : null;
                 }
             }, this);
@@ -306,10 +309,13 @@ module fmvc {
                     if(commands[0] === 'set') {
                         var objectTo = commands[1].split('.');
                         var objectProperty = objectTo[1].trim();
+                        if(this.model) {
+                            var result = {};
+                            result[objectProperty] = e.target.value;
+                            this.model.data = result;
+                        }
                         if(this._data) {
-                            console.log('Before change ', this._data, objectProperty, e.target.value);
                             this._data[objectProperty] = e.target.value;
-                            console.log('After change ', this._data, objectProperty, e.target.value);
                         }
                     }
                 }
@@ -522,7 +528,7 @@ module fmvc {
             //console.log('invalid ' , this._invalidate , this._inDocument);
             if (!this._invalidate || !this._inDocument) return;
 
-            if (this._invalidate & 1) this.updateData();
+            if (this._invalidate & 1) this.updateData(this.data, 'data.', 2);
             this._invalidate = 0;
         }
 
@@ -577,7 +583,7 @@ module fmvc {
         // Data & model
         //------------------------------------------------------------------------------------------------
         public set data(value:any) {
-            ////console.log('View: set data' , value);
+            console.log('View: set data' , value);
             this._data = value;
             this.invalidate(1);
         }

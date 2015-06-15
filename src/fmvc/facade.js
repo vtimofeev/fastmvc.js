@@ -11,8 +11,8 @@ var fmvc;
             this._objects = [];
             this._events = {};
             this._name = name;
-            this._logger = new fmvc.Logger(this, 'Log');
-            this.log('Start ' + name + ', fmvc ' + fmvc.VERSION);
+            //this._logger = new fmvc.Logger(this, 'Log');
+            //this.log('Start ' + name + ', fmvc ' + fmvc.VERSION);
             Facade._facades.push(name);
         }
         Facade.prototype.register = function (object) {

@@ -10,7 +10,8 @@
     <div>{data.firstname|i18n.template}</div>
     <div>Hello man ! Yo Yo {data.age as AGE, data.firstname as FIRST|i18n.template}</div>
     <div onmouseover="overText" onmouseout="outText">{data.age as AGE, data.firstname as FIRST|i18n.template2}</div>
-    <div>123</div>
+    <div>The value is {data.value}</div>
+    <div>Cooridnates {data.coordinates.x} & {data.coordinates.y}</div>
     <input states="selected" type="text" value="{@data.value}" onkeydown="changeValueOnKeyUp" onkeyup="changeValueOnKeyDown" onclick="stopPropagation" />
     <div link="close" class="close" states="hover,touch" style="background-color:red">Close Text get from ...</div>
     <div link="close" class="close" states="selected,custom=one" style="">Close Text get from ...</div>

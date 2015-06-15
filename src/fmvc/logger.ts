@@ -1,4 +1,4 @@
-///<reference path='./d.ts'/>
+
 
 module fmvc {
     export class Logger extends fmvc.Notifier {
@@ -8,6 +8,7 @@ module fmvc {
 
         constructor(facade:fmvc.Facade, name:string) {
             super(name);
+            console.log('Construct facade logger ');
             this.facade = facade;
         }
 
