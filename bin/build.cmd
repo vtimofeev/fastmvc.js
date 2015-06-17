@@ -1,1 +1,1 @@
-d:/__DEV/external/node/node_modules/.bin/r.js.cmd -o baseUrl=./ name=package.fmvc out=../builds/fmvc.min.js
+r.js.cmd -o baseUrl=./ name=package.fmvc out=../builds/fmvc.min.js

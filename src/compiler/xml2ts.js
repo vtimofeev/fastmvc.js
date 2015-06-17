@@ -3,6 +3,7 @@
 ///<reference path='../d.ts/async/async.d.ts'/>
 //<reference path='../d.ts/lodash/lodash.d.ts'/>
 ///<reference path='../d.ts/dustjs-linkedin/dustjs-linkedin.d.ts'/>
+///<reference path='../../node-modules/
 var util = require('util');
 var fs = require('fs');
 var htmlparser = require("htmlparser");
@@ -13,6 +14,7 @@ var path = require('path');
 var async = require('async');
 var beautify = require('js-beautify');
 var stylus = require('stylus');
+var tsc = require('typescript-compiler');
 require('dustjs-helpers');
 dust.config.whitespace = true;
 var xml2ns;
@@ -120,10 +122,15 @@ var xml2ns;
             rootDom.className = path.basename(fileName).replace(path.extname(fileName), '');
             if (i18nJs)
                 rootDom.i18n = i18nJs;
+            var tsClassPath = path.normalize(__dirname + '/' + t.srcOut + '/' + rootDom.className + '.ts');
+            var jsClassPath = path.normalize(__dirname + '/' + t.srcOut + '/' + rootDom.className + '.js');
             async.series([
                 function loadStylus(cb) {
-                    if (!styleJs)
+                    console.log('styleJs', styleJs);
+                    if (!styleJs) {
                         cb(null, null);
+                        return;
+                    }
                     var stylusSrc = path.normalize(__dirname + '/' + t.srcIn + '/' + styleJs.attribs.src);
                     console.log('Style source is ' + stylusSrc);
                     var stylusSrc = fs.readFileSync(stylusSrc, 'utf8');
@@ -135,21 +142,26 @@ var xml2ns;
                         console.log('Css of stylus : ' + css);
                         cb(err, css);
                     });
+                },
+                function createTsClass(cb) {
+                    dust.render('object.ts.dust', rootDom, function dustCompileHandler(e, result) {
+                        var reformattedContent = beautify.js_beautify(result, { "max_preserve_newlines": 1 });
+                        console.log('Write file ' + tsClassPath);
+                        fs.writeFile(tsClassPath, reformattedContent, function tsSaveHandler(e, result) {
+                            if (!e)
+                                cb();
+                            else
+                                throw new Error('Cant write content to ' + tsClassPath);
+                        });
+                    });
                 }
             ], function compileResultHandler(err, result) {
                 if (err)
                     return 'Cant render dust cause errors for ' + rootDom.className;
-                dust.render('object.ts.dust', rootDom, function (e, result) {
-                    var reformattedContent = beautify.js_beautify(result, { "max_preserve_newlines": 1 });
-                    var filePath = path.normalize(__dirname + '/' + t.srcOut + '/' + rootDom.className + '.ts');
-                    console.log('Write file ' + filePath);
-                    fs.writeFile(filePath, reformattedContent, function (e, result) {
-                        if (!e)
-                            next();
-                        else
-                            throw new Error('Cant write content to ' + filePath);
-                    });
-                });
+                var start = Date.now();
+                tsc.compile([tsClassPath], '-m commonjs -t ES5 --out ' + jsClassPath);
+                console.log('Compiled ts to %s, for %d ms', jsClassPath, (Date.now() - start));
+                next();
             });
         };
         return Xml2Ts;

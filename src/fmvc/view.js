@@ -24,6 +24,7 @@ var fmvc;
             _super.call(this, name, fmvc.TYPE_VIEW);
             this.dynamicPropertyValue = {}; // те которые были установлены
             this.elementPaths = {};
+            this.componentPaths = {};
             this.handlers = {};
             // Invalidate properties
             this._invalidateTimeout = 0;
@@ -36,7 +37,7 @@ var fmvc;
             this.init();
             this.invalidateHandler = this.invalidateHandler.bind(this);
         }
-        // Init, overrided method
+        // @override
         View.prototype.init = function () {
         };
         View.prototype.render = function (parent) {
@@ -55,20 +56,8 @@ var fmvc;
         View.prototype.createDom = function () {
             this.element = document.createElement('div');
             this.childrenContainer = this.element;
+            return this;
         };
-        /*
-         public createElementPathLinks(element, data, root) {
-         if (!data.path) return;
-
-         var path = data.path.split(',');
-         path.splice(0, 1);
-         this.elementPaths[data.path] = this.getElementByPath(element, path, root);
-         ////console.log('Create path for ' , data.path, this.elementPaths[data.path]);
-         _.each(data.children, function (data) {
-         this.createElementPathLinks(element, data);
-         }, this);
-         }
-         */
         View.prototype.createStates = function (states) {
             this._states = {};
             _.each(states, function (value) {
@@ -269,7 +258,8 @@ var fmvc;
             this.enterDocumentElement(this.jsTemplate, this.elementPaths);
         };
         View.prototype.applyEventHandlers = function (e) {
-            var name = this.handlers[e.target][e.type];
+            var path = e.target.getAttribute('data-path');
+            var name = this.handlers[path][e.type];
             if (name === 'stopPropagation') {
                 e.stopPropagation();
             }
@@ -301,21 +291,54 @@ var fmvc;
         View.prototype.enterDocumentElement = function (value, object) {
             if (!value || !object)
                 return;
+            var path = value.path;
             var e = object[value.path];
-            if (value.type === fmvc.DomObjectType.TAG) {
+            var isTag = e.nodeType === 1;
+            var c = this.componentPaths[value.path];
+            if (c)
+                c.enterDocument();
+            if (value.type === fmvc.DomObjectType.TAG && isTag) {
                 console.log('EnterDocument ', value.tagName, value.path);
                 _.each(value.children, function (child, index) {
-                    var result = this.enterDocumentElement(child, object);
+                    this.enterDocumentElement(child, object);
                 }, this);
                 // add global handlers if not exist
                 if (value.handlers) {
                     _.each(value.handlers, function (name, eventType) {
-                        if (!this.handlers[e] || !this.handlers[e][eventType]) {
-                            if (!this.handlers[e])
-                                this.handlers[e] = {};
-                            this.handlers[e][eventType] = name;
-                            console.log('add listener ', eventType);
+                        if (!this.handlers[path] || !this.handlers[path][eventType]) {
+                            if (!this.handlers[path])
+                                this.handlers[path] = {};
+                            this.handlers[path][eventType] = name;
+                            console.log('add listener ', e, value.tagName, path, eventType);
+                            e.setAttribute('data-path', path);
+                            //e.dataset.path = path;
                             e.addEventListener(eventType, this.applyEventHandlers);
+                        }
+                    }, this);
+                }
+            }
+        };
+        View.prototype.exitDocumentElement = function (value, object) {
+            if (!value || !object)
+                return;
+            var path = value.path;
+            var e = object[value.path];
+            var isTag = e.nodeType === 1;
+            var c = this.componentPaths[value.path];
+            if (c)
+                c.exitDocument();
+            if (value.type === fmvc.DomObjectType.TAG && isTag) {
+                console.log('EnterDocument ', value.tagName, value.path);
+                _.each(value.children, function (child, index) {
+                    this.enterDocumentElement(child, object);
+                }, this);
+                // add global handlers if not exist
+                if (value.handlers) {
+                    _.each(value.handlers, function (name, eventType) {
+                        if (this.handlers[path] && this.handlers[path][eventType]) {
+                            console.log('remove listener ', e, value.tagName, path, eventType);
+                            e.removeEventListener(eventType, this.applyEventHandlers);
+                            delete this.handlers[path][eventType];
                         }
                     }, this);
                 }
@@ -503,8 +526,9 @@ var fmvc;
         // Children
         //------------------------------------------------------------------------------------------------
         View.prototype.forEachChild = function (value) {
-            if (!this.childrenViews || !this.childrenViews.length)
-                ;
+            if (!this.childrenViews || !this.childrenViews.length) {
+                return;
+            }
             _.each(this.childrenViews, value, this);
         };
         View.prototype.addChild = function (value) {
@@ -657,10 +681,18 @@ var fmvc;
             var e = null;
             var isIncluded = value.states ? this.isStateEnabled(value.states) : true;
             if (isIncluded && value.type === fmvc.DomObjectType.TAG) {
-                e = document.createElement(value.tagName);
-                _.each(value.staticAttributes, function (v) {
-                    e.setAttribute(v.name, v.value);
-                });
+                if (value.tagName.indexOf('.') > -1) {
+                    console.log('Create component, ' + value.tagName);
+                    var component = new (ui[value.tagName.split('.')[1]])();
+                    this.componentPaths[value.path] = component;
+                    e = component.createDom().element;
+                }
+                else {
+                    e = document.createElement(value.tagName);
+                    _.each(value.staticAttributes, function (v) {
+                        e.setAttribute(v.name, v.value);
+                    });
+                }
                 _.each(value.children, function (child, index) {
                     var ce = this.getElement(child, object);
                     if (ce)

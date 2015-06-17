@@ -23,12 +23,13 @@ module fmvc {
 
         public  dynamicPropertyValue:{[name:string]:any} = {}; // те которые были установлены
         public  elementPaths:{[name:string]:Element} = {};
+        private componentPaths:{[name:string]:fmvc.View} = {};
         private handlers:{[id:string]:string} = {};
 
         // Invalidate properties
         private _invalidateTimeout:number = 0;
         private _invalidate:number = 0;
-        private _inDocument:Boolean = false;
+        private _inDocument:boolean = false;
         private _avaibleInheritedStates:string[] = null;
 
         // States object (view support multistates)
@@ -39,7 +40,6 @@ module fmvc {
         private parentElement:Element;
         private linkedViews:fmvc.View[];
         private childrenViews:fmvc.View[];
-
 
         // Elements
         public  element:Element; // root element
@@ -53,12 +53,11 @@ module fmvc {
             this.invalidateHandler = this.invalidateHandler.bind(this);
         }
 
-        // Init, overrided method
+        // @override
         public init():void {
-
         }
 
-        public render(parent) {
+        public render(parent:Element) {
             this.parentElement = parent;
             this.createDom();
             this.parentElement.appendChild(this.element);
@@ -74,24 +73,12 @@ module fmvc {
         // Dom
         //------------------------------------------------------------------------------------------------
 
-        public createDom():void {
+        public createDom():fmvc.View {
             this.element = document.createElement('div');
             this.childrenContainer = this.element;
+            return this;
         }
 
-        /*
-         public createElementPathLinks(element, data, root) {
-         if (!data.path) return;
-
-         var path = data.path.split(',');
-         path.splice(0, 1);
-         this.elementPaths[data.path] = this.getElementByPath(element, path, root);
-         ////console.log('Create path for ' , data.path, this.elementPaths[data.path]);
-         _.each(data.children, function (data) {
-         this.createElementPathLinks(element, data);
-         }, this);
-         }
-         */
 
         public createStates(states:string[]):void {
             this._states = {};
@@ -167,7 +154,7 @@ module fmvc {
                 if (!this.i18n[templateObject.name]) return 'Error:View.getDataObjectValue has no i18n property';
 
                 var data:any = {};
-                _.each(templateObject.args, function (value, key) {
+                _.each(templateObject.args, function (value:string, key:string) {
                     if (value) data[key] = this.data[value.replace('data.', '')];
                 }, this);
                 var result = this.getFormattedMessage(this.i18n[templateObject.name], data);
@@ -242,7 +229,7 @@ module fmvc {
                 case 'style':
                     var style = resultValue.split(':');
                     var propName = style[0].trim();
-                    element.style[propName] = style[1].trim();
+                    (<HTMLElement>element).style[propName] = style[1].trim();
                     break;
 
                 case 'data':
@@ -299,7 +286,8 @@ module fmvc {
         }
 
         public applyEventHandlers(e:any) {
-            var name = this.handlers[e.target][e.type];
+            var path:string = e.target.getAttribute('data-path');
+            var name:string = this.handlers[path][e.type];
 
             if(name === 'stopPropagation') {
                 e.stopPropagation();
@@ -334,29 +322,63 @@ module fmvc {
         public enterDocumentElement(value:IDomObject, object:any):any {
             if (!value || !object) return;
 
+            var path = value.path;
             var e:Element = object[value.path];
+            var isTag = e.nodeType === 1;
+            var c:fmvc.View = this.componentPaths[value.path];
+            if(c) c.enterDocument();
 
-            if (value.type === DomObjectType.TAG) {
+            if (value.type === DomObjectType.TAG && isTag) {
                 console.log('EnterDocument ', value.tagName, value.path);
                 _.each(value.children, function (child:IDomObject, index) {
-                    var result = this.enterDocumentElement(child, object);
+                    this.enterDocumentElement(child, object);
                 }, this);
 
                 // add global handlers if not exist
                 if(value.handlers) {
                     _.each(value.handlers, function (name:string, eventType:string) {
-                        if (!this.handlers[e] || !this.handlers[e][eventType]) {
-                            if (!this.handlers[e]) this.handlers[e] = {};
-                            this.handlers[e][eventType] = name;
-                            console.log('add listener ', eventType);
+                        if (!this.handlers[path] || !this.handlers[path][eventType]) {
+                            if (!this.handlers[path]) this.handlers[path] = {};
+                            this.handlers[path][eventType] = name;
+
+                            console.log('add listener ', e, value.tagName, path, eventType);
+                            e.setAttribute('data-path', path);
+                            //e.dataset.path = path;
                             e.addEventListener(eventType, this.applyEventHandlers);
                         }
                     }, this);
                 }
-
-
             }
         }
+
+        public exitDocumentElement(value:IDomObject, object:any):any {
+            if (!value || !object) return;
+
+            var path = value.path;
+            var e:Element = object[value.path];
+            var isTag = e.nodeType === 1;
+            var c:fmvc.View = this.componentPaths[value.path];
+            if(c) c.exitDocument();
+
+            if (value.type === DomObjectType.TAG && isTag) {
+                console.log('EnterDocument ', value.tagName, value.path);
+                _.each(value.children, function (child:IDomObject, index) {
+                    this.enterDocumentElement(child, object);
+                }, this);
+
+                // add global handlers if not exist
+                if(value.handlers) {
+                    _.each(value.handlers, function (name:string, eventType:string) {
+                        if (this.handlers[path] && this.handlers[path][eventType]) {
+                            console.log('remove listener ', e, value.tagName, path, eventType);
+                            e.removeEventListener(eventType, this.applyEventHandlers);
+                            delete this.handlers[path][eventType];
+                        }
+                    }, this);
+                }
+            }
+        }
+
 
         public applyChangeStateElement(value:IDomObject, object:any):any {
             if (!value || !object) return;
@@ -555,7 +577,10 @@ module fmvc {
         //------------------------------------------------------------------------------------------------
 
         public forEachChild(value:Function) {
-            if (!this.childrenViews || !this.childrenViews.length);
+            if(!this.childrenViews || !this.childrenViews.length)  {
+                return;
+            }
+
             _.each(this.childrenViews, value, this);
         }
 
@@ -703,10 +728,19 @@ module fmvc {
             var isIncluded = value.states ? this.isStateEnabled(value.states) : true;
 
             if (isIncluded && value.type === DomObjectType.TAG) {
-                e = document.createElement(value.tagName);
-                _.each(value.staticAttributes, function (v) {
-                    e.setAttribute(v.name, v.value);
-                });
+                if(value.tagName.indexOf('.') > -1) {
+                    console.log('Create component, ' + value.tagName);
+                    var component = new (ui[value.tagName.split('.')[1]])();
+                    this.componentPaths[value.path] = component;
+                    e = component.createDom().element;
+                } else {
+                    e = document.createElement(value.tagName);
+                    _.each(value.staticAttributes, function (v) {
+                        e.setAttribute(v.name, v.value);
+                    });
+                }
+
+
                 _.each(value.children, function (child:IDomObject, index) {
                     var ce = this.getElement(child, object);
                     if (ce) e.appendChild(ce);
@@ -735,57 +769,6 @@ module fmvc {
 
         private static __className:string = 'View';
         private static __inheritedStates:string[] = [State.DISABLED];
-    }
-
-    export interface IView {
-        init():void;
-        invalidate(type:number):void;
-        data:any;
-        model:fmvc.Model; // get, set
-        mediator:fmvc.Mediator; // get, set
-        eventHandler(name:string, e:any):void;
-    }
-
-    export interface IRootDomObject extends IDomObject {
-        className:string;
-        css?:string;
-        links?:{[name:string]:string/* path */}[];
-        dynamicSummary?:IDynamicSummary;
-    }
-
-    interface INameValue {
-        name:string;
-        value:any;
-    }
-
-    export interface IDynamicSummary {
-        [propertyName:string]:{[substance/* class, data, style any */:string]:any};
-    }
-
-    export interface IDomObject {
-        path:string;
-        type:string; // @tag/string/other
-        tagName?:string; // tag name: div/br
-        extend?:string;
-
-        isVirtual:boolean;
-        isComponent:boolean;
-
-        createDom:Function;
-
-        component?:fmvc.View;
-        componentConstructor?:Function;
-
-        element?:HTMLElement;
-        virtualElement?:HTMLElement;
-
-        createStates?:string[];
-        states?:string[];
-
-        staticAttributes?:INameValue[];
-
-        handlers?:{[event:string]:string};
-        children?:IDomObject[];
     }
 
 

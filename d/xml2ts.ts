@@ -113,7 +113,7 @@ module xml2ns {
     }
 
     export class Xml2Ts {
-        constructor(public srcIn:string, public srcOut:string) {
+        constructor(public srcIn:string,  public srcOut:string) {
             _.bindAll(this, 'loadDustSources', 'loadSources', 'parse', 'complete');
             this.loadDustSources(this.loadSources);
         }

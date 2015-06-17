@@ -1,4 +1,4 @@
-<f:style src="./userview.styl"/>
+<f:style src="./styl/userview.styl"/>
 <f:i18n src="./userview.i18n.js"/>
 
 <div className="UserView" extend="fmvc.View" createStates="hover,selected,disabled" selected="{selected}" style="background-color:blue;color: red; top:{top}px;"
@@ -13,8 +13,15 @@
     <div>The value is {data.value}</div>
     <div>Cooridnates {data.coordinates.x} & {data.coordinates.y}</div>
     <input states="selected" type="text" value="{@data.value}" onkeydown="changeValueOnKeyUp" onkeyup="changeValueOnKeyDown" onclick="stopPropagation" />
+
+    <ui.Button>{data.firstname} The Text Of The button</ui.Button>
+
+    <div link="close2" class="close" states="selected,custom=one" style="">{data.firstname} Close Text get from .</div>
+
     <div link="close" class="close" states="hover,touch" style="background-color:red">Close Text get from ...</div>
-    <div link="close" class="close" states="selected,custom=one" style="">Close Text get from ...</div>
+
+
+
 
 <!-- Comment -->
 </div>

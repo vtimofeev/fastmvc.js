@@ -17,9 +17,10 @@ var ui;
         }
         UserView.prototype.createDom = function () {
             this.element = this.templateElement;
-            this.close = this.elementPaths["0,21"];
-            this.close = this.elementPaths["0,23"];
+            this.close2 = this.elementPaths["0,23"];
+            this.close = this.elementPaths["0,25"];
             this.childrenContainer = this.childrenContainer || this.element;
+            return this;
         };
         UserView.prototype.isDynamicStylesEnabled = function (value) {
             if (_.isBoolean(value))
@@ -290,28 +291,26 @@ var ui;
                 }, {
                     "path": "0,20",
                     "type": "text",
-                    "data": "\n    "
+                    "data": "\n\n    "
                 }, {
                     "path": "0,21",
                     "type": "tag",
-                    "staticAttributes": [{
-                            "name": "class",
-                            "value": "close"
-                        }, {
-                            "name": "style",
-                            "value": "background-color:red"
-                        }],
                     "children": [{
                             "path": "0,21,0",
                             "type": "text",
-                            "data": "Close Text get from ..."
+                            "data": {
+                                "static": null,
+                                "dynamic": {
+                                    "data.firstname": ["{data.firstname} The Text Of The button"]
+                                },
+                                "bounds": null
+                            }
                         }],
-                    "tagName": "div",
-                    "states": ["hover", "touch"]
+                    "tagName": "ui.Button"
                 }, {
                     "path": "0,22",
                     "type": "text",
-                    "data": "\n    "
+                    "data": "\n\n    "
                 }, {
                     "path": "0,23",
                     "type": "tag",
@@ -322,29 +321,56 @@ var ui;
                     "children": [{
                             "path": "0,23,0",
                             "type": "text",
-                            "data": "Close Text get from ..."
+                            "data": {
+                                "static": null,
+                                "dynamic": {
+                                    "data.firstname": ["{data.firstname} Close Text get from ."]
+                                },
+                                "bounds": null
+                            }
                         }],
                     "tagName": "div",
                     "states": ["selected", ["custom", "one"]]
                 }, {
                     "path": "0,24",
                     "type": "text",
-                    "data": "\n\n"
+                    "data": "\n\n    "
                 }, {
                     "path": "0,25",
+                    "type": "tag",
+                    "staticAttributes": [{
+                            "name": "class",
+                            "value": "close"
+                        }, {
+                            "name": "style",
+                            "value": "background-color:red"
+                        }],
+                    "children": [{
+                            "path": "0,25,0",
+                            "type": "text",
+                            "data": "Close Text get from ..."
+                        }],
+                    "tagName": "div",
+                    "states": ["hover", "touch"]
+                }, {
+                    "path": "0,26",
+                    "type": "text",
+                    "data": "\n\n\n\n\n"
+                }, {
+                    "path": "0,27",
                     "type": "comment",
                     "data": " Comment "
                 }, {
-                    "path": "0,26",
+                    "path": "0,28",
                     "type": "text",
                     "data": "\n"
                 }],
             "links": [{
-                    "name": "close",
-                    "value": "0,21"
+                    "name": "close2",
+                    "value": "0,23"
                 }, {
                     "name": "close",
-                    "value": "0,23"
+                    "value": "0,25"
                 }],
             "dynamicSummary": {
                 "selected": {
@@ -398,7 +424,9 @@ var ui;
                             "method": "i18n",
                             "name": "template2",
                             "source": "{replace}"
-                        }
+                        },
+                        "0,21,0": "{data.firstname} The Text Of The button",
+                        "0,23,0": "{data.firstname} Close Text get from ."
                     }
                 },
                 "data.secondname": {
@@ -474,4 +502,3 @@ var ui;
     })(fmvc.View);
     ui.UserView = UserView;
 })(ui || (ui = {}));
-//# sourceMappingURL=UserView.js.map
