@@ -13,7 +13,7 @@ var ui;
         function Button(name, $root) {
             _super.call(this, name, $root);
             /* create states */
-            this.createStates(["hover", "selected", "disabled", "error", "open"]);
+            this.enableStates(["hover", "selected", "disabled", "error", "open"]);
         }
         Button.prototype.createDom = function () {
             this.element = this.templateElement;
@@ -76,7 +76,7 @@ var ui;
             },
             "tagName": "div",
             "extend": "fmvc.View",
-            "createStates": ["hover", "selected", "disabled", "error", "open"],
+            "enableStates": ["hover", "selected", "disabled", "error", "open"],
             "className": "Button",
             "css": "button{display:inline-block;min-width:120px;width:100;background-color:#000;color:#fff;font-size:1}.button-hover{background-color:#008000}.button-selected{font-weight:bold;border-bottom:2px solid #000}"
         };

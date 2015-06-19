@@ -2,7 +2,7 @@
 
 var xml = '<f:style src="./userview.styl"/>' +
     '<div className="UserView" extend="fmvc.View" ' +
-    ' createStates="hover,selected,disabled" ' +
+    ' enableStates="hover,selected,disabled" ' +
     ' selected="{selected}" ' +
     ' style="background-color:blue;top:{top}px;"' +
     ' onkeydown="changeName" ' +
@@ -16,7 +16,7 @@ var xml = '<f:style src="./userview.styl"/>' +
     '</div>';
 
 var xml3 = '<div className="Test" extend="fmvc.View" ' +
-    ' createStates="hover,selected,dragged" ' +
+    ' enableStates="hover,selected,dragged" ' +
     ' checked="true" ' +
     ' selected="{selected}" ' +
     ' style="background-color:red;top:{left}px;"' +
@@ -33,7 +33,7 @@ var xml3 = '<div className="Test" extend="fmvc.View" ' +
 
 var xml2 = '<div' +
     ' link="element"' +
-    ' createStates="hover,selected,dragged" ' +
+    ' enableStates="hover,selected,dragged" ' +
     ' checked="true" ' +
     ' selected="{selected}" ' +
     ' class="button button-{selected} {hover} button-{hover}" ' +

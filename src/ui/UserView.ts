@@ -7,7 +7,7 @@ module ui {
         constructor(name: string, $root: any) {
             super(name, $root);
             /* create states */
-            this.createStates(["hover", "selected", "disabled"]);
+            this.enableStates(["hover", "selected", "disabled"]);
         }
         createDom() {
             this.element = this.templateElement;
@@ -432,7 +432,7 @@ module ui {
             },
             "tagName": "div",
             "extend": "fmvc.View",
-            "createStates": ["hover", "selected", "disabled"],
+            "enableStates": ["hover", "selected", "disabled"],
             "className": "UserView",
             "i18n": {
                 "ru": {

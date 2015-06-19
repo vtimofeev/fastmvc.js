@@ -13,7 +13,7 @@ var ui;
         function UserView(name, $root) {
             _super.call(this, name, $root);
             /* create states */
-            this.createStates(["hover", "selected", "disabled"]);
+            this.enableStates(["hover", "selected", "disabled"]);
         }
         UserView.prototype.createDom = function () {
             this.element = this.templateElement;
@@ -447,7 +447,7 @@ var ui;
             },
             "tagName": "div",
             "extend": "fmvc.View",
-            "createStates": ["hover", "selected", "disabled"],
+            "enableStates": ["hover", "selected", "disabled"],
             "className": "UserView",
             "i18n": {
                 "ru": {

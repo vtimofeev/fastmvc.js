@@ -14,7 +14,7 @@ var xml2ns;
 (function (xml2ns) {
     var KEYS = {
         EXTEND: 'extend',
-        CREATE_STATES: 'createStates',
+        CREATE_STATES: 'enableStates',
         LINK: 'link',
         RAW: 'raw',
         DATA: 'data',
@@ -206,8 +206,8 @@ var xml2ns;
                     rootObject.links.push(Xml2TsUtils.getNameValue(a.link, path));
                 if (a.extend)
                     object.extend = a.extend;
-                if (a.createStates)
-                    object.createStates = a.createStates.split(',');
+                if (a.enableStates)
+                    object.enableStates = a.enableStates.split(',');
             }
             // create static attributes
             _.each(a, function (value, key) {

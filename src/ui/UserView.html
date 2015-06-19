@@ -9,7 +9,7 @@
 <div
     className="UserView"
     extend="fmvc.View"
-    createStates="hover,selected,disabled,counter"
+    enableStates="hover,selected,disabled,counter"
     selected="{selected}"
     style="background-color:blue;color: red; top:{state.top}px;"
     class="userview userview-{selected} userview-{disabled} userview-{hover}"
@@ -27,7 +27,7 @@
     <ui.Button
             link="hellobutton"
             id="{c.id}-ui-hellobutton"
-            createStates="hover,selected,disabled"
+            enableStates="hover,selected,disabled"
             model="{model.button}"
             base="hellobutton"
             events="click:helloButtonClick,mouseover:helloButtonOver,mouseout:helloButtonOut"

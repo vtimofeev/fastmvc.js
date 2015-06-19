@@ -43,7 +43,7 @@ module fmvc {
         element?:HTMLElement;
         virtualElement?:HTMLElement;
 
-        createStates?:string[];
+        enableStates?:string[];
         states?:string[];
         data?:string;
 
