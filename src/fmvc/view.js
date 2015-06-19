@@ -7,9 +7,14 @@ var __extends = this.__extends || function (d, b) {
 ///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
+    fmvc.BrowserEvent = {
+        CLICK: 'click',
+        MOUSEOVER: 'mouseover',
+        MOUSEOUT: 'mouseout'
+    };
     fmvc.State = {
         SELECTED: 'selected',
-        HOVERED: 'hovered',
+        HOVER: 'hover',
         FOCUSED: 'focused',
         DISABLED: 'disabled'
     };
@@ -17,6 +22,10 @@ var fmvc;
         TEXT: 'text',
         TAG: 'tag',
         COMMENT: 'comment'
+    };
+    fmvc.Filter = {
+        FIRST: 'first',
+        SECOND: 'second'
     };
     var View = (function (_super) {
         __extends(View, _super);
@@ -32,7 +41,7 @@ var fmvc;
             this._inDocument = false;
             this._avaibleInheritedStates = null;
             this._locale = 'ru';
-            _.bindAll(this, 'getDataStringValue', 'applyEventHandlers');
+            _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler', 'getDataObjectValue');
             this.$root = $root;
             this.init();
             this.invalidateHandler = this.invalidateHandler.bind(this);
@@ -61,6 +70,15 @@ var fmvc;
         View.prototype.createStates = function (states) {
             this._states = {};
             _.each(states, function (value) {
+                /*
+                switch (value) {
+                    case State.HOVER:
+                        _.bindAll(this, 'setHoverTrue', 'setHoverFalse');
+                        break;
+                    case State.SELECTED:
+                        _.bindAll(this, 'toggleSelected');
+                        break;
+                }*/
                 this._states[value] = false;
             }, this);
         };
@@ -101,7 +119,7 @@ var fmvc;
                     this.updateData(value, nextPrefix, depth);
                 }
                 else {
-                    console.log('Set data ', prefix + name);
+                    //console.log('Set data ' , prefix + name);
                     this.dynamicProperties[prefix + name] ? this.updateDynamicProperty(prefix + name, value) : null;
                 }
             }, this);
@@ -125,18 +143,43 @@ var fmvc;
                 return this.getDataObjectValue(propertyName, propertyValue, templateStringOrObject);
             }
         };
-        View.prototype.getDataObjectValue = function (propertyName, propertyValue, templateObject) {
-            if (templateObject.method === 'i18n') {
-                if (!this.i18n[templateObject.name])
-                    return 'Error:View.getDataObjectValue has no i18n property';
-                var data = {};
-                _.each(templateObject.args, function (value, key) {
-                    if (value)
-                        data[key] = this.data[value.replace('data.', '')];
-                }, this);
-                var result = this.getFormattedMessage(this.i18n[templateObject.name], data);
-                return templateObject.source.replace('{replace}', result);
+        View.prototype.executeComplexFilter = function (filterArrayData, value) {
+        };
+        View.prototype.executeFilter = function (filter, value) {
+            switch (filter) {
+                case fmvc.Filter.FIRST:
+                    return 'first:' + value;
+                    break;
+                case fmvc.Filter.SECOND:
+                    return 'second:' + value;
+                    break;
             }
+            return value;
+        };
+        View.prototype.getDataObjectValue = function (propertyName, propertyValue, templateObject) {
+            var getFilterValue = function (reducedValue, filter) {
+                if (_.isArray(filter)) {
+                    if (filter[0] === 'i18n') {
+                        var secondName = filter[1];
+                        if (!this.i18n[secondName])
+                            return 'Error:View.getDataObjectValue has no i18n property';
+                        var data = {};
+                        _.each(templateObject.args, function (value, key) {
+                            if (value)
+                                data[key] = this.data[value.replace('data.', '')];
+                        }, this);
+                        var result = this.getFormattedMessage(this.i18n[secondName], data);
+                        return templateObject.source.replace('{replace}', result);
+                    }
+                    else {
+                        return this.executeComplexFilter(filter, reducedValue);
+                    }
+                }
+                else {
+                    return this.executeFilter(filter, reducedValue);
+                }
+            };
+            return _.reduce(templateObject.filters, getFilterValue, propertyValue, this);
         };
         View.prototype.updatePaths = function (paths, type, name, value, GetValue, each) {
             _.each(paths, function (valueOrValues, path) {
@@ -245,21 +288,33 @@ var fmvc;
             if (this._inDocument)
                 return;
             this._inDocument = true;
+            var t = this;
             if (!this.isDynamicStylesEnabled())
                 this.enableDynamicStyle(true);
-            var t = this;
-            if (this.hasState('hover')) {
-                this.element.addEventListener('mouseover', function () { return t.setState('hover', true); });
-                this.element.addEventListener('mouseout', function () { return t.setState('hover', false); });
+            if (this.hasState(fmvc.State.HOVER)) {
+                this.element.addEventListener(fmvc.BrowserEvent.MOUSEOVER, function () { return t.setState(fmvc.State.HOVER, true); });
+                this.element.addEventListener(fmvc.BrowserEvent.MOUSEOUT, function () { return t.setState(fmvc.State.HOVER, false); });
+                this.dispatcher.listen(this.element);
             }
-            if (this.hasState('selected')) {
-                this.element.addEventListener('click', function () { return t.setState('selected', !t.getState('selected')); });
+            if (this.hasState(fmvc.State.SELECTED)) {
+                this.element.addEventListener(fmvc.BrowserEvent.CLICK, function () { return t.setState(fmvc.State.SELECTED, false); });
             }
             this.enterDocumentElement(this.jsTemplate, this.elementPaths);
+            this.invalidate(1);
+        };
+        View.prototype.setHoverTrue = function () {
+            this.setState(fmvc.State.HOVER, true);
+        };
+        View.prototype.setHoverFalse = function () {
+            this.setState(fmvc.State.HOVER, false);
+        };
+        View.prototype.toggleSelected = function () {
+            this.setState(fmvc.State.SELECTED, !this.getState(fmvc.State.SELECTED));
         };
         View.prototype.applyEventHandlers = function (e) {
             var path = e.target.getAttribute('data-path');
             var name = this.handlers[path][e.type];
+            e.stopPropagation();
             if (name === 'stopPropagation') {
                 e.stopPropagation();
             }
@@ -298,7 +353,7 @@ var fmvc;
             if (c)
                 c.enterDocument();
             if (value.type === fmvc.DomObjectType.TAG && isTag) {
-                console.log('EnterDocument ', value.tagName, value.path);
+                //console.log('EnterDocument ', value.tagName, value.path);
                 _.each(value.children, function (child, index) {
                     this.enterDocumentElement(child, object);
                 }, this);
@@ -309,12 +364,14 @@ var fmvc;
                             if (!this.handlers[path])
                                 this.handlers[path] = {};
                             this.handlers[path][eventType] = name;
-                            console.log('add listener ', e, value.tagName, path, eventType);
                             e.setAttribute('data-path', path);
-                            //e.dataset.path = path;
-                            e.addEventListener(eventType, this.applyEventHandlers);
+                            this.dispatcher.listen(e, eventType, this.applyEventHandlers);
                         }
                     }, this);
+                }
+                else {
+                    if (path != '0')
+                        e.style['pointer-events'] = 'none';
                 }
             }
         };
@@ -328,16 +385,18 @@ var fmvc;
             if (c)
                 c.exitDocument();
             if (value.type === fmvc.DomObjectType.TAG && isTag) {
-                console.log('EnterDocument ', value.tagName, value.path);
+                //console.log('ExitDocument ', value.tagName, value.path);
                 _.each(value.children, function (child, index) {
-                    this.enterDocumentElement(child, object);
+                    this.exitDocumentElement(child, object);
                 }, this);
                 // add global handlers if not exist
                 if (value.handlers) {
                     _.each(value.handlers, function (name, eventType) {
+                        //console.log('try remove listener ', e, value.tagName, path, eventType);
                         if (this.handlers[path] && this.handlers[path][eventType]) {
-                            console.log('remove listener ', e, value.tagName, path, eventType);
-                            e.removeEventListener(eventType, this.applyEventHandlers);
+                            //console.log('remove listener ', e, value.tagName, path, eventType);
+                            //e.removeEventListener(eventType, this.applyEventHandlers);
+                            this.dispatcher.unlisten(e, eventType);
                             delete this.handlers[path][eventType];
                         }
                     }, this);
@@ -366,13 +425,16 @@ var fmvc;
                 parentNode.replaceChild(newElement, e);
                 object[value.path] = newElement;
                 this.enterDocumentElement(value, object);
+                View.Counters.element.removed++;
             }
             else if (!isIncluded && isEnabled) {
+                this.exitDocumentElement(value, object);
                 var newElement = this.getElement(value, object);
                 var parentNode = e.parentNode;
                 //console.log('Replace node on Comment ');
                 parentNode.replaceChild(newElement, e);
                 object[value.path] = newElement;
+                View.Counters.element.removed++;
             }
             else {
             }
@@ -459,11 +521,14 @@ var fmvc;
         };
         Object.defineProperty(View.prototype, "avaibleInheritedStates", {
             get: function () {
-                return this._avaibleInheritedStates ? this._avaibleInheritedStates : (this._avaibleInheritedStates = _.filter(_.map(this._states, function (v, k) {
-                    return k;
-                }), function (k) {
-                    return this.inheritedStates.indexOf(k) > -1;
-                }, this), this);
+                if (!this._avaibleInheritedStates) {
+                    this._avaibleInheritedStates = _.filter(_.map(this._states, function (v, k) {
+                        return k;
+                    }), function (k) {
+                        return this.inheritedStates.indexOf(k) > -1;
+                    }, this);
+                }
+                return this._avaibleInheritedStates;
             },
             enumerable: true,
             configurable: true
@@ -478,8 +543,8 @@ var fmvc;
         View.prototype.isSelected = function () {
             return !!this.getState(fmvc.State.SELECTED);
         };
-        View.prototype.isHovered = function () {
-            return !!this.getState(fmvc.State.HOVERED);
+        View.prototype.isHover = function () {
+            return !!this.getState(fmvc.State.HOVER);
         };
         View.prototype.isFocused = function () {
             return !!this.getState(fmvc.State.FOCUSED);
@@ -491,10 +556,9 @@ var fmvc;
         // VALIDATE
         //------------------------------------------------------------------------------------------------
         View.prototype.invalidate = function (type) {
-            this.removeInvalidateTimeout();
             this._invalidate = this._invalidate | type;
-            //this._invalidateTimeout = setTimeout(this.invalidateHandler, 20);
-            this.invalidateHandler();
+            if (!this._invalidateTimeout)
+                this._invalidateTimeout = setTimeout(this.invalidateHandler, 20);
         };
         View.prototype.invalidateHandler = function () {
             this.removeInvalidateTimeout();
@@ -529,7 +593,7 @@ var fmvc;
             if (!this.childrenViews || !this.childrenViews.length) {
                 return;
             }
-            _.each(this.childrenViews, value, this);
+            _.each(this.childrenViews, (value), this);
         };
         View.prototype.addChild = function (value) {
             this.childrenViews = this.childrenViews ? this.childrenViews : [];
@@ -554,7 +618,7 @@ var fmvc;
             // Data & model
             //------------------------------------------------------------------------------------------------
             set: function (value) {
-                console.log('View: set data', value);
+                //console.log('View: set data' , value);
                 this._data = value;
                 this.invalidate(1);
             },
@@ -648,7 +712,7 @@ var fmvc;
                 var style = document.createElement('style');
                 style.id = id; //@todo create method that setup className at the generator
                 style.type = 'text/css';
-                style.cssText = this.dynamicStyle;
+                //style.cssText = this.dynamicStyle;
                 style.innerHTML = this.dynamicStyle;
                 document.getElementsByTagName('head')[0].appendChild(style);
                 this.isDynamicStylesEnabled(true);
@@ -679,10 +743,11 @@ var fmvc;
         };
         View.prototype.getElement = function (value, object) {
             var e = null;
+            var n = null;
             var isIncluded = value.states ? this.isStateEnabled(value.states) : true;
             if (isIncluded && value.type === fmvc.DomObjectType.TAG) {
                 if (value.tagName.indexOf('.') > -1) {
-                    console.log('Create component, ' + value.tagName);
+                    //console.log('Create component, ' + value.tagName);
                     var component = new (ui[value.tagName.split('.')[1]])();
                     this.componentPaths[value.path] = component;
                     e = component.createDom().element;
@@ -692,6 +757,8 @@ var fmvc;
                     _.each(value.staticAttributes, function (v) {
                         e.setAttribute(v.name, v.value);
                     });
+                    if (value.handlers || String(value.path) === '0')
+                        e.setAttribute('id', 'id-' + View.Counters.element.added);
                 }
                 _.each(value.children, function (child, index) {
                     var ce = this.getElement(child, object);
@@ -700,11 +767,12 @@ var fmvc;
                 }, this);
             }
             else if (value.type === fmvc.DomObjectType.TEXT)
-                e = document.createTextNode(value.data || '');
+                n = document.createTextNode(value.data || '');
             else
-                e = document.createComment(value.path);
-            object[value.path] = e;
-            return e;
+                n = document.createComment(value.path);
+            View.Counters.element.added++;
+            object[value.path] = e || n;
+            return (e || n);
         };
         Object.defineProperty(View.prototype, "jsTemplate", {
             get: function () {
@@ -720,14 +788,24 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(View.prototype, "dispatcher", {
+            get: function () {
+                return View.dispatcher;
+            },
+            enumerable: true,
+            configurable: true
+        });
         View.__isDynamicStylesEnabled = false;
         View.__jsTemplate = null;
         View.__formatter = {};
         View.__messageFormat = {};
         View.__className = 'View';
         View.__inheritedStates = [fmvc.State.DISABLED];
+        View.Counters = { element: { added: 0, removed: 0 } };
+        View.dispatcher = new fmvc.EventDispatcher();
         return View;
     })(fmvc.Notifier);
     fmvc.View = View;
+    setInterval(function () { console.log(JSON.stringify(View.Counters)); }, 3000);
 })(fmvc || (fmvc = {}));
 //# sourceMappingURL=view.js.map

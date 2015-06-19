@@ -1,11 +1,8 @@
 ///<reference path='../fmvc/d.ts' />
-
 ///<reference path='../d.ts/node/node.d.ts'/>
 ///<reference path='../d.ts/async/async.d.ts'/>
-//<reference path='../d.ts/lodash/lodash.d.ts'/>
+///<reference path='../d.ts/lodash/lodash.d.ts'/>
 ///<reference path='../d.ts/dustjs-linkedin/dustjs-linkedin.d.ts'/>
-///<reference path='../../node-modules/
-
 
 import util = require('util');
 import fs = require('fs');
@@ -22,12 +19,14 @@ import tsc = require('typescript-compiler');
 require('dustjs-helpers');
 dust.config.whitespace = true;
 
+var start = Date.now();
+var tsClasses = [];
+
 module xml2ns {
     const KEYS = {
         EXTEND: 'extend',
         CREATE_STATES: 'createStates',
         LINK: 'link',
-
 
         RAW: 'raw',
         DATA: 'data',
@@ -112,6 +111,7 @@ module xml2ns {
 
         createStates?:string[];
         states?:string[];
+        bounds?:any;
 
         staticAttributes?:INameValue[];
 
@@ -135,7 +135,7 @@ module xml2ns {
                     }, function (err, content, filename, next) {
                         if (err) throw err;
                         var base = path.basename(filename);
-                        console.log('Compile ', filename, base);
+                        //console.log('Compile ', filename, base);
                         dust.loadSource(dust.compile(content, base, true));
                         next();
                     },
@@ -150,7 +150,7 @@ module xml2ns {
         loadSources() {
             var t = this;
             var loadSrc = path.normalize(__dirname + '/' + this.srcIn);
-            console.log('loadSource from ' + loadSrc);
+            //console.log('loadSource from ' + loadSrc);
             dir.readFiles(loadSrc,
                 {
                     match: /.html$/,
@@ -164,16 +164,21 @@ module xml2ns {
         }
 
         complete() {
-            console.log('*** complete ***');
+
+            var jsClassPath:string = path.normalize(__dirname + '/' + this.srcOut + '/compiled.js');
+            tsc.compile(tsClasses, '-m commonjs -t ES5 --out ' + jsClassPath);
+            console.log('Compiled ts to %s, for %d ms', jsClassPath , (Date.now() - start));
+            console.log('*** complete all ***');
         }
 
         parse(fileName:string, content:string, next:Function) {
             var t = this;
             var handler:any = new htmlparser.DefaultHandler(function (error, dom) {
-                if (error)
-                    console.log('error parse html ' + fileName);
+                if (error) {
+                    //console.log('error parse html ' + fileName);
+                }
                 else {
-                    console.log('success parse html ' + fileName);
+                    //console.log('success parse html ' + fileName);
                 }
             }, {enforceEmptyTags: false, verbose: false});
 
@@ -187,7 +192,7 @@ module xml2ns {
             var styleJs:any = null;
             var i18nJs:any = null;
 
-            _.each(resultHtmlJs, function (value:string, index:number) {
+            _.each(resultHtmlJs, function (value:any, index:number) {
                 if (value.type === 'tag' && value.name.indexOf('f:') === -1) {
                     rootJs = value;
                 }
@@ -197,13 +202,13 @@ module xml2ns {
                 else if (value.name === 'f:i18n') {
                     var i18nPath = path.normalize(__dirname + '/' + t.srcIn + '/' + value.attribs.src)
                     i18nJs = require(i18nPath);
-                    console.log('i18n ' , i18nJs);
+                    //console.log('i18n ' , i18nJs);
                 }
             });
 
-            console.log(util.inspect(rootJs, {depth: 5}));
+            //console.log(util.inspect(rootJs, {depth: 5}));
 
-            rootDom = Xml2TsUtils.recreateJsNode(rootJs, 0);
+            rootDom = Xml2TsUtils.recreateJsNode(rootJs, '0');
             rootDom.className = path.basename(fileName).replace(path.extname(fileName), '');
             if (i18nJs) rootDom.i18n = i18nJs;
             var tsClassPath:string = path.normalize(__dirname + '/' + t.srcOut + '/' + rootDom.className + '.ts');
@@ -212,20 +217,20 @@ module xml2ns {
             async.series(
                 [
                     function loadStylus(cb) {
-                        console.log('styleJs' , styleJs);
+                        //console.log('styleJs' , styleJs);
                         if (!styleJs) {
                             cb(null, null);
                             return;
                         }
                         var stylusSrc = path.normalize(__dirname + '/' + t.srcIn + '/' + styleJs.attribs.src);
-                        console.log('Style source is ' + stylusSrc)
+                        //console.log('Style source is ' + stylusSrc)
                         var stylusSrc = fs.readFileSync(stylusSrc, 'utf8');
 
                         stylus(stylusSrc, {compress: true})
                             .render(function (err, css) {
                                 if (err) throw err;
                                 rootDom.css = css;
-                                console.log('Css of stylus : ' + css);
+                                //console.log('Css of stylus : ' + css);
                                 cb(err, css);
                             });
                     },
@@ -233,7 +238,7 @@ module xml2ns {
                         dust.render('object.ts.dust', rootDom,
                             function dustCompileHandler(e, result) {
                                 var reformattedContent = beautify.js_beautify(result, {"max_preserve_newlines": 1});
-                                console.log('Write file ' + tsClassPath);
+                                //console.log('Write file ' + tsClassPath);
                                 fs.writeFile(tsClassPath, reformattedContent, function tsSaveHandler(e, result) {
                                     if (!e) cb();
                                     else throw new Error('Cant write content to ' + tsClassPath);
@@ -243,10 +248,7 @@ module xml2ns {
 
                 ],
                 function compileResultHandler(err, result) {
-                    if (err) return 'Cant render dust cause errors for ' + rootDom.className;
-                    var start = Date.now();
-                    tsc.compile([tsClassPath], '-m commonjs -t ES5 --out ' + jsClassPath);
-                    console.log('Compiled ts to %s, for %d ms', jsClassPath , (Date.now() - start));
+                    if (!err) tsClasses.push(tsClassPath);
                     next();
                 });
 
@@ -258,7 +260,7 @@ module xml2ns {
         public static MATCH_REGEXP:RegExp = /\{([\@A-Za-z\, \|0-9\.]+)\}/;
 
         public static jsonReplacer(key:string, value:any):any {
-            //console.log(key, _.isString(value));
+            ////console.log(key, _.isString(value));
             if(!_.isString(value)) return value;
 
             switch (key) {
@@ -274,7 +276,7 @@ module xml2ns {
                 {
                     if (key in EVENT_KEYS) return value;// {event: key.replace('on', null), value: value};
                     else  {
-                        //console.log('Check replacer dynamic ' , key , _.isString(value) , ALLOWED_KEYS.indexOf(key) );
+                        ////console.log('Check replacer dynamic ' , key , _.isString(value) , ALLOWED_KEYS.indexOf(key) );
                         return (_.isString(value) && ALLOWED_KEYS.indexOf(key) > -1 ) ? Xml2TsUtils.getDynamicValues(key, value) : value
                     }
                 }
@@ -282,7 +284,7 @@ module xml2ns {
         }
 
         public static getDynamicValues(key:string, value:any, delimiter?:string) {
-            //console.log('Check for ' , key, value);
+            ////console.log('Check for ' , key, value);
             if (!_.isString(value)) return value;
 
             var values:any[] = delimiter !== null ? (value.split(delimiter ? delimiter : ' ')) : [value];
@@ -296,26 +298,8 @@ module xml2ns {
                     var matchValue = matches[1];
                     var filterResult = null;
 
-                    //console.log('Check dv of ' , matchValue);
-                    if(matchValue.indexOf('|') > -1) {
-                        var dataAndFilters = matchValue.split('|');
-                        var firstFilter = dataAndFilters[1].split('.');
-                        filterResult = {args: {}, method: firstFilter[0].trim(), name: firstFilter[1].trim(), source: v.replace(matches[0], '{replace}') };
-
-                        var dataFields = dataAndFilters[0].split(',');
-                        _.each(dataFields, function(dataFieldContent) {
-                            var content = dataFieldContent.split('as');
-                            var dataPropName = content[0].trim();
-                            filterResult.args[content[1]?content[1].trim():'VALUE'] = dataPropName;
-
-                            if (!dynamicValues) dynamicValues = {};
-                            if (!dynamicValues[dataPropName]) dynamicValues[dataPropName] = [filterResult];
-                            else dynamicValues[dataPropName].push(filterResult);
-                        });
-
-                        //console.log('It has matched filter ' , filterResult);
-                    }
-                    else if(matchValue.indexOf('@') > -1) {
+                    ////console.log('Check dv of ' , matchValue);
+                    if(matchValue.indexOf('@') > -1) {
                         var cleanMatchValue:string = matchValue.replace('@', '');
                         var cleanResultValue:string = '{' + cleanMatchValue + '}';
 
@@ -325,6 +309,31 @@ module xml2ns {
 
                         if (!boundValues) boundValues = {};
                         if (!boundValues[cleanMatchValue]) boundValues[cleanMatchValue] = cleanResultValue;
+                    }
+                    else if(matchValue.indexOf('|') > -1) {
+                        var filters = matchValue.split('|');
+                        var data = filters.splice(0,1)[0];
+                        filterResult = {args: {}, filters: [], source: v.replace(matches[0], '{replace}') };
+
+                        _.each(filters, function (v,k) {
+                            var filter = v.indexOf('.')>-1?v.split('.'):v;
+                            filterResult.filters.push(filter);
+                        });
+
+                        var dataFields = data.split(',');
+                        _.each(dataFields, function(dataFieldContent) {
+                            var content = dataFieldContent.split('as');
+                            var dataPropName:string = content[0].trim();
+                            var dataPropKey:string = content[1]?content[1].trim():'VALUE';
+                            filterResult.args[dataPropKey] = dataPropName;
+
+                            if (!dynamicValues) dynamicValues = {};
+                            if (!dynamicValues[dataPropName]) dynamicValues[dataPropName] = [filterResult];
+                            else dynamicValues[dataPropName].push(filterResult);
+                        });
+
+
+
                     }
                     else {
                         if (!dynamicValues) dynamicValues = {};
@@ -340,10 +349,10 @@ module xml2ns {
             });
 
             if (dynamicValues) {
-                //console.log('Return dynamic for ' , key, dynamicValues);
+                ////console.log('Return dynamic for ' , key, dynamicValues);
                 return {static: staticValues, dynamic: dynamicValues, bounds: boundValues };
             } else {
-                console.log('Return static for ', key, value);
+                //console.log('Return static for ', key, value);
                 return value;
             }
         }
@@ -354,13 +363,13 @@ module xml2ns {
         }
 
         public static extendDynamicSummary(dynamic:IDynamicSummary, dynamicName:string, domName:string, elementPath:string, values:string[]) {
-            console.log('[ex2ds] ' , dynamicName, domName, elementPath, values);
+            //console.log('[ex2ds] ' , dynamicName, domName, elementPath, values);
             if (!dynamic[dynamicName]) dynamic[dynamicName] = {};
             if (!dynamic[dynamicName][domName]) dynamic[dynamicName][domName] = {};
             if (!dynamic[dynamicName][domName][elementPath]) dynamic[dynamicName][domName][elementPath] = (values.length === 1) ? values[0] : values;
         }
 
-        public static recreateJsNode(data:any, path:string, rootObject:IRootDomObject):IDomObject {
+        public static recreateJsNode(data:any, path:string, rootObject?:IRootDomObject):any {
             var a:any = data.attribs;
             var object:IDomObject = {path: path, type: data.type, data: data.data, staticAttributes: [], children: [], links: [], handlers: {}, bounds: {}};
             if (!rootObject) {
@@ -370,6 +379,12 @@ module xml2ns {
 
             if (object.type === 'tag') object.tagName = data.name;
 
+            // skip empty text node
+            if(object.type === 'text'  && _.isString(object.data))  {
+                var empty = (object.data.replace(/[\n\t ]./gi, ''));
+                if(empty) { console.log('Empty ' + path); return null; }
+            }
+
             if (a) {
                 if (a.link) rootObject.links.push(Xml2TsUtils.getNameValue(a.link, path));
                 if (a.extend) object.extend = a.extend;
@@ -378,10 +393,10 @@ module xml2ns {
             }
 
             // handlers, create static attributes
-            _.each(a, function (value:string, key:any) {
-                console.log('Check: ', key, value);
+            _.each(a, function (value:any, key:any) {
+                //console.log('Check: ', key, value);
                 if (_.values(EVENT_KEYS).indexOf(key) > -1) {
-                    console.log('--- Handler ' , key, value);
+                    //console.log('--- Handler ' , key, value);
                     object.handlers[key.replace('on','')] = value;
                 }
 
@@ -398,7 +413,7 @@ module xml2ns {
 
                 //create dynamic maps summary for  root
                 if (_.isObject(value)) {
-                    _.each(value.dynamic, function (dynamicValueArray, dynamicName) {
+                    _.each(value.dynamic, function (dynamicValueArray:any, dynamicName) {
                         Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, dynamicName, key, path, dynamicValueArray);
                     });
 
@@ -414,7 +429,7 @@ module xml2ns {
 
             if (_.isObject(data.data)) {
                 var key:string = 'data';
-                _.each(data.data.dynamic, function (dynamicValueArray, dynamicName) {
+                _.each(data.data.dynamic, function (dynamicValueArray:any, dynamicName) {
                     Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, dynamicName, key, path, dynamicValueArray); //create dynamic maps summary for root
                 });
             }
@@ -422,8 +437,8 @@ module xml2ns {
             _.forEach(data.children, function (node, index) {
                 var childPath:string = path + ',' + index;
                 var result = Xml2TsUtils.recreateJsNode(node, childPath, rootObject);
-                object.children.push(result);
-            });
+                if(result) object.children.push(result);
+           });
 
             if (object.staticAttributes.length === 0) delete object.staticAttributes;
             if (object.children.length === 0) delete object.children;

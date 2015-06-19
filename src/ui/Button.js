@@ -41,16 +41,11 @@ var ui;
         });
         Button.__isDynamicStylesEnabled = false;
         Button.__jsTemplate = {
-            "path": 0,
+            "path": "0",
             "type": "tag",
             "staticAttributes": [{
                     "name": "class",
                     "value": "button"
-                }],
-            "children": [{
-                    "path": "0,0",
-                    "type": "text",
-                    "data": "\n"
                 }],
             "dynamicSummary": {
                 "selected": {

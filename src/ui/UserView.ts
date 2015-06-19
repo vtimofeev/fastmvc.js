@@ -28,7 +28,7 @@ module ui {
         }
         private static __isDynamicStylesEnabled: boolean = false;
         private static __jsTemplate: fmvc.IRootDomObject = {
-            "path": 0,
+            "path": "0",
             "type": "tag",
             "staticAttributes": [{
                 "name": "style",
@@ -38,10 +38,6 @@ module ui {
                 "value": "userview"
             }],
             "children": [{
-                "path": "0,0",
-                "type": "text",
-                "data": "\n    "
-            }, {
                 "path": "0,1",
                 "type": "tag",
                 "children": [{
@@ -56,10 +52,6 @@ module ui {
                     }
                 }],
                 "tagName": "div"
-            }, {
-                "path": "0,2",
-                "type": "text",
-                "data": "\n    "
             }, {
                 "path": "0,3",
                 "type": "tag",
@@ -76,10 +68,6 @@ module ui {
                 }],
                 "tagName": "div"
             }, {
-                "path": "0,4",
-                "type": "text",
-                "data": "\n    "
-            }, {
                 "path": "0,5",
                 "type": "tag",
                 "children": [{
@@ -94,10 +82,6 @@ module ui {
                     }
                 }],
                 "tagName": "div"
-            }, {
-                "path": "0,6",
-                "type": "text",
-                "data": "\n    "
             }, {
                 "path": "0,7",
                 "type": "tag",
@@ -114,10 +98,6 @@ module ui {
                 }],
                 "tagName": "div"
             }, {
-                "path": "0,8",
-                "type": "text",
-                "data": "\n    "
-            }, {
                 "path": "0,9",
                 "type": "tag",
                 "children": [{
@@ -130,8 +110,9 @@ module ui {
                                 "args": {
                                     "VALUE": "data.firstname"
                                 },
-                                "method": "i18n",
-                                "name": "template",
+                                "filters": [
+                                    ["i18n", "template"]
+                                ],
                                 "source": "{replace}"
                             }]
                         },
@@ -139,10 +120,6 @@ module ui {
                     }
                 }],
                 "tagName": "div"
-            }, {
-                "path": "0,10",
-                "type": "text",
-                "data": "\n    "
             }, {
                 "path": "0,11",
                 "type": "tag",
@@ -157,8 +134,9 @@ module ui {
                                     "AGE": "data.age",
                                     "FIRST": "data.firstname"
                                 },
-                                "method": "i18n",
-                                "name": "template",
+                                "filters": [
+                                    ["i18n", "template"]
+                                ],
                                 "source": "Hello man ! Yo Yo {replace}"
                             }],
                             "data.firstname": [{
@@ -166,8 +144,9 @@ module ui {
                                     "AGE": "data.age",
                                     "FIRST": "data.firstname"
                                 },
-                                "method": "i18n",
-                                "name": "template",
+                                "filters": [
+                                    ["i18n", "template"]
+                                ],
                                 "source": "Hello man ! Yo Yo {replace}"
                             }]
                         },
@@ -175,10 +154,6 @@ module ui {
                     }
                 }],
                 "tagName": "div"
-            }, {
-                "path": "0,12",
-                "type": "text",
-                "data": "\n    "
             }, {
                 "path": "0,13",
                 "type": "tag",
@@ -193,8 +168,9 @@ module ui {
                                     "AGE": "data.age",
                                     "FIRST": "data.firstname"
                                 },
-                                "method": "i18n",
-                                "name": "template2",
+                                "filters": [
+                                    ["i18n", "template2"]
+                                ],
                                 "source": "{replace}"
                             }],
                             "data.firstname": [{
@@ -202,8 +178,9 @@ module ui {
                                     "AGE": "data.age",
                                     "FIRST": "data.firstname"
                                 },
-                                "method": "i18n",
-                                "name": "template2",
+                                "filters": [
+                                    ["i18n", "template2"]
+                                ],
                                 "source": "{replace}"
                             }]
                         },
@@ -215,10 +192,6 @@ module ui {
                     "mouseout": "outText"
                 },
                 "tagName": "div"
-            }, {
-                "path": "0,14",
-                "type": "text",
-                "data": "\n    "
             }, {
                 "path": "0,15",
                 "type": "tag",
@@ -235,10 +208,6 @@ module ui {
                 }],
                 "tagName": "div"
             }, {
-                "path": "0,16",
-                "type": "text",
-                "data": "\n    "
-            }, {
                 "path": "0,17",
                 "type": "tag",
                 "children": [{
@@ -253,10 +222,6 @@ module ui {
                     }
                 }],
                 "tagName": "div"
-            }, {
-                "path": "0,18",
-                "type": "text",
-                "data": "\n    "
             }, {
                 "path": "0,19",
                 "type": "tag",
@@ -274,10 +239,6 @@ module ui {
                 "tagName": "input",
                 "states": ["selected"]
             }, {
-                "path": "0,20",
-                "type": "text",
-                "data": "\n\n    "
-            }, {
                 "path": "0,21",
                 "type": "tag",
                 "children": [{
@@ -286,16 +247,18 @@ module ui {
                     "data": {
                         "static": null,
                         "dynamic": {
-                            "data.firstname": ["{data.firstname} The Text Of The button"]
+                            "data.firstname": [{
+                                "args": {
+                                    "VALUE": "data.firstname"
+                                },
+                                "filters": ["second", "first"],
+                                "source": "{replace} The Text Of The button"
+                            }]
                         },
                         "bounds": null
                     }
                 }],
                 "tagName": "ui.Button"
-            }, {
-                "path": "0,22",
-                "type": "text",
-                "data": "\n\n    "
             }, {
                 "path": "0,23",
                 "type": "tag",
@@ -309,17 +272,19 @@ module ui {
                     "data": {
                         "static": null,
                         "dynamic": {
-                            "data.firstname": ["{data.firstname} Close Text get from ."]
+                            "data.firstname": [{
+                                "args": {
+                                    "VALUE": "data.firstname"
+                                },
+                                "filters": ["first"],
+                                "source": "{replace} Close Text get from ."
+                            }]
                         },
                         "bounds": null
                     }
                 }],
                 "tagName": "div",
                 "states": ["selected", ["custom", "one"]]
-            }, {
-                "path": "0,24",
-                "type": "text",
-                "data": "\n\n    "
             }, {
                 "path": "0,25",
                 "type": "tag",
@@ -330,25 +295,12 @@ module ui {
                     "name": "style",
                     "value": "background-color:red"
                 }],
-                "children": [{
-                    "path": "0,25,0",
-                    "type": "text",
-                    "data": "Close Text get from ..."
-                }],
                 "tagName": "div",
                 "states": ["hover", "touch"]
-            }, {
-                "path": "0,26",
-                "type": "text",
-                "data": "\n\n\n\n\n"
             }, {
                 "path": "0,27",
                 "type": "comment",
                 "data": " Comment "
-            }, {
-                "path": "0,28",
-                "type": "text",
-                "data": "\n"
             }],
             "links": [{
                 "name": "close2",
@@ -388,8 +340,9 @@ module ui {
                             "args": {
                                 "VALUE": "data.firstname"
                             },
-                            "method": "i18n",
-                            "name": "template",
+                            "filters": [
+                                ["i18n", "template"]
+                            ],
                             "source": "{replace}"
                         },
                         "0,11,0": {
@@ -397,8 +350,9 @@ module ui {
                                 "AGE": "data.age",
                                 "FIRST": "data.firstname"
                             },
-                            "method": "i18n",
-                            "name": "template",
+                            "filters": [
+                                ["i18n", "template"]
+                            ],
                             "source": "Hello man ! Yo Yo {replace}"
                         },
                         "0,13,0": {
@@ -406,12 +360,25 @@ module ui {
                                 "AGE": "data.age",
                                 "FIRST": "data.firstname"
                             },
-                            "method": "i18n",
-                            "name": "template2",
+                            "filters": [
+                                ["i18n", "template2"]
+                            ],
                             "source": "{replace}"
                         },
-                        "0,21,0": "{data.firstname} The Text Of The button",
-                        "0,23,0": "{data.firstname} Close Text get from ."
+                        "0,21,0": {
+                            "args": {
+                                "VALUE": "data.firstname"
+                            },
+                            "filters": ["second", "first"],
+                            "source": "{replace} The Text Of The button"
+                        },
+                        "0,23,0": {
+                            "args": {
+                                "VALUE": "data.firstname"
+                            },
+                            "filters": ["first"],
+                            "source": "{replace} Close Text get from ."
+                        }
                     }
                 },
                 "data.secondname": {
@@ -427,8 +394,9 @@ module ui {
                                 "AGE": "data.age",
                                 "FIRST": "data.firstname"
                             },
-                            "method": "i18n",
-                            "name": "template",
+                            "filters": [
+                                ["i18n", "template"]
+                            ],
                             "source": "Hello man ! Yo Yo {replace}"
                         },
                         "0,13,0": {
@@ -436,8 +404,9 @@ module ui {
                                 "AGE": "data.age",
                                 "FIRST": "data.firstname"
                             },
-                            "method": "i18n",
-                            "name": "template2",
+                            "filters": [
+                                ["i18n", "template2"]
+                            ],
                             "source": "{replace}"
                         }
                     }

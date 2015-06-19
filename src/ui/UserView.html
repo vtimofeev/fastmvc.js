@@ -1,8 +1,19 @@
 <f:style src="./styl/userview.styl"/>
 <f:i18n src="./userview.i18n.js"/>
 
-<div className="UserView" extend="fmvc.View" createStates="hover,selected,disabled" selected="{selected}" style="background-color:blue;color: red; top:{top}px;"
-    class="userview userview-{selected} userview-{disabled} userview-{hover}">
+<f:state type="int" name="counter" default="0"></f:state>
+<f:state type="int" name="top" default="0"></f:state>
+<f:state type="int" name="value" bind="{data.user.valueOfAges}" default="0"></f:state>
+<f:state type="string" name="type" default="none" values="none,loading,ready,updating,error"></f:state>
+
+<div
+    className="UserView"
+    extend="fmvc.View"
+    createStates="hover,selected,disabled,counter"
+    selected="{selected}"
+    style="background-color:blue;color: red; top:{state.top}px;"
+    class="userview userview-{selected} userview-{disabled} userview-{hover}"
+    fx="hover:animation-hover,2s;hover=false:animation-hover-out,2s;{data.online}:animation-online,2s">
     <div>F: {data.firstname}</div>
     <div>S: {data.secondname}</div>
     <div>A: {data.age}</div>
@@ -12,16 +23,28 @@
     <div onmouseover="overText" onmouseout="outText">{data.age as AGE, data.firstname as FIRST|i18n.template2}</div>
     <div>The value is {data.value}</div>
     <div>Cooridnates {data.coordinates.x} & {data.coordinates.y}</div>
-    <input states="selected" type="text" value="{@data.value}" onkeydown="changeValueOnKeyUp" onkeyup="changeValueOnKeyDown" onclick="stopPropagation" />
-
-    <ui.Button>{data.firstname} The Text Of The button</ui.Button>
-
-    <div link="close2" class="close" states="selected,custom=one" style="">{data.firstname} Close Text get from .</div>
-
+    <input states="selected" type="text" value="{@data.value|int}" onkeydown="changeValueOnKeyUp" onkeyup="changeValueOnKeyDown" onclick="stopPropagation" validators="" />
+    <ui.Button
+            link="hellobutton"
+            id="{c.id}-ui-hellobutton"
+            createStates="hover,selected,disabled"
+            model="{model.button}"
+            base="hellobutton"
+            events="click:helloButtonClick,mouseover:helloButtonOver,mouseout:helloButtonOut"
+            fx="hover=true:animation-hover,2s;hover=false:animation-hover-out,2s"
+            >{data.firstname|second|first} The Text Of The button</ui.Button>
+    <div link="close2" class="close" states="selected,custom=one" style="">{data.firstname|first} Close Text get from .</div>
     <div link="close" class="close" states="hover,touch" style="background-color:red">Close Text get from ...</div>
 
-
-
-
+    <div id="{c.id}-ui-view" states="hellobutton.hover=true,counter>=0" >Show on ui.Button over/Hide on ui.Button out</div>
 <!-- Comment -->
 </div>
+
+<script>
+    var extend = {
+        selectActive: function() {
+            this.id = 1;
+            this.selected = 2;
+        }
+    }
+</script>

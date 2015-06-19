@@ -1,6 +1,7 @@
 ///<reference path='./event.ts'/>
 ///<reference path='./facade.ts'/>
 ///<reference path='./notifier.ts'/>
+///<reference path='./event.dispatcher.ts'/>
 ///<reference path='./logger.ts'/>
 ///<reference path='./model.ts'/>
 ///<reference path='./model.list.ts'/>

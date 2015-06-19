@@ -45,11 +45,13 @@ module fmvc {
 
         createStates?:string[];
         states?:string[];
+        data?:string;
 
         staticAttributes?:INameValue[];
 
         handlers?:{[event:string]:string};
         children?:IDomObject[];
+
     }
 }
 

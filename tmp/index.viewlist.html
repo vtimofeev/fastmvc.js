@@ -8,17 +8,18 @@
 <body>
 <div id="userView">#userView</div>
 
-
 <script src="underscore.js"></script>
 <script src="messageformat.js"></script>
 <script src="../src/fmvc/event.js"></script>
 <script src="../src/fmvc/facade.js"></script>
 <script src="../src/fmvc/notifier.js"></script>
+<script src="../src/fmvc/event.dispatcher.js"></script>
 <script src="../src/fmvc/mediator.js"></script>
 <script src="../src/fmvc/model.js"></script>
 <script src="../src/fmvc/model.list.js"></script>
 <script src="../src/fmvc/view.js"></script>
 <script src="../src/fmvc/view.list.js"></script>
+<script src="../src/ui/Button.js"></script>
 <script src="../src/ui/UserView.js"></script>
 <script>
 
@@ -37,7 +38,6 @@
 
     var start = Date.now();
 
-
     var listView = new fmvc.ViewList('userview.list');
     listView.createStates(['selected', 'disabled']);
     listView.childrenConstructor = ui.UserView;
@@ -49,12 +49,14 @@
     console.log('summary', Date.now() - start);
 
 
+
+
     /*
     var d = document.getElementById('userView');
     d.innerHTML = str;
     */
 
-    alert(Date.now() - start);
+    //alert(Date.now() - start);
 </script>
 
 

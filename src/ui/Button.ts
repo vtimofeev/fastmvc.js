@@ -24,16 +24,11 @@ module ui {
         }
         private static __isDynamicStylesEnabled: boolean = false;
         private static __jsTemplate: fmvc.IRootDomObject = {
-            "path": 0,
+            "path": "0",
             "type": "tag",
             "staticAttributes": [{
                 "name": "class",
                 "value": "button"
-            }],
-            "children": [{
-                "path": "0,0",
-                "type": "text",
-                "data": "\n"
             }],
             "dynamicSummary": {
                 "selected": {
