@@ -67,7 +67,7 @@ var fmvc;
             this.childrenContainer = this.element;
             return this;
         };
-        View.prototype.createStates = function (states) {
+        View.prototype.enableStates = function (states) {
             this._states = {};
             _.each(states, function (value) {
                 /*

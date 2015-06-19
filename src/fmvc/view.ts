@@ -90,7 +90,7 @@ module fmvc {
         }
 
 
-        public createStates(states:string[]):void {
+        public enableStates(states:string[]):void {
             this._states = {};
             _.each(states, function (value:string) {
                 /*

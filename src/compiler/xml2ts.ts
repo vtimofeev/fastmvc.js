@@ -20,12 +20,19 @@ require('dustjs-helpers');
 dust.config.whitespace = true;
 
 var start = Date.now();
-var tsClasses = [];
+var tFsClasses = [];
 
 module xml2ns {
+    // Локальные элементы для расщирения класса
+    const F_ELEMENTS = {
+        STYLE: 'f:style',
+        STATE: 'f:state',
+        I18N: 'f:i18n'
+    };
+
     const KEYS = {
         EXTEND: 'extend',
-        CREATE_STATES: 'createStates',
+        CREATE_STATES: 'enableStates',
         LINK: 'link',
 
         RAW: 'raw',
@@ -84,12 +91,17 @@ module xml2ns {
         value:any;
     }
 
+    interface ITypedNameValue extends INameValue {
+        type:string;
+    }
+
     interface IRootDomObject extends IDomObject {
         className:string;
         css?:string;
         i18n?:any;
         links?:{[name:string]:string/* path */}[];
         dynamicSummary?:IDynamicSummary;
+        customStates:ITypedNameValue[];
     }
 
     interface IDomObject {
@@ -109,7 +121,7 @@ module xml2ns {
         element?:HTMLElement;
         virtualElement?:HTMLElement;
 
-        createStates?:string[];
+        enableStates?:string[];
         states?:string[];
         bounds?:any;
 
@@ -193,20 +205,24 @@ module xml2ns {
             var i18nJs:any = null;
 
             _.each(resultHtmlJs, function (value:any, index:number) {
-                if (value.type === 'tag' && value.name.indexOf('f:') === -1) {
+                var isHtmlTag:boolean = value.type === 'tag' && value.name.indexOf('f:') === -1;
+                if (isHtmlTag) {
                     rootJs = value;
                 }
-                else if (value.name === 'f:style') {
-                    styleJs = value;
-                }
-                else if (value.name === 'f:i18n') {
-                    var i18nPath = path.normalize(__dirname + '/' + t.srcIn + '/' + value.attribs.src)
-                    i18nJs = require(i18nPath);
-                    //console.log('i18n ' , i18nJs);
+                else {
+                    switch (value.name) {
+                        case F_ELEMENTS.STYLE:
+                            styleJs = value;
+                            break;
+                        case F_ELEMENTS.I18N:
+                            var i18nPath:string = path.normalize(__dirname + '/' + t.srcIn + '/' + value.attribs.src);
+                            i18nJs = require(i18nPath);
+                            break;
+                        case F_ELEMENTS.STATE:
+                            break;
+                    }
                 }
             });
-
-            //console.log(util.inspect(rootJs, {depth: 5}));
 
             rootDom = Xml2TsUtils.recreateJsNode(rootJs, '0');
             rootDom.className = path.basename(fileName).replace(path.extname(fileName), '');
@@ -388,7 +404,7 @@ module xml2ns {
             if (a) {
                 if (a.link) rootObject.links.push(Xml2TsUtils.getNameValue(a.link, path));
                 if (a.extend) object.extend = a.extend;
-                if (a.createStates) object.createStates = a.createStates.split(',');
+                if (a.enableStates) object.enableStates = a.enableStates.split(',');
                 if (a.states) object.states = a.states;
             }
 

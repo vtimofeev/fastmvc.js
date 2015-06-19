@@ -11,7 +11,7 @@ module fui {
     constructor(name:string, $root:any) {
        super(name, $root);
       /* create states */
-      {?data.createStatesString}this.createStates({data.createStatesString|s});{/data.createStatesString}
+      {?data.enableStatesString}this.enableStates({data.enableStatesString|s});{/data.enableStatesString}
     }
 
     createDom() {

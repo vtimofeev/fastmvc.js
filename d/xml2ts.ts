@@ -22,7 +22,7 @@ dust.config.whitespace = true;
 module xml2ns {
     const KEYS = {
         EXTEND: 'extend',
-        CREATE_STATES: 'createStates',
+        CREATE_STATES: 'enableStates',
         LINK: 'link',
 
 
@@ -103,7 +103,7 @@ module xml2ns {
         element?:HTMLElement;
         virtualElement?:HTMLElement;
 
-        createStates?:string[];
+        enableStates?:string[];
         states?:string[];
 
         staticAttributes?:INameValue[];
@@ -286,7 +286,7 @@ module xml2ns {
             if (a) {
                 if (a.link) rootObject.links.push(Xml2TsUtils.getNameValue(a.link, path));
                 if (a.extend) object.extend = a.extend;
-                if (a.createStates) object.createStates = a.createStates.split(',');
+                if (a.enableStates) object.enableStates = a.enableStates.split(',');
             }
 
             // create static attributes

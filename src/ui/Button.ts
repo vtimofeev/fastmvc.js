@@ -5,7 +5,7 @@ module ui {
         constructor(name: string, $root: any) {
             super(name, $root);
             /* create states */
-            this.createStates(["hover", "selected", "disabled", "error", "open"]);
+            this.enableStates(["hover", "selected", "disabled", "error", "open"]);
         }
         createDom() {
             this.element = this.templateElement;
@@ -59,7 +59,7 @@ module ui {
             },
             "tagName": "div",
             "extend": "fmvc.View",
-            "createStates": ["hover", "selected", "disabled", "error", "open"],
+            "enableStates": ["hover", "selected", "disabled", "error", "open"],
             "className": "Button",
             "css": "button{display:inline-block;min-width:120px;width:100;background-color:#000;color:#fff;font-size:1}.button-hover{background-color:#008000}.button-selected{font-weight:bold;border-bottom:2px solid #000}"
         };
