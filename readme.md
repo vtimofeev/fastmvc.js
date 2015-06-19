@@ -30,10 +30,15 @@
 * Односторонний биндинг.
 * Двусторонний биндинг.
 * i18n.
-* Stylus компиляция и встраивание стилей в компонент.
+* Встраивание стилей в компонент (поддержка Stylus).
 
 ```html
-<div class='baseStyle baseStyle-{selected} baseStyle-{disabled}' onAction='actionEventNameHere'>{i18n.title}: <b link='name'>{data.name as NAME, data.gender as GENDER|i18n.name}<b></div>
+<div
+      class='{base} {base}-{selected} {base}-{disabled}'
+      onAction='actionEventNameHere'
+      style="top:{top}px;left:{left}px;"
+      >{i18n.title}: <b link='name'>{data.name as NAME, data.gender as GENDER|i18n.name}<b>
+</div>
 ```
 
 
