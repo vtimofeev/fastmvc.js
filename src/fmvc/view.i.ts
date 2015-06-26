@@ -1,6 +1,19 @@
 ///<reference path='./d.ts'/>
 
 module fmvc {
+    export var Type = {
+        String: 'string',
+        Int: 'int',
+        Float: 'float',
+        Boolean: 'boolean'
+    };
+
+    export interface IStyleDefinition {
+        enabled:boolean;
+        content?:string;
+        url?:string;
+    }
+
     export interface IView {
         init():void;
         invalidate(type:number):void;
@@ -12,19 +25,29 @@ module fmvc {
 
     export interface IRootDomObject extends IDomObject {
         className:string;
-        css?:string;
+        css?:IStyleDefinition;
         links?:{[name:string]:string/* path */}[];
         dynamicSummary?:IDynamicSummary;
+        i18n:any;
     }
 
-    interface INameValue {
+    export interface INameValue {
         name:string;
         value:any;
     }
 
+    export interface ITypeNameValue {
+        name:string;
+        value:any;
+        type:string;
+    }
+
+
     export interface IDynamicSummary {
         [propertyName:string]:{[substance/* class, data, style any */:string]:any};
     }
+
+
 
     export interface IDomObject {
         path:string;
@@ -33,7 +56,7 @@ module fmvc {
         extend?:string;
 
         isVirtual?:boolean;
-        isComponent:boolean;
+        isComponent?:boolean;
 
         createDom:Function;
 
@@ -43,11 +66,11 @@ module fmvc {
         element?:HTMLElement;
         virtualElement?:HTMLElement;
 
-        enableStates?:string[];
+        enableStates?:(string|ITypeNameValue)[];
         states?:string[];
         data?:string;
 
-        staticAttributes?:INameValue[];
+        staticAttributes?:{[id:string]:any};
 
         handlers?:{[event:string]:string};
         children?:IDomObject[];

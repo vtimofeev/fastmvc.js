@@ -5,6 +5,81 @@
 //<reference path='../d.ts/lodash/lodash.d.ts'/>
 ///<reference path='../d.ts/dustjs-linkedin/dustjs-linkedin.d.ts'/>
 
+
+interface IDynamic {
+    /*
+     {'data': {
+     'data.value' : 'text and {data.type} + {data.value}' ,
+     'data.type' : 'text and {data.type} + {data.value}' } },
+     {'class': { 'data.type' : ['enabled-{data.type}'] ] }
+     */
+    dynamic:{[propery:string]:string[]};
+    static?:string[]; // [ 'backgroundColor:red' ];
+    value:string;
+}
+
+/* {
+ selected: {
+ class: {
+ '0.1': ['total-{selected}'],
+ '0.2': 'close-{selected}'
+ }
+ },
+ data.firstname: { 0.1: { data: '{data.firstname} is '}};
+ */
+interface IDynamicSummary {
+    [propertyName:string]:{[substance/* class, data, style any */:string]:any};
+}
+
+interface INameValue {
+    name:string;
+    value:any;
+}
+
+interface ITypedNameValue extends INameValue {
+    type:string;
+}
+
+interface IRootDomObject extends IDomObject {
+    className:string;
+    css?:fmvc.IStyleDefinition;
+    i18n?:any;
+    links?:{[name:string]:string/* path */}[];
+    dynamicSummary?:fmvc.IDynamicSummary;
+    customStates:fmvc.ITypedNameValue[];
+}
+
+interface IDomObject {
+    path:string;
+    type:string; // @tag/string/other
+    tagName?:string; // tag name: div/br
+    extend?:string;
+
+    isVirtual:boolean;
+    isComponent:boolean;
+
+    createDom:Function;
+
+    component?:fmvc.View;
+    componentConstructor?:Function;
+
+    element?:HTMLElement;
+    virtualElement?:HTMLElement;
+
+    enableStates?:string[];
+    states?:string[];
+    bounds?:any;
+
+    staticAttributes?:fmvc.INameValue[];
+
+    links?:any;
+    handlers?:{[event:string]:string};
+    children?:fmvc.IDomObject[];
+}
+
+
+
+
 import util = require('util');
 import fs = require('fs');
 import htmlparser = require("htmlparser");

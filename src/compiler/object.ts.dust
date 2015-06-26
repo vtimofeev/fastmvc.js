@@ -9,9 +9,7 @@ module ui {
     {/links}
 
     constructor(name:string, $root:any) {
-       super(name, $root);
-      /* create states */
-      {?enableStates}this.enableStates({enableStates|js|s});{/enableStates}
+      super(name, $root);
     }
 
     createDom() {
@@ -23,20 +21,18 @@ module ui {
       return this;
     }
 
+    /*
     public isDynamicStylesEnabled(value?:boolean):boolean {
          if(_.isBoolean(value)) {className}.__isDynamicStylesEnabled = value;
             return {className}.__isDynamicStylesEnabled;
     }
-
-    public get i18n():any {
-       return this.jsTemplate.i18n?this.jsTemplate.i18n[this.locale]:null;
-    }
-
+    private static __isDynamicStylesEnabled:boolean = false;
+    */
 
     public get jsTemplate():fmvc.IRootDomObject {
           return {className}.__jsTemplate;
     }
-    private static __isDynamicStylesEnabled:boolean = false;
+
     private static __jsTemplate:fmvc.IRootDomObject = {.|js|s};
   }
 

@@ -1,10 +1,16 @@
 ///<reference path='./d.ts'/>
+
 module fmvc {
+    export var global:any = window || {};
+    console.log('Global is ' + global);
+
+    /*
     export var BrowserEvent = {
         CLICK: 'click',
         MOUSEOVER: 'mouseover',
         MOUSEOUT: 'mouseout'
-    }
+    };
+    */
 
     export var State = {
         SELECTED: 'selected',
@@ -24,16 +30,14 @@ module fmvc {
         SECOND: 'second'
     };
 
-    export class View extends fmvc.Notifier implements IView {
-        private $root:any;
-        private _mediator:fmvc.Mediator;
-
-        private _model:fmvc.Model;
+    export class View extends Notifier implements IView {
+        private _mediator:Mediator;
+        private _model:Model;
         private _data:any;
 
         public  dynamicPropertyValue:{[name:string]:any} = {}; // те которые были установлены
         public  elementPaths:{[name:string]:Element} = {};
-        private componentPaths:{[name:string]:fmvc.View} = {};
+        private componentPaths:{[name:string]:View} = {};
         private handlers:{[id:string]:string} = {};
 
         // Invalidate properties
@@ -44,28 +48,39 @@ module fmvc {
 
         // States object (view support multistates)
         private _states:{[id:string]:any};
+        private _statesType:{[id:string]:any};
         private _locale:string = 'ru';
+        private _id:string = null;
 
-        private parentView:fmvc.View;
+        private parentView:View;
         private parentElement:Element;
-        private linkedViews:fmvc.View[];
-        private childrenViews:fmvc.View[];
+        private linkedViews:View[];
+        private childrenViews:View[];
+
+
 
         // Elements
         public  element:Element; // root element
         public  childrenContainer:Element; // children container
 
-        constructor(name:string, $root:any) {
-            super(name, fmvc.TYPE_VIEW);
+        constructor(name:string, jsTemplate:IDomObject) {
+            super(name, TYPE_VIEW);
             _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler', 'getDataObjectValue');
-            this.$root = $root;
+
+            this.initTemplate(jsTemplate);
             this.init();
             this.invalidateHandler = this.invalidateHandler.bind(this);
+        }
+
+        public initTemplate(jsTemplate:IDomObject) {
+            this.jsTemplate = <IRootDomObject> (_.extend(this.jsTemplate, jsTemplate));
+            if(this.jsTemplate && this.jsTemplate.enableStates) this.enableStates(this.jsTemplate.enableStates);
         }
 
         // @override
         public init():void {
         }
+
 
         public render(parent:Element) {
             this.parentElement = parent;
@@ -79,31 +94,38 @@ module fmvc {
         public updateChildren() {
         }
 
+        // @memorize
+        public get id():string {
+            if(!this._id) {
+                this._id = (_.property('staticAttributes')(this.jsTemplate)?this.jsTemplate.staticAttributes['id']:null) || ViewHelper.getId();
+            }
+            return this._id;
+        }
+
         //------------------------------------------------------------------------------------------------
         // Dom
         //------------------------------------------------------------------------------------------------
 
-        public createDom():fmvc.View {
+        public createDom():View {
             this.element = document.createElement('div');
             this.childrenContainer = this.element;
             return this;
         }
 
-
-        public enableStates(states:string[]):void {
+        public enableStates(states:(string|ITypeNameValue)[]):void {
             this._states = {};
-            _.each(states, function (value:string) {
-                /*
-                switch (value) {
-                    case State.HOVER:
-                        _.bindAll(this, 'setHoverTrue', 'setHoverFalse');
-                        break;
-                    case State.SELECTED:
-                        _.bindAll(this, 'toggleSelected');
-                        break;
-                }*/
+            this._statesType = {};
 
-                this._states[value] = false;
+            _.each(states, function (value:(string|ITypeNameValue)) {
+                if(_.isString(value)) {
+                    var svalue:string = <string>(value);
+                    this._states[svalue] = false;
+                }
+                else if(_.isObject(value)) {
+                    var ivalue:ITypeNameValue = <ITypeNameValue>(value);
+                    this._statesType[ivalue.name] = ivalue.type;
+                    this._states[ivalue.name] = ivalue.value;
+                }
             }, this);
         }
 
@@ -133,7 +155,6 @@ module fmvc {
         }
 
         public updateData(data, prefix = 'data.', depth:number = 0):void {
-
             if (!this.dynamicProperties || !data || !depth) return;
             depth--;
 
@@ -316,6 +337,8 @@ module fmvc {
         //------------------------------------------------------------------------------------------------
 
 
+
+
         public enterDocument() {
             if (this._inDocument) return;
             this._inDocument = true;
@@ -323,39 +346,20 @@ module fmvc {
 
             if (!this.isDynamicStylesEnabled()) this.enableDynamicStyle(true);
 
+            ViewHelper.checkElementAttribute(this.element, 'id', this.id);
+
             if (this.hasState(State.HOVER)) {
-
-                this.element.addEventListener(BrowserEvent.MOUSEOVER, ()=>t.setState(State.HOVER, true));
-                this.element.addEventListener(BrowserEvent.MOUSEOUT, ()=>t.setState(State.HOVER, false));
-                this.dispatcher.listen(this.element
-
-                //this.element.addEventListener(BrowserEvent.MOUSEOVER, this.setHoverTrue);
-                //this.element.addEventListener(BrowserEvent.MOUSEOUT, this.setHoverFalse);
-                //this.dispatcher.listen(this.element, BrowserEvent.MOUSEOVER, ()=>t.setState(State.HOVER, true));
-                //this.dispatcher.listen(this.element, BrowserEvent.MOUSEOUT, ()=>t.setState(State.HOVER, false));
+                this.dispatcher.listen(this.element, BrowserEvent.MOUSEOVER, ()=>t.setState(State.HOVER, true));
+                this.dispatcher.listen(this.element, BrowserEvent.MOUSEOUT, ()=>t.setState(State.HOVER, false));
             }
 
             if (this.hasState(State.SELECTED)) {
-
-                this.element.addEventListener(BrowserEvent.CLICK, ()=>t.setState(State.SELECTED, false));
-                //this.element.addEventListener(BrowserEvent.CLICK, this.toggleSelected);
-                //this.dispatcher.listen(this.element, BrowserEvent.CLICK, ()=>t.setState(State.SELECTED, false));
+                this.dispatcher.listen(this.element, BrowserEvent.CLICK, ()=>t.setState(State.SELECTED, !t.getState(State.SELECTED)));
             }
 
             this.enterDocumentElement(this.jsTemplate, this.elementPaths);
+
             this.invalidate(1);
-        }
-
-        public setHoverTrue() {
-            this.setState(State.HOVER, true);
-        }
-
-        public setHoverFalse() {
-            this.setState(State.HOVER, false);
-        }
-
-        public toggleSelected() {
-            this.setState(State.SELECTED, !this.getState(State.SELECTED));
         }
 
         public applyEventHandlers(e:any) {
@@ -397,9 +401,9 @@ module fmvc {
             if (!value || !object) return;
 
             var path = value.path;
-            var e:Element = object[value.path];
+            var e:HTMLElement = object[value.path];
             var isTag = e.nodeType === 1;
-            var c:fmvc.View = this.componentPaths[value.path];
+            var c:View = this.componentPaths[value.path];
             if(c) c.enterDocument();
 
             if (value.type === DomObjectType.TAG && isTag) {
@@ -410,6 +414,9 @@ module fmvc {
 
                 // add global handlers if not exist
                 if(value.handlers) {
+                    var id:string = value.staticAttributes?value.staticAttributes['id']:null || ViewHelper.getId();
+                    ViewHelper.checkElementAttribute(e, 'id', id);
+
                     _.each(value.handlers, function (name:string, eventType:string) {
                         if (!this.handlers[path] || !this.handlers[path][eventType]) {
                             if (!this.handlers[path]) this.handlers[path] = {};
@@ -418,8 +425,9 @@ module fmvc {
                             this.dispatcher.listen(e, eventType, this.applyEventHandlers);
                         }
                     }, this);
-                } else {
-                    if(path != '0') e.style['pointer-events'] = 'none';
+                }
+                else {
+                    //e.style['pointer-events'] = 'none';
                 }
             }
         }
@@ -430,7 +438,7 @@ module fmvc {
             var path = value.path;
             var e:Element = object[value.path];
             var isTag = e.nodeType === 1;
-            var c:fmvc.View = this.componentPaths[value.path];
+            var c:View = this.componentPaths[value.path];
             if(c) c.exitDocument();
 
             if (value.type === DomObjectType.TAG && isTag) {
@@ -444,8 +452,6 @@ module fmvc {
                     _.each(value.handlers, function (name:string, eventType:string) {
                         //console.log('try remove listener ', e, value.tagName, path, eventType);
                         if (this.handlers[path] && this.handlers[path][eventType]) {
-                            //console.log('remove listener ', e, value.tagName, path, eventType);
-                            //e.removeEventListener(eventType, this.applyEventHandlers);
                             this.dispatcher.unlisten(e, eventType);
                             delete this.handlers[path][eventType];
                         }
@@ -560,8 +566,11 @@ module fmvc {
 
         public setState(name:string, value:any) {
             if (!(name in this._states)) return;
+            if (name in this._statesType) value = View.getTypedValue(value, this._statesType[name]);
+
             if (this._states[name] === value) return;
             this._states[name] = value;
+
             this.applyState(name, value);
             this.applyChildrenState(name, value);
             this.applyChangeStateElement(this.jsTemplate, this.elementPaths);
@@ -643,11 +652,11 @@ module fmvc {
         // Mediator
         //------------------------------------------------------------------------------------------------
 
-        public set mediator(value:fmvc.Mediator) {
+        public set mediator(value:Mediator) {
             this._mediator = value;
         }
 
-        public get mediator():fmvc.Mediator {
+        public get mediator():Mediator {
             return this._mediator;
         }
 
@@ -663,24 +672,24 @@ module fmvc {
             _.each(this.childrenViews, <any>(value), this);
         }
 
-        public addChild(value:fmvc.View):void {
+        public addChild(value:View):void {
             this.childrenViews = this.childrenViews ? this.childrenViews : [];
             this.childrenViews.push(value);
             value.render(this.childrenContainer);
         }
 
-        public removeChild(value:fmvc.View):void {
+        public removeChild(value:View):void {
 
         }
 
-        public removeAllChildren():fmvc.View[] {
-            _.each(this.childrenViews, (view:fmvc.View)=>view.dispose());
+        public removeAllChildren():View[] {
+            _.each(this.childrenViews, (view:View)=>view.dispose());
             var result = this.childrenViews;
             this.childrenViews = [];
             return result;
         }
 
-        public removeChildAt(value:fmvc.View):void {
+        public removeChildAt(value:View):void {
         }
 
         //------------------------------------------------------------------------------------------------
@@ -696,17 +705,17 @@ module fmvc {
             return this._data;
         }
 
-        public set model(data:fmvc.Model) {
+        public set model(data:Model) {
             this._model = data;
             this.data = data.data;
         }
 
-        public get model():fmvc.Model {
+        public get model():Model {
             return this._model;
         }
 
 
-        public setModelWithListener(value:fmvc.Model) {
+        public setModelWithListener(value:Model) {
             this.model = value;
             this.model.bind(true, this, this.modelHandler);
         }
@@ -726,8 +735,9 @@ module fmvc {
         }
 
         public get i18n():any {
-            return null;
+            return this.jsTemplate && this.jsTemplate.i18n && this.locale?this.jsTemplate.i18n[this.locale]:null;
         }
+
 
         //------------------------------------------------------------------------------------------------
         // Local methods, overrides
@@ -765,8 +775,9 @@ module fmvc {
         }
 
         public isDynamicStylesEnabled(value?:boolean):boolean {
-            if (_.isBoolean(value)) View.__isDynamicStylesEnabled = value;
-            return View.__isDynamicStylesEnabled;
+            if(!(this.jsTemplate && this.jsTemplate.css)) return false;
+            if (_.isBoolean(value) ) this.jsTemplate.css.enabled = value;
+            return this.jsTemplate.css.enabled;
         }
 
         public enableDynamicStyle(value:boolean) {
@@ -784,7 +795,7 @@ module fmvc {
         }
 
         public get dynamicStyle():string {
-            return this.jsTemplate ? this.jsTemplate.css : null;
+            return this.jsTemplate ? this.jsTemplate.css.content : null;
         }
 
         public get templateElement():Element {
@@ -808,13 +819,13 @@ module fmvc {
             if (isIncluded && value.type === DomObjectType.TAG) {
                 if(value.tagName.indexOf('.') > -1) {
                     //console.log('Create component, ' + value.tagName);
-                    var component = new (ui[value.tagName.split('.')[1]])();
+                    var component = new (global.ui[value.tagName.split('.')[1]])();
                     this.componentPaths[value.path] = component;
                     e = component.createDom().element;
                 } else {
                     e = document.createElement(value.tagName);
-                    _.each(value.staticAttributes, function (v) {
-                        e.setAttribute(v.name, v.value);
+                    _.each(value.staticAttributes, function (v,key) {
+                        e.setAttribute(key, v);
                     });
 
                     if(value.handlers || String(value.path) === '0') e.setAttribute('id', 'id-' + View.Counters.element.added );
@@ -844,9 +855,23 @@ module fmvc {
             return View.__className;
         }
 
-        public get dispatcher():fmvc.EventDispatcher {
+        public get dispatcher():EventDispatcher {
             return View.dispatcher;
         }
+
+        public static getTypedValue(s:any, type:string):any {
+            switch (type) {
+                case Type.String:
+                    return _.isString(s)?s:String(s);
+                case Type.Int:
+                    return parseInt(s,10);
+                case Type.Float:
+                    return parseFloat(s);
+                case Type.Boolean:
+                    return !!(s === true || s === 'true');
+            }
+        }
+
 
         private static __isDynamicStylesEnabled:boolean = false;
         private static __jsTemplate:any = null;
@@ -854,8 +879,23 @@ module fmvc {
         private static __messageFormat:{[locale:string]:any} = {};
         private static __className:string = 'View';
         private static __inheritedStates:string[] = [State.DISABLED];
-        static Counters = { element: {added: 0, removed: 0}};
+        static Counters = { element: {added: 0, removed: 0, handlers: 0}};
         static dispatcher = new EventDispatcher();
+        static Name = 'View';
+    }
+
+
+    export class ViewHelper {
+        public static getId(name:string = View.Name):string {
+            return 'id_' + (View.Counters.element.handlers++);
+        }
+
+        public static checkElementAttribute(el:Element, name:string, value:string) {
+            if(!el || !name) return;
+            if(el.getAttribute(name) !== String(value)) el.setAttribute(name, value);
+        }
+
+
     }
 
     setInterval(function() { console.log(JSON.stringify(View.Counters))}, 3000);

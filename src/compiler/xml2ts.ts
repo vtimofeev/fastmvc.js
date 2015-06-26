@@ -1,7 +1,7 @@
 ///<reference path='../fmvc/d.ts' />
 ///<reference path='../d.ts/node/node.d.ts'/>
 ///<reference path='../d.ts/async/async.d.ts'/>
-///<reference path='../d.ts/lodash/lodash.d.ts'/>
+//<reference path='../d.ts/lodash/lodash.d.ts'/>
 ///<reference path='../d.ts/dustjs-linkedin/dustjs-linkedin.d.ts'/>
 
 import util = require('util');
@@ -20,9 +20,17 @@ require('dustjs-helpers');
 dust.config.whitespace = true;
 
 var start = Date.now();
-var tFsClasses = [];
+var tsClasses = [];
 
-module xml2ns {
+module fmvc {
+    export var Type = {
+        String: 'string',
+        Int: 'int',
+        Float: 'float',
+        Boolean: 'boolean'
+    };
+
+
     // Локальные элементы для расщирения класса
     const F_ELEMENTS = {
         STYLE: 'f:style',
@@ -60,77 +68,6 @@ module xml2ns {
 
     const DOM_KEYS:string[] = [KEYS.VALUE, KEYS.HREF, KEYS.STYLE, KEYS.CLASS, KEYS.CHECKED, KEYS.DISABLED, KEYS.SELECTED, KEYS.FOCUSED];
     const ALLOWED_KEYS:string[] = [].concat(_.values(KEYS), _.values(EVENT_KEYS) );
-
-    interface IDynamic {
-        /*
-         {'data': {
-         'data.value' : 'text and {data.type} + {data.value}' ,
-         'data.type' : 'text and {data.type} + {data.value}' } },
-         {'class': { 'data.type' : ['enabled-{data.type}'] ] }
-         */
-        dynamic:{[propery:string]:string[]};
-        static?:string[]; // [ 'backgroundColor:red' ];
-        value:string;
-    }
-
-    /* {
-     selected: {
-     class: {
-     '0.1': ['total-{selected}'],
-     '0.2': 'close-{selected}'
-     }
-     },
-     data.firstname: { 0.1: { data: '{data.firstname} is '}};
-     */
-    interface IDynamicSummary {
-        [propertyName:string]:{[substance/* class, data, style any */:string]:any};
-    }
-
-    interface INameValue {
-        name:string;
-        value:any;
-    }
-
-    interface ITypedNameValue extends INameValue {
-        type:string;
-    }
-
-    interface IRootDomObject extends IDomObject {
-        className:string;
-        css?:string;
-        i18n?:any;
-        links?:{[name:string]:string/* path */}[];
-        dynamicSummary?:IDynamicSummary;
-        customStates:ITypedNameValue[];
-    }
-
-    interface IDomObject {
-        path:string;
-        type:string; // @tag/string/other
-        tagName?:string; // tag name: div/br
-        extend?:string;
-
-        isVirtual:boolean;
-        isComponent:boolean;
-
-        createDom:Function;
-
-        component?:fmvc.View;
-        componentConstructor?:Function;
-
-        element?:HTMLElement;
-        virtualElement?:HTMLElement;
-
-        enableStates?:string[];
-        states?:string[];
-        bounds?:any;
-
-        staticAttributes?:INameValue[];
-
-        links?:any;
-        handlers?:{[event:string]:string};
-        children?:IDomObject[];
-    }
 
     export class Xml2Ts {
         constructor(public srcIn:string, public srcOut:string) {
@@ -200,9 +137,10 @@ module xml2ns {
             var resultHtmlJs:any = JSON.parse(JSON.stringify(handler.dom, Xml2TsUtils.jsonReplacer, '\t'));
 
             var rootJs:any = null;
-            var rootDom:IRootDomObject = null;
+            var rootDom:fmvc.IRootDomObject = null;
             var styleJs:any = null;
             var i18nJs:any = null;
+            var statesJs:any = null;
 
             _.each(resultHtmlJs, function (value:any, index:number) {
                 var isHtmlTag:boolean = value.type === 'tag' && value.name.indexOf('f:') === -1;
@@ -219,13 +157,20 @@ module xml2ns {
                             i18nJs = require(i18nPath);
                             break;
                         case F_ELEMENTS.STATE:
-                            break;
+                            if(!statesJs) statesJs = [];
+                            var type = value.attribs.type || 'boolean';
+                            statesJs.push({name: value.attribs.name, type: type, default: Xml2TsUtils.getTypedValue(value.attribs.default || '', type) });
                     }
                 }
             });
 
+
+
             rootDom = Xml2TsUtils.recreateJsNode(rootJs, '0');
             rootDom.className = path.basename(fileName).replace(path.extname(fileName), '');
+            rootDom.enableStates = [].concat(rootDom.enableStates, statesJs);
+
+
             if (i18nJs) rootDom.i18n = i18nJs;
             var tsClassPath:string = path.normalize(__dirname + '/' + t.srcOut + '/' + rootDom.className + '.ts');
             var jsClassPath:string = path.normalize(__dirname + '/' + t.srcOut + '/' + rootDom.className + '.js');
@@ -245,8 +190,7 @@ module xml2ns {
                         stylus(stylusSrc, {compress: true})
                             .render(function (err, css) {
                                 if (err) throw err;
-                                rootDom.css = css;
-                                //console.log('Css of stylus : ' + css);
+                                rootDom.css = {content: css, enabled: false};
                                 cb(err, css);
                             });
                     },
@@ -378,16 +322,16 @@ module xml2ns {
             return _.isObject(value) && value.static ? value.static.join(delimiter) : _.isString(value) ? value : null;
         }
 
-        public static extendDynamicSummary(dynamic:IDynamicSummary, dynamicName:string, domName:string, elementPath:string, values:string[]) {
+        public static extendDynamicSummary(dynamic:fmvc.IDynamicSummary, dynamicName:string, domName:string, elementPath:string, values:string[]) {
             //console.log('[ex2ds] ' , dynamicName, domName, elementPath, values);
             if (!dynamic[dynamicName]) dynamic[dynamicName] = {};
             if (!dynamic[dynamicName][domName]) dynamic[dynamicName][domName] = {};
             if (!dynamic[dynamicName][domName][elementPath]) dynamic[dynamicName][domName][elementPath] = (values.length === 1) ? values[0] : values;
         }
 
-        public static recreateJsNode(data:any, path:string, rootObject?:IRootDomObject):any {
+        public static recreateJsNode(data:any, path:string, rootObject?:fmvc.IRootDomObject):any {
             var a:any = data.attribs;
-            var object:IDomObject = {path: path, type: data.type, data: data.data, staticAttributes: [], children: [], links: [], handlers: {}, bounds: {}};
+            var object:fmvc.IDomObject = {path: path, type: data.type, data: data.data, staticAttributes: {}, children: [], links: [], handlers: {}, bounds: {}};
             if (!rootObject) {
                 rootObject = object;
                 rootObject.dynamicSummary = {};
@@ -403,8 +347,8 @@ module xml2ns {
 
             if (a) {
                 if (a.link) rootObject.links.push(Xml2TsUtils.getNameValue(a.link, path));
+                if (a.enableStates) rootObject.enableStates = Xml2TsUtils.getValueArrayFromString(a.enableStates, ',');
                 if (a.extend) object.extend = a.extend;
-                if (a.enableStates) object.enableStates = a.enableStates.split(',');
                 if (a.states) object.states = a.states;
             }
 
@@ -440,7 +384,7 @@ module xml2ns {
                     });
                 }
 
-                if (result) object.staticAttributes.push(Xml2TsUtils.getNameValue(key, result));
+                if (result) object.staticAttributes[key] = result;
             });
 
             if (_.isObject(data.data)) {
@@ -456,7 +400,7 @@ module xml2ns {
                 if(result) object.children.push(result);
            });
 
-            if (object.staticAttributes.length === 0) delete object.staticAttributes;
+            if (_.keys(object.staticAttributes).length === 0) delete object.staticAttributes;
             if (object.children.length === 0) delete object.children;
             if (object.links.length === 0) delete object.links;
             if (_.keys(object.handlers).length === 0) delete  object.handlers;
@@ -466,11 +410,34 @@ module xml2ns {
         }
 
 
-        public static getNameValue(name:string, value:any):INameValue {
+        public static getNameValue(name:string, value:any):fmvc.INameValue {
             return {name: name, value: value};
         }
+
+        private static getValueArrayFromString(enableStates:string, s:string):(string|fmvc.INameValue)[] {
+            var r = enableStates.split(s);
+            return _.map(r, function(v,k) { return (v.indexOf('=')>-1)?Xml2TsUtils.getNameValueObjectFromString(v, '='):v; });
+        }
+
+        private static getNameValueObjectFromString(v:string, s:String):fmvc.INameValue {
+            var r = v.split(s);
+            return { name : r[0] , value : r[1] };
+        }
+
+        public static getTypedValue(s:any, type:string):any {
+            switch (type) {
+                case fmvc.Type.String:
+                    return s;
+                case fmvc.Type.Int:
+                    return parseInt(s,10);
+                case fmvc.Type.Float:
+                    return parseFloat(s);
+                case fmvc.Type.Boolean:
+                    return !!(s === true || s === 'true');
+            }
+        }
+
     }
 }
 
-
-new xml2ns.Xml2Ts('../ui' , '../ui');
+new fmvc.Xml2Ts('../ui' , '../ui');

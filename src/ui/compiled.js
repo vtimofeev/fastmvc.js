@@ -199,40 +199,103 @@ var __extends = this.__extends || function (d, b) {
 ///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
+    fmvc.BrowserEvent = {
+        CLICK: 'click',
+        KEYUP: 'keyup',
+        KEYDOWN: 'keydown',
+        MOUSEOVER: 'mouseover',
+        MOUSEOUT: 'mouseout',
+        CHANGE: 'change'
+    };
+    fmvc.SpecialEvent = {
+        ACTION: 'action',
+        SWIPE: 'swipe',
+        PAN: 'pan',
+        PINCH: 'pinch',
+        TAP: 'tap',
+        DRAG: 'drag' // start,end,move
+    };
+    fmvc.browserElementEvents = [fmvc.BrowserEvent.MOUSEOUT, fmvc.BrowserEvent.MOUSEOVER, fmvc.BrowserEvent.CLICK];
+    fmvc.browserWindowEvents = [fmvc.BrowserEvent.KEYDOWN, fmvc.BrowserEvent.KEYUP];
+    fmvc.specialEvents = [fmvc.SpecialEvent.ACTION];
     var EventDispatcher = (function (_super) {
         __extends(EventDispatcher, _super);
         function EventDispatcher() {
             _super.call(this, EventDispatcher.NAME, 'controller');
-            this.elementHashMap = {};
-            this.windowHashMap = {};
-            _.bindAll(this, 'windowHandler');
+            this.elementIdMap = {};
+            this.executionMap = {};
+            this.windowHandlerMap = {};
+            this.elementHandlerMap = {};
+            _.bindAll(this, 'browserHandler');
         }
-        EventDispatcher.prototype.listen = function (el, type, handler) {
-            var id = el.getAttribute('id');
+        EventDispatcher.prototype.listen = function (el, id, type, handler, context) {
+            //var id = el.getAttribute('id');
             if (!id || !type || !handler)
                 return;
-            var uid = id + ':' + type;
-            if (!this.windowHashMap[type])
+            if (!this.elementIdMap[id])
+                this.elementIdMap[id] = el;
+            this.executionMap[id] = this.executionMap[id] || {};
+            if (!this.executionMap[id][type]) {
+                this.executionMap[id][type] = { handler: handler, context: context };
+                console.log(id, type, this.executionMap[id][type]);
+                this.__createListener(el, id, type, handler, context);
+            }
+            else {
+                console.warn('Cant listen cause exist ', id, type);
+            }
+            return this;
+        };
+        EventDispatcher.prototype.__createListener = function (el, id, type, handler, context) {
+            if (_.contains(fmvc.browserWindowEvents, type))
+                this.__createWindowListener(el, type);
+            else if (_.contains(fmvc.browserElementEvents, type))
+                this.__createElementListener(el, type);
+            else if (_.contains(fmvc.specialEvents, type))
+                this.__createSpecialListener(el, type);
+            else
+                console.warn('create listener for %s not found', type);
+        };
+        EventDispatcher.prototype.__removeListener = function (el, id, type) {
+            var id = id || el.getAttribute('id') || _.findKey(this.elementIdMap, el);
+            if (_.contains(fmvc.browserElementEvents, type)) {
+                el.removeEventListener(type, this.browserHandler);
+            }
+        };
+        EventDispatcher.prototype.__createElementListener = function (el, type) {
+            //console.log('Element listener of %s , %s' , el, type);
+            el.addEventListener(type, this.browserHandler);
+        };
+        EventDispatcher.prototype.__createWindowListener = function (el, type) {
+            //console.log('Browser listener of %s , %s' , el, type);
+            if (!this.windowHandlerMap[type])
                 this.createWindowListener(type);
-            if (!this.elementHashMap[uid])
-                this.elementHashMap[uid] = handler;
+        };
+        EventDispatcher.prototype.__createSpecialListener = function (el, type) {
+            console.warn('create special listener for %s not implemented', type);
         };
         EventDispatcher.prototype.unlisten = function (el, type) {
-            var id = el.getAttribute('id');
+            var id = el.getAttribute('id') || _.findKey(this.elementIdMap, el);
             var uid = id + ':' + type;
             if (!id)
                 return;
-            delete this.elementHashMap[uid];
+            delete this.elementIdMap[uid];
         };
-        EventDispatcher.prototype.windowHandler = function (e) {
-            var id = e.target.getAttribute('id');
-            var uid = id + ':' + e.type;
-            if (this.elementHashMap[uid])
-                this.elementHashMap[uid](e);
+        EventDispatcher.prototype.browserHandler = function (e) {
+            var el = e.currentTarget || e.target;
+            console.log(el.getAttribute('id'));
+            var id = el.getAttribute('id') || _.findKey(this.elementIdMap, el);
+            var type = e.type;
+            if (!id)
+                return;
+            console.log(this.executionMap[id]);
+            if (this.executionMap[id] && this.executionMap[id][type]) {
+                var handlerObject = this.executionMap[id][type];
+                handlerObject.handler.call(handlerObject.context, e);
+            }
         };
         EventDispatcher.prototype.createWindowListener = function (type) {
-            console.log('listen window');
-            window.addEventListener(type, this.windowHandler, true);
+            this.windowHandlerMap[type] = true;
+            window.addEventListener(type, this.browserHandler, true);
         };
         EventDispatcher.NAME = 'EventDispatcher';
         return EventDispatcher;
@@ -446,14 +509,27 @@ var fmvc;
     fmvc.ModelList = ModelList;
 })(fmvc || (fmvc = {}));
 ///<reference path='./d.ts'/>
+var fmvc;
+(function (fmvc) {
+    fmvc.Type = {
+        String: 'string',
+        Int: 'int',
+        Float: 'float',
+        Boolean: 'boolean'
+    };
+})(fmvc || (fmvc = {}));
 ///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
-    fmvc.BrowserEvent = {
+    fmvc.global = window || {};
+    console.log('Global is ' + fmvc.global);
+    /*
+    export var BrowserEvent = {
         CLICK: 'click',
         MOUSEOVER: 'mouseover',
         MOUSEOUT: 'mouseout'
     };
+    */
     fmvc.State = {
         SELECTED: 'selected',
         HOVER: 'hover',
@@ -471,7 +547,7 @@ var fmvc;
     };
     var View = (function (_super) {
         __extends(View, _super);
-        function View(name, $root) {
+        function View(name, jsTemplate) {
             _super.call(this, name, fmvc.TYPE_VIEW);
             this.dynamicPropertyValue = {}; // те которые были установлены
             this.elementPaths = {};
@@ -483,11 +559,17 @@ var fmvc;
             this._inDocument = false;
             this._avaibleInheritedStates = null;
             this._locale = 'ru';
+            this._id = null;
             _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler', 'getDataObjectValue');
-            this.$root = $root;
+            this.initTemplate(jsTemplate);
             this.init();
             this.invalidateHandler = this.invalidateHandler.bind(this);
         }
+        View.prototype.initTemplate = function (jsTemplate) {
+            this.jsTemplate = (_.extend(this.jsTemplate, jsTemplate));
+            if (this.jsTemplate && this.jsTemplate.enableStates)
+                this.enableStates(this.jsTemplate.enableStates);
+        };
         // @override
         View.prototype.init = function () {
         };
@@ -501,6 +583,19 @@ var fmvc;
         };
         View.prototype.updateChildren = function () {
         };
+        Object.defineProperty(View.prototype, "id", {
+            // @memorize
+            get: function () {
+                if (this._id) {
+                    return this._id;
+                }
+                else {
+                    this._id = _.property('staticAttributes')(this.jsTemplate) ? this.jsTemplate.staticAttributes['id'] : null || ViewHelper.getId();
+                }
+            },
+            enumerable: true,
+            configurable: true
+        });
         //------------------------------------------------------------------------------------------------
         // Dom
         //------------------------------------------------------------------------------------------------
@@ -509,10 +604,19 @@ var fmvc;
             this.childrenContainer = this.element;
             return this;
         };
-        View.prototype.createStates = function (states) {
+        View.prototype.enableStates = function (states) {
             this._states = {};
+            this._statesType = {};
             _.each(states, function (value) {
-                this._states[value] = false;
+                if (_.isString(value)) {
+                    var svalue = (value);
+                    this._states[svalue] = false;
+                }
+                else if (_.isObject(value)) {
+                    var ivalue = (value);
+                    this._statesType[ivalue.name] = ivalue.type;
+                    this._states[ivalue.name] = ivalue.value;
+                }
             }, this);
         };
         View.prototype.updateDom = function () {
@@ -720,18 +824,16 @@ var fmvc;
             if (this._inDocument)
                 return;
             this._inDocument = true;
+            var t = this;
             if (!this.isDynamicStylesEnabled())
                 this.enableDynamicStyle(true);
-            var t = this;
+            ViewHelper.checkElementAttribute(this.element, 'id', this.id);
             if (this.hasState(fmvc.State.HOVER)) {
-                //this.element.addEventListener(BrowserEvent.MOUSEOVER, ()=>t.setState(State.HOVER, true));
-                //this.element.addEventListener(BrowserEvent.MOUSEOUT, ()=>t.setState(State.HOVER, false));
-                this.dispatcher.listen(this.element, fmvc.BrowserEvent.MOUSEOVER, function () { return t.setState(fmvc.State.HOVER, true); });
-                this.dispatcher.listen(this.element, fmvc.BrowserEvent.MOUSEOUT, function () { return t.setState(fmvc.State.HOVER, false); });
+                this.dispatcher.listen(this.element, this.id, fmvc.BrowserEvent.MOUSEOVER, function () { return t.setState(fmvc.State.HOVER, true); });
+                this.dispatcher.listen(this.element, this.id, fmvc.BrowserEvent.MOUSEOUT, function () { return t.setState(fmvc.State.HOVER, false); });
             }
             if (this.hasState(fmvc.State.SELECTED)) {
-                //this.element.addEventListener(BrowserEvent.CLICK, ()=>t.setState(State.SELECTED, !t.getState(State.SELECTED)));
-                this.dispatcher.listen(this.element, fmvc.BrowserEvent.CLICK, function () { return t.setState(fmvc.State.SELECTED, false); });
+                this.dispatcher.listen(this.element, this.id, fmvc.BrowserEvent.CLICK, function () { return t.setState(fmvc.State.SELECTED, false); });
             }
             this.enterDocumentElement(this.jsTemplate, this.elementPaths);
             this.invalidate(1);
@@ -784,15 +886,19 @@ var fmvc;
                 }, this);
                 // add global handlers if not exist
                 if (value.handlers) {
+                    var id = value.staticAttributes ? value.staticAttributes['id'] : null || ViewHelper.getId();
+                    ViewHelper.checkElementAttribute(e, 'id', id);
                     _.each(value.handlers, function (name, eventType) {
                         if (!this.handlers[path] || !this.handlers[path][eventType]) {
                             if (!this.handlers[path])
                                 this.handlers[path] = {};
                             this.handlers[path][eventType] = name;
                             e.setAttribute('data-path', path);
-                            this.dispatcher.listen(e, eventType, this.applyEventHandlers);
+                            this.dispatcher.listen(e, id, eventType, this.applyEventHandlers);
                         }
                     }, this);
+                }
+                else {
                 }
             }
         };
@@ -920,6 +1026,8 @@ var fmvc;
         View.prototype.setState = function (name, value) {
             if (!(name in this._states))
                 return;
+            if (name in this._statesType)
+                value = View.getTypedValue(value, this._statesType[name]);
             if (this._states[name] === value)
                 return;
             this._states[name] = value;
@@ -1077,7 +1185,7 @@ var fmvc;
         });
         Object.defineProperty(View.prototype, "i18n", {
             get: function () {
-                return null;
+                return this.jsTemplate && this.jsTemplate.i18n && this.locale ? this.jsTemplate.i18n[this.locale] : null;
             },
             enumerable: true,
             configurable: true
@@ -1122,9 +1230,11 @@ var fmvc;
             configurable: true
         });
         View.prototype.isDynamicStylesEnabled = function (value) {
+            if (!(this.jsTemplate && this.jsTemplate.css))
+                return false;
             if (_.isBoolean(value))
-                View.__isDynamicStylesEnabled = value;
-            return View.__isDynamicStylesEnabled;
+                this.jsTemplate.css.enabled = value;
+            return this.jsTemplate.css.enabled;
         };
         View.prototype.enableDynamicStyle = function (value) {
             var id = this.className + '__' + Math.random() + 'Style';
@@ -1141,7 +1251,7 @@ var fmvc;
         };
         Object.defineProperty(View.prototype, "dynamicStyle", {
             get: function () {
-                return this.jsTemplate ? this.jsTemplate.css : null;
+                return this.jsTemplate ? this.jsTemplate.css.content : null;
             },
             enumerable: true,
             configurable: true
@@ -1169,14 +1279,14 @@ var fmvc;
             if (isIncluded && value.type === fmvc.DomObjectType.TAG) {
                 if (value.tagName.indexOf('.') > -1) {
                     //console.log('Create component, ' + value.tagName);
-                    var component = new (ui[value.tagName.split('.')[1]])();
+                    var component = new (fmvc.global.ui[value.tagName.split('.')[1]])();
                     this.componentPaths[value.path] = component;
                     e = component.createDom().element;
                 }
                 else {
                     e = document.createElement(value.tagName);
-                    _.each(value.staticAttributes, function (v) {
-                        e.setAttribute(v.name, v.value);
+                    _.each(value.staticAttributes, function (v, key) {
+                        e.setAttribute(key, v);
                     });
                     if (value.handlers || String(value.path) === '0')
                         e.setAttribute('id', 'id-' + View.Counters.element.added);
@@ -1216,17 +1326,46 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        View.getTypedValue = function (s, type) {
+            switch (type) {
+                case fmvc.Type.String:
+                    return _.isString(s) ? s : String(s);
+                case fmvc.Type.Int:
+                    return parseInt(s, 10);
+                case fmvc.Type.Float:
+                    return parseFloat(s);
+                case fmvc.Type.Boolean:
+                    return !!(s === true || s === 'true');
+            }
+        };
         View.__isDynamicStylesEnabled = false;
         View.__jsTemplate = null;
         View.__formatter = {};
         View.__messageFormat = {};
         View.__className = 'View';
         View.__inheritedStates = [fmvc.State.DISABLED];
-        View.Counters = { element: { added: 0, removed: 0 } };
+        View.Counters = { element: { added: 0, removed: 0, handlers: 0 } };
         View.dispatcher = new fmvc.EventDispatcher();
+        View.Name = 'View';
         return View;
     })(fmvc.Notifier);
     fmvc.View = View;
+    var ViewHelper = (function () {
+        function ViewHelper() {
+        }
+        ViewHelper.getId = function (name) {
+            if (name === void 0) { name = View.Name; }
+            return 'id_' + (View.Counters.element.handlers++);
+        };
+        ViewHelper.checkElementAttribute = function (el, name, value) {
+            if (!el || !name)
+                return;
+            if (el.getAttribute(name) !== String(value))
+                el.setAttribute(name, value);
+        };
+        return ViewHelper;
+    })();
+    fmvc.ViewHelper = ViewHelper;
     setInterval(function () {
         console.log(JSON.stringify(View.Counters));
     }, 3000);
@@ -1381,41 +1520,32 @@ var ui;
         __extends(Button, _super);
         function Button(name, $root) {
             _super.call(this, name, $root);
-            /* create states */
-            this.createStates(["hover", "selected", "disabled", "error", "open"]);
         }
         Button.prototype.createDom = function () {
             this.element = this.templateElement;
             this.childrenContainer = this.childrenContainer || this.element;
             return this;
         };
-        Button.prototype.isDynamicStylesEnabled = function (value) {
-            if (_.isBoolean(value))
-                Button.__isDynamicStylesEnabled = value;
-            return Button.__isDynamicStylesEnabled;
-        };
-        Object.defineProperty(Button.prototype, "i18n", {
-            get: function () {
-                return this.jsTemplate.i18n ? this.jsTemplate.i18n[this.locale] : null;
-            },
-            enumerable: true,
-            configurable: true
-        });
         Object.defineProperty(Button.prototype, "jsTemplate", {
+            /*
+            public isDynamicStylesEnabled(value?:boolean):boolean {
+                 if(_.isBoolean(value)) Button.__isDynamicStylesEnabled = value;
+                    return Button.__isDynamicStylesEnabled;
+            }
+            private static __isDynamicStylesEnabled:boolean = false;
+            */
             get: function () {
                 return Button.__jsTemplate;
             },
             enumerable: true,
             configurable: true
         });
-        Button.__isDynamicStylesEnabled = false;
         Button.__jsTemplate = {
             "path": "0",
             "type": "tag",
-            "staticAttributes": [{
-                "name": "class",
-                "value": "button"
-            }],
+            "staticAttributes": {
+                "class": "button"
+            },
             "dynamicSummary": {
                 "selected": {
                     "class": {
@@ -1444,10 +1574,13 @@ var ui;
                 }
             },
             "tagName": "div",
+            "enableStates": ["hover", "selected", "disabled", "error", "open", null],
             "extend": "fmvc.View",
-            "createStates": ["hover", "selected", "disabled", "error", "open"],
             "className": "Button",
-            "css": "button{display:inline-block;min-width:120px;width:100;background-color:#000;color:#fff;font-size:1}.button-hover{background-color:#008000}.button-selected{font-weight:bold;border-bottom:2px solid #000}"
+            "css": {
+                "content": "button{display:inline-block;min-width:120px;width:100;background-color:#000;color:#fff;font-size:1}.button-hover{background-color:#008000}.button-selected{font-weight:bold;border-bottom:2px solid #000}",
+                "enabled": false
+            }
         };
         return Button;
     })(fmvc.View);
@@ -1461,46 +1594,36 @@ var ui;
         __extends(UserView, _super);
         function UserView(name, $root) {
             _super.call(this, name, $root);
-            /* create states */
-            this.createStates(["hover", "selected", "disabled"]);
         }
         UserView.prototype.createDom = function () {
             this.element = this.templateElement;
+            this.hellobutton = this.elementPaths["0,21"];
             this.close2 = this.elementPaths["0,23"];
             this.close = this.elementPaths["0,25"];
             this.childrenContainer = this.childrenContainer || this.element;
             return this;
         };
-        UserView.prototype.isDynamicStylesEnabled = function (value) {
-            if (_.isBoolean(value))
-                UserView.__isDynamicStylesEnabled = value;
-            return UserView.__isDynamicStylesEnabled;
-        };
-        Object.defineProperty(UserView.prototype, "i18n", {
-            get: function () {
-                return this.jsTemplate.i18n ? this.jsTemplate.i18n[this.locale] : null;
-            },
-            enumerable: true,
-            configurable: true
-        });
         Object.defineProperty(UserView.prototype, "jsTemplate", {
+            /*
+            public isDynamicStylesEnabled(value?:boolean):boolean {
+                 if(_.isBoolean(value)) UserView.__isDynamicStylesEnabled = value;
+                    return UserView.__isDynamicStylesEnabled;
+            }
+            private static __isDynamicStylesEnabled:boolean = false;
+            */
             get: function () {
                 return UserView.__jsTemplate;
             },
             enumerable: true,
             configurable: true
         });
-        UserView.__isDynamicStylesEnabled = false;
         UserView.__jsTemplate = {
             "path": "0",
             "type": "tag",
-            "staticAttributes": [{
-                "name": "style",
-                "value": "background-color:blue;color: red;"
-            }, {
-                "name": "class",
-                "value": "userview"
-            }],
+            "staticAttributes": {
+                "style": "background-color:blue;color: red;",
+                "class": "userview"
+            },
             "children": [{
                 "path": "0,1",
                 "type": "tag",
@@ -1690,14 +1813,14 @@ var ui;
                 "path": "0,19",
                 "type": "tag",
                 "handlers": {
-                    "change": "set,data.value,{data.value}",
+                    "change": "set,data.value|int,{data.value|int}",
                     "keydown": "changeValueOnKeyUp",
                     "keyup": "changeValueOnKeyDown",
                     "click": "stopPropagation"
                 },
                 "bounds": {
                     "value": {
-                        "data.value": "{data.value}"
+                        "data.value|int": "{data.value|int}"
                     }
                 },
                 "tagName": "input",
@@ -1716,7 +1839,7 @@ var ui;
                                     "VALUE": "data.firstname"
                                 },
                                 "filters": ["second", "first"],
-                                "source": "{replace} The Text Of The button"
+                                "source": "{replace} The Text Of The button\n    "
                             }]
                         },
                         "bounds": null
@@ -1726,12 +1849,11 @@ var ui;
             }, {
                 "path": "0,23",
                 "type": "tag",
-                "staticAttributes": [{
-                    "name": "class",
-                    "value": "close"
-                }],
+                "staticAttributes": {
+                    "class": "close"
+                },
                 "children": [{
-                    "path": "0,23,0",
+                    "path": "0,23,1",
                     "type": "text",
                     "data": {
                         "static": null,
@@ -1748,25 +1870,30 @@ var ui;
                     }
                 }],
                 "tagName": "div",
-                "states": ["selected", ["custom", "one"]]
+                "states": ["states"]
             }, {
                 "path": "0,25",
                 "type": "tag",
-                "staticAttributes": [{
-                    "name": "class",
-                    "value": "close"
-                }, {
-                    "name": "style",
-                    "value": "background-color:red"
-                }],
+                "staticAttributes": {
+                    "class": "close",
+                    "style": "background-color:red"
+                },
                 "tagName": "div",
                 "states": ["hover", "touch"]
             }, {
                 "path": "0,27",
+                "type": "tag",
+                "tagName": "div",
+                "states": ["states"]
+            }, {
+                "path": "0,29",
                 "type": "comment",
                 "data": " Comment "
             }],
             "links": [{
+                "name": "hellobutton",
+                "value": "0,21"
+            }, {
                 "name": "close2",
                 "value": "0,23"
             }, {
@@ -1782,9 +1909,9 @@ var ui;
                         "0": "userview-{selected}"
                     }
                 },
-                "top": {
+                "state.top": {
                     "style": {
-                        "0": " top:{top}px"
+                        "0": " top:{state.top}px"
                     }
                 },
                 "disabled": {
@@ -1834,9 +1961,9 @@ var ui;
                                 "VALUE": "data.firstname"
                             },
                             "filters": ["second", "first"],
-                            "source": "{replace} The Text Of The button"
+                            "source": "{replace} The Text Of The button\n    "
                         },
-                        "0,23,0": {
+                        "0,23,1": {
                             "args": {
                                 "VALUE": "data.firstname"
                             },
@@ -1883,20 +2010,38 @@ var ui;
                 "data.value": {
                     "data": {
                         "0,15,0": "The value is {data.value}"
-                    },
-                    "value": {
-                        "0,19": "{data.value}"
                     }
                 },
                 "data.coordinates.x": {
                     "data": {
                         "0,17,0": "Cooridnates {data.coordinates.x} & {data.coordinates.y}"
                     }
+                },
+                "data.value|int": {
+                    "value": {
+                        "0,19": "{data.value|int}"
+                    }
                 }
             },
             "tagName": "div",
+            "enableStates": ["hover", "selected", "disabled", {
+                "name": "counter",
+                "type": "int",
+                "default": 0
+            }, {
+                "name": "top",
+                "type": "int",
+                "default": 0
+            }, {
+                "name": "value",
+                "type": "int",
+                "default": 0
+            }, {
+                "name": "type",
+                "type": "string",
+                "default": "none"
+            }],
             "extend": "fmvc.View",
-            "createStates": ["hover", "selected", "disabled"],
             "className": "UserView",
             "i18n": {
                 "ru": {
@@ -1914,7 +2059,10 @@ var ui;
                     "balance": "She/he has {VALUE, plural, one {# ruble} other {# rubles}"
                 }
             },
-            "css": ".userview{background-color:#808080;font-size:16px;line-height:24px;display:inline-block;width:200px}.userview-selected{border:1px solid #f00}.userview-hover{font-weight:bold;background-color:#0e90d2 !important;border:1px solid #00f}.userview-disabled{font-color:#f00;text-decoration:underline}"
+            "css": {
+                "content": ".userview{background-color:#808080;font-size:16px;line-height:24px;display:inline-block;width:200px}.userview-selected{border:1px solid #f00}.userview-hover{font-weight:bold;background-color:#0e90d2 !important;border:1px solid #00f}.userview-disabled{font-color:#f00;text-decoration:underline}",
+                "enabled": false
+            }
         };
         return UserView;
     })(fmvc.View);

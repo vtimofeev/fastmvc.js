@@ -12,41 +12,32 @@ var ui;
         __extends(Button, _super);
         function Button(name, $root) {
             _super.call(this, name, $root);
-            /* create states */
-            this.enableStates(["hover", "selected", "disabled", "error", "open"]);
         }
         Button.prototype.createDom = function () {
             this.element = this.templateElement;
             this.childrenContainer = this.childrenContainer || this.element;
             return this;
         };
-        Button.prototype.isDynamicStylesEnabled = function (value) {
-            if (_.isBoolean(value))
-                Button.__isDynamicStylesEnabled = value;
-            return Button.__isDynamicStylesEnabled;
-        };
-        Object.defineProperty(Button.prototype, "i18n", {
-            get: function () {
-                return this.jsTemplate.i18n ? this.jsTemplate.i18n[this.locale] : null;
-            },
-            enumerable: true,
-            configurable: true
-        });
         Object.defineProperty(Button.prototype, "jsTemplate", {
+            /*
+            public isDynamicStylesEnabled(value?:boolean):boolean {
+                 if(_.isBoolean(value)) Button.__isDynamicStylesEnabled = value;
+                    return Button.__isDynamicStylesEnabled;
+            }
+            private static __isDynamicStylesEnabled:boolean = false;
+            */
             get: function () {
                 return Button.__jsTemplate;
             },
             enumerable: true,
             configurable: true
         });
-        Button.__isDynamicStylesEnabled = false;
         Button.__jsTemplate = {
             "path": "0",
             "type": "tag",
-            "staticAttributes": [{
-                    "name": "class",
-                    "value": "button"
-                }],
+            "staticAttributes": {
+                "class": "button"
+            },
             "dynamicSummary": {
                 "selected": {
                     "class": {
@@ -75,10 +66,13 @@ var ui;
                 }
             },
             "tagName": "div",
+            "enableStates": ["hover", "selected", "disabled", "error", "open", null],
             "extend": "fmvc.View",
-            "enableStates": ["hover", "selected", "disabled", "error", "open"],
             "className": "Button",
-            "css": "button{display:inline-block;min-width:120px;width:100;background-color:#000;color:#fff;font-size:1}.button-hover{background-color:#008000}.button-selected{font-weight:bold;border-bottom:2px solid #000}"
+            "css": {
+                "content": "button{display:inline-block;min-width:120px;width:100;background-color:#000;color:#fff;font-size:1}.button-hover{background-color:#008000}.button-selected{font-weight:bold;border-bottom:2px solid #000}",
+                "enabled": false
+            }
         };
         return Button;
     })(fmvc.View);

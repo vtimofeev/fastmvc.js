@@ -9,7 +9,7 @@
 <div
     className="UserView"
     extend="fmvc.View"
-    enableStates="hover,selected,disabled,counter"
+    enableStates="hover,selected,disabled=true,counter=100"
     selected="{selected}"
     style="background-color:blue;color: red; top:{state.top}px;"
     class="userview userview-{selected} userview-{disabled} userview-{hover}"
@@ -32,8 +32,9 @@
             base="hellobutton"
             events="click:helloButtonClick,mouseover:helloButtonOver,mouseout:helloButtonOut"
             fx="hover=true:animation-hover,2s;hover=false:animation-hover-out,2s"
-            >{data.firstname|second|first} The Text Of The button</ui.Button>
-    <div link="close2" class="close" states="selected,custom=one" style="">{data.firstname|first} Close Text get from .</div>
+            >{data.firstname|second|first} The Text Of The button
+    </ui.Button>
+    <div link="close2" class="close" states="selected,custom=one,counter>=10" style="">{data.firstname|first} Close Text get from .</div>
     <div link="close" class="close" states="hover,touch" style="background-color:red">Close Text get from ...</div>
 
     <div id="{c.id}-ui-view" states="hellobutton.hover=true,counter>=0" >Show on ui.Button over/Hide on ui.Button out</div>

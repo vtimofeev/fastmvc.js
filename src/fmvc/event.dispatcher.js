@@ -10,42 +10,117 @@ var __extends = this.__extends || function (d, b) {
 ///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
+    fmvc.BrowserEvent = {
+        CLICK: 'click',
+        KEYUP: 'keyup',
+        KEYDOWN: 'keydown',
+        MOUSEOVER: 'mouseover',
+        MOUSEOUT: 'mouseout',
+        CHANGE: 'change'
+    };
+    fmvc.SpecialEvent = {
+        ACTION: 'action',
+        SWIPE: 'swipe',
+        PAN: 'pan',
+        PINCH: 'pinch',
+        TAP: 'tap',
+        DRAG: 'drag' // start,end,move
+    };
+    fmvc.browserElementEvents = [fmvc.BrowserEvent.MOUSEOUT, fmvc.BrowserEvent.MOUSEOVER, fmvc.BrowserEvent.CLICK];
+    fmvc.browserWindowEvents = [fmvc.BrowserEvent.KEYDOWN, fmvc.BrowserEvent.KEYUP];
+    fmvc.specialEvents = [fmvc.SpecialEvent.ACTION];
     var EventDispatcher = (function (_super) {
         __extends(EventDispatcher, _super);
         function EventDispatcher() {
             _super.call(this, EventDispatcher.NAME, 'controller');
-            this.elementHashMap = {};
-            this.windowHashMap = {};
-            _.bindAll(this, 'windowHandler');
+            //private elementIdMap = {};
+            this.executionMap = {};
+            this.windowHandlerMap = {};
+            _.bindAll(this, 'browserHandler');
         }
-        EventDispatcher.prototype.listen = function (el, type, handler) {
+        EventDispatcher.prototype.listen = function (el, type, handler, context) {
             var id = el.getAttribute('id');
-            if (!id || !type || !handler)
+            if (!id || !type || !handler) {
+                console.warn('Incorrect listener on ', el, id, type);
                 return;
-            var uid = id + ':' + type;
-            if (!this.windowHashMap[type])
-                this.createWindowListener(type);
-            if (!this.elementHashMap[uid])
-                this.elementHashMap[uid] = handler;
+            }
+            //if(!this.elementIdMap[id]) this.elementIdMap[id] = el;
+            this.executionMap[id] = this.executionMap[id] || {};
+            if (!this.executionMap[id][type]) {
+                this.executionMap[id][type] = { handler: handler, context: context };
+                console.log(id, type, this.executionMap[id][type]);
+                this.__createListener(el, id, type, handler, context);
+            }
+            else {
+                console.warn('Cant listen cause exist ', id, type);
+            }
             return this;
+        };
+        EventDispatcher.prototype.__createListener = function (el, id, type, handler, context) {
+            if (_.contains(fmvc.browserWindowEvents, type))
+                this.__createWindowListener(el, type);
+            else if (_.contains(fmvc.browserElementEvents, type))
+                this.__createElementListener(el, type);
+            else if (_.contains(fmvc.specialEvents, type))
+                this.__createSpecialListener(el, type);
+            else
+                console.warn('create listener for %s not found', type);
+        };
+        EventDispatcher.prototype.__removeListener = function (el, id, type) {
+            var id = id || el.getAttribute('id');
+            if (_.contains(fmvc.browserElementEvents, type)) {
+                el.removeEventListener(type, this.browserHandler);
+            }
+        };
+        EventDispatcher.prototype.__createElementListener = function (el, type) {
+            //console.log('Element listener of %s , %s' , el, type);
+            el.addEventListener(type, this.browserHandler);
+        };
+        EventDispatcher.prototype.__createWindowListener = function (el, type) {
+            //console.log('Browser listener of %s , %s' , el, type);
+            if (!this.windowHandlerMap[type])
+                this.createWindowListener(type);
+        };
+        EventDispatcher.prototype.__createSpecialListener = function (el, type) {
+            console.warn('create special listener for %s not implemented', type);
+        };
+        EventDispatcher.prototype.unlistenAll = function (el) {
+            var id = el.getAttribute('id');
+            if (!id)
+                return;
+            _.each(this.executionMap[id], function (handlerObject, type) {
+                el.removeEventListener(type, this.browserHandler);
+                delete handlerObject.handler;
+                delete handlerObject.context;
+            }, this);
+            delete this.executionMap[id];
+            //delete this.elementIdMap[id];
         };
         EventDispatcher.prototype.unlisten = function (el, type) {
             var id = el.getAttribute('id');
-            var uid = id + ':' + type;
             if (!id)
                 return;
-            delete this.elementHashMap[uid];
+            var handlerObject = this.executionMap[id][type];
+            el.removeEventListener(type, this.browserHandler);
+            delete handlerObject.handler;
+            delete handlerObject.context;
+            delete this.executionMap[id][type];
         };
-        EventDispatcher.prototype.windowHandler = function (e) {
-            var id = e.target.getAttribute('id');
-            var uid = id + ':' + e.type;
-            if (this.elementHashMap[uid])
-                this.elementHashMap[uid](e);
+        EventDispatcher.prototype.browserHandler = function (e) {
+            var el = e.currentTarget || e.target;
+            var id = el.getAttribute('id');
+            var type = e.type;
+            if (!id)
+                return;
+            console.log(id, type, this.executionMap[id]);
+            if (this.executionMap[id] && this.executionMap[id][type]) {
+                var handlerObject = this.executionMap[id][type];
+                handlerObject.handler.call(handlerObject.context, e);
+            }
         };
         EventDispatcher.prototype.createWindowListener = function (type) {
-            //console.log('listen window type');
-            this.windowHashMap[type] = true;
-            window.addEventListener(type, this.windowHandler, true);
+            this.windowHandlerMap[type] = true;
+            window.addEventListener(type, this.browserHandler, true);
         };
         EventDispatcher.NAME = 'EventDispatcher';
         return EventDispatcher;

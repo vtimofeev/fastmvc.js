@@ -38,12 +38,13 @@
 
     var start = Date.now();
 
+
     var listView = new fmvc.ViewList('userview.list');
-    listView.enableStates(['selected', 'disabled']);
+    listView.enableStates(['disabled']);
     listView.childrenConstructor = ui.UserView;
     listView.dataset = data;
-    listView.setState('selected', true);
-    listView.setState('disabled', true);
+    //listView.setState('selected', true);
+    //listView.setState('disabled', true);
     listView.render(document.getElementById('userView'));
 
     console.log('summary', Date.now() - start);

@@ -12,46 +12,36 @@ var ui;
         __extends(UserView, _super);
         function UserView(name, $root) {
             _super.call(this, name, $root);
-            /* create states */
-            this.enableStates(["hover", "selected", "disabled"]);
         }
         UserView.prototype.createDom = function () {
             this.element = this.templateElement;
+            this.hellobutton = this.elementPaths["0,21"];
             this.close2 = this.elementPaths["0,23"];
             this.close = this.elementPaths["0,25"];
             this.childrenContainer = this.childrenContainer || this.element;
             return this;
         };
-        UserView.prototype.isDynamicStylesEnabled = function (value) {
-            if (_.isBoolean(value))
-                UserView.__isDynamicStylesEnabled = value;
-            return UserView.__isDynamicStylesEnabled;
-        };
-        Object.defineProperty(UserView.prototype, "i18n", {
-            get: function () {
-                return this.jsTemplate.i18n ? this.jsTemplate.i18n[this.locale] : null;
-            },
-            enumerable: true,
-            configurable: true
-        });
         Object.defineProperty(UserView.prototype, "jsTemplate", {
+            /*
+            public isDynamicStylesEnabled(value?:boolean):boolean {
+                 if(_.isBoolean(value)) UserView.__isDynamicStylesEnabled = value;
+                    return UserView.__isDynamicStylesEnabled;
+            }
+            private static __isDynamicStylesEnabled:boolean = false;
+            */
             get: function () {
                 return UserView.__jsTemplate;
             },
             enumerable: true,
             configurable: true
         });
-        UserView.__isDynamicStylesEnabled = false;
         UserView.__jsTemplate = {
             "path": "0",
             "type": "tag",
-            "staticAttributes": [{
-                    "name": "style",
-                    "value": "background-color:blue;color: red;"
-                }, {
-                    "name": "class",
-                    "value": "userview"
-                }],
+            "staticAttributes": {
+                "style": "background-color:blue;color: red;",
+                "class": "userview"
+            },
             "children": [{
                     "path": "0,1",
                     "type": "tag",
@@ -241,14 +231,14 @@ var ui;
                     "path": "0,19",
                     "type": "tag",
                     "handlers": {
-                        "change": "set,data.value,{data.value}",
+                        "change": "set,data.value|int,{data.value|int}",
                         "keydown": "changeValueOnKeyUp",
                         "keyup": "changeValueOnKeyDown",
                         "click": "stopPropagation"
                     },
                     "bounds": {
                         "value": {
-                            "data.value": "{data.value}"
+                            "data.value|int": "{data.value|int}"
                         }
                     },
                     "tagName": "input",
@@ -267,7 +257,7 @@ var ui;
                                                 "VALUE": "data.firstname"
                                             },
                                             "filters": ["second", "first"],
-                                            "source": "{replace} The Text Of The button"
+                                            "source": "{replace} The Text Of The button\n    "
                                         }]
                                 },
                                 "bounds": null
@@ -277,12 +267,11 @@ var ui;
                 }, {
                     "path": "0,23",
                     "type": "tag",
-                    "staticAttributes": [{
-                            "name": "class",
-                            "value": "close"
-                        }],
+                    "staticAttributes": {
+                        "class": "close"
+                    },
                     "children": [{
-                            "path": "0,23,0",
+                            "path": "0,23,1",
                             "type": "text",
                             "data": {
                                 "static": null,
@@ -299,25 +288,30 @@ var ui;
                             }
                         }],
                     "tagName": "div",
-                    "states": ["selected", ["custom", "one"]]
+                    "states": ["states"]
                 }, {
                     "path": "0,25",
                     "type": "tag",
-                    "staticAttributes": [{
-                            "name": "class",
-                            "value": "close"
-                        }, {
-                            "name": "style",
-                            "value": "background-color:red"
-                        }],
+                    "staticAttributes": {
+                        "class": "close",
+                        "style": "background-color:red"
+                    },
                     "tagName": "div",
                     "states": ["hover", "touch"]
                 }, {
                     "path": "0,27",
+                    "type": "tag",
+                    "tagName": "div",
+                    "states": ["states"]
+                }, {
+                    "path": "0,29",
                     "type": "comment",
                     "data": " Comment "
                 }],
             "links": [{
+                    "name": "hellobutton",
+                    "value": "0,21"
+                }, {
                     "name": "close2",
                     "value": "0,23"
                 }, {
@@ -333,9 +327,9 @@ var ui;
                         "0": "userview-{selected}"
                     }
                 },
-                "top": {
+                "state.top": {
                     "style": {
-                        "0": " top:{top}px"
+                        "0": " top:{state.top}px"
                     }
                 },
                 "disabled": {
@@ -385,9 +379,9 @@ var ui;
                                 "VALUE": "data.firstname"
                             },
                             "filters": ["second", "first"],
-                            "source": "{replace} The Text Of The button"
+                            "source": "{replace} The Text Of The button\n    "
                         },
-                        "0,23,0": {
+                        "0,23,1": {
                             "args": {
                                 "VALUE": "data.firstname"
                             },
@@ -434,20 +428,38 @@ var ui;
                 "data.value": {
                     "data": {
                         "0,15,0": "The value is {data.value}"
-                    },
-                    "value": {
-                        "0,19": "{data.value}"
                     }
                 },
                 "data.coordinates.x": {
                     "data": {
                         "0,17,0": "Cooridnates {data.coordinates.x} & {data.coordinates.y}"
                     }
+                },
+                "data.value|int": {
+                    "value": {
+                        "0,19": "{data.value|int}"
+                    }
                 }
             },
             "tagName": "div",
+            "enableStates": ["hover", "selected", "disabled", {
+                    "name": "counter",
+                    "type": "int",
+                    "default": 0
+                }, {
+                    "name": "top",
+                    "type": "int",
+                    "default": 0
+                }, {
+                    "name": "value",
+                    "type": "int",
+                    "default": 0
+                }, {
+                    "name": "type",
+                    "type": "string",
+                    "default": "none"
+                }],
             "extend": "fmvc.View",
-            "enableStates": ["hover", "selected", "disabled"],
             "className": "UserView",
             "i18n": {
                 "ru": {
@@ -465,7 +477,10 @@ var ui;
                     "balance": "She/he has {VALUE, plural, one {# ruble} other {# rubles}"
                 }
             },
-            "css": ".userview{background-color:#808080;font-size:16px;line-height:24px;display:inline-block;width:200px}.userview-selected{border:1px solid #f00}.userview-hover{font-weight:bold;background-color:#0e90d2 !important;border:1px solid #00f}.userview-disabled{font-color:#f00;text-decoration:underline}"
+            "css": {
+                "content": ".userview{background-color:#808080;font-size:16px;line-height:24px;display:inline-block;width:200px}.userview-selected{border:1px solid #f00}.userview-hover{font-weight:bold;background-color:#0e90d2 !important;border:1px solid #00f}.userview-disabled{font-color:#f00;text-decoration:underline}",
+                "enabled": false
+            }
         };
         return UserView;
     })(fmvc.View);
