@@ -28,7 +28,7 @@ module fmvc {
         css?:IStyleDefinition;
         links?:{[name:string]:string/* path */}[];
         dynamicSummary?:IDynamicSummary;
-        i18n:any;
+        i18n?:any;
     }
 
     export interface INameValue {
@@ -58,7 +58,7 @@ module fmvc {
         isVirtual?:boolean;
         isComponent?:boolean;
 
-        createDom:Function;
+        //createDom:Function;
 
         component?:fmvc.View;
         componentConstructor?:Function;

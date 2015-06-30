@@ -33,7 +33,7 @@ var fmvc;
     };
     var View = (function (_super) {
         __extends(View, _super);
-        function View(name, jsTemplate) {
+        function View(name, modelOrData, jsTemplate) {
             _super.call(this, name, fmvc.TYPE_VIEW);
             this.dynamicPropertyValue = {}; // те которые были установлены
             this.elementPaths = {};
@@ -47,14 +47,23 @@ var fmvc;
             this._locale = 'ru';
             this._id = null;
             _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler', 'getDataObjectValue');
+            this.template = this.jsTemplate;
+            if (modelOrData) {
+                if (modelOrData.type === fmvc.TYPE_MODEL)
+                    this.model = modelOrData;
+                else
+                    this.data = modelOrData;
+            }
             this.initTemplate(jsTemplate);
             this.init();
             this.invalidateHandler = this.invalidateHandler.bind(this);
         }
-        View.prototype.initTemplate = function (jsTemplate) {
-            this.jsTemplate = (_.extend(this.jsTemplate, jsTemplate));
-            if (this.jsTemplate && this.jsTemplate.enableStates)
-                this.enableStates(this.jsTemplate.enableStates);
+        View.prototype.initTemplate = function (templateExtention) {
+            if (templateExtention)
+                this.template = (_.extend(_.clone(this.template), templateExtention));
+            console.log('template: ', this.template);
+            if (this.template && this.template.enableStates)
+                this.enableStates(this.template.enableStates);
         };
         // @override
         View.prototype.init = function () {
@@ -508,15 +517,16 @@ var fmvc;
         };
         View.prototype.setState = function (name, value) {
             if (!(name in this._states))
-                return;
+                return this;
             if (name in this._statesType)
                 value = View.getTypedValue(value, this._statesType[name]);
             if (this._states[name] === value)
-                return;
+                return this;
             this._states[name] = value;
             this.applyState(name, value);
             this.applyChildrenState(name, value);
             this.applyChangeStateElement(this.jsTemplate, this.elementPaths);
+            return this;
         };
         View.prototype.getState = function (name) {
             return this._states[name];
@@ -722,7 +732,7 @@ var fmvc;
         View.prototype.enableDynamicStyle = function (value) {
             var id = this.className + '__' + Math.random() + 'Style';
             if (value && !this.isDynamicStylesEnabled()) {
-                ////console.log(' *** enable dynamic style *** ');
+                console.log(' *** enable dynamic style *** ', this.jsTemplate.css);
                 var style = document.createElement('style');
                 style.id = id; //@todo create method that setup className at the generator
                 style.type = 'text/css';
@@ -734,7 +744,7 @@ var fmvc;
         };
         Object.defineProperty(View.prototype, "dynamicStyle", {
             get: function () {
-                return this.jsTemplate ? this.jsTemplate.css.content : null;
+                return this.jsTemplate && this.jsTemplate.css ? this.jsTemplate.css.content : null;
             },
             enumerable: true,
             configurable: true

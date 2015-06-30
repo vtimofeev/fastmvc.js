@@ -2,6 +2,7 @@
 
 module fmvc {
     export var global:any = window || {};
+
     console.log('Global is ' + global);
 
     /*
@@ -48,9 +49,12 @@ module fmvc {
 
         // States object (view support multistates)
         private _states:{[id:string]:any};
+        private template:IRootDomObject;
         private _statesType:{[id:string]:any};
         private _locale:string = 'ru';
         private _id:string = null;
+
+
 
         private parentView:View;
         private parentElement:Element;
@@ -58,23 +62,29 @@ module fmvc {
         private childrenViews:View[];
 
 
-
         // Elements
         public  element:Element; // root element
         public  childrenContainer:Element; // children container
 
-        constructor(name:string, jsTemplate:IDomObject) {
+        constructor(name:string, modelOrData?:fmvc.Model|any, jsTemplate?:IDomObject) {
             super(name, TYPE_VIEW);
             _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler', 'getDataObjectValue');
+            this.template = this.jsTemplate;
+
+            if(modelOrData) {
+                if(modelOrData.type === TYPE_MODEL) this.model = modelOrData;
+                else this.data = modelOrData;
+            }
 
             this.initTemplate(jsTemplate);
             this.init();
             this.invalidateHandler = this.invalidateHandler.bind(this);
         }
 
-        public initTemplate(jsTemplate:IDomObject) {
-            this.jsTemplate = <IRootDomObject> (_.extend(this.jsTemplate, jsTemplate));
-            if(this.jsTemplate && this.jsTemplate.enableStates) this.enableStates(this.jsTemplate.enableStates);
+        public initTemplate(templateExtention:IDomObject) {
+            if(templateExtention) this.template = <IRootDomObject> (_.extend(_.clone(this.template), templateExtention));
+            console.log('template: ' , this.template);
+            if(this.template && this.template.enableStates) this.enableStates(this.template.enableStates);
         }
 
         // @override
@@ -564,16 +574,17 @@ module fmvc {
             return _.isBoolean(this._states[name]);
         }
 
-        public setState(name:string, value:any) {
-            if (!(name in this._states)) return;
+        public setState(name:string, value:any):View {
+            if (!(name in this._states)) return this;
             if (name in this._statesType) value = View.getTypedValue(value, this._statesType[name]);
 
-            if (this._states[name] === value) return;
+            if (this._states[name] === value) return this;
             this._states[name] = value;
 
             this.applyState(name, value);
             this.applyChildrenState(name, value);
             this.applyChangeStateElement(this.jsTemplate, this.elementPaths);
+            return this;
         }
 
         public getState(name:string):any {
@@ -584,6 +595,7 @@ module fmvc {
             if (!this.dynamicProperties) return;
             if (this._inDocument) this.updateDynamicProperty(name, value);
         }
+
 
         public applyChildrenState(name, value):void {
         }
@@ -783,7 +795,7 @@ module fmvc {
         public enableDynamicStyle(value:boolean) {
             var id = this.className + '__' + Math.random() + 'Style';
             if (value && !this.isDynamicStylesEnabled()) {
-                ////console.log(' *** enable dynamic style *** ');
+                console.log(' *** enable dynamic style *** ', this.jsTemplate.css);
                 var style:HTMLStyleElement = document.createElement('style');
                 style.id = id; //@todo create method that setup className at the generator
                 style.type = 'text/css';
@@ -795,7 +807,7 @@ module fmvc {
         }
 
         public get dynamicStyle():string {
-            return this.jsTemplate ? this.jsTemplate.css.content : null;
+            return this.jsTemplate && this.jsTemplate.css ? this.jsTemplate.css.content : null;
         }
 
         public get templateElement():Element {

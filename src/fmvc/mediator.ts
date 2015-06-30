@@ -3,37 +3,49 @@
 module fmvc {
     export class Mediator extends fmvc.Notifier implements IMediator {
         private views:any;
+        private _root:Element;
 
-        constructor(facade:fmvc.Facade, name:string, views:fmvc.View[] = null) {
+        constructor(name:string, root?:Element, facade?:Facade) {
             super(name, fmvc.TYPE_MEDIATOR);
+            this._root = root;
             this.facade = facade;
-            this.initViews(views);
         }
 
-        private initViews(views)
+        public setRoot(root:Element):Mediator {
+            this._root = root;
+            return this;
+        }
+
+        public setFacade(facade:fmvc.Facade):Mediator {
+            this.facade = facade;
+            return this;
+        }
+
+        public addViews(views:fmvc.View|fmvc.View[]):Mediator
         {
             if (views) {
-                if (views.length) {
+                if (_.isArray(views)) {
                     for (var i in views) {
                         this.initView(views[i]);
                     }
-
                     this.views = views;
                 }
                 else {
-                    this.initView(views);
+                    this.initView(<fmvc.View> (views));
                     this.views = [views];
                 }
             }
             else {
-                this.log('Has no views on init');
+                this.log('Has no views to add');
             }
+
+            return this;
         }
 
         private initView(view:fmvc.View) {
             this.log('Init view ' + view.name);
             view.mediator = this;
-            view.init();
+            view.render(this._root)
         }
 
         public getView(name:string):any

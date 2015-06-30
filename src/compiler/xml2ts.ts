@@ -217,7 +217,7 @@ module fmvc {
     }
 
     class Xml2TsUtils {
-        public static MATCH_REGEXP:RegExp = /\{([\@A-Za-z\, \|0-9\.]+)\}/;
+        public static MATCH_REGEXP:RegExp = /\{([\@A-Za-z\, \|0-9\.]+)\}/g;
 
         public static jsonReplacer(key:string, value:any):any {
             ////console.log(key, _.isString(value));
@@ -254,10 +254,10 @@ module fmvc {
 
             _.each(values, function (v) {
                 var matches = v.match(Xml2TsUtils.MATCH_REGEXP);
-                if (matches && matches.length === 2) {
-                    var matchValue = matches[1];
-                    var filterResult = null;
 
+                _.each(matches, function(match, index) {
+                    var matchValue = match.replace(/[\{\}]/g, '');
+                    var filterResult = null;
                     ////console.log('Check dv of ' , matchValue);
                     if(matchValue.indexOf('@') > -1) {
                         var cleanMatchValue:string = matchValue.replace('@', '');
@@ -300,9 +300,8 @@ module fmvc {
                         if (!dynamicValues[matchValue]) dynamicValues[matchValue] = [v];
                         else dynamicValues[matchValue].push(v);
                     }
-
-
-                } else {
+                });
+                if (!(matches && matches.length)) {
                     if (!staticValues) staticValues = [];
                     staticValues.push(v);
                 }
@@ -405,7 +404,6 @@ module fmvc {
             if (object.links.length === 0) delete object.links;
             if (_.keys(object.handlers).length === 0) delete  object.handlers;
             if (_.keys(object.bounds).length === 0) delete  object.bounds;
-
             return object;
         }
 

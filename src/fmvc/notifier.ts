@@ -46,17 +46,19 @@ module fmvc
             return this._type;
         }
 
+        // Послаем сообщение сначала в фасад, потом частным слушателям (для моделей)
         public sendEvent(name:string, data:any = null, sub:string = null, error:any = null, log:boolean = true):void
         {
             var e = {name: name, sub:sub, data: data, error: error, target: this};
             if(log) this.log('Send event ' + name);
             if(this._facade) this._facade.eventHandler(e);
-            if(this._listeners && this._listeners.length) this.sendToListners(name, data);
+            if(this._listeners && this._listeners.length) this._sendToListners(name, data);
         }
+
 
         public log(message:string, level?:number):void
         {
-            // log messages
+            // @todo remove facade reference
             if(this._facade) this._facade.sendLog(this.name, message, level);
         }
 
@@ -68,24 +70,33 @@ module fmvc
         {
         }
 
-        public addListener(object:INotifier, handler:Function):void
+
+        public bind(object:any, handler?:any):Notifier
+        {
+            this.addListener(object, handler);
+            return this;
+        }
+
+        public unbind(object:any, handler?:any):Notifier
+        {
+            this.removeListener(object, handler);
+            return this;
+        }
+
+        public addListener(object:INotifier, handler:Function):Notifier
         {
             if(!this._listeners) this._listeners = [];
             this._listeners.push({target: object, handler: handler});
+            return this;
         }
 
-        public bind(bind:boolean, object:any, handler?:any)
-        {
-            if(bind) this.addListener(object, handler);
-            else this.removeListener(object, handler);
-        }
-
-        public removeListener(object:INotifier, handler?:Function):void
+        public removeListener(object:INotifier, handler?:Function):Notifier
         {
             var deleted:number = 0;
             this._listeners.forEach(function(lo:IListener, i:number) {
                 if(lo.target === object) { this.splice(i - deleted, 1); deleted++; }
             }, this._listeners);
+            return this;
         }
 
         public removeAllListeners():void
@@ -93,7 +104,7 @@ module fmvc
             this._listeners = null;
         }
 
-        public sendToListners(event, data)
+        private _sendToListners(event, data)
         {
             this._listeners.forEach(function(lo:IListener) {
                 if(!lo.target.disposed) (lo.handler).apply(lo.target, [event, data]);
@@ -101,11 +112,10 @@ module fmvc
         }
 
         public dispose():void {
+            this.removeAllListeners();
             this.facade = null;
-            this._listeners = null;
             this._disposed = true;
         }
-
     }
 
     export interface IListener {
@@ -118,7 +128,6 @@ module fmvc
         name:string;
         data:any;
     }
-
 
     export interface INotifier
     {

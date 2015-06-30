@@ -5,8 +5,8 @@ module ui {
         public hellobutton: Element;
         public close2: Element;
         public close: Element;
-        constructor(name: string, $root: any) {
-            super(name, $root);
+        constructor(name: string, modelOrData ? : fmvc.Model | any, jsTemplate ? : IDomObject) {
+            super(name, modelOrData, jsTemplate);
         }
         createDom() {
             this.element = this.templateElement;
@@ -212,7 +212,8 @@ module ui {
                     "data": {
                         "static": null,
                         "dynamic": {
-                            "data.coordinates.x": ["Cooridnates {data.coordinates.x} & {data.coordinates.y}"]
+                            "data.coordinates.x": ["Cooridnates {data.coordinates.x} & {data.coordinates.y}"],
+                            "data.coordinates.y": ["Cooridnates {data.coordinates.x} & {data.coordinates.y}"]
                         },
                         "bounds": null
                     }
@@ -422,6 +423,11 @@ module ui {
                     }
                 },
                 "data.coordinates.x": {
+                    "data": {
+                        "0,17,0": "Cooridnates {data.coordinates.x} & {data.coordinates.y}"
+                    }
+                },
+                "data.coordinates.y": {
                     "data": {
                         "0,17,0": "Cooridnates {data.coordinates.x} & {data.coordinates.y}"
                     }

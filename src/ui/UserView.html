@@ -35,7 +35,7 @@
             >{data.firstname|second|first} The Text Of The button
     </ui.Button>
     <div link="close2" class="close" states="selected,custom=one,counter>=10" style="">{data.firstname|first} Close Text get from .</div>
-    <div link="close" class="close" states="hover,touch" style="background-color:red">Close Text get from ...</div>
+    <div link="close" class="close" states="app.config.close,hover,touch" style="background-color:red">Close Text get from ...</div>
 
     <div id="{c.id}-ui-view" states="hellobutton.hover=true,counter>=0" >Show on ui.Button over/Hide on ui.Button out</div>
 <!-- Comment -->

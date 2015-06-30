@@ -8,8 +8,8 @@ module ui {
     public {name}:Element;
     {/links}
 
-    constructor(name:string, $root:any) {
-      super(name, $root);
+    constructor(name:string, modelOrData?:fmvc.Model|any, jsTemplate?:IDomObject) {
+           super(name, modelOrData, jsTemplate);
     }
 
     createDom() {

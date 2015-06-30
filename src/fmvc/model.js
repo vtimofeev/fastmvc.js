@@ -9,14 +9,15 @@ var fmvc;
 (function (fmvc) {
     var Model = (function (_super) {
         __extends(Model, _super);
-        function Model(name, data, isEvents) {
+        function Model(name, data, opts) {
             if (data === void 0) { data = {}; }
-            if (isEvents === void 0) { isEvents = true; }
             _super.call(this, name);
+            this.enabledEvents = true;
             this._data = data;
-            this._isEvents = isEvents;
-            if (isEvents)
-                this.sendEvent(fmvc.Event.MODEL_CREATED, this.data);
+            if (opts) {
+                this.enabledEvents = opts.enableEvents;
+            }
+            this.sendEvent(fmvc.Event.MODEL_CREATED, this.data);
         }
         Object.defineProperty(Model.prototype, "data", {
             get: function () {
@@ -24,14 +25,14 @@ var fmvc;
             },
             set: function (value) {
                 var data = this._data;
-                var changedFields = null;
+                var changes = null;
                 var hasChanges = false;
                 if (data) {
                     for (var i in value) {
-                        if (data[i] != value[i]) {
-                            if (!changedFields)
-                                changedFields = [];
-                            changedFields.push(i);
+                        if (data[i] !== value[i]) {
+                            if (!changes)
+                                changes = [];
+                            changes.push(i);
                             hasChanges = true;
                             data[i] = value[i];
                         }
@@ -40,12 +41,25 @@ var fmvc;
                 else {
                     this._data = value;
                 }
-                if (hasChanges && this._isEvents)
+                if (hasChanges && this.enabledEvents)
                     this.sendEvent(fmvc.Event.MODEL_CHANGED, this._data);
             },
             enumerable: true,
             configurable: true
         });
+        Model.prototype.sendEvent = function (name, data, sub, error, log) {
+            if (data === void 0) { data = null; }
+            if (sub === void 0) { sub = null; }
+            if (error === void 0) { error = null; }
+            if (log === void 0) { log = true; }
+            if (this.enabledEvents)
+                _super.prototype.sendEvent.call(this, name, data, sub, error, log);
+        };
+        Model.prototype.destroy = function () {
+        };
+        //-----------------------------------------------------------------------------
+        // VALIDATOR PATH
+        //-----------------------------------------------------------------------------
         Model.prototype.addValidator = function (value) {
             this._validators = this._validators ? this._validators : [];
             if (this._validators.indexOf(value) >= 0)
@@ -70,8 +84,6 @@ var fmvc;
             }
             this.sendEvent(fmvc.Event.MODEL_VALIDATED, result, null, error);
             return result;
-        };
-        Model.prototype.destroy = function () {
         };
         return Model;
     })(fmvc.Notifier);

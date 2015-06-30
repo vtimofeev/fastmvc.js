@@ -8,26 +8,51 @@ module fmvc
     export var TYPE_MODEL:string = 'model';
     export var TYPE_VIEW:string = 'view';
 
+    export var DefaultModel = {
+        locale:'locale',
+        i18n:'i18n'
+    };
+
     export class Facade {
         private _name:string = '';
         private _objects:any = [];
         private _events:any = {};
         private _logger:fmvc.Logger;
-        private static _facades = [];
+        private _root:any;
 
-        constructor(name:string) {
+        public model:{[id:string]:Model} = {};
+        public mediator:{[id:string]:Mediator} = {};
+
+        constructor(name:string, root:Element|Window, locale:string = 'ru', i18nDict:any = {}) {
             this._name = name;
+            this._root = root;
             //this._logger = new fmvc.Logger(this, 'Log');
             //this.log('Start ' + name + ', fmvc ' + fmvc.VERSION);
+
+            var locale:Model = new Model(DefaultModel.locale, {value: 'ru'});
+            var i18n:Model = new Model(DefaultModel.i18n, {});
+            this.register(locale, i18n);
+
             Facade._facades.push(name);
+            init();
         }
 
-        public register(object:any):void {
-            object.facade(this);
-            this.log('Register ' + object.name);
+        init() {
+        }
+
+        public register(object:any):Facade {
+            object.facade = this;
+            this.log('Register ' + object.name + ', ' + object.type);
+            switch(object.type) {
+                case TYPE_MODEL:
+                    break;
+                    case TYPE_MEDIATOR:
+                        var mediator:Mediator = <Mediator>(object);
+                        mediator.
+                    break;
+            }
 
             if (this._objects.indexOf(object) < 0) {
-
                 this._objects.push(object);
                 if (object && ('events' in object)) {
                     var events = object.events();
@@ -43,6 +68,13 @@ module fmvc
                     }
                 }
             }
+            return this;
+        }
+
+
+
+        public get locale() {
+
         }
 
         public getLogger():fmvc.Logger
@@ -60,6 +92,8 @@ module fmvc
             return null;
         }
 
+
+
         public eventHandler(e:IEvent):void {
             var objects:any = this._events[e.name];
             for (var i in objects)
@@ -76,7 +110,14 @@ module fmvc
 
         public sendLog(name:string, message:string, level?:number)
         {
-            this._logger.saveLog(name, message, level);
+            console.log(_.toArray(arguments));
+            //this._logger.saveLog(name, message, level);
         }
+
+
+        public getInstance(name:string):Facade {
+            return this._facades[name];
+        }
+        private static _facades = [];
     }
 }

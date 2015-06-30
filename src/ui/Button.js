@@ -10,8 +10,8 @@ var ui;
 (function (ui) {
     var Button = (function (_super) {
         __extends(Button, _super);
-        function Button(name, $root) {
-            _super.call(this, name, $root);
+        function Button(name, modelOrData, jsTemplate) {
+            _super.call(this, name, modelOrData, jsTemplate);
         }
         Button.prototype.createDom = function () {
             this.element = this.templateElement;
@@ -38,6 +38,18 @@ var ui;
             "staticAttributes": {
                 "class": "button"
             },
+            "children": [{
+                    "path": "0,0",
+                    "type": "text",
+                    "data": {
+                        "static": null,
+                        "dynamic": {
+                            "data.content": ["{data.content}{content}"],
+                            "content": ["{data.content}{content}"]
+                        },
+                        "bounds": null
+                    }
+                }],
             "dynamicSummary": {
                 "selected": {
                     "class": {
@@ -63,14 +75,28 @@ var ui;
                     "class": {
                         "0": "button-{open}"
                     }
+                },
+                "data.content": {
+                    "data": {
+                        "0,0": "{data.content}{content}"
+                    }
+                },
+                "content": {
+                    "data": {
+                        "0,0": "{data.content}{content}"
+                    }
                 }
             },
             "tagName": "div",
-            "enableStates": ["hover", "selected", "disabled", "error", "open", null],
+            "enableStates": ["hover", "selected", "disabled", "error", "open", {
+                    "name": "content",
+                    "type": "string",
+                    "default": "Default caption"
+                }],
             "extend": "fmvc.View",
             "className": "Button",
             "css": {
-                "content": "button{display:inline-block;min-width:120px;width:100;background-color:#000;color:#fff;font-size:1}.button-hover{background-color:#008000}.button-selected{font-weight:bold;border-bottom:2px solid #000}",
+                "content": ".button{display:inline-block;min-width:120px;width:100;background-color:#0a0;color:#fff;font-size:1}.button-hover{background-color:#0f0}.button-selected{font-weight:bold;border-bottom:2px solid #000}",
                 "enabled": false
             }
         };

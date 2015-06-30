@@ -10,8 +10,8 @@ var ui;
 (function (ui) {
     var UserView = (function (_super) {
         __extends(UserView, _super);
-        function UserView(name, $root) {
-            _super.call(this, name, $root);
+        function UserView(name, modelOrData, jsTemplate) {
+            _super.call(this, name, modelOrData, jsTemplate);
         }
         UserView.prototype.createDom = function () {
             this.element = this.templateElement;
@@ -221,7 +221,8 @@ var ui;
                             "data": {
                                 "static": null,
                                 "dynamic": {
-                                    "data.coordinates.x": ["Cooridnates {data.coordinates.x} & {data.coordinates.y}"]
+                                    "data.coordinates.x": ["Cooridnates {data.coordinates.x} & {data.coordinates.y}"],
+                                    "data.coordinates.y": ["Cooridnates {data.coordinates.x} & {data.coordinates.y}"]
                                 },
                                 "bounds": null
                             }
@@ -431,6 +432,11 @@ var ui;
                     }
                 },
                 "data.coordinates.x": {
+                    "data": {
+                        "0,17,0": "Cooridnates {data.coordinates.x} & {data.coordinates.y}"
+                    }
+                },
+                "data.coordinates.y": {
                     "data": {
                         "0,17,0": "Cooridnates {data.coordinates.x} & {data.coordinates.y}"
                     }

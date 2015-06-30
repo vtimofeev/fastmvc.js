@@ -224,8 +224,8 @@ var fmvc;
             var boundValues = null;
             _.each(values, function (v) {
                 var matches = v.match(Xml2TsUtils.MATCH_REGEXP);
-                if (matches && matches.length === 2) {
-                    var matchValue = matches[1];
+                _.each(matches, function (match, index) {
+                    var matchValue = match.replace(/[\{\}]/g, '');
                     var filterResult = null;
                     ////console.log('Check dv of ' , matchValue);
                     if (matchValue.indexOf('@') > -1) {
@@ -272,8 +272,8 @@ var fmvc;
                         else
                             dynamicValues[matchValue].push(v);
                     }
-                }
-                else {
+                });
+                if (!(matches && matches.length)) {
                     if (!staticValues)
                         staticValues = [];
                     staticValues.push(v);
@@ -407,7 +407,7 @@ var fmvc;
                     return !!(s === true || s === 'true');
             }
         };
-        Xml2TsUtils.MATCH_REGEXP = /\{([\@A-Za-z\, \|0-9\.]+)\}/;
+        Xml2TsUtils.MATCH_REGEXP = /\{([\@A-Za-z\, \|0-9\.]+)\}/g;
         return Xml2TsUtils;
     })();
 })(fmvc || (fmvc = {}));

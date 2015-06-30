@@ -21,15 +21,23 @@
 ///<reference path='./mediator.ts'/>
 -->
 
+<script src="underscore.js"></script>
+<script src="messageformat.js"></script>
 <script src="../src/fmvc/event.js"></script>
 <script src="../src/fmvc/facade.js"></script>
 <script src="../src/fmvc/notifier.js"></script>
+<script src="../src/fmvc/event.dispatcher.js"></script>
 <script src="../src/fmvc/mediator.js"></script>
 <script src="../src/fmvc/model.js"></script>
+<script src="../src/fmvc/model.list.js"></script>
 <script src="../src/fmvc/view.js"></script>
-<script src="result.js"></script>
+<script src="../src/fmvc/view.i.js"></script>
+<script src="../src/fmvc/view.list.js"></script>
+<script src="../src/ui/Button.js"></script>
+<script src="./src/test.app.js"></script>
 <script>
-    var start = Date.now();
+    //var start = Date.now();
+    /*
     var items = [];
     var data = {firstname: 'Vasya', secondname: 'Timofeev', age: 33};
     for(var i = 0; i < 1000; i++) {
@@ -40,10 +48,7 @@
         view.render(document.getElementById('userView'));
         items.push(view);
     }
-
     console.log('summary', Date.now() - start);
-
-
     function update() {
         var start = Date.now();
         data.age++;
@@ -52,8 +57,8 @@
         });
         console.log('summary', Date.now() - start);
     }
-
     setInterval(update, 100);
+    */
 </script>
 <script>
     /*
@@ -85,7 +90,6 @@
     console.log(links);
     document.body.appendChild(copy);
     */
-
 </script>
 
 </body>

@@ -46,6 +46,7 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        // ������� ��������� ������� � �����, ����� ������� ���������� (��� �������)
         Notifier.prototype.sendEvent = function (name, data, sub, error, log) {
             if (data === void 0) { data = null; }
             if (sub === void 0) { sub = null; }
@@ -57,10 +58,10 @@ var fmvc;
             if (this._facade)
                 this._facade.eventHandler(e);
             if (this._listeners && this._listeners.length)
-                this.sendToListners(name, data);
+                this._sendToListners(name, data);
         };
         Notifier.prototype.log = function (message, level) {
-            // log messages
+            // @todo remove facade reference
             if (this._facade)
                 this._facade.sendLog(this.name, message, level);
         };
@@ -68,16 +69,19 @@ var fmvc;
         };
         Notifier.prototype.removeHandler = function () {
         };
+        Notifier.prototype.bind = function (object, handler) {
+            this.addListener(object, handler);
+            return this;
+        };
+        Notifier.prototype.unbind = function (object, handler) {
+            this.removeListener(object, handler);
+            return this;
+        };
         Notifier.prototype.addListener = function (object, handler) {
             if (!this._listeners)
                 this._listeners = [];
             this._listeners.push({ target: object, handler: handler });
-        };
-        Notifier.prototype.bind = function (bind, object, handler) {
-            if (bind)
-                this.addListener(object, handler);
-            else
-                this.removeListener(object, handler);
+            return this;
         };
         Notifier.prototype.removeListener = function (object, handler) {
             var deleted = 0;
@@ -87,19 +91,20 @@ var fmvc;
                     deleted++;
                 }
             }, this._listeners);
+            return this;
         };
         Notifier.prototype.removeAllListeners = function () {
             this._listeners = null;
         };
-        Notifier.prototype.sendToListners = function (event, data) {
+        Notifier.prototype._sendToListners = function (event, data) {
             this._listeners.forEach(function (lo) {
                 if (!lo.target.disposed)
                     (lo.handler).apply(lo.target, [event, data]);
             });
         };
         Notifier.prototype.dispose = function () {
+            this.removeAllListeners();
             this.facade = null;
-            this._listeners = null;
             this._disposed = true;
         };
         return Notifier;

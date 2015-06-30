@@ -21,17 +21,18 @@ var fmvc;
     fmvc.TYPE_MODEL = 'model';
     fmvc.TYPE_VIEW = 'view';
     var Facade = (function () {
-        function Facade(name) {
+        function Facade(name, root) {
             this._name = '';
             this._objects = [];
             this._events = {};
             this._name = name;
+            this._root = root;
             //this._logger = new fmvc.Logger(this, 'Log');
             //this.log('Start ' + name + ', fmvc ' + fmvc.VERSION);
             Facade._facades.push(name);
         }
         Facade.prototype.register = function (object) {
-            object.facade(this);
+            object.facade = this;
             this.log('Register ' + object.name);
             if (this._objects.indexOf(object) < 0) {
                 this._objects.push(object);
@@ -49,6 +50,7 @@ var fmvc;
                     }
                 }
             }
+            return this;
         };
         Facade.prototype.getLogger = function () {
             return this._logger;
@@ -72,7 +74,8 @@ var fmvc;
             this.sendLog(this._name, message, level);
         };
         Facade.prototype.sendLog = function (name, message, level) {
-            this._logger.saveLog(name, message, level);
+            console.log(_.toArray(arguments));
+            //this._logger.saveLog(name, message, level);
         };
         Facade._facades = [];
         return Facade;
@@ -222,18 +225,18 @@ var fmvc;
         __extends(EventDispatcher, _super);
         function EventDispatcher() {
             _super.call(this, EventDispatcher.NAME, 'controller');
-            this.elementIdMap = {};
+            //private elementIdMap = {};
             this.executionMap = {};
             this.windowHandlerMap = {};
-            this.elementHandlerMap = {};
             _.bindAll(this, 'browserHandler');
         }
-        EventDispatcher.prototype.listen = function (el, id, type, handler, context) {
-            //var id = el.getAttribute('id');
-            if (!id || !type || !handler)
+        EventDispatcher.prototype.listen = function (el, type, handler, context) {
+            var id = el.getAttribute('id');
+            if (!id || !type || !handler) {
+                console.warn('Incorrect listener on ', el, id, type);
                 return;
-            if (!this.elementIdMap[id])
-                this.elementIdMap[id] = el;
+            }
+            //if(!this.elementIdMap[id]) this.elementIdMap[id] = el;
             this.executionMap[id] = this.executionMap[id] || {};
             if (!this.executionMap[id][type]) {
                 this.executionMap[id][type] = { handler: handler, context: context };
@@ -256,7 +259,7 @@ var fmvc;
                 console.warn('create listener for %s not found', type);
         };
         EventDispatcher.prototype.__removeListener = function (el, id, type) {
-            var id = id || el.getAttribute('id') || _.findKey(this.elementIdMap, el);
+            var id = id || el.getAttribute('id');
             if (_.contains(fmvc.browserElementEvents, type)) {
                 el.removeEventListener(type, this.browserHandler);
             }
@@ -273,21 +276,35 @@ var fmvc;
         EventDispatcher.prototype.__createSpecialListener = function (el, type) {
             console.warn('create special listener for %s not implemented', type);
         };
-        EventDispatcher.prototype.unlisten = function (el, type) {
-            var id = el.getAttribute('id') || _.findKey(this.elementIdMap, el);
-            var uid = id + ':' + type;
+        EventDispatcher.prototype.unlistenAll = function (el) {
+            var id = el.getAttribute('id');
             if (!id)
                 return;
-            delete this.elementIdMap[uid];
+            _.each(this.executionMap[id], function (handlerObject, type) {
+                el.removeEventListener(type, this.browserHandler);
+                delete handlerObject.handler;
+                delete handlerObject.context;
+            }, this);
+            delete this.executionMap[id];
+            //delete this.elementIdMap[id];
+        };
+        EventDispatcher.prototype.unlisten = function (el, type) {
+            var id = el.getAttribute('id');
+            if (!id)
+                return;
+            var handlerObject = this.executionMap[id][type];
+            el.removeEventListener(type, this.browserHandler);
+            delete handlerObject.handler;
+            delete handlerObject.context;
+            delete this.executionMap[id][type];
         };
         EventDispatcher.prototype.browserHandler = function (e) {
             var el = e.currentTarget || e.target;
-            console.log(el.getAttribute('id'));
-            var id = el.getAttribute('id') || _.findKey(this.elementIdMap, el);
+            var id = el.getAttribute('id');
             var type = e.type;
             if (!id)
                 return;
-            console.log(this.executionMap[id]);
+            console.log(id, type, this.executionMap[id]);
             if (this.executionMap[id] && this.executionMap[id][type]) {
                 var handlerObject = this.executionMap[id][type];
                 handlerObject.handler.call(handlerObject.context, e);
@@ -547,7 +564,7 @@ var fmvc;
     };
     var View = (function (_super) {
         __extends(View, _super);
-        function View(name, jsTemplate) {
+        function View(name, modelOrData, jsTemplate) {
             _super.call(this, name, fmvc.TYPE_VIEW);
             this.dynamicPropertyValue = {}; // те которые были установлены
             this.elementPaths = {};
@@ -561,6 +578,12 @@ var fmvc;
             this._locale = 'ru';
             this._id = null;
             _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler', 'getDataObjectValue');
+            if (modelOrData) {
+                if (modelOrData.type === fmvc.TYPE_MODEL)
+                    this.model = modelOrData;
+                else
+                    this.data = modelOrData;
+            }
             this.initTemplate(jsTemplate);
             this.init();
             this.invalidateHandler = this.invalidateHandler.bind(this);
@@ -586,12 +609,10 @@ var fmvc;
         Object.defineProperty(View.prototype, "id", {
             // @memorize
             get: function () {
-                if (this._id) {
-                    return this._id;
+                if (!this._id) {
+                    this._id = (_.property('staticAttributes')(this.jsTemplate) ? this.jsTemplate.staticAttributes['id'] : null) || ViewHelper.getId();
                 }
-                else {
-                    this._id = _.property('staticAttributes')(this.jsTemplate) ? this.jsTemplate.staticAttributes['id'] : null || ViewHelper.getId();
-                }
+                return this._id;
             },
             enumerable: true,
             configurable: true
@@ -829,11 +850,11 @@ var fmvc;
                 this.enableDynamicStyle(true);
             ViewHelper.checkElementAttribute(this.element, 'id', this.id);
             if (this.hasState(fmvc.State.HOVER)) {
-                this.dispatcher.listen(this.element, this.id, fmvc.BrowserEvent.MOUSEOVER, function () { return t.setState(fmvc.State.HOVER, true); });
-                this.dispatcher.listen(this.element, this.id, fmvc.BrowserEvent.MOUSEOUT, function () { return t.setState(fmvc.State.HOVER, false); });
+                this.dispatcher.listen(this.element, fmvc.BrowserEvent.MOUSEOVER, function () { return t.setState(fmvc.State.HOVER, true); });
+                this.dispatcher.listen(this.element, fmvc.BrowserEvent.MOUSEOUT, function () { return t.setState(fmvc.State.HOVER, false); });
             }
             if (this.hasState(fmvc.State.SELECTED)) {
-                this.dispatcher.listen(this.element, this.id, fmvc.BrowserEvent.CLICK, function () { return t.setState(fmvc.State.SELECTED, false); });
+                this.dispatcher.listen(this.element, fmvc.BrowserEvent.CLICK, function () { return t.setState(fmvc.State.SELECTED, !t.getState(fmvc.State.SELECTED)); });
             }
             this.enterDocumentElement(this.jsTemplate, this.elementPaths);
             this.invalidate(1);
@@ -894,7 +915,7 @@ var fmvc;
                                 this.handlers[path] = {};
                             this.handlers[path][eventType] = name;
                             e.setAttribute('data-path', path);
-                            this.dispatcher.listen(e, id, eventType, this.applyEventHandlers);
+                            this.dispatcher.listen(e, eventType, this.applyEventHandlers);
                         }
                     }, this);
                 }
@@ -921,8 +942,6 @@ var fmvc;
                     _.each(value.handlers, function (name, eventType) {
                         //console.log('try remove listener ', e, value.tagName, path, eventType);
                         if (this.handlers[path] && this.handlers[path][eventType]) {
-                            //console.log('remove listener ', e, value.tagName, path, eventType);
-                            //e.removeEventListener(eventType, this.applyEventHandlers);
                             this.dispatcher.unlisten(e, eventType);
                             delete this.handlers[path][eventType];
                         }
@@ -1239,7 +1258,7 @@ var fmvc;
         View.prototype.enableDynamicStyle = function (value) {
             var id = this.className + '__' + Math.random() + 'Style';
             if (value && !this.isDynamicStylesEnabled()) {
-                ////console.log(' *** enable dynamic style *** ');
+                console.log(' *** enable dynamic style *** ', this.jsTemplate.css);
                 var style = document.createElement('style');
                 style.id = id; //@todo create method that setup className at the generator
                 style.type = 'text/css';
@@ -1251,7 +1270,7 @@ var fmvc;
         };
         Object.defineProperty(View.prototype, "dynamicStyle", {
             get: function () {
-                return this.jsTemplate ? this.jsTemplate.css.content : null;
+                return this.jsTemplate && this.jsTemplate.css ? this.jsTemplate.css.content : null;
             },
             enumerable: true,
             configurable: true
@@ -1430,33 +1449,41 @@ var fmvc;
 (function (fmvc) {
     var Mediator = (function (_super) {
         __extends(Mediator, _super);
-        function Mediator(facade, name, views) {
-            if (views === void 0) { views = null; }
+        function Mediator(name, root, facade) {
             _super.call(this, name, fmvc.TYPE_MEDIATOR);
+            this._root = root;
             this.facade = facade;
-            this.initViews(views);
         }
-        Mediator.prototype.initViews = function (views) {
+        Mediator.prototype.setRoot = function (root) {
+            this._root = root;
+            return this;
+        };
+        Mediator.prototype.setFacade = function (facade) {
+            this.facade = facade;
+            return this;
+        };
+        Mediator.prototype.addViews = function (views) {
             if (views) {
-                if (views.length) {
+                if (_.isArray(views)) {
                     for (var i in views) {
                         this.initView(views[i]);
                     }
                     this.views = views;
                 }
                 else {
-                    this.initView(views);
+                    this.initView((views));
                     this.views = [views];
                 }
             }
             else {
-                this.log('Has no views on init');
+                this.log('Has no views to add');
             }
+            return this;
         };
         Mediator.prototype.initView = function (view) {
             this.log('Init view ' + view.name);
             view.mediator = this;
-            view.init();
+            view.render(this._root);
         };
         Mediator.prototype.getView = function (name) {
             for (var i in this.views) {
@@ -1518,8 +1545,8 @@ var ui;
 (function (ui) {
     var Button = (function (_super) {
         __extends(Button, _super);
-        function Button(name, $root) {
-            _super.call(this, name, $root);
+        function Button(name, modelOrData, jsTemplate) {
+            _super.call(this, name, modelOrData, jsTemplate);
         }
         Button.prototype.createDom = function () {
             this.element = this.templateElement;
@@ -1546,6 +1573,18 @@ var ui;
             "staticAttributes": {
                 "class": "button"
             },
+            "children": [{
+                "path": "0,0",
+                "type": "text",
+                "data": {
+                    "static": null,
+                    "dynamic": {
+                        "data.content": ["{data.content}{content}"],
+                        "content": ["{data.content}{content}"]
+                    },
+                    "bounds": null
+                }
+            }],
             "dynamicSummary": {
                 "selected": {
                     "class": {
@@ -1571,14 +1610,28 @@ var ui;
                     "class": {
                         "0": "button-{open}"
                     }
+                },
+                "data.content": {
+                    "data": {
+                        "0,0": "{data.content}{content}"
+                    }
+                },
+                "content": {
+                    "data": {
+                        "0,0": "{data.content}{content}"
+                    }
                 }
             },
             "tagName": "div",
-            "enableStates": ["hover", "selected", "disabled", "error", "open", null],
+            "enableStates": ["hover", "selected", "disabled", "error", "open", {
+                "name": "content",
+                "type": "string",
+                "default": "Default caption"
+            }],
             "extend": "fmvc.View",
             "className": "Button",
             "css": {
-                "content": "button{display:inline-block;min-width:120px;width:100;background-color:#000;color:#fff;font-size:1}.button-hover{background-color:#008000}.button-selected{font-weight:bold;border-bottom:2px solid #000}",
+                "content": ".button{display:inline-block;min-width:120px;width:100;background-color:#0a0;color:#fff;font-size:1}.button-hover{background-color:#0f0}.button-selected{font-weight:bold;border-bottom:2px solid #000}",
                 "enabled": false
             }
         };
@@ -1592,8 +1645,8 @@ var ui;
 (function (ui) {
     var UserView = (function (_super) {
         __extends(UserView, _super);
-        function UserView(name, $root) {
-            _super.call(this, name, $root);
+        function UserView(name, modelOrData, jsTemplate) {
+            _super.call(this, name, modelOrData, jsTemplate);
         }
         UserView.prototype.createDom = function () {
             this.element = this.templateElement;
@@ -1803,7 +1856,8 @@ var ui;
                     "data": {
                         "static": null,
                         "dynamic": {
-                            "data.coordinates.x": ["Cooridnates {data.coordinates.x} & {data.coordinates.y}"]
+                            "data.coordinates.x": ["Cooridnates {data.coordinates.x} & {data.coordinates.y}"],
+                            "data.coordinates.y": ["Cooridnates {data.coordinates.x} & {data.coordinates.y}"]
                         },
                         "bounds": null
                     }
@@ -2013,6 +2067,11 @@ var ui;
                     }
                 },
                 "data.coordinates.x": {
+                    "data": {
+                        "0,17,0": "Cooridnates {data.coordinates.x} & {data.coordinates.y}"
+                    }
+                },
+                "data.coordinates.y": {
                     "data": {
                         "0,17,0": "Cooridnates {data.coordinates.x} & {data.coordinates.y}"
                     }

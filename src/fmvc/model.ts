@@ -1,27 +1,33 @@
 ///<reference path='./d.ts'/>
 module fmvc {
+    export interface IModelOptions {
+        enableEvents?:boolean;
+    }
+
     export class Model extends fmvc.Notifier {
         private _data:any;
-        private _isEvents:boolean;
+        private enabledEvents:boolean = true;
         private _validators:Array<Validator>;
 
-        constructor(name:string, data:any = {}, isEvents:boolean = true) {
+        constructor(name:string, data:any = {}, opts?:IModelOptions) {
             super(name);
             this._data = data;
-            this._isEvents = isEvents;
-            if(isEvents) this.sendEvent(fmvc.Event.MODEL_CREATED, this.data);
+            if(opts) {
+                this.enabledEvents = opts.enableEvents;
+            }
+            this.sendEvent(fmvc.Event.MODEL_CREATED, this.data);
         }
 
         public set data(value:any) {
             var data = this._data;
-            var changedFields:Array<string> = null;
-
+            var changes:Array<string> = null;
             var hasChanges:boolean = false;
+
             if (data) {
                 for(var i in value) {
-                    if(data[i] != value[i]) {
-                        if(!changedFields) changedFields = [];
-                        changedFields.push(i);
+                    if(data[i] !== value[i]) {
+                        if(!changes) changes = [];
+                        changes.push(i);
                         hasChanges = true;
                         data[i] = value[i];
                     }
@@ -31,12 +37,24 @@ module fmvc {
                 this._data = value;
             }
 
-            if(hasChanges && this._isEvents) this.sendEvent(fmvc.Event.MODEL_CHANGED, this._data);
+            if(hasChanges && this.enabledEvents) this.sendEvent(fmvc.Event.MODEL_CHANGED, this._data);
         }
 
         public get data():any {
             return this._data;
         }
+
+        public sendEvent(name:string, data:any = null, sub:string = null, error:any = null, log:boolean = true):void {
+            if(this.enabledEvents) super.sendEvent(name, data, sub, error, log);
+        }
+
+        public destroy()
+        {
+        }
+
+        //-----------------------------------------------------------------------------
+        // VALIDATOR PATH
+        //-----------------------------------------------------------------------------
 
         public addValidator(value:Validator):void {
             this._validators = this._validators?this._validators:[];
@@ -62,16 +80,9 @@ module fmvc {
                     break;
                 }
             }
-
             this.sendEvent(fmvc.Event.MODEL_VALIDATED, result, null, error);
             return result;
         }
-
-        public destroy()
-        {
-
-        }
-
     }
 
     export class Validator {

@@ -9,33 +9,41 @@ var fmvc;
 (function (fmvc) {
     var Mediator = (function (_super) {
         __extends(Mediator, _super);
-        function Mediator(facade, name, views) {
-            if (views === void 0) { views = null; }
+        function Mediator(name, root, facade) {
             _super.call(this, name, fmvc.TYPE_MEDIATOR);
+            this._root = root;
             this.facade = facade;
-            this.initViews(views);
         }
-        Mediator.prototype.initViews = function (views) {
+        Mediator.prototype.setRoot = function (root) {
+            this._root = root;
+            return this;
+        };
+        Mediator.prototype.setFacade = function (facade) {
+            this.facade = facade;
+            return this;
+        };
+        Mediator.prototype.addViews = function (views) {
             if (views) {
-                if (views.length) {
+                if (_.isArray(views)) {
                     for (var i in views) {
                         this.initView(views[i]);
                     }
                     this.views = views;
                 }
                 else {
-                    this.initView(views);
+                    this.initView((views));
                     this.views = [views];
                 }
             }
             else {
-                this.log('Has no views on init');
+                this.log('Has no views to add');
             }
+            return this;
         };
         Mediator.prototype.initView = function (view) {
             this.log('Init view ' + view.name);
             view.mediator = this;
-            view.init();
+            view.render(this._root);
         };
         Mediator.prototype.getView = function (name) {
             for (var i in this.views) {
