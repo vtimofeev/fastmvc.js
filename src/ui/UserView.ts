@@ -289,7 +289,7 @@ module ui {
                     "style": "background-color:red"
                 },
                 "tagName": "div",
-                "states": ["hover", "touch"]
+                "states": ["app.config.close", "hover", "touch"]
             }, {
                 "path": "0,27",
                 "type": "tag",

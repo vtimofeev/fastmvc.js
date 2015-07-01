@@ -56,10 +56,11 @@ module fmvc
         }
 
 
-        public log(message:string, level?:number):void
+        public log(message:string, level?:number):Notifier
         {
             // @todo remove facade reference
             if(this._facade) this._facade.sendLog(this.name, message, level);
+            return this;
         }
 
         public registerHandler():void

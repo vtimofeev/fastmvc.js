@@ -20,20 +20,41 @@ var fmvc;
     fmvc.TYPE_MEDIATOR = 'mediator';
     fmvc.TYPE_MODEL = 'model';
     fmvc.TYPE_VIEW = 'view';
+    fmvc.DefaultModel = {
+        locale: 'locale',
+        i18n: 'i18n'
+    };
     var Facade = (function () {
-        function Facade(name, root) {
+        function Facade(name, root, locale, i18nDict) {
+            if (locale === void 0) { locale = 'ru'; }
+            if (i18nDict === void 0) { i18nDict = {}; }
             this._name = '';
             this._objects = [];
             this._events = {};
+            this.model = {};
+            this.mediator = {};
             this._name = name;
             this._root = root;
             //this._logger = new fmvc.Logger(this, 'Log');
             //this.log('Start ' + name + ', fmvc ' + fmvc.VERSION);
+            var locale = new fmvc.Model(fmvc.DefaultModel.locale, { value: 'ru' });
+            var i18n = new fmvc.Model(fmvc.DefaultModel.i18n, {});
+            this.register(locale, i18n);
             Facade._facades.push(name);
+            init();
         }
+        Facade.prototype.init = function () {
+        };
         Facade.prototype.register = function (object) {
             object.facade = this;
-            this.log('Register ' + object.name);
+            this.log('Register ' + object.name + ', ' + object.type);
+            switch (object.type) {
+                case fmvc.TYPE_MODEL:
+                    break;
+                case fmvc.TYPE_MEDIATOR:
+                    var mediator = (object);
+                    mediator.break;
+            }
             if (this._objects.indexOf(object) < 0) {
                 this._objects.push(object);
                 if (object && ('events' in object)) {
@@ -52,6 +73,12 @@ var fmvc;
             }
             return this;
         };
+        Object.defineProperty(Facade.prototype, "locale", {
+            get: function () {
+            },
+            enumerable: true,
+            configurable: true
+        });
         Facade.prototype.getLogger = function () {
             return this._logger;
         };
@@ -76,6 +103,9 @@ var fmvc;
         Facade.prototype.sendLog = function (name, message, level) {
             console.log(_.toArray(arguments));
             //this._logger.saveLog(name, message, level);
+        };
+        Facade.prototype.getInstance = function (name) {
+            return this._facades[name];
         };
         Facade._facades = [];
         return Facade;
@@ -130,6 +160,7 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        // ������� ��������� ������� � �����, ����� ������� ���������� (��� �������)
         Notifier.prototype.sendEvent = function (name, data, sub, error, log) {
             if (data === void 0) { data = null; }
             if (sub === void 0) { sub = null; }
@@ -141,27 +172,31 @@ var fmvc;
             if (this._facade)
                 this._facade.eventHandler(e);
             if (this._listeners && this._listeners.length)
-                this.sendToListners(name, data);
+                this._sendToListners(name, data);
         };
         Notifier.prototype.log = function (message, level) {
-            // log messages
+            // @todo remove facade reference
             if (this._facade)
                 this._facade.sendLog(this.name, message, level);
+            return this;
         };
         Notifier.prototype.registerHandler = function () {
         };
         Notifier.prototype.removeHandler = function () {
         };
+        Notifier.prototype.bind = function (object, handler) {
+            this.addListener(object, handler);
+            return this;
+        };
+        Notifier.prototype.unbind = function (object, handler) {
+            this.removeListener(object, handler);
+            return this;
+        };
         Notifier.prototype.addListener = function (object, handler) {
             if (!this._listeners)
                 this._listeners = [];
             this._listeners.push({ target: object, handler: handler });
-        };
-        Notifier.prototype.bind = function (bind, object, handler) {
-            if (bind)
-                this.addListener(object, handler);
-            else
-                this.removeListener(object, handler);
+            return this;
         };
         Notifier.prototype.removeListener = function (object, handler) {
             var deleted = 0;
@@ -171,19 +206,20 @@ var fmvc;
                     deleted++;
                 }
             }, this._listeners);
+            return this;
         };
         Notifier.prototype.removeAllListeners = function () {
             this._listeners = null;
         };
-        Notifier.prototype.sendToListners = function (event, data) {
+        Notifier.prototype._sendToListners = function (event, data) {
             this._listeners.forEach(function (lo) {
                 if (!lo.target.disposed)
                     (lo.handler).apply(lo.target, [event, data]);
             });
         };
         Notifier.prototype.dispose = function () {
+            this.removeAllListeners();
             this.facade = null;
-            this._listeners = null;
             this._disposed = true;
         };
         return Notifier;
@@ -376,14 +412,15 @@ var fmvc;
 (function (fmvc) {
     var Model = (function (_super) {
         __extends(Model, _super);
-        function Model(name, data, isEvents) {
+        function Model(name, data, opts) {
             if (data === void 0) { data = {}; }
-            if (isEvents === void 0) { isEvents = true; }
             _super.call(this, name);
+            this.enabledEvents = true;
             this._data = data;
-            this._isEvents = isEvents;
-            if (isEvents)
-                this.sendEvent(fmvc.Event.MODEL_CREATED, this.data);
+            if (opts) {
+                this.enabledEvents = opts.enableEvents;
+            }
+            this.sendEvent(fmvc.Event.MODEL_CREATED, this.data);
         }
         Object.defineProperty(Model.prototype, "data", {
             get: function () {
@@ -391,14 +428,14 @@ var fmvc;
             },
             set: function (value) {
                 var data = this._data;
-                var changedFields = null;
+                var changes = null;
                 var hasChanges = false;
                 if (data) {
                     for (var i in value) {
-                        if (data[i] != value[i]) {
-                            if (!changedFields)
-                                changedFields = [];
-                            changedFields.push(i);
+                        if (data[i] !== value[i]) {
+                            if (!changes)
+                                changes = [];
+                            changes.push(i);
                             hasChanges = true;
                             data[i] = value[i];
                         }
@@ -407,12 +444,25 @@ var fmvc;
                 else {
                     this._data = value;
                 }
-                if (hasChanges && this._isEvents)
+                if (hasChanges && this.enabledEvents)
                     this.sendEvent(fmvc.Event.MODEL_CHANGED, this._data);
             },
             enumerable: true,
             configurable: true
         });
+        Model.prototype.sendEvent = function (name, data, sub, error, log) {
+            if (data === void 0) { data = null; }
+            if (sub === void 0) { sub = null; }
+            if (error === void 0) { error = null; }
+            if (log === void 0) { log = true; }
+            if (this.enabledEvents)
+                _super.prototype.sendEvent.call(this, name, data, sub, error, log);
+        };
+        Model.prototype.destroy = function () {
+        };
+        //-----------------------------------------------------------------------------
+        // VALIDATOR PATH
+        //-----------------------------------------------------------------------------
         Model.prototype.addValidator = function (value) {
             this._validators = this._validators ? this._validators : [];
             if (this._validators.indexOf(value) >= 0)
@@ -437,8 +487,6 @@ var fmvc;
             }
             this.sendEvent(fmvc.Event.MODEL_VALIDATED, result, null, error);
             return result;
-        };
-        Model.prototype.destroy = function () {
         };
         return Model;
     })(fmvc.Notifier);
@@ -578,6 +626,7 @@ var fmvc;
             this._locale = 'ru';
             this._id = null;
             _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler', 'getDataObjectValue');
+            this.template = this.jsTemplate;
             if (modelOrData) {
                 if (modelOrData.type === fmvc.TYPE_MODEL)
                     this.model = modelOrData;
@@ -588,10 +637,12 @@ var fmvc;
             this.init();
             this.invalidateHandler = this.invalidateHandler.bind(this);
         }
-        View.prototype.initTemplate = function (jsTemplate) {
-            this.jsTemplate = (_.extend(this.jsTemplate, jsTemplate));
-            if (this.jsTemplate && this.jsTemplate.enableStates)
-                this.enableStates(this.jsTemplate.enableStates);
+        View.prototype.initTemplate = function (templateExtention) {
+            if (templateExtention)
+                this.template = (_.extend(_.clone(this.template), templateExtention));
+            console.log('template: ', this.template);
+            if (this.template && this.template.enableStates)
+                this.enableStates(this.template.enableStates);
         };
         // @override
         View.prototype.init = function () {
@@ -1044,15 +1095,16 @@ var fmvc;
         };
         View.prototype.setState = function (name, value) {
             if (!(name in this._states))
-                return;
+                return this;
             if (name in this._statesType)
                 value = View.getTypedValue(value, this._statesType[name]);
             if (this._states[name] === value)
-                return;
+                return this;
             this._states[name] = value;
             this.applyState(name, value);
             this.applyChildrenState(name, value);
             this.applyChangeStateElement(this.jsTemplate, this.elementPaths);
+            return this;
         };
         View.prototype.getState = function (name) {
             return this._states[name];
@@ -1933,7 +1985,7 @@ var ui;
                     "style": "background-color:red"
                 },
                 "tagName": "div",
-                "states": ["hover", "touch"]
+                "states": ["app.config.close", "hover", "touch"]
             }, {
                 "path": "0,27",
                 "type": "tag",

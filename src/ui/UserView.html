@@ -23,7 +23,7 @@
     <div onmouseover="overText" onmouseout="outText">{data.age as AGE, data.firstname as FIRST|i18n.template2}</div>
     <div>The value is {data.value}</div>
     <div>Cooridnates {data.coordinates.x} & {data.coordinates.y}</div>
-    <input states="selected" type="text" value="{@data.value|int}" onkeydown="changeValueOnKeyUp" onkeyup="changeValueOnKeyDown" onclick="stopPropagation" validators="" />
+    <input states="selected" type="text" value="{@data.value}" onkeydown="changeValueOnKeyUp" onkeyup="changeValueOnKeyDown"  validators="" />
     <ui.Button
             link="hellobutton"
             id="{c.id}-ui-hellobutton"
@@ -34,10 +34,10 @@
             fx="hover=true:animation-hover,2s;hover=false:animation-hover-out,2s"
             >{data.firstname|second|first} The Text Of The button
     </ui.Button>
-    <div link="close2" class="close" states="selected,custom=one,counter>=10" style="">{data.firstname|first} Close Text get from .</div>
-    <div link="close" class="close" states="app.config.close,hover,touch" style="background-color:red">Close Text get from ...</div>
+    <div link="close2" class="close" states="selected,custom==='one',counter>=10" style="">{data.firstname|first} Close Text get from .</div>
+    <div link="close" class="close" states="app.config.close&&(state==='one'||state==='two'))" style="background-color:red">Close Text get from ...</div>
 
-    <div id="{c.id}-ui-view" states="hellobutton.hover=true,counter>=0" >Show on ui.Button over/Hide on ui.Button out</div>
+    <div id="{id}-ui-view" states="{(hellobutton.hover=true||counter>=0)}" >Show on ui.Button over/Hide on ui.Button out</div>
 <!-- Comment -->
 </div>
 

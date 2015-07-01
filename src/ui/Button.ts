@@ -2,14 +2,13 @@
 /* start object */
 module ui {
     export class Button extends fmvc.View {
-        constructor(name: string, modelOrData ? : fmvc.Model | any, jsTemplate ? : any) {
+        constructor(name: string, modelOrData ? : fmvc.Model | any, jsTemplate ? : IDomObject) {
             super(name, modelOrData, jsTemplate);
         }
         createDom() {
             this.element = this.templateElement;
             this.childrenContainer = this.childrenContainer || this.element;
             return this;
-
         }
         /*
         public isDynamicStylesEnabled(value?:boolean):boolean {
@@ -21,7 +20,6 @@ module ui {
         public get jsTemplate(): fmvc.IRootDomObject {
             return Button.__jsTemplate;
         }
-
         private static __jsTemplate: fmvc.IRootDomObject = {
             "path": "0",
             "type": "tag",

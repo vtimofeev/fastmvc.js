@@ -1,8 +1,9 @@
 <f:style src="./styl/button.styl"/>
 <f:state type="string" name="content" default="Default caption"></f:state>
+<f:state type="string" name="title" default="Can be also a content"></f:state>
 
 <div className="Button"
      extend="fmvc.View"
      enableStates="hover,selected,disabled,error,open"
      class="button button-{selected} button-{disabled} button-{hover} button-{error} button-{open}"
-     >{data.content}{content}</div>
+     >{(data.content||content)} a button content can be {(data.title||title)}</div>

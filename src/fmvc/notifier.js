@@ -64,6 +64,7 @@ var fmvc;
             // @todo remove facade reference
             if (this._facade)
                 this._facade.sendLog(this.name, message, level);
+            return this;
         };
         Notifier.prototype.registerHandler = function () {
         };

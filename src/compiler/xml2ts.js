@@ -57,6 +57,7 @@ var fmvc;
     };
     var DOM_KEYS = [KEYS.VALUE, KEYS.HREF, KEYS.STYLE, KEYS.CLASS, KEYS.CHECKED, KEYS.DISABLED, KEYS.SELECTED, KEYS.FOCUSED];
     var ALLOWED_KEYS = [].concat(_.values(KEYS), _.values(EVENT_KEYS));
+    var ALLOWED_VARIABLES_IN_EXPRESSION = [].concat(_.values(KEYS), ['data', 'app']);
     var Xml2Ts = (function () {
         function Xml2Ts(srcIn, srcOut) {
             this.srcIn = srcIn;
@@ -214,6 +215,59 @@ var fmvc;
                     }
             }
         };
+        // todo review
+        Xml2TsUtils.getDataDynamicValue = function (key, value) {
+            if (value.match(Xml2TsUtils.PROPERTY_DATA_MATCH)) {
+                return value;
+            }
+            else {
+            }
+        };
+        Xml2TsUtils.parseDynamicContent = function (value) {
+            // {abc}
+            // {(a||b)}
+            // {(a||b?'one':two')}
+            // {(a||b) as V, c as D, (a||b||c) as E|i18n.t|s|d}
+            var result = { vars: [], arguments: {}, filters: [], expression: [] };
+            var expressionMatches = value.match(Xml2TsUtils.BRACKETS_MATCH);
+            if (expressionMatches && expressionMatches.length)
+                _.each(expressionMatches, function (expression, index) {
+                    value = value.replace(expression, '$' + index);
+                    var variables = _.uniq(_.filter(expression.match(Xml2TsUtils.VARS_MATCH), function (v) { return v.indexOf('\'') === -1 && v.match(/[A-Za-z]+/gi); }));
+                    result.vars.concat(variables);
+                    result.expression.push(_.reduce(variables, function (memo, v) { return memo.replace(new RegExp(v, 'g'), 'this.' + v); }), expression);
+                });
+            var valueSpitByFilter = value.split('|');
+            value = _.first(valueSpitByFilter);
+            result.filters = _.rest(valueSpitByFilter);
+            result.expression = expressionMatches;
+            var arguments = Xml2TsUtils.parseArguments(value);
+            if (_.isObject(arguments)) {
+                result.arguments = arguments;
+                result.vars.concat(_.values(arguments));
+            }
+            else {
+                result.vars.concat(arguments);
+            }
+            return result;
+        };
+        Xml2TsUtils.parseArguments = function (value) {
+            if (value.indexOf(',') === -1)
+                return Xml2TsUtils.parseArgument(value);
+            var result = {};
+            _.each(value.split(','), function (argument, index) {
+                _.extend(result, Xml2TsUtils.parseArgument(argument));
+            });
+            return result;
+        };
+        Xml2TsUtils.parseArgument = function (value) {
+            if (value.indexOf('as') === -1)
+                return value.trim();
+            else {
+                var result = value.split('as');
+                return ({})[result[0].trim()] = result[1].trim();
+            }
+        };
         Xml2TsUtils.getDynamicValues = function (key, value, delimiter) {
             ////console.log('Check for ' , key, value);
             if (!_.isString(value))
@@ -223,7 +277,7 @@ var fmvc;
             var staticValues = null;
             var boundValues = null;
             _.each(values, function (v) {
-                var matches = v.match(Xml2TsUtils.MATCH_REGEXP);
+                var matches = v.match(Xml2TsUtils.DATA_MATCH_REGEXP);
                 _.each(matches, function (match, index) {
                     var matchValue = match.replace(/[\{\}]/g, '');
                     var filterResult = null;
@@ -408,6 +462,10 @@ var fmvc;
             }
         };
         Xml2TsUtils.MATCH_REGEXP = /\{([\@A-Za-z\, \|0-9\.]+)\}/g;
+        Xml2TsUtils.DATA_MATCH_REGEXP = /\{([\(\)\\,\.\|@A-Za-z 0-9]+)\}/g;
+        Xml2TsUtils.BRACKETS_MATCH = /\([^()]+\)/gi;
+        Xml2TsUtils.VARS_MATCH = /\([A-Za-z0-9'\.]+\)/gi;
+        Xml2TsUtils.PROPERTY_DATA_MATCH = /^\{[A-Za-z0-9\.]+\}$/;
         return Xml2TsUtils;
     })();
 })(fmvc || (fmvc = {}));

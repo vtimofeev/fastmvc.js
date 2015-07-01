@@ -68,6 +68,7 @@ module fmvc {
 
     const DOM_KEYS:string[] = [KEYS.VALUE, KEYS.HREF, KEYS.STYLE, KEYS.CLASS, KEYS.CHECKED, KEYS.DISABLED, KEYS.SELECTED, KEYS.FOCUSED];
     const ALLOWED_KEYS:string[] = [].concat(_.values(KEYS), _.values(EVENT_KEYS) );
+    const ALLOWED_VARIABLES_IN_EXPRESSION = [].concat(_.values(KEYS), ['data', 'app']);
 
     export class Xml2Ts {
         constructor(public srcIn:string, public srcOut:string) {
@@ -218,6 +219,11 @@ module fmvc {
 
     class Xml2TsUtils {
         public static MATCH_REGEXP:RegExp = /\{([\@A-Za-z\, \|0-9\.]+)\}/g;
+        public static DATA_MATCH_REGEXP:RegExp = /\{([\(\)\\,\.\|@A-Za-z 0-9]+)\}/g;
+        public static BRACKETS_MATCH:RegExp = /\([^()]+\)/gi;
+        public static VARS_MATCH:RegExp = /\([A-Za-z0-9'\.]+\)/gi;
+        public static PROPERTY_DATA_MATCH:RegExp = /^\{[A-Za-z0-9\.]+\}$/;
+
 
         public static jsonReplacer(key:string, value:any):any {
             ////console.log(key, _.isString(value));
@@ -243,9 +249,72 @@ module fmvc {
             }
         }
 
+        // todo review
+        public static getDataDynamicValue(key, value) {
+            if(value.match(Xml2TsUtils.PROPERTY_DATA_MATCH)) {
+                return value;
+            }
+            else {
+                // each match {...} return result array
+            }
+        }
+
+        public static parseDynamicContent(value) {
+            // {abc}
+            // {(a||b)}
+            // {(a||b?'one':two')}
+            // {(a||b) as V, c as D, (a||b||c) as E|i18n.t|s|d}
+            var result = {vars: [], arguments: {}, filters: [], expression: []};
+
+            var expressionMatches = value.match(Xml2TsUtils.BRACKETS_MATCH);
+            if (expressionMatches && expressionMatches.length) _.each(expressionMatches,
+                function(expression:string, index:number) {
+                    value = value.replace(expression, '$' + index);
+                    var variables = _.uniq(_.filter(expression.match(Xml2TsUtils.VARS_MATCH), function (v) { return  v.indexOf('\'') === -1 && v.match(/[A-Za-z]+/gi); }));
+                    result.vars.concat(variables);
+                    result.expression.push(_.reduce(variables, function(memo, v) { return memo.replace(new RegExp(v, 'g'), 'this.' + v); }), expression);
+                });
+
+            var valueSpitByFilter = value.split('|');
+
+            value = _.first(valueSpitByFilter);
+            result.filters = _.rest(valueSpitByFilter);
+            result.expression = expressionMatches;
+
+            var arguments = Xml2TsUtils.parseArguments(value);
+
+            if(_.isObject(arguments)) {
+                result.arguments = arguments;
+                result.vars.concat(_.values(arguments));
+            } else {
+                result.vars.concat(arguments);
+            }
+
+            return result;
+        }
+
+        public static parseArguments(value:string):string|Object {
+            if(value.indexOf(',') === -1) return Xml2TsUtils.parseArgument(value);
+
+            var result = {};
+            _.each(value.split(','), function(argument, index) {
+                _.extend(result, Xml2TsUtils.parseArgument(argument));
+            });
+            return result;
+        }
+
+        public static parseArgument(value:string) {
+            if(value.indexOf('as') === -1) return value.trim();
+            else {
+                var result = value.split('as');
+                return ({})[result[0].trim()] = result[1].trim();
+            }
+        }
+
         public static getDynamicValues(key:string, value:any, delimiter?:string) {
             ////console.log('Check for ' , key, value);
             if (!_.isString(value)) return value;
+
 
             var values:any[] = delimiter !== null ? (value.split(delimiter ? delimiter : ' ')) : [value];
             var dynamicValues:{[property:string]:string} = null;
@@ -253,7 +322,7 @@ module fmvc {
             var boundValues:string[] = null;
 
             _.each(values, function (v) {
-                var matches = v.match(Xml2TsUtils.MATCH_REGEXP);
+                var matches = v.match(Xml2TsUtils.DATA_MATCH_REGEXP);
 
                 _.each(matches, function(match, index) {
                     var matchValue = match.replace(/[\{\}]/g, '');
@@ -291,9 +360,6 @@ module fmvc {
                             if (!dynamicValues[dataPropName]) dynamicValues[dataPropName] = [filterResult];
                             else dynamicValues[dataPropName].push(filterResult);
                         });
-
-
-
                     }
                     else {
                         if (!dynamicValues) dynamicValues = {};
@@ -314,6 +380,7 @@ module fmvc {
                 //console.log('Return static for ', key, value);
                 return value;
             }
+
         }
 
         public static getStaticValueOfDynamicObject(value:any, delimiter:string):string {
