@@ -502,6 +502,26 @@ module fmvc {
             }
         }
 
+
+        public static getExpressionFromString(value:string):string[] {
+            var brackets = [];
+            var open = 0;
+            var r = [];
+
+            _.each(value, function(v, i) {
+                if(v === '(') {
+                    if(open === 0) brackets.push([i]);
+                    open++;
+                } else if (v === '(') {
+                    if(open === 1) brackets[brackets.length-1].push(i);
+                    open--;
+                }
+            });
+
+            _.each(brackets, function(v) { r.push(value.substring(v[0],v[1])); })
+            return r.length?r:null;
+        }
+
     }
 }
 
