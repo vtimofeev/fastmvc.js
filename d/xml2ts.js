@@ -1,4 +1,7 @@
 ///<reference path='../fmvc/d.ts' />
+///<reference path='../d.ts/node/node.d.ts'/>
+///<reference path='../d.ts/async/async.d.ts'/>
+///<reference path='../d.ts/dustjs-linkedin/dustjs-linkedin.d.ts'/>
 var fs = require('fs');
 var htmlparser = require("htmlparser");
 var _ = require('lodash');
