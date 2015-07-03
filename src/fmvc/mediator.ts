@@ -54,7 +54,7 @@ module fmvc {
             return null;
         }
 
-        public events():any {
+        public get events():string[] {
             return [];
         }
 
@@ -93,7 +93,7 @@ module fmvc {
     }
 
     export interface IMediator {
-        events():any;
+        events:string[];
         internalHandler(e:any):void;
         eventHandler(e:any):void;
         getView(name:string):any;

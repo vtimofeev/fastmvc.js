@@ -696,7 +696,7 @@ var fmvc;
         };
         View.prototype.log = function (message, level) {
             if (this._mediator)
-                this._mediator.facade.sendLog(this.name, message, level);
+                this._mediator.facade.logger.log(this.name, message, level);
         };
         // Overrided
         View.prototype.viewEventsHandler = function (name, e) {

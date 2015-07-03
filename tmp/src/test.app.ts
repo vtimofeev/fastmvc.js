@@ -13,6 +13,8 @@ var ViewEvent = {
     CANCEL: 'cancel'
 };
 
+
+
 class TestMediator extends fmvc.Mediator {
     static NAME:string = 'TestMediator';
     events():string[] {

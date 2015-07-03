@@ -7,18 +7,57 @@ var __extends = this.__extends || function (d, b) {
 ///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
+    fmvc.ModelState = {
+        NONE: 'none',
+        LOADING: 'loading',
+        UPDATING: 'updating',
+        SYNCING: 'syncing',
+        SYNCED: 'synced',
+        CHANGED: 'changed',
+    };
+    /*
+        Загрузка данных
+        var configModel = new Model('config', { default data } , { enabedState: true , state: 'synced' } );
+        var loaderProxy = new LoaderProxy(configModel, configUrl);
+        loaderProxy.load().then(function(data) {
+         var parserProxy = new ParserProxy(data, parserFunction, configModel);
+         parserProxy.parser().then(function() { });
+
+         configModel(
+            defaultConfig,
+            { url : { load: [template], update: [template], remove: [template] },
+              loadProxy: {} // universary queue manager,
+              parserProxy: {} // parserFunction(data=>result),
+              validateProxy: {} // validatorFunction
+              onError
+            }) // option init
+            .load(callback?) // load in model context
+            .sync(callback?). // if changed -> save , if synced -> update
+            .parse(callback?);
+        });
+
+     */
     var Model = (function (_super) {
         __extends(Model, _super);
         function Model(name, data, opts) {
             if (data === void 0) { data = {}; }
             _super.call(this, name);
             this.enabledEvents = true;
-            this._data = data;
-            if (opts) {
-                this.enabledEvents = opts.enableEvents;
-            }
+            this.enabledState = false;
+            this.watchChanges = true;
+            if (opts)
+                _.extend(this, opts);
+            if (data)
+                this.data = data;
             this.sendEvent(fmvc.Event.MODEL_CREATED, this.data);
         }
+        Model.prototype.setState = function (value) {
+            if (!this.enabledState || this._state === value)
+                return this;
+            this._previousState = value;
+            this._state = value;
+            return this;
+        };
         Object.defineProperty(Model.prototype, "data", {
             get: function () {
                 return this._data;
@@ -27,22 +66,29 @@ var fmvc;
                 var data = this._data;
                 var changes = null;
                 var hasChanges = false;
-                if (data) {
+                if (value instanceof Model)
+                    throw Error('Cant set model data, data must be object, array or primitive');
+                //@todo check type of data and value
+                if (_.isObject(data) && _.isObject(value) && this.watchChanges) {
                     for (var i in value) {
                         if (data[i] !== value[i]) {
                             if (!changes)
-                                changes = [];
-                            changes.push(i);
+                                changes = {};
                             hasChanges = true;
+                            changes[i] = value[i];
                             data[i] = value[i];
                         }
                     }
                 }
                 else {
-                    this._data = value;
+                    // primitive || array || no data && any value (object etc)
+                    if (data !== value) {
+                        hasChanges = true;
+                        this._data = _.isObject(value) ? _.extend(this._data, value) : value;
+                    }
                 }
-                if (hasChanges && this.enabledEvents)
-                    this.sendEvent(fmvc.Event.MODEL_CHANGED, this._data);
+                if (hasChanges)
+                    this.sendEvent(fmvc.Event.MODEL_CHANGED, changes || this._data);
             },
             enumerable: true,
             configurable: true
@@ -57,9 +103,6 @@ var fmvc;
         };
         Model.prototype.destroy = function () {
         };
-        //-----------------------------------------------------------------------------
-        // VALIDATOR PATH
-        //-----------------------------------------------------------------------------
         Model.prototype.addValidator = function (value) {
             this._validators = this._validators ? this._validators : [];
             if (this._validators.indexOf(value) >= 0)

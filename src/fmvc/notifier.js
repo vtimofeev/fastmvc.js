@@ -46,7 +46,7 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        // ������� ��������� ������� � �����, ����� ������� ���������� (��� �������)
+        // Послаем сообщение сначала в фасад, потом частным слушателям (для моделей)
         Notifier.prototype.sendEvent = function (name, data, sub, error, log) {
             if (data === void 0) { data = null; }
             if (sub === void 0) { sub = null; }
@@ -63,7 +63,7 @@ var fmvc;
         Notifier.prototype.log = function (message, level) {
             // @todo remove facade reference
             if (this._facade)
-                this._facade.sendLog(this.name, message, level);
+                this._facade.logger.add(this.name, message, level);
             return this;
         };
         Notifier.prototype.registerHandler = function () {

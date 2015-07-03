@@ -760,7 +760,7 @@ module fmvc {
         }
 
         public log(message:string, level?:number):void {
-            if (this._mediator) this._mediator.facade.sendLog(this.name, message, level);
+            if (this._mediator) this._mediator.facade.logger.log(this.name, message, level);
         }
 
         // Overrided

@@ -46,7 +46,7 @@ module fmvc
             return this._type;
         }
 
-        // Послаем сообщение сначала в фасад, потом частным слушателям (для моделей)
+        // РџРѕСЃР»Р°РµРј СЃРѕРѕР±С‰РµРЅРёРµ СЃРЅР°С‡Р°Р»Р° РІ С„Р°СЃР°Рґ, РїРѕС‚РѕРј С‡Р°СЃС‚РЅС‹Рј СЃР»СѓС€Р°С‚РµР»СЏРј (РґР»СЏ РјРѕРґРµР»РµР№)
         public sendEvent(name:string, data:any = null, sub:string = null, error:any = null, log:boolean = true):void
         {
             var e = {name: name, sub:sub, data: data, error: error, target: this};
@@ -59,7 +59,7 @@ module fmvc
         public log(message:string, level?:number):Notifier
         {
             // @todo remove facade reference
-            if(this._facade) this._facade.sendLog(this.name, message, level);
+            if(this._facade) this._facade.logger.add(this.name, message, level);
             return this;
         }
 
@@ -70,7 +70,6 @@ module fmvc
         public removeHandler():void
         {
         }
-
 
         public bind(object:any, handler?:any):Notifier
         {

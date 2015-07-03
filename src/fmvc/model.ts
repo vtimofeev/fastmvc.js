@@ -1,43 +1,94 @@
 ///<reference path='./d.ts'/>
 module fmvc {
     export interface IModelOptions {
-        enableEvents?:boolean;
+        enabledState?:boolean;
+        enabledEvents?:boolean;
+        watchChanges?:boolean;
     }
+
+    export var ModelState = {
+        NONE: 'none',
+        LOADING: 'loading', // load from local/remote source
+        UPDATING: 'updating', // actualize changes @todo? можно исползовать syncing вместо loading/updating
+        SYNCING: 'syncing', // saving changes, updating actual data from remote ...
+        SYNCED: 'synced', //
+        CHANGED: 'changed', // changed in system
+    };
+
+    /*
+        Загрузка данных
+        var configModel = new Model('config', { default data } , { enabedState: true , state: 'synced' } );
+        var loaderProxy = new LoaderProxy(configModel, configUrl);
+        loaderProxy.load().then(function(data) {
+         var parserProxy = new ParserProxy(data, parserFunction, configModel);
+         parserProxy.parser().then(function() { });
+
+         configModel(
+            defaultConfig,
+            { url : { load: [template], update: [template], remove: [template] },
+              loadProxy: {} // universary queue manager,
+              parserProxy: {} // parserFunction(data=>result),
+              validateProxy: {} // validatorFunction
+              onError
+            }) // option init
+            .load(callback?) // load in model context
+            .sync(callback?). // if changed -> save , if synced -> update
+            .parse(callback?);
+        });
+
+     */
 
     export class Model extends fmvc.Notifier {
         private _data:any;
-        private enabledEvents:boolean = true;
-        private _validators:Array<Validator>;
+        private _previousState:string;
+        private _previousData:string;
+        private _state:string;
+
+        public enabledEvents:boolean = true;
+        public enabledState:boolean = false;
+        public watchChanges:boolean = true;
 
         constructor(name:string, data:any = {}, opts?:IModelOptions) {
             super(name);
-            this._data = data;
-            if(opts) {
-                this.enabledEvents = opts.enableEvents;
-            }
+            if (opts) _.extend(this, opts);
+            if (data) this.data = data;
             this.sendEvent(fmvc.Event.MODEL_CREATED, this.data);
+        }
+
+        public setState(value:string):Model {
+            if(!this.enabledState || this._state === value) return this;
+            this._previousState = value;
+            this._state = value;
+            return this;
         }
 
         public set data(value:any) {
             var data = this._data;
-            var changes:Array<string> = null;
+            var changes:{[id:string]:any} = null;
             var hasChanges:boolean = false;
 
-            if (data) {
-                for(var i in value) {
-                    if(data[i] !== value[i]) {
-                        if(!changes) changes = [];
-                        changes.push(i);
+            if (value instanceof Model) throw Error('Cant set model data, data must be object, array or primitive');
+            //@todo check type of data and value
+
+            if(_.isObject(data) && _.isObject(value) && this.watchChanges) {
+                for (var i in value) {
+                    if (data[i] !== value[i]) {
+                        if (!changes) changes = {};
                         hasChanges = true;
+                        changes[i] = value[i];
                         data[i] = value[i];
                     }
                 }
             }
             else {
-                this._data = value;
+                // primitive || array || no data && any value (object etc)
+                if (data !== value) {
+                    hasChanges = true;
+                    this._data = _.isObject(value)?_.extend(this._data, value) : value;
+                }
             }
 
-            if(hasChanges && this.enabledEvents) this.sendEvent(fmvc.Event.MODEL_CHANGED, this._data);
+            if (hasChanges) this.sendEvent(fmvc.Event.MODEL_CHANGED, changes || this._data);
         }
 
         public get data():any {
@@ -45,20 +96,21 @@ module fmvc {
         }
 
         public sendEvent(name:string, data:any = null, sub:string = null, error:any = null, log:boolean = true):void {
-            if(this.enabledEvents) super.sendEvent(name, data, sub, error, log);
+            if (this.enabledEvents) super.sendEvent(name, data, sub, error, log);
         }
 
-        public destroy()
-        {
+        public destroy() {
         }
 
         //-----------------------------------------------------------------------------
         // VALIDATOR PATH
         //-----------------------------------------------------------------------------
 
+        private _validators:Array<Validator>;
+
         public addValidator(value:Validator):void {
-            this._validators = this._validators?this._validators:[];
-            if(this._validators.indexOf(value) >= 0) throw 'Cant add validator to model';
+            this._validators = this._validators ? this._validators : [];
+            if (this._validators.indexOf(value) >= 0) throw 'Cant add validator to model';
             this._validators.push(value);
         }
 
@@ -67,15 +119,14 @@ module fmvc {
             if (index >= 0) this._validators.splice(index, 1);
         }
 
-        public validate(value:any):boolean
-        {
+        public validate(value:any):boolean {
             var result = false;
             var error = {};
 
-            for(var i in this._validators) {
+            for (var i in this._validators) {
                 var validator:Validator = this._validators[i];
                 value = validator.execute(value)
-                if(!value) {
+                if (!value) {
                     result = false;
                     break;
                 }
@@ -90,7 +141,7 @@ module fmvc {
         fnc:Function = null;
 
         constructor(name:string, fnc:Function) {
-            this.name  = name;
+            this.name = name;
             this.fnc = fnc;
         }
 

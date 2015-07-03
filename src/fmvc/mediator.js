@@ -52,9 +52,13 @@ var fmvc;
             }
             return null;
         };
-        Mediator.prototype.events = function () {
-            return [];
-        };
+        Object.defineProperty(Mediator.prototype, "events", {
+            get: function () {
+                return [];
+            },
+            enumerable: true,
+            configurable: true
+        });
         Mediator.prototype.internalHandler = function (e) {
             if (e && e.global) {
                 this.facade.eventHandler(e);
