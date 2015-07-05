@@ -221,7 +221,7 @@ module fmvc {
         public static MATCH_REGEXP:RegExp = /\{([\@A-Za-z\, \|0-9\.]+)\}/g;
         public static DATA_MATCH_REGEXP:RegExp = /\{([\(\)\\,\.\|@A-Za-z 0-9]+)\}/g;
         public static BRACKETS_MATCH:RegExp = /\([^()]+\)/gi;
-        public static VARS_MATCH:RegExp = /\([A-Za-z0-9'\.]+\)/gi;
+        public static VARS_MATCH:RegExp = /([A-Za-z0-9'\.]+)/gi;
         public static PROPERTY_DATA_MATCH:RegExp = /^\{[A-Za-z0-9\.]+\}$/;
 
 
@@ -237,7 +237,9 @@ module fmvc {
                 case KEYS.DATA:
                     return Xml2TsUtils.getDynamicValues(key, value, null);
                 case KEYS.STATES:
-                    return _.map(value.split(','), function(value) { return value.indexOf('=')>-1?value.split('='):value });
+                    return Xml2TsUtils.parseDynamicContent(value);
+
+                    //return _.map(value.split(','), function(value) { return value.indexOf('=')>-1?value.split('='):value });
                 default:
                 {
                     if (key in EVENT_KEYS) return value;// {event: key.replace('on', null), value: value};
@@ -260,54 +262,85 @@ module fmvc {
         }
 
         public static parseDynamicContent(value) {
-            // {abc}
-            // {(a||b)}
-            // {(a||b?'one':two')}
-            // {(a||b) as V, c as D, (a||b||c) as E|i18n.t|s|d}
-            var result = {vars: [], arguments: {}, filters: [], expression: []};
+            // {a} // property
+            // {a|filterOne|filterTwo} // property
+            // {a,b,c} // selector if a or b or c
+            // {(a||b||c)} // expression
+            // {(a||b?'one':'two')} // expression
+            // {(a||b) as V, c as D, (a||b||c) as E|i18n.t|s|d} // expression
 
-            var expressionMatches = value.match(Xml2TsUtils.BRACKETS_MATCH);
+            //console.log('Start ' ,value);
+            var result = {
+                content: value,
+                values: [], // упорядоченные значения до получения любого истинного значения {a,b,c}
+                vars: [], // переменные которые участвуют
+                args: {}, // аргументы для i18n
+                filters: [], // фильтры
+                expression: [] // выражения для расчет
+            };
+
+            var expressionMatches = Xml2TsUtils.getExpressionFromString(value);//value.match(Xml2TsUtils.BRACKETS_MATCH);
+            //console.log('expression matches: ', expressionMatches);
+
             if (expressionMatches && expressionMatches.length) _.each(expressionMatches,
                 function(expression:string, index:number) {
+                    //console.log('Start expression ' , expression);
                     value = value.replace(expression, '$' + index);
                     var variables = _.uniq(_.filter(expression.match(Xml2TsUtils.VARS_MATCH), function (v) { return  v.indexOf('\'') === -1 && v.match(/[A-Za-z]+/gi); }));
-                    result.vars.concat(variables);
-                    result.expression.push(_.reduce(variables, function(memo, v) { return memo.replace(new RegExp(v, 'g'), 'this.' + v); }), expression);
+                    if (!_.isEmpty(variables)) variables = variables.sort((a:string,b:string)=>a.length>b.length?-1:1);
+                    result.vars = result.vars.concat(variables);
+                    var reducedExpression = _.reduce(variables, function(memo, v) {
+                        var requestVariable = ((v.indexOf('.')>-1 && v.indexOf('state.') === -1)?('this.' + v):('this.getState("' + v.replace('state.', '') + '")'));
+                        return memo.replace(new RegExp(v, 'g'),  requestVariable);
+                    }, expression, this);
+                    //console.log('Reduces expression: ', reducedExpression);
+                    result.expression.push(reducedExpression);
                 });
 
-            var valueSpitByFilter = value.split('|');
+            //console.log('value after expressions ' , value);
 
+            var valueSpitByFilter = value.split('|');
             value = _.first(valueSpitByFilter);
+
+            //console.log('value after filter ' , value);
+
             result.filters = _.rest(valueSpitByFilter);
-            result.expression = expressionMatches;
+            //result.expression = expressionMatches;
 
             var arguments = Xml2TsUtils.parseArguments(value);
+            //console.log('arguments ' , arguments, _.isObject(arguments), value.split(','));
 
             if(_.isObject(arguments)) {
-                result.arguments = arguments;
-                result.vars.concat(_.values(arguments));
+                result.args = arguments;
+                result.vars = result.vars.concat(_.filter(_.values(arguments), (v)=>v.indexOf('$')===-1));
+                result.values = [];
             } else {
-                result.vars.concat(arguments);
+                result.vars = result.vars.concat(value.split(','));
+                result.values = result.values.concat(value.split(','));
             }
-
+            console.dir(result);
             return result;
         }
 
-        public static parseArguments(value:string):string|Object {
+        public static parseArguments(value:string):string|string[]|Object {
             if(value.indexOf(',') === -1) return Xml2TsUtils.parseArgument(value);
 
             var result = {};
             _.each(value.split(','), function(argument, index) {
-                _.extend(result, Xml2TsUtils.parseArgument(argument));
+                var parsedArgs = Xml2TsUtils.parseArgument(argument);
+                //console.log('Parsed arguments', parsedArgs);
+                if(_.isObject(parsedArgs)) result = _.extend(result, parsedArgs);
             });
-            return result;
+            return _.isEmpty(result)?null:result;
         }
 
         public static parseArgument(value:string) {
             if(value.indexOf('as') === -1) return value.trim();
             else {
                 var result = value.split('as');
-                return ({})[result[0].trim()] = result[1].trim();
+                var object = {};
+                object[result[1].trim()] = result[0].trim();
+                return object;
             }
         }
 
@@ -512,13 +545,13 @@ module fmvc {
                 if(v === '(') {
                     if(open === 0) brackets.push([i]);
                     open++;
-                } else if (v === '(') {
+                } else if (v === ')') {
                     if(open === 1) brackets[brackets.length-1].push(i);
                     open--;
                 }
             });
 
-            _.each(brackets, function(v) { r.push(value.substring(v[0],v[1])); })
+            _.each(brackets, function(v) { r.push(value.substring(v[0],v[1]+1)); })
             return r.length?r:null;
         }
 

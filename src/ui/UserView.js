@@ -232,18 +232,24 @@ var ui;
                     "path": "0,19",
                     "type": "tag",
                     "handlers": {
-                        "change": "set,data.value|int,{data.value|int}",
+                        "change": "set,data.value,{data.value}",
                         "keydown": "changeValueOnKeyUp",
-                        "keyup": "changeValueOnKeyDown",
-                        "click": "stopPropagation"
+                        "keyup": "changeValueOnKeyDown"
                     },
                     "bounds": {
                         "value": {
-                            "data.value|int": "{data.value|int}"
+                            "data.value": "{data.value}"
                         }
                     },
                     "tagName": "input",
-                    "states": ["selected"]
+                    "states": {
+                        "start": "selected",
+                        "values": ["selected"],
+                        "vars": ["selected"],
+                        "args": {},
+                        "filters": [],
+                        "expression": []
+                    }
                 }, {
                     "path": "0,21",
                     "type": "tag",
@@ -289,7 +295,14 @@ var ui;
                             }
                         }],
                     "tagName": "div",
-                    "states": ["states"]
+                    "states": {
+                        "start": "states",
+                        "values": ["states"],
+                        "vars": ["states"],
+                        "args": {},
+                        "filters": [],
+                        "expression": []
+                    }
                 }, {
                     "path": "0,25",
                     "type": "tag",
@@ -298,12 +311,26 @@ var ui;
                         "style": "background-color:red"
                     },
                     "tagName": "div",
-                    "states": ["app.config.close", "hover", "touch"]
+                    "states": {
+                        "start": "app.config.close&&(state==='one'||state==='two'))",
+                        "values": ["app.config.close&&$0)"],
+                        "vars": ["state", "app.config.close&&$0)"],
+                        "args": {},
+                        "filters": [],
+                        "expression": ["(this.getState(\"state\")==='one'||this.getState(\"state\")==='two')"]
+                    }
                 }, {
                     "path": "0,27",
                     "type": "tag",
                     "tagName": "div",
-                    "states": ["states"]
+                    "states": {
+                        "start": "states",
+                        "values": ["states"],
+                        "vars": ["states"],
+                        "args": {},
+                        "filters": [],
+                        "expression": []
+                    }
                 }, {
                     "path": "0,29",
                     "type": "comment",
@@ -429,6 +456,9 @@ var ui;
                 "data.value": {
                     "data": {
                         "0,15,0": "The value is {data.value}"
+                    },
+                    "value": {
+                        "0,19": "{data.value}"
                     }
                 },
                 "data.coordinates.x": {
@@ -439,11 +469,6 @@ var ui;
                 "data.coordinates.y": {
                     "data": {
                         "0,17,0": "Cooridnates {data.coordinates.x} & {data.coordinates.y}"
-                    }
-                },
-                "data.value|int": {
-                    "value": {
-                        "0,19": "{data.value|int}"
                     }
                 }
             },

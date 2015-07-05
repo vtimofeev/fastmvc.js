@@ -203,7 +203,8 @@ var fmvc;
                 case KEYS.DATA:
                     return Xml2TsUtils.getDynamicValues(key, value, null);
                 case KEYS.STATES:
-                    return _.map(value.split(','), function (value) { return value.indexOf('=') > -1 ? value.split('=') : value; });
+                    return Xml2TsUtils.parseDynamicContent(value);
+                //return _.map(value.split(','), function(value) { return value.indexOf('=')>-1?value.split('='):value });
                 default:
                     {
                         if (key in EVENT_KEYS)
@@ -224,31 +225,56 @@ var fmvc;
             }
         };
         Xml2TsUtils.parseDynamicContent = function (value) {
-            // {abc}
-            // {(a||b)}
-            // {(a||b?'one':two')}
-            // {(a||b) as V, c as D, (a||b||c) as E|i18n.t|s|d}
-            var result = { vars: [], arguments: {}, filters: [], expression: [] };
-            var expressionMatches = value.match(Xml2TsUtils.BRACKETS_MATCH);
+            // {a} // property
+            // {a|filterOne|filterTwo} // property
+            // {a,b,c} // selector if a or b or c
+            // {(a||b||c)} // expression
+            // {(a||b?'one':'two')} // expression
+            // {(a||b) as V, c as D, (a||b||c) as E|i18n.t|s|d} // expression
+            //console.log('Start ' ,value);
+            var result = {
+                content: value,
+                values: [],
+                vars: [],
+                args: {},
+                filters: [],
+                expression: [] // выражения для расчет
+            };
+            var expressionMatches = Xml2TsUtils.getExpressionFromString(value); //value.match(Xml2TsUtils.BRACKETS_MATCH);
+            //console.log('expression matches: ', expressionMatches);
             if (expressionMatches && expressionMatches.length)
                 _.each(expressionMatches, function (expression, index) {
+                    //console.log('Start expression ' , expression);
                     value = value.replace(expression, '$' + index);
                     var variables = _.uniq(_.filter(expression.match(Xml2TsUtils.VARS_MATCH), function (v) { return v.indexOf('\'') === -1 && v.match(/[A-Za-z]+/gi); }));
-                    result.vars.concat(variables);
-                    result.expression.push(_.reduce(variables, function (memo, v) { return memo.replace(new RegExp(v, 'g'), 'this.' + v); }), expression);
+                    if (!_.isEmpty(variables))
+                        variables = variables.sort(function (a, b) { return a.length > b.length ? -1 : 1; });
+                    result.vars = result.vars.concat(variables);
+                    var reducedExpression = _.reduce(variables, function (memo, v) {
+                        var requestVariable = ((v.indexOf('.') > -1 && v.indexOf('state.') === -1) ? ('this.' + v) : ('this.getState("' + v.replace('state.', '') + '")'));
+                        return memo.replace(new RegExp(v, 'g'), requestVariable);
+                    }, expression, this);
+                    //console.log('Reduces expression: ', reducedExpression);
+                    result.expression.push(reducedExpression);
                 });
+            //console.log('value after expressions ' , value);
             var valueSpitByFilter = value.split('|');
             value = _.first(valueSpitByFilter);
+            //console.log('value after filter ' , value);
             result.filters = _.rest(valueSpitByFilter);
-            result.expression = expressionMatches;
+            //result.expression = expressionMatches;
             var arguments = Xml2TsUtils.parseArguments(value);
+            //console.log('arguments ' , arguments, _.isObject(arguments), value.split(','));
             if (_.isObject(arguments)) {
-                result.arguments = arguments;
-                result.vars.concat(_.values(arguments));
+                result.args = arguments;
+                result.vars = result.vars.concat(_.filter(_.values(arguments), function (v) { return v.indexOf('$') === -1; }));
+                result.values = [];
             }
             else {
-                result.vars.concat(arguments);
+                result.vars = result.vars.concat(value.split(','));
+                result.values = result.values.concat(value.split(','));
             }
+            console.dir(result);
             return result;
         };
         Xml2TsUtils.parseArguments = function (value) {
@@ -256,16 +282,21 @@ var fmvc;
                 return Xml2TsUtils.parseArgument(value);
             var result = {};
             _.each(value.split(','), function (argument, index) {
-                _.extend(result, Xml2TsUtils.parseArgument(argument));
+                var parsedArgs = Xml2TsUtils.parseArgument(argument);
+                //console.log('Parsed arguments', parsedArgs);
+                if (_.isObject(parsedArgs))
+                    result = _.extend(result, parsedArgs);
             });
-            return result;
+            return _.isEmpty(result) ? null : result;
         };
         Xml2TsUtils.parseArgument = function (value) {
             if (value.indexOf('as') === -1)
                 return value.trim();
             else {
                 var result = value.split('as');
-                return ({})[result[0].trim()] = result[1].trim();
+                var object = {};
+                object[result[1].trim()] = result[0].trim();
+                return object;
             }
         };
         Xml2TsUtils.getDynamicValues = function (key, value, delimiter) {
@@ -461,10 +492,29 @@ var fmvc;
                     return !!(s === true || s === 'true');
             }
         };
+        Xml2TsUtils.getExpressionFromString = function (value) {
+            var brackets = [];
+            var open = 0;
+            var r = [];
+            _.each(value, function (v, i) {
+                if (v === '(') {
+                    if (open === 0)
+                        brackets.push([i]);
+                    open++;
+                }
+                else if (v === ')') {
+                    if (open === 1)
+                        brackets[brackets.length - 1].push(i);
+                    open--;
+                }
+            });
+            _.each(brackets, function (v) { r.push(value.substring(v[0], v[1] + 1)); });
+            return r.length ? r : null;
+        };
         Xml2TsUtils.MATCH_REGEXP = /\{([\@A-Za-z\, \|0-9\.]+)\}/g;
         Xml2TsUtils.DATA_MATCH_REGEXP = /\{([\(\)\\,\.\|@A-Za-z 0-9]+)\}/g;
         Xml2TsUtils.BRACKETS_MATCH = /\([^()]+\)/gi;
-        Xml2TsUtils.VARS_MATCH = /\([A-Za-z0-9'\.]+\)/gi;
+        Xml2TsUtils.VARS_MATCH = /([A-Za-z0-9'\.]+)/gi;
         Xml2TsUtils.PROPERTY_DATA_MATCH = /^\{[A-Za-z0-9\.]+\}$/;
         return Xml2TsUtils;
     })();

@@ -16,98 +16,162 @@ var fmvc;
 ///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
-    fmvc.VERSION = '0.6.1';
+    fmvc.VERSION = '0.8.0';
     fmvc.TYPE_MEDIATOR = 'mediator';
     fmvc.TYPE_MODEL = 'model';
     fmvc.TYPE_VIEW = 'view';
     fmvc.DefaultModel = {
         locale: 'locale',
-        i18n: 'i18n'
+        i18n: 'i18n',
+        theme: 'theme',
+        log: 'log'
     };
     var Facade = (function () {
-        function Facade(name, root, locale, i18nDict) {
+        function Facade(name, root, theme, locale, i18nDict) {
+            if (theme === void 0) { theme = ''; }
             if (locale === void 0) { locale = 'ru'; }
             if (i18nDict === void 0) { i18nDict = {}; }
             this._name = '';
-            this._objects = [];
             this._events = {};
             this.model = {};
             this.mediator = {};
+            // Уникальное имя приложения
             this._name = name;
+            // Контейнер приложения
             this._root = root;
-            //this._logger = new fmvc.Logger(this, 'Log');
-            //this.log('Start ' + name + ', fmvc ' + fmvc.VERSION);
-            var locale = new fmvc.Model(fmvc.DefaultModel.locale, { value: 'ru' });
-            var i18n = new fmvc.Model(fmvc.DefaultModel.i18n, {});
-            this.register(locale, i18n);
-            Facade._facades.push(name);
-            init();
+            // Регистрируем в синглтоне приложений среды (в дальнейшем используется для взаимойдействий между приложениями)
+            Facade.__facades[name] = this;
+            // создание модели логгера
+            var logModel = new fmvc.Logger(fmvc.DefaultModel.log);
+            // записываем модель в фасад (для глобального доступа и обработки событий из модели)
+            this.register(logModel);
+            // Модель локали, содержит строку указывающую на локализацию
+            var localeModel = new fmvc.Model(fmvc.DefaultModel.locale, { value: locale });
+            // Модель темы, содержит строку указывающую на тему
+            var themeModel = new fmvc.Model(fmvc.DefaultModel.theme, { value: theme });
+            // Объект содержащий глобальные данные i18n
+            var i18nModel = new fmvc.Model(fmvc.DefaultModel.i18n, i18nDict);
+            // Добавляем модели по умолчанию в фасад
+            this.register([localeModel, i18nModel, themeModel]);
+            this.log('Старт приложения ' + name + ', fmvc версия ' + fmvc.VERSION);
+            this.init();
         }
+        // В насдедниках переписываем метод, в нем добавляем доменные модели, прокси, медиаторы
         Facade.prototype.init = function () {
         };
-        Facade.prototype.register = function (object) {
-            object.facade = this;
-            this.log('Register ' + object.name + ', ' + object.type);
-            switch (object.type) {
-                case fmvc.TYPE_MODEL:
-                    break;
-                case fmvc.TYPE_MEDIATOR:
-                    var mediator = (object);
-                    mediator.break;
+        // Регистрация объкта система - модели, медиатора
+        // Модели, содержат данные, генерируют события моделей
+        // Медиаторы, содержат отображения, а тажке генерируют, проксируют события отображения, слушают события модели
+        Facade.prototype.register = function (objects) {
+            var _this = this;
+            if (_.isArray(objects)) {
+                _.each(objects, this.register, this);
             }
-            if (this._objects.indexOf(object) < 0) {
-                this._objects.push(object);
-                if (object && ('events' in object)) {
-                    var events = object.events();
-                    for (var i in events) {
-                        var event = events[i];
-                        this.log('Add event listener ' + object.name);
-                        if (this._events[event]) {
-                            this._events[event].push(object);
-                        }
-                        else {
-                            this._events[event] = [object];
-                        }
-                    }
+            else {
+                var object = (objects);
+                object.facade = this;
+                this.log('Register ' + object.name + ', ' + object.type);
+                switch (object.type) {
+                    case fmvc.TYPE_MODEL:
+                        var model = (object);
+                        this.model[object.name] = model;
+                        break;
+                    case fmvc.TYPE_MEDIATOR:
+                        var mediator = (object);
+                        this.mediator[object.name] = mediator;
+                        _.each(mediator.events, function (e) { return _this.addListener(mediator, e); }, this);
+                        break;
                 }
             }
             return this;
         };
+        // Удаление объекта системы - модели, медиатора
+        Facade.prototype.unregister = function (objects) {
+            if (_.isArray(objects)) {
+                _.each(objects, this.unregister, this);
+            }
+            else {
+                var object = (objects);
+                this.log('Unregister ' + object.name + ', ' + object.type);
+                object.dispose();
+                switch (object.type) {
+                    case fmvc.TYPE_MODEL:
+                        delete this.model[object.name];
+                        break;
+                    case fmvc.TYPE_MEDIATOR:
+                        delete this.model[object.name];
+                        this.removeListener((object));
+                        break;
+                }
+            }
+            return this;
+        };
+        Facade.prototype.addListener = function (object, event) {
+            this._events[event] ? this._events[event].push(object) : (this._events[event] = [object]);
+            return this;
+        };
+        Facade.prototype.removeListener = function (object, event) {
+            function removeFromObjects(objects) {
+                if (objects.indexOf(object) > -1)
+                    objects = _.without(objects, object);
+            }
+            ;
+            if (event)
+                removeFromObjects(this._events[event]);
+            else
+                _.each(this._events, removeFromObjects, this);
+            return this;
+        };
         Object.defineProperty(Facade.prototype, "locale", {
+            // Текущее значение локали
             get: function () {
+                return this.model[fmvc.DefaultModel.locale].data.value;
             },
             enumerable: true,
             configurable: true
         });
-        Facade.prototype.getLogger = function () {
-            return this._logger;
-        };
-        Facade.prototype.getObject = function (name) {
-            for (var i in this._objects) {
-                var object = this._objects[i];
-                if (object && object.name === name)
-                    return object;
-            }
-            return null;
-        };
+        Object.defineProperty(Facade.prototype, "theme", {
+            // Текущее значение темы
+            get: function () {
+                return this.model[fmvc.DefaultModel.locale].data.value;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Facade.prototype, "i18n", {
+            // i18n
+            get: function () {
+                return this.model[fmvc.DefaultModel.i18n].data;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        // Глобальный получатель событий от системы
         Facade.prototype.eventHandler = function (e) {
             var objects = this._events[e.name];
-            for (var i in objects) {
-                var object = objects[i];
-                object.eventHandler(e);
-            }
+            _.each(objects, function (object) { return object.eventHandler(e.name); });
         };
+        Object.defineProperty(Facade.prototype, "logger", {
+            get: function () {
+                return (this.model[fmvc.DefaultModel.log]);
+            },
+            enumerable: true,
+            configurable: true
+        });
         Facade.prototype.log = function (message, level) {
-            this.sendLog(this._name, message, level);
+            if (this.logger) {
+                this.logger.add(this._name, message, level);
+            }
+            else {
+                console.log(this._name, message, level);
+            }
+            return this;
         };
-        Facade.prototype.sendLog = function (name, message, level) {
-            console.log(_.toArray(arguments));
-            //this._logger.saveLog(name, message, level);
+        // Получение фасада приложения по имени
+        Facade.getInstance = function (name) {
+            return this.__facades[name];
         };
-        Facade.prototype.getInstance = function (name) {
-            return this._facades[name];
-        };
-        Facade._facades = [];
+        Facade.__facades = {};
         return Facade;
     })();
     fmvc.Facade = Facade;
@@ -160,7 +224,7 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        // ������� ��������� ������� � �����, ����� ������� ���������� (��� �������)
+        // Послаем сообщение сначала в фасад, потом частным слушателям (для моделей)
         Notifier.prototype.sendEvent = function (name, data, sub, error, log) {
             if (data === void 0) { data = null; }
             if (sub === void 0) { sub = null; }
@@ -177,7 +241,7 @@ var fmvc;
         Notifier.prototype.log = function (message, level) {
             // @todo remove facade reference
             if (this._facade)
-                this._facade.sendLog(this.name, message, level);
+                this._facade.logger.add(this.name, message, level);
             return this;
         };
         Notifier.prototype.registerHandler = function () {
@@ -355,73 +419,131 @@ var fmvc;
     })(fmvc.Notifier);
     fmvc.EventDispatcher = EventDispatcher;
 })(fmvc || (fmvc = {}));
+///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
     var Logger = (function (_super) {
         __extends(Logger, _super);
-        function Logger(facade, name) {
-            _super.call(this, name);
-            this._data = [];
+        function Logger(name, config) {
+            _super.call(this, name, [], { enabledEvents: false, watchChanges: false });
             this._config = { filter: [], length: 100000, console: true };
             this._modules = [];
+            if (config)
+                this.config = config;
             console.log('Construct facade logger ');
-            this.facade = facade;
         }
-        Logger.prototype.setConfig = function (value) {
-            this._config = value;
-        };
-        Logger.prototype.console = function (value) {
-            this._config.console = value;
-        };
-        Logger.prototype.setFilter = function (value) {
-            this._config.filter = value;
-        };
-        Logger.prototype.modules = function () {
-            return this._modules;
-        };
-        Logger.prototype.saveLog = function (name, message, level) {
+        Object.defineProperty(Logger.prototype, "config", {
+            set: function (value) {
+                _.extend(this._config, value);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Logger.prototype, "console", {
+            set: function (value) {
+                this._config.console = value;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Logger.prototype, "filter", {
+            set: function (value) {
+                this._config.filter = value;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Logger.prototype, "modules", {
+            get: function () {
+                return this._modules;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Logger.prototype.add = function (name, message, level) {
             if (level === void 0) { level = 0; }
             var data = { name: name, message: message, level: level, date: new Date() };
-            this._data.push(data);
-            // clean logs
-            if (this._data.length > this._config.length * 2) {
-                this._data.length = this._data.slice(this._config.length);
-            }
-            if (this._modules.indexOf(name) === -1) {
+            var dataArray = this.data;
+            var config = this._config;
+            dataArray.push(data);
+            // add module
+            if (this._modules.indexOf(name) === -1)
                 this._modules.push(name);
-            }
-            // send log event
             // exit if it has filters and has no the name in the array
-            if (this._config && this._config.filter && this._config.filter.length && this._config.filter.indexOf(name) === -1) {
+            if (config.filter && config.filter.length && config.filter.indexOf(name) === -1) {
                 return;
             }
             // console
-            if (this._config && this._config.console && ('console' in window)) {
+            if (config && config.console && ('console' in window)) {
                 console.log('[' + name + '] ' + level + ' ' + message);
             }
-            // log
-            this.sendEvent('log', data, null, null, false);
-            return;
+            // clean: remove part of logs
+            if (dataArray.length > config.length * 2) {
+                dataArray.splice(0, dataArray.length - this._config.length);
+            }
+            // send event
+            if (this.enabledEvents)
+                this.sendEvent('log', data, null, null, false);
+            return this;
         };
         return Logger;
-    })(fmvc.Notifier);
+    })(fmvc.Model);
     fmvc.Logger = Logger;
 })(fmvc || (fmvc = {}));
 ///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
+    fmvc.ModelState = {
+        NONE: 'none',
+        LOADING: 'loading',
+        UPDATING: 'updating',
+        SYNCING: 'syncing',
+        SYNCED: 'synced',
+        CHANGED: 'changed',
+    };
+    /*
+        Загрузка данных
+        var configModel = new Model('config', { default data } , { enabedState: true , state: 'synced' } );
+        var loaderProxy = new LoaderProxy(configModel, configUrl);
+        loaderProxy.load().then(function(data) {
+         var parserProxy = new ParserProxy(data, parserFunction, configModel);
+         parserProxy.parser().then(function() { });
+
+         configModel(
+            defaultConfig,
+            { url : { load: [template], update: [template], remove: [template] },
+              loadProxy: {} // universary queue manager,
+              parserProxy: {} // parserFunction(data=>result),
+              validateProxy: {} // validatorFunction
+              onError
+            }) // option init
+            .load(callback?) // load in model context
+            .sync(callback?). // if changed -> save , if synced -> update
+            .parse(callback?);
+        });
+
+     */
     var Model = (function (_super) {
         __extends(Model, _super);
         function Model(name, data, opts) {
             if (data === void 0) { data = {}; }
             _super.call(this, name);
             this.enabledEvents = true;
-            this._data = data;
-            if (opts) {
-                this.enabledEvents = opts.enableEvents;
-            }
+            this.enabledState = false;
+            this.watchChanges = true;
+            if (opts)
+                _.extend(this, opts);
+            if (data)
+                this.data = data;
             this.sendEvent(fmvc.Event.MODEL_CREATED, this.data);
         }
+        Model.prototype.setState = function (value) {
+            if (!this.enabledState || this._state === value)
+                return this;
+            this._previousState = value;
+            this._state = value;
+            return this;
+        };
         Object.defineProperty(Model.prototype, "data", {
             get: function () {
                 return this._data;
@@ -430,22 +552,29 @@ var fmvc;
                 var data = this._data;
                 var changes = null;
                 var hasChanges = false;
-                if (data) {
+                if (value instanceof Model)
+                    throw Error('Cant set model data, data must be object, array or primitive');
+                //@todo check type of data and value
+                if (_.isObject(data) && _.isObject(value) && this.watchChanges) {
                     for (var i in value) {
                         if (data[i] !== value[i]) {
                             if (!changes)
-                                changes = [];
-                            changes.push(i);
+                                changes = {};
                             hasChanges = true;
+                            changes[i] = value[i];
                             data[i] = value[i];
                         }
                     }
                 }
                 else {
-                    this._data = value;
+                    // primitive || array || no data && any value (object etc)
+                    if (data !== value) {
+                        hasChanges = true;
+                        this._data = _.isObject(value) ? _.extend(this._data, value) : value;
+                    }
                 }
-                if (hasChanges && this.enabledEvents)
-                    this.sendEvent(fmvc.Event.MODEL_CHANGED, this._data);
+                if (hasChanges)
+                    this.sendEvent(fmvc.Event.MODEL_CHANGED, changes || this._data);
             },
             enumerable: true,
             configurable: true
@@ -460,9 +589,6 @@ var fmvc;
         };
         Model.prototype.destroy = function () {
         };
-        //-----------------------------------------------------------------------------
-        // VALIDATOR PATH
-        //-----------------------------------------------------------------------------
         Model.prototype.addValidator = function (value) {
             this._validators = this._validators ? this._validators : [];
             if (this._validators.indexOf(value) >= 0)
@@ -1274,7 +1400,7 @@ var fmvc;
         };
         View.prototype.log = function (message, level) {
             if (this._mediator)
-                this._mediator.facade.sendLog(this.name, message, level);
+                this._mediator.facade.logger.log(this.name, message, level);
         };
         // Overrided
         View.prototype.viewEventsHandler = function (name, e) {
@@ -1544,9 +1670,13 @@ var fmvc;
             }
             return null;
         };
-        Mediator.prototype.events = function () {
-            return [];
-        };
+        Object.defineProperty(Mediator.prototype, "events", {
+            get: function () {
+                return [];
+            },
+            enumerable: true,
+            configurable: true
+        });
         Mediator.prototype.internalHandler = function (e) {
             if (e && e.global) {
                 this.facade.eventHandler(e);
@@ -1628,13 +1758,147 @@ var ui;
             "children": [{
                 "path": "0,0",
                 "type": "text",
-                "data": {
-                    "static": null,
-                    "dynamic": {
-                        "data.content": ["{data.content}{content}"],
-                        "content": ["{data.content}{content}"]
+                "data": "\n     "
+            }, {
+                "path": "0,1",
+                "type": "tag",
+                "tagName": "div",
+                "states": {
+                    "content": "content00",
+                    "values": ["content00"],
+                    "vars": ["content00"],
+                    "args": {},
+                    "filters": [],
+                    "expression": []
+                }
+            }, {
+                "path": "0,2",
+                "type": "text",
+                "data": "\n     "
+            }, {
+                "path": "0,3",
+                "type": "tag",
+                "staticAttributes": {
+                    "class": "content content-{(!!(content))}"
+                },
+                "tagName": "div",
+                "states": {
+                    "content": "data.content0,content0",
+                    "values": ["data.content0", "content0"],
+                    "vars": ["data.content0", "content0"],
+                    "args": {},
+                    "filters": [],
+                    "expression": []
+                }
+            }, {
+                "path": "0,4",
+                "type": "text",
+                "data": "\n     "
+            }, {
+                "path": "0,5",
+                "type": "tag",
+                "children": [{
+                    "path": "0,5,0",
+                    "type": "text",
+                    "data": {
+                        "static": null,
+                        "dynamic": {
+                            "data.title": ["{data.title} a button content can be {(data.title||title)}"],
+                            "(data.title": [{
+                                "args": {
+                                    "VALUE": "(data.title"
+                                },
+                                "filters": ["", "title)"],
+                                "source": "{replace} a button content can be {(data.title||title)}"
+                            }]
+                        },
+                        "bounds": null
+                    }
+                }],
+                "tagName": "div",
+                "states": {
+                    "content": "(data.content1 && (state.content1 === 'pizda' || state.content1 === 'ebatnya'))",
+                    "values": ["$0"],
+                    "vars": ["state.content1", "data.content1", "$0"],
+                    "args": {},
+                    "filters": [],
+                    "expression": ["(this.data.content1 && (this.getState(\"content1\") === 'pizda' || this.getState(\"content1\") === 'ebatnya'))"]
+                }
+            }, {
+                "path": "0,6",
+                "type": "text",
+                "data": "\n     "
+            }, {
+                "path": "0,7",
+                "type": "tag",
+                "children": [{
+                    "path": "0,7,0",
+                    "type": "text",
+                    "data": {
+                        "static": null,
+                        "dynamic": {
+                            "data.title": ["{data.title} a button content can be {(data.title||title)}"],
+                            "(data.title": [{
+                                "args": {
+                                    "VALUE": "(data.title"
+                                },
+                                "filters": ["", "title)"],
+                                "source": "{replace} a button content can be {(data.title||title)}"
+                            }]
+                        },
+                        "bounds": null
+                    }
+                }],
+                "tagName": "div",
+                "states": {
+                    "content": "(data.content2||state.content2) as VALUE2, data.content3 as VALUE3|i18n.checkValue",
+                    "values": [],
+                    "vars": ["state.content2", "data.content2", "data.content3"],
+                    "args": {
+                        "VALUE2": "$0",
+                        "VALUE3": "data.content3"
                     },
-                    "bounds": null
+                    "filters": ["i18n.checkValue"],
+                    "expression": ["(this.data.content2||this.getState(\"content2\"))"]
+                }
+            }, {
+                "path": "0,8",
+                "type": "text",
+                "data": "\n     "
+            }, {
+                "path": "0,9",
+                "type": "tag",
+                "children": [{
+                    "path": "0,9,0",
+                    "type": "tag",
+                    "children": [{
+                        "path": "0,9,0,1",
+                        "type": "text",
+                        "data": {
+                            "static": null,
+                            "dynamic": {
+                                "data.title": ["{data.title} a button content can be {(data.title||title)}"],
+                                "(data.title": [{
+                                    "args": {
+                                        "VALUE": "(data.title"
+                                    },
+                                    "filters": ["", "title)"],
+                                    "source": "{replace} a button content can be {(data.title||title)}"
+                                }]
+                            },
+                            "bounds": null
+                        }
+                    }],
+                    "tagName": "10||state.content4"
+                }],
+                "tagName": "div",
+                "states": {
+                    "content": "states",
+                    "values": ["states"],
+                    "vars": ["states"],
+                    "args": {},
+                    "filters": [],
+                    "expression": []
                 }
             }],
             "dynamicSummary": {
@@ -1663,14 +1927,36 @@ var ui;
                         "0": "button-{open}"
                     }
                 },
-                "data.content": {
+                "data.title": {
                     "data": {
-                        "0,0": "{data.content}{content}"
+                        "0,5,0": "{data.title} a button content can be {(data.title||title)}",
+                        "0,7,0": "{data.title} a button content can be {(data.title||title)}",
+                        "0,9,0,1": "{data.title} a button content can be {(data.title||title)}"
                     }
                 },
-                "content": {
+                "(data.title": {
                     "data": {
-                        "0,0": "{data.content}{content}"
+                        "0,5,0": {
+                            "args": {
+                                "VALUE": "(data.title"
+                            },
+                            "filters": ["", "title)"],
+                            "source": "{replace} a button content can be {(data.title||title)}"
+                        },
+                        "0,7,0": {
+                            "args": {
+                                "VALUE": "(data.title"
+                            },
+                            "filters": ["", "title)"],
+                            "source": "{replace} a button content can be {(data.title||title)}"
+                        },
+                        "0,9,0,1": {
+                            "args": {
+                                "VALUE": "(data.title"
+                            },
+                            "filters": ["", "title)"],
+                            "source": "{replace} a button content can be {(data.title||title)}"
+                        }
                     }
                 }
             },
@@ -1679,6 +1965,10 @@ var ui;
                 "name": "content",
                 "type": "string",
                 "default": "Default caption"
+            }, {
+                "name": "title",
+                "type": "string",
+                "default": "Can be also a content"
             }],
             "extend": "fmvc.View",
             "className": "Button",
@@ -1919,18 +2209,24 @@ var ui;
                 "path": "0,19",
                 "type": "tag",
                 "handlers": {
-                    "change": "set,data.value|int,{data.value|int}",
+                    "change": "set,data.value,{data.value}",
                     "keydown": "changeValueOnKeyUp",
-                    "keyup": "changeValueOnKeyDown",
-                    "click": "stopPropagation"
+                    "keyup": "changeValueOnKeyDown"
                 },
                 "bounds": {
                     "value": {
-                        "data.value|int": "{data.value|int}"
+                        "data.value": "{data.value}"
                     }
                 },
                 "tagName": "input",
-                "states": ["selected"]
+                "states": {
+                    "content": "selected",
+                    "values": ["selected"],
+                    "vars": ["selected"],
+                    "args": {},
+                    "filters": [],
+                    "expression": []
+                }
             }, {
                 "path": "0,21",
                 "type": "tag",
@@ -1976,7 +2272,14 @@ var ui;
                     }
                 }],
                 "tagName": "div",
-                "states": ["states"]
+                "states": {
+                    "content": "states",
+                    "values": ["states"],
+                    "vars": ["states"],
+                    "args": {},
+                    "filters": [],
+                    "expression": []
+                }
             }, {
                 "path": "0,25",
                 "type": "tag",
@@ -1985,12 +2288,26 @@ var ui;
                     "style": "background-color:red"
                 },
                 "tagName": "div",
-                "states": ["app.config.close", "hover", "touch"]
+                "states": {
+                    "content": "app.config.close&&(state==='one'||state==='two'))",
+                    "values": ["app.config.close&&$0)"],
+                    "vars": ["state", "app.config.close&&$0)"],
+                    "args": {},
+                    "filters": [],
+                    "expression": ["(this.getState(\"state\")==='one'||this.getState(\"state\")==='two')"]
+                }
             }, {
                 "path": "0,27",
                 "type": "tag",
                 "tagName": "div",
-                "states": ["states"]
+                "states": {
+                    "content": "states",
+                    "values": ["states"],
+                    "vars": ["states"],
+                    "args": {},
+                    "filters": [],
+                    "expression": []
+                }
             }, {
                 "path": "0,29",
                 "type": "comment",
@@ -2116,6 +2433,9 @@ var ui;
                 "data.value": {
                     "data": {
                         "0,15,0": "The value is {data.value}"
+                    },
+                    "value": {
+                        "0,19": "{data.value}"
                     }
                 },
                 "data.coordinates.x": {
@@ -2126,11 +2446,6 @@ var ui;
                 "data.coordinates.y": {
                     "data": {
                         "0,17,0": "Cooridnates {data.coordinates.x} & {data.coordinates.y}"
-                    }
-                },
-                "data.value|int": {
-                    "value": {
-                        "0,19": "{data.value|int}"
                     }
                 }
             },
