@@ -8,8 +8,8 @@
      enableStates="hover,selected,disabled,error,open"
      class="button button-{selected} button-{disabled} button-{hover} button-{error} button-{open}"
      >
-     <div states="content00">{data.content,content,'custom text'}</div>
-     <div states="data.content0,content0" class="content content-{(!!(content))}">{data.content,content,'custom text'}</div>
+     <div states="contentFirst">{data.contentFirst,contentFirst,'custom text'}</div>
+     <div states="(contentFirst||contentSecond)" >{data.contentFirst,contentFirst,'custom text'}</div>
      <div states="(data.content1 && (state.content1 === 'pizda' || state.content1 === 'ebatnya'))">{data.title} a button content can be {(data.title||title)}</div>
      <div states="(data.content2||state.content2) as VALUE2, data.content3 as VALUE3|i18n.checkValue">{data.title} a button content can be {(data.title||title)}</div>
      <div states="((data.content4 < 10||state.content4 > 1)?'1':'2') as VALUE4|i18n.checkValue|filterOne|filterTwo">{data.title} a button content can be {(data.title||title)}</div>

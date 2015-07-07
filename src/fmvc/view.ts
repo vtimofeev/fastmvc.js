@@ -200,11 +200,19 @@ module fmvc {
             }
         }
 
+        public executeFilters(value:any, filters:string[]):any {
+            if(!filters || !filters.length) return value;
+
+            return _.reduce(filters, function(memo:any, filter:string, index:number) {
+                if (filter.indexOf('i18n.') === 0) return this.getFormattedMessage(this.i18n[filter.replace('i18n.', '')],memo);
+                else return this.executePlainFilter(filter, memo);
+            },this);
+        }
 
         public executeComplexFilter(filterArrayData, value) {
         }
 
-        public executeFilter(filter:string, value:string):string {
+        public executePlainFilter(filter:string, value:string):string {
             switch (filter) {
                 case Filter.FIRST:
                     return 'first:' + value;
@@ -234,7 +242,7 @@ module fmvc {
                     }
                 }
                 else {
-                    return this.executeFilter(filter, reducedValue);
+                    return this.executePlainFilter(filter, reducedValue);
                 }
             };
 
@@ -346,9 +354,6 @@ module fmvc {
         // Event handlers
         //------------------------------------------------------------------------------------------------
 
-
-
-
         public enterDocument() {
             if (this._inDocument) return;
             this._inDocument = true;
@@ -371,6 +376,12 @@ module fmvc {
 
             this.invalidate(1);
         }
+
+        public exitDocument() {
+            this.dispatcher.unlistenAll(this.element);
+            this._inDocument = false;
+        }
+
 
         public applyEventHandlers(e:any) {
             var path:string = e.target.getAttribute('data-path');
@@ -511,10 +522,6 @@ module fmvc {
             }
         }
 
-        public exitDocument() {
-            this._inDocument = false;
-            this.delegateEventHandlers(false);
-        }
 
         public getFormattedMessage(value:string, data?:any):string {
             View.__formatter[value] = View.__formatter[value] ? View.__formatter[value] : this.getCompiledFormatter(value);
@@ -524,46 +531,6 @@ module fmvc {
         public getCompiledFormatter(value:string):Function {
             View.__messageFormat[this.locale] = View.__messageFormat[this.locale] ? View.__messageFormat[this.locale] : new MessageFormat(this.locale);
             return View.__messageFormat[this.locale].compile(value);
-        }
-
-        private delegateEventHandlers(init:boolean):void {
-            /*
-             private eventHandlers:any[];
-
-             private static delegateEventSplitter = /^(\S+)\s*(.*)$/;
-             var _t:View = this;
-             this.log('Events: ' + (JSON.stringify(this.eventHandlers)));
-
-             for (var commonHandlerData in this.eventHandlers) {
-             var eventName:string = this.eventHandlers[commonHandlerData];
-             var match:any = commonHandlerData.match(View.delegateEventSplitter);
-             var handledEvents:string = match[1];
-             var selector:string = match[2];
-
-             // add handlers
-             if (init) {
-             this.log('Add listeners [' + handledEvents + '] of the [' + selector + ']');
-             var eventClosure = function (name) {
-             return function (e) {
-             _t.eventHandler(name, e);
-             };
-             }(eventName);
-             if (selector === '') {
-             this.$root.on(handledEvents, eventClosure);
-             } else {
-             this.$root.on(handledEvents, selector, eventClosure);
-             }
-             }
-             // remove handlers
-             else {
-             if (selector === '') {
-             this.$root.off(handledEvents);
-             } else {
-             this.$root(selector).on(handledEvents, selector);
-             }
-             }
-             }
-             */
         }
 
 
@@ -729,7 +696,7 @@ module fmvc {
 
         public setModelWithListener(value:Model) {
             this.model = value;
-            this.model.bind(true, this, this.modelHandler);
+            this.model.bind(this, this.modelHandler);
         }
 
         public modelHandler(name:string, data:any):void {
@@ -759,8 +726,9 @@ module fmvc {
             if (this._mediator) this._mediator.internalHandler({name: name, data: data, global: global, target: this});
         }
 
-        public log(message:string, level?:number):void {
-            if (this._mediator) this._mediator.facade.logger.log(this.name, message, level);
+        public log(message:string, level?:number):View {
+            if (this._mediator) this._mediator.facade.logger.add(this.name, message, level);
+            return this;
         }
 
         // Overrided
@@ -776,8 +744,7 @@ module fmvc {
 
         // Overrided
         public dispose():void {
-            if (this.model) this.model.bind(false, this, this.modelHandler);
-            this.delegateEventHandlers(false);
+            if (this.model) this.model.unbind(this, this.modelHandler);
             super.dispose();
         }
 
@@ -815,13 +782,47 @@ module fmvc {
             return this.getElement(this.jsTemplate, this.elementPaths);
         }
 
-        public isStateEnabled(states:string[]):boolean {
+        public isStateEnabled(states:any):boolean {
+            /*
             var statesLength = states.length;
             for(var i = 0; i < statesLength; i++) {
                 var stateValue = states[i];
                 return _.isArray(stateValue)?this.getState(stateValue[0]) === stateValue[1]:!!this.getState(states[i]);
             }
-            return false;
+            */
+            return this.executeExpression(states);
+        }
+
+        private executeEval(value:string) {
+            return eval(value);
+        }
+
+        public getVarValue(v:string, ex:IExpression):any {
+            if(v.indexOf('data.') === 0) return this.data[v.replace('data.','')];
+            else if(v.indexOf('$') === 0) return this.executeEval(ex.expressions[parseInt(v.replace('$', ''),10)]);
+            else if(v.indexOf('.') === -1) return this.getState(v);
+            else throw new Error('Not supported variable in ' + this.name + ', ' + v);
+        }
+
+
+        public executeExpression(ex:IExpression):any {
+            var r:any = null;
+
+            // we create object to send to first filter (like i18n method) that returns a string value
+            if(ex.args && ex.filters) {
+                r = {};
+                r = _.each(ex.args,(v:string,k:string)=>r[k]=this.getVarValue(v,ex),this);
+            }
+            // other way we search first positive result of values
+            else if(ex.values)
+            {
+                var i = 0, l = ex.values.length;
+                while(!r && i < l) r = this.getVarValue(ex.values[i++], ex);
+            }
+            else throw Error('Expression must has args and filter or values');
+
+            r = this.executeFilters(r, ex.filters);
+            return r;
         }
 
         public getElement(value:IDomObject, object:any):Element {

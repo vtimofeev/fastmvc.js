@@ -45,11 +45,28 @@ var ui;
                 }, {
                     "path": "0,1",
                     "type": "tag",
+                    "children": [{
+                            "path": "0,1,0",
+                            "type": "text",
+                            "data": {
+                                "content": "{data.contentFirst,contentFirst,'custom text'}",
+                                "result": "{$0}",
+                                "vars": ["$0"],
+                                "expressions": [{
+                                        "content": "data.contentFirst,contentFirst,'custom text'",
+                                        "vars": ["data.contentFirst", "contentFirst", "'custom text'"],
+                                        "values": ["data.contentFirst", "contentFirst", "'custom text'"],
+                                        "args": {},
+                                        "filters": [],
+                                        "expression": []
+                                    }]
+                            }
+                        }],
                     "tagName": "div",
                     "states": {
-                        "start": "content00",
-                        "values": ["content00"],
-                        "vars": ["content00"],
+                        "content": "contentFirst",
+                        "vars": ["contentFirst"],
+                        "values": ["contentFirst"],
                         "args": {},
                         "filters": [],
                         "expression": []
@@ -61,17 +78,31 @@ var ui;
                 }, {
                     "path": "0,3",
                     "type": "tag",
-                    "staticAttributes": {
-                        "class": "content content-{(!!(content))}"
-                    },
+                    "children": [{
+                            "path": "0,3,0",
+                            "type": "text",
+                            "data": {
+                                "content": "{data.contentFirst,contentFirst,'custom text'}",
+                                "result": "{$0}",
+                                "vars": ["$0"],
+                                "expressions": [{
+                                        "content": "data.contentFirst,contentFirst,'custom text'",
+                                        "vars": ["data.contentFirst", "contentFirst", "'custom text'"],
+                                        "values": ["data.contentFirst", "contentFirst", "'custom text'"],
+                                        "args": {},
+                                        "filters": [],
+                                        "expression": []
+                                    }]
+                            }
+                        }],
                     "tagName": "div",
                     "states": {
-                        "start": "data.content0,content0",
-                        "values": ["data.content0", "content0"],
-                        "vars": ["data.content0", "content0"],
+                        "content": "(contentFirst||contentSecond)",
+                        "vars": ["contentSecond", "contentFirst", "$0"],
+                        "values": ["$0"],
                         "args": {},
                         "filters": [],
-                        "expression": []
+                        "expression": ["(this.getState(\"contentFirst\")||this.getState(\"contentSecond\"))"]
                     }
                 }, {
                     "path": "0,4",
@@ -84,25 +115,31 @@ var ui;
                             "path": "0,5,0",
                             "type": "text",
                             "data": {
-                                "static": null,
-                                "dynamic": {
-                                    "data.title": ["{data.title} a button content can be {(data.title||title)}"],
-                                    "(data.title": [{
-                                            "args": {
-                                                "VALUE": "(data.title"
-                                            },
-                                            "filters": ["", "title)"],
-                                            "source": "{replace} a button content can be {(data.title||title)}"
-                                        }]
-                                },
-                                "bounds": null
+                                "content": "{data.title} a button content can be {(data.title||title)}",
+                                "result": "{$0} a button content can be {$1}",
+                                "vars": ["$0", "$1"],
+                                "expressions": [{
+                                        "content": "data.title",
+                                        "vars": ["data.title"],
+                                        "values": ["data.title"],
+                                        "args": {},
+                                        "filters": [],
+                                        "expression": []
+                                    }, {
+                                        "content": "(data.title||title)",
+                                        "vars": ["data.title", "title", "$0"],
+                                        "values": ["$0"],
+                                        "args": {},
+                                        "filters": [],
+                                        "expression": ["(this.data.this.getState(\"title\")||this.getState(\"title\"))"]
+                                    }]
                             }
                         }],
                     "tagName": "div",
                     "states": {
-                        "start": "(data.content1 && (state.content1 === 'pizda' || state.content1 === 'ebatnya'))",
-                        "values": ["$0"],
+                        "content": "(data.content1 && (state.content1 === 'pizda' || state.content1 === 'ebatnya'))",
                         "vars": ["state.content1", "data.content1", "$0"],
+                        "values": ["$0"],
                         "args": {},
                         "filters": [],
                         "expression": ["(this.data.content1 && (this.getState(\"content1\") === 'pizda' || this.getState(\"content1\") === 'ebatnya'))"]
@@ -118,25 +155,31 @@ var ui;
                             "path": "0,7,0",
                             "type": "text",
                             "data": {
-                                "static": null,
-                                "dynamic": {
-                                    "data.title": ["{data.title} a button content can be {(data.title||title)}"],
-                                    "(data.title": [{
-                                            "args": {
-                                                "VALUE": "(data.title"
-                                            },
-                                            "filters": ["", "title)"],
-                                            "source": "{replace} a button content can be {(data.title||title)}"
-                                        }]
-                                },
-                                "bounds": null
+                                "content": "{data.title} a button content can be {(data.title||title)}",
+                                "result": "{$0} a button content can be {$1}",
+                                "vars": ["$0", "$1"],
+                                "expressions": [{
+                                        "content": "data.title",
+                                        "vars": ["data.title"],
+                                        "values": ["data.title"],
+                                        "args": {},
+                                        "filters": [],
+                                        "expression": []
+                                    }, {
+                                        "content": "(data.title||title)",
+                                        "vars": ["data.title", "title", "$0"],
+                                        "values": ["$0"],
+                                        "args": {},
+                                        "filters": [],
+                                        "expression": ["(this.data.this.getState(\"title\")||this.getState(\"title\"))"]
+                                    }]
                             }
                         }],
                     "tagName": "div",
                     "states": {
-                        "start": "(data.content2||state.content2) as VALUE2, data.content3 as VALUE3|i18n.checkValue",
-                        "values": ["state.content2", "data.content2", "$0", "data.content3"],
-                        "vars": ["state.content2", "data.content2"],
+                        "content": "(data.content2||state.content2) as VALUE2, data.content3 as VALUE3|i18n.checkValue",
+                        "vars": ["state.content2", "data.content2", "data.content3"],
+                        "values": [],
                         "args": {
                             "VALUE2": "$0",
                             "VALUE3": "data.content3"
@@ -158,27 +201,33 @@ var ui;
                                     "path": "0,9,0,1",
                                     "type": "text",
                                     "data": {
-                                        "static": null,
-                                        "dynamic": {
-                                            "data.title": ["{data.title} a button content can be {(data.title||title)}"],
-                                            "(data.title": [{
-                                                    "args": {
-                                                        "VALUE": "(data.title"
-                                                    },
-                                                    "filters": ["", "title)"],
-                                                    "source": "{replace} a button content can be {(data.title||title)}"
-                                                }]
-                                        },
-                                        "bounds": null
+                                        "content": "{data.title} a button content can be {(data.title||title)}",
+                                        "result": "{$0} a button content can be {$1}",
+                                        "vars": ["$0", "$1"],
+                                        "expressions": [{
+                                                "content": "data.title",
+                                                "vars": ["data.title"],
+                                                "values": ["data.title"],
+                                                "args": {},
+                                                "filters": [],
+                                                "expression": []
+                                            }, {
+                                                "content": "(data.title||title)",
+                                                "vars": ["data.title", "title", "$0"],
+                                                "values": ["$0"],
+                                                "args": {},
+                                                "filters": [],
+                                                "expression": ["(this.data.this.getState(\"title\")||this.getState(\"title\"))"]
+                                            }]
                                     }
                                 }],
                             "tagName": "10||state.content4"
                         }],
                     "tagName": "div",
                     "states": {
-                        "start": "states",
-                        "values": ["states"],
+                        "content": "states",
                         "vars": ["states"],
+                        "values": ["states"],
                         "args": {},
                         "filters": [],
                         "expression": []
@@ -208,38 +257,6 @@ var ui;
                 "open": {
                     "class": {
                         "0": "button-{open}"
-                    }
-                },
-                "data.title": {
-                    "data": {
-                        "0,5,0": "{data.title} a button content can be {(data.title||title)}",
-                        "0,7,0": "{data.title} a button content can be {(data.title||title)}",
-                        "0,9,0,1": "{data.title} a button content can be {(data.title||title)}"
-                    }
-                },
-                "(data.title": {
-                    "data": {
-                        "0,5,0": {
-                            "args": {
-                                "VALUE": "(data.title"
-                            },
-                            "filters": ["", "title)"],
-                            "source": "{replace} a button content can be {(data.title||title)}"
-                        },
-                        "0,7,0": {
-                            "args": {
-                                "VALUE": "(data.title"
-                            },
-                            "filters": ["", "title)"],
-                            "source": "{replace} a button content can be {(data.title||title)}"
-                        },
-                        "0,9,0,1": {
-                            "args": {
-                                "VALUE": "(data.title"
-                            },
-                            "filters": ["", "title)"],
-                            "source": "{replace} a button content can be {(data.title||title)}"
-                        }
                     }
                 }
             },

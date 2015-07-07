@@ -201,7 +201,7 @@ var fmvc;
                 case KEYS.STYLE:
                     return Xml2TsUtils.getDynamicValues(key, value, ';');
                 case KEYS.DATA:
-                    return Xml2TsUtils.getDynamicValues(key, value, null);
+                    return Xml2TsUtils.parseMultidynamicContent(value);
                 case KEYS.STATES:
                     return Xml2TsUtils.parseDynamicContent(value);
                 //return _.map(value.split(','), function(value) { return value.indexOf('=')>-1?value.split('='):value });
@@ -224,6 +224,16 @@ var fmvc;
             else {
             }
         };
+        Xml2TsUtils.parseMultidynamicContent = function (value) {
+            var _this = this;
+            var matches = value.match(Xml2TsUtils.DATA_MATCH_REGEXP);
+            if (!(matches && matches.length))
+                return value;
+            var expressions = _.map(matches, function (v) { return _this.parseDynamicContent(v.substring(1, v.length - 1)); }, this);
+            var expressionVars = [];
+            var result = _.reduce(matches, function (r, v, i) { var e = '$' + i; expressionVars.push(e); return r.replace(v, '{' + e + '}'); }, value, this);
+            return { content: value, result: result, vars: expressionVars, expressions: expressions };
+        };
         Xml2TsUtils.parseDynamicContent = function (value) {
             // {a} // property
             // {a|filterOne|filterTwo} // property
@@ -234,8 +244,8 @@ var fmvc;
             //console.log('Start ' ,value);
             var result = {
                 content: value,
-                values: [],
                 vars: [],
+                values: [],
                 args: {},
                 filters: [],
                 expression: [] // выражения для расчет
@@ -433,6 +443,7 @@ var fmvc;
                 }
                 //create dynamic maps summary for  root
                 if (_.isObject(value)) {
+                    _.each(value.vars, function (dynamicName) { return Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, dynamicName, key, path, value); });
                     _.each(value.dynamic, function (dynamicValueArray, dynamicName) {
                         Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, dynamicName, key, path, dynamicValueArray);
                     });
@@ -512,7 +523,7 @@ var fmvc;
             return r.length ? r : null;
         };
         Xml2TsUtils.MATCH_REGEXP = /\{([\@A-Za-z\, \|0-9\.]+)\}/g;
-        Xml2TsUtils.DATA_MATCH_REGEXP = /\{([\(\)\\,\.\|@A-Za-z 0-9]+)\}/g;
+        Xml2TsUtils.DATA_MATCH_REGEXP = /\{([\(\)\\,\.\|'"@A-Za-z 0-9]+)\}/g;
         Xml2TsUtils.BRACKETS_MATCH = /\([^()]+\)/gi;
         Xml2TsUtils.VARS_MATCH = /([A-Za-z0-9'\.]+)/gi;
         Xml2TsUtils.PROPERTY_DATA_MATCH = /^\{[A-Za-z0-9\.]+\}$/;

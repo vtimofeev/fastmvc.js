@@ -7,12 +7,13 @@ module fmvc {
     }
 
     export var ModelState = {
-        NONE: 'none',
-        LOADING: 'loading', // load from local/remote source
-        UPDATING: 'updating', // actualize changes @todo? можно исползовать syncing вместо loading/updating
-        SYNCING: 'syncing', // saving changes, updating actual data from remote ...
-        SYNCED: 'synced', //
-        CHANGED: 'changed', // changed in system
+        None: 'none',
+        Loading: 'loading', // load from local/remote source
+        Updating: 'updating', // actualize changes @todo? можно исползовать syncing вместо loading/updating
+        Syncing: 'syncing', // saving changes, updating actual data from remote ...
+        Synced: 'synced', //
+        Changed: 'changed', // changed in system
+        Error: 'error',
     };
 
     /*
@@ -31,7 +32,7 @@ module fmvc {
               validateProxy: {} // validatorFunction
               onError
             }) // option init
-            .load(callback?) // load in model context
+            .load(callback?):Promise // load in model context
             .sync(callback?). // if changed -> save , if synced -> update
             .parse(callback?);
         });
@@ -59,6 +60,13 @@ module fmvc {
             if(!this.enabledState || this._state === value) return this;
             this._previousState = value;
             this._state = value;
+            return this;
+        }
+
+        public set(value:any, direct:boolean = false, reset:boolean = false):Model {
+            if(reset) this._data = null;
+            if (direct) this._data = value;
+            else this.data = value;
             return this;
         }
 
@@ -93,6 +101,10 @@ module fmvc {
 
         public get data():any {
             return this._data;
+        }
+
+        public get state():string {
+            return this._state;
         }
 
         public sendEvent(name:string, data:any = null, sub:string = null, error:any = null, log:boolean = true):void {

@@ -9,67 +9,38 @@ var fmvc;
 (function (fmvc) {
     var ModelList = (function (_super) {
         __extends(ModelList, _super);
-        function ModelList(name, data) {
-            if (data === void 0) { data = null; }
-            _super.call(this, name);
-            this.data = data;
+        function ModelList(name, data, opts) {
+            if (data === void 0) { data = []; }
+            _super.call(this, name, data, opts);
         }
         Object.defineProperty(ModelList.prototype, "data", {
-            get: function () {
-                return this._data;
-            },
             set: function (value) {
-                if (!this._data)
-                    this._data = [];
-                for (var i in value) {
-                    this._data.push(this.createModel(value[i]));
-                }
+                if (!_.isArray(value))
+                    throw Error('Cant set modelList from not array data');
+                var data = this.data || [];
+                _.each(value, function (item) {
+                    var modelValue = (item instanceof fmvc.Model) ? item : this.getModel(item);
+                    data.push(modelValue);
+                }, this);
+                this.set(data, true, true);
                 this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
             },
             enumerable: true,
             configurable: true
         });
-        ModelList.prototype.createModel = function (value) {
+        // @overrided
+        ModelList.prototype.getModel = function (value) {
             return new fmvc.Model(this.name + '-item', value);
         };
-        ModelList.prototype.add = function (value) {
-            this._data.push(this.createModel(value));
-            this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
-            return true;
-        };
-        ModelList.prototype.remove = function (value) {
-            var data = this._data;
-            var result = false;
-            var index = data.indexOf(value);
-            if (index > -1) {
-                data.splice(index, 1);
-                result = true;
-            }
-            this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
-            return result;
-        };
-        ModelList.prototype.update = function (value) {
-            var data = this._data;
-            var result = false;
-            var index = this.getIndexOfModelData(value);
-            if (index > -1) {
-                data[index].setData(value);
-                result = true;
-            }
-            this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
-            return result;
-        };
-        ModelList.prototype.getIndexOfModelData = function (value) {
-            for (var i in this._data) {
-                var model = this._data[i];
-                console.log('Check ' + model.data + ', ' + value);
-                if (model.data === value)
-                    return Number(i);
-            }
-            return -1;
-        };
+        Object.defineProperty(ModelList.prototype, "count", {
+            get: function () {
+                return this.data && this.data.length ? this.data.length : 0;
+            },
+            enumerable: true,
+            configurable: true
+        });
         return ModelList;
-    })(fmvc.Notifier);
+    })(fmvc.Model);
     fmvc.ModelList = ModelList;
 })(fmvc || (fmvc = {}));
 //# sourceMappingURL=model.list.js.map

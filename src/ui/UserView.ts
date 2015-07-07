@@ -40,11 +40,17 @@ module ui {
                     "path": "0,1,0",
                     "type": "text",
                     "data": {
-                        "static": null,
-                        "dynamic": {
-                            "data.firstname": ["F: {data.firstname}"]
-                        },
-                        "bounds": null
+                        "content": "F: {data.firstname}",
+                        "result": "F: {$0}",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "data.firstname",
+                            "vars": ["data.firstname"],
+                            "values": ["data.firstname"],
+                            "args": {},
+                            "filters": [],
+                            "expression": []
+                        }]
                     }
                 }],
                 "tagName": "div"
@@ -55,11 +61,17 @@ module ui {
                     "path": "0,3,0",
                     "type": "text",
                     "data": {
-                        "static": null,
-                        "dynamic": {
-                            "data.secondname": ["S: {data.secondname}"]
-                        },
-                        "bounds": null
+                        "content": "S: {data.secondname}",
+                        "result": "S: {$0}",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "data.secondname",
+                            "vars": ["data.secondname"],
+                            "values": ["data.secondname"],
+                            "args": {},
+                            "filters": [],
+                            "expression": []
+                        }]
                     }
                 }],
                 "tagName": "div"
@@ -70,11 +82,17 @@ module ui {
                     "path": "0,5,0",
                     "type": "text",
                     "data": {
-                        "static": null,
-                        "dynamic": {
-                            "data.age": ["A: {data.age}"]
-                        },
-                        "bounds": null
+                        "content": "A: {data.age}",
+                        "result": "A: {$0}",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "data.age",
+                            "vars": ["data.age"],
+                            "values": ["data.age"],
+                            "args": {},
+                            "filters": [],
+                            "expression": []
+                        }]
                     }
                 }],
                 "tagName": "div"
@@ -85,11 +103,17 @@ module ui {
                     "path": "0,7,0",
                     "type": "text",
                     "data": {
-                        "static": null,
-                        "dynamic": {
-                            "i18n.template": ["{i18n.template}"]
-                        },
-                        "bounds": null
+                        "content": "{i18n.template}",
+                        "result": "{$0}",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "i18n.template",
+                            "vars": ["i18n.template"],
+                            "values": ["i18n.template"],
+                            "args": {},
+                            "filters": [],
+                            "expression": []
+                        }]
                     }
                 }],
                 "tagName": "div"
@@ -100,19 +124,17 @@ module ui {
                     "path": "0,9,0",
                     "type": "text",
                     "data": {
-                        "static": null,
-                        "dynamic": {
-                            "data.firstname": [{
-                                "args": {
-                                    "VALUE": "data.firstname"
-                                },
-                                "filters": [
-                                    ["i18n", "template"]
-                                ],
-                                "source": "{replace}"
-                            }]
-                        },
-                        "bounds": null
+                        "content": "{data.firstname|i18n.template}",
+                        "result": "{$0}",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "data.firstname|i18n.template",
+                            "vars": ["data.firstname"],
+                            "values": ["data.firstname"],
+                            "args": {},
+                            "filters": ["i18n.template"],
+                            "expression": []
+                        }]
                     }
                 }],
                 "tagName": "div"
@@ -123,30 +145,20 @@ module ui {
                     "path": "0,11,0",
                     "type": "text",
                     "data": {
-                        "static": null,
-                        "dynamic": {
-                            "data.age": [{
-                                "args": {
-                                    "AGE": "data.age",
-                                    "FIRST": "data.firstname"
-                                },
-                                "filters": [
-                                    ["i18n", "template"]
-                                ],
-                                "source": "Hello man ! Yo Yo {replace}"
-                            }],
-                            "data.firstname": [{
-                                "args": {
-                                    "AGE": "data.age",
-                                    "FIRST": "data.firstname"
-                                },
-                                "filters": [
-                                    ["i18n", "template"]
-                                ],
-                                "source": "Hello man ! Yo Yo {replace}"
-                            }]
-                        },
-                        "bounds": null
+                        "content": "Hello man ! Yo Yo {data.age as AGE, data.firstname as FIRST|i18n.template}",
+                        "result": "Hello man ! Yo Yo {$0}",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "data.age as AGE, data.firstname as FIRST|i18n.template",
+                            "vars": ["data.age", "data.firstname"],
+                            "values": [],
+                            "args": {
+                                "AGE": "data.age",
+                                "FIRST": "data.firstname"
+                            },
+                            "filters": ["i18n.template"],
+                            "expression": []
+                        }]
                     }
                 }],
                 "tagName": "div"
@@ -157,30 +169,20 @@ module ui {
                     "path": "0,13,0",
                     "type": "text",
                     "data": {
-                        "static": null,
-                        "dynamic": {
-                            "data.age": [{
-                                "args": {
-                                    "AGE": "data.age",
-                                    "FIRST": "data.firstname"
-                                },
-                                "filters": [
-                                    ["i18n", "template2"]
-                                ],
-                                "source": "{replace}"
-                            }],
-                            "data.firstname": [{
-                                "args": {
-                                    "AGE": "data.age",
-                                    "FIRST": "data.firstname"
-                                },
-                                "filters": [
-                                    ["i18n", "template2"]
-                                ],
-                                "source": "{replace}"
-                            }]
-                        },
-                        "bounds": null
+                        "content": "{data.age as AGE, data.firstname as FIRST|i18n.template2}",
+                        "result": "{$0}",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "data.age as AGE, data.firstname as FIRST|i18n.template2",
+                            "vars": ["data.age", "data.firstname"],
+                            "values": [],
+                            "args": {
+                                "AGE": "data.age",
+                                "FIRST": "data.firstname"
+                            },
+                            "filters": ["i18n.template2"],
+                            "expression": []
+                        }]
                     }
                 }],
                 "handlers": {
@@ -195,11 +197,17 @@ module ui {
                     "path": "0,15,0",
                     "type": "text",
                     "data": {
-                        "static": null,
-                        "dynamic": {
-                            "data.value": ["The value is {data.value}"]
-                        },
-                        "bounds": null
+                        "content": "The value is {data.value}",
+                        "result": "The value is {$0}",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "data.value",
+                            "vars": ["data.value"],
+                            "values": ["data.value"],
+                            "args": {},
+                            "filters": [],
+                            "expression": []
+                        }]
                     }
                 }],
                 "tagName": "div"
@@ -210,12 +218,24 @@ module ui {
                     "path": "0,17,0",
                     "type": "text",
                     "data": {
-                        "static": null,
-                        "dynamic": {
-                            "data.coordinates.x": ["Cooridnates {data.coordinates.x} & {data.coordinates.y}"],
-                            "data.coordinates.y": ["Cooridnates {data.coordinates.x} & {data.coordinates.y}"]
-                        },
-                        "bounds": null
+                        "content": "Cooridnates {data.coordinates.x} & {data.coordinates.y}",
+                        "result": "Cooridnates {$0} & {$1}",
+                        "vars": ["$0", "$1"],
+                        "expressions": [{
+                            "content": "data.coordinates.x",
+                            "vars": ["data.coordinates.x"],
+                            "values": ["data.coordinates.x"],
+                            "args": {},
+                            "filters": [],
+                            "expression": []
+                        }, {
+                            "content": "data.coordinates.y",
+                            "vars": ["data.coordinates.y"],
+                            "values": ["data.coordinates.y"],
+                            "args": {},
+                            "filters": [],
+                            "expression": []
+                        }]
                     }
                 }],
                 "tagName": "div"
@@ -235,8 +255,8 @@ module ui {
                 "tagName": "input",
                 "states": {
                     "content": "selected",
-                    "values": ["selected"],
                     "vars": ["selected"],
+                    "values": ["selected"],
                     "args": {},
                     "filters": [],
                     "expression": []
@@ -248,17 +268,17 @@ module ui {
                     "path": "0,21,0",
                     "type": "text",
                     "data": {
-                        "static": null,
-                        "dynamic": {
-                            "data.firstname": [{
-                                "args": {
-                                    "VALUE": "data.firstname"
-                                },
-                                "filters": ["second", "first"],
-                                "source": "{replace} The Text Of The button\n    "
-                            }]
-                        },
-                        "bounds": null
+                        "content": "{data.firstname|second|first} The Text Of The button\n    ",
+                        "result": "{$0} The Text Of The button\n    ",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "data.firstname|second|first",
+                            "vars": ["data.firstname"],
+                            "values": ["data.firstname"],
+                            "args": {},
+                            "filters": ["second", "first"],
+                            "expression": []
+                        }]
                     }
                 }],
                 "tagName": "ui.Button"
@@ -272,24 +292,24 @@ module ui {
                     "path": "0,23,1",
                     "type": "text",
                     "data": {
-                        "static": null,
-                        "dynamic": {
-                            "data.firstname": [{
-                                "args": {
-                                    "VALUE": "data.firstname"
-                                },
-                                "filters": ["first"],
-                                "source": "{replace} Close Text get from ."
-                            }]
-                        },
-                        "bounds": null
+                        "content": "{data.firstname|first} Close Text get from .",
+                        "result": "{$0} Close Text get from .",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "data.firstname|first",
+                            "vars": ["data.firstname"],
+                            "values": ["data.firstname"],
+                            "args": {},
+                            "filters": ["first"],
+                            "expression": []
+                        }]
                     }
                 }],
                 "tagName": "div",
                 "states": {
                     "content": "states",
-                    "values": ["states"],
                     "vars": ["states"],
+                    "values": ["states"],
                     "args": {},
                     "filters": [],
                     "expression": []
@@ -304,8 +324,8 @@ module ui {
                 "tagName": "div",
                 "states": {
                     "content": "app.config.close&&(state==='one'||state==='two'))",
-                    "values": ["app.config.close&&$0)"],
                     "vars": ["state", "app.config.close&&$0)"],
+                    "values": ["app.config.close&&$0)"],
                     "args": {},
                     "filters": [],
                     "expression": ["(this.getState(\"state\")==='one'||this.getState(\"state\")==='two')"]
@@ -316,8 +336,8 @@ module ui {
                 "tagName": "div",
                 "states": {
                     "content": "states",
-                    "values": ["states"],
                     "vars": ["states"],
+                    "values": ["states"],
                     "args": {},
                     "filters": [],
                     "expression": []
@@ -361,105 +381,9 @@ module ui {
                         "0": "userview-{hover}"
                     }
                 },
-                "data.firstname": {
-                    "data": {
-                        "0,1,0": "F: {data.firstname}",
-                        "0,9,0": {
-                            "args": {
-                                "VALUE": "data.firstname"
-                            },
-                            "filters": [
-                                ["i18n", "template"]
-                            ],
-                            "source": "{replace}"
-                        },
-                        "0,11,0": {
-                            "args": {
-                                "AGE": "data.age",
-                                "FIRST": "data.firstname"
-                            },
-                            "filters": [
-                                ["i18n", "template"]
-                            ],
-                            "source": "Hello man ! Yo Yo {replace}"
-                        },
-                        "0,13,0": {
-                            "args": {
-                                "AGE": "data.age",
-                                "FIRST": "data.firstname"
-                            },
-                            "filters": [
-                                ["i18n", "template2"]
-                            ],
-                            "source": "{replace}"
-                        },
-                        "0,21,0": {
-                            "args": {
-                                "VALUE": "data.firstname"
-                            },
-                            "filters": ["second", "first"],
-                            "source": "{replace} The Text Of The button\n    "
-                        },
-                        "0,23,1": {
-                            "args": {
-                                "VALUE": "data.firstname"
-                            },
-                            "filters": ["first"],
-                            "source": "{replace} Close Text get from ."
-                        }
-                    }
-                },
-                "data.secondname": {
-                    "data": {
-                        "0,3,0": "S: {data.secondname}"
-                    }
-                },
-                "data.age": {
-                    "data": {
-                        "0,5,0": "A: {data.age}",
-                        "0,11,0": {
-                            "args": {
-                                "AGE": "data.age",
-                                "FIRST": "data.firstname"
-                            },
-                            "filters": [
-                                ["i18n", "template"]
-                            ],
-                            "source": "Hello man ! Yo Yo {replace}"
-                        },
-                        "0,13,0": {
-                            "args": {
-                                "AGE": "data.age",
-                                "FIRST": "data.firstname"
-                            },
-                            "filters": [
-                                ["i18n", "template2"]
-                            ],
-                            "source": "{replace}"
-                        }
-                    }
-                },
-                "i18n.template": {
-                    "data": {
-                        "0,7,0": "{i18n.template}"
-                    }
-                },
                 "data.value": {
-                    "data": {
-                        "0,15,0": "The value is {data.value}"
-                    },
                     "value": {
                         "0,19": "{data.value}"
-                    }
-                },
-                "data.coordinates.x": {
-                    "data": {
-                        "0,17,0": "Cooridnates {data.coordinates.x} & {data.coordinates.y}"
-                    }
-                },
-                "data.coordinates.y": {
-                    "data": {
-                        "0,17,0": "Cooridnates {data.coordinates.x} & {data.coordinates.y}"
                     }
                 }
             },

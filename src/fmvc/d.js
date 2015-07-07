@@ -10,4 +10,5 @@
 ///<reference path='./view.list.ts'/>
 ///<reference path='./mediator.ts'/>
 ///<reference path='../../../DefinitelyTyped/lodash/lodash.d.ts'/>
+///<reference path='../../../DefinitelyTyped/jquery/jquery.d.ts'/>
 //# sourceMappingURL=d.js.map

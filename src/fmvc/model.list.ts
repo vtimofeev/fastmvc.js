@@ -2,33 +2,35 @@
 
 
 module fmvc {
-    export class ModelList extends fmvc.Notifier {
-        private _data:Array<Model>;
-
-        constructor(name:string, data:Array<Model> = null) {
-            super(name);
-            this.data = data;
+    export class ModelList extends Model {
+        constructor(name:string, data:any = [], opts?:IModelOptions) {
+            super(name, data, opts);
         }
 
-        public set data(value:Array<Model>) {
-            if (!this._data) this._data = [];
-            for (var i in value) {
-                this._data.push(this.createModel(value[i]));
-            }
+        public set data(value:any) {
+            if (!_.isArray(value)) throw Error('Cant set modelList from not array data');
+            var data = this.data || [];
+            _.each(value, function(item) {
+                var modelValue:Model  = (item instanceof Model)?item:this.getModel(item);
+                data.push(modelValue);
+            }, this);
+
+            this.set(data, true, true);
             this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
         }
 
-        public get data():Array<Model> {
-            return this._data;
-        }
-
-
-        private createModel(value:any):Model {
+        // @overrided
+        public getModel(value:any):Model {
             return new Model(this.name + '-item', value);
         }
 
-        public add(value:any):boolean {
-            this._data.push(this.createModel(value));
+        public get count():number {
+            return this.data && this.data.length ? this.data.length : 0;
+        }
+
+        /*
+            public add(value:any):boolean {
+            this._data.push(this.getModel(value));
             this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
             return true;
         }
@@ -61,7 +63,7 @@ module fmvc {
             return result;
         }
 
-        private getIndexOfModelData(value):number {
+        private getIndexOfModel(value:any):number {
             for (var i in this._data) {
                 var model:Model = this._data[i];
                 console.log('Check ' + model.data + ', ' + value);
@@ -69,5 +71,6 @@ module fmvc {
             }
             return -1;
         }
+        */
     }
 }

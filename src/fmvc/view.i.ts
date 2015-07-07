@@ -47,6 +47,15 @@ module fmvc {
         [propertyName:string]:{[substance/* class, data, style any */:string]:any};
     }
 
+    export interface IExpression {
+        content: string;
+        vars: string[];
+        values:string[];
+        expressions?:string[];
+        args?:any;
+        filters?:string[];
+    }
+
 
 
     export interface IDomObject {
@@ -67,7 +76,7 @@ module fmvc {
         virtualElement?:HTMLElement;
 
         enableStates?:(string|ITypeNameValue)[];
-        states?:string[];
+        states?:any;
         data?:string;
 
         staticAttributes?:{[id:string]:any};

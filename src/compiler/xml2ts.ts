@@ -219,7 +219,7 @@ module fmvc {
 
     class Xml2TsUtils {
         public static MATCH_REGEXP:RegExp = /\{([\@A-Za-z\, \|0-9\.]+)\}/g;
-        public static DATA_MATCH_REGEXP:RegExp = /\{([\(\)\\,\.\|@A-Za-z 0-9]+)\}/g;
+        public static DATA_MATCH_REGEXP:RegExp = /\{([\(\)\\,\.\|'"@A-Za-z 0-9]+)\}/g;
         public static BRACKETS_MATCH:RegExp = /\([^()]+\)/gi;
         public static VARS_MATCH:RegExp = /([A-Za-z0-9'\.]+)/gi;
         public static PROPERTY_DATA_MATCH:RegExp = /^\{[A-Za-z0-9\.]+\}$/;
@@ -235,7 +235,7 @@ module fmvc {
                 case KEYS.STYLE:
                     return Xml2TsUtils.getDynamicValues(key, value, ';');
                 case KEYS.DATA:
-                    return Xml2TsUtils.getDynamicValues(key, value, null);
+                    return Xml2TsUtils.parseMultidynamicContent(value);
                 case KEYS.STATES:
                     return Xml2TsUtils.parseDynamicContent(value);
 
@@ -261,7 +261,17 @@ module fmvc {
             }
         }
 
-        public static parseDynamicContent(value) {
+        public static parseMultidynamicContent(value:string):any {
+            var matches = value.match(Xml2TsUtils.DATA_MATCH_REGEXP);
+            if(!(matches && matches.length)) return value;
+
+            var expressions:IExpression[] = _.map(matches, (v)=>this.parseDynamicContent(v.substring(1,v.length-1)), this);
+            var expressionVars = [];
+            var result = _.reduce(matches, function(r, v, i) { var e = '$' + i; expressionVars.push(e); return r.replace(v, '{' + e + '}'); }, value, this);
+            return {content: value, result:result, vars: expressionVars, expressions: expressions};
+        }
+
+        public static parseDynamicContent(value:string) {
             // {a} // property
             // {a|filterOne|filterTwo} // property
             // {a,b,c} // selector if a or b or c
@@ -270,10 +280,10 @@ module fmvc {
             // {(a||b) as V, c as D, (a||b||c) as E|i18n.t|s|d} // expression
 
             //console.log('Start ' ,value);
-            var result = {
+            var result:IExpression = {
                 content: value,
-                values: [], // упорядоченные значения до получения любого истинного значения {a,b,c}
                 vars: [], // переменные которые участвуют
+                values: [], // упорядоченные значения до получения любого истинного значения {a,b,c}
                 args: {}, // аргументы для i18n
                 filters: [], // фильтры
                 expression: [] // выражения для расчет
@@ -472,6 +482,9 @@ module fmvc {
 
                 //create dynamic maps summary for  root
                 if (_.isObject(value)) {
+                    _.each(value.vars, (dynamicName)=>Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, dynamicName, key, path, value));
+
+
                     _.each(value.dynamic, function (dynamicValueArray:any, dynamicName) {
                         Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, dynamicName, key, path, dynamicValueArray);
                     });

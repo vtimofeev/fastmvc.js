@@ -8,12 +8,13 @@ var __extends = this.__extends || function (d, b) {
 var fmvc;
 (function (fmvc) {
     fmvc.ModelState = {
-        NONE: 'none',
-        LOADING: 'loading',
-        UPDATING: 'updating',
-        SYNCING: 'syncing',
-        SYNCED: 'synced',
-        CHANGED: 'changed',
+        None: 'none',
+        Loading: 'loading',
+        Updating: 'updating',
+        Syncing: 'syncing',
+        Synced: 'synced',
+        Changed: 'changed',
+        Error: 'error',
     };
     /*
         Загрузка данных
@@ -31,7 +32,7 @@ var fmvc;
               validateProxy: {} // validatorFunction
               onError
             }) // option init
-            .load(callback?) // load in model context
+            .load(callback?):Promise // load in model context
             .sync(callback?). // if changed -> save , if synced -> update
             .parse(callback?);
         });
@@ -56,6 +57,17 @@ var fmvc;
                 return this;
             this._previousState = value;
             this._state = value;
+            return this;
+        };
+        Model.prototype.set = function (value, direct, reset) {
+            if (direct === void 0) { direct = false; }
+            if (reset === void 0) { reset = false; }
+            if (reset)
+                this._data = null;
+            if (direct)
+                this._data = value;
+            else
+                this.data = value;
             return this;
         };
         Object.defineProperty(Model.prototype, "data", {
@@ -89,6 +101,13 @@ var fmvc;
                 }
                 if (hasChanges)
                     this.sendEvent(fmvc.Event.MODEL_CHANGED, changes || this._data);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Model.prototype, "state", {
+            get: function () {
+                return this._state;
             },
             enumerable: true,
             configurable: true
