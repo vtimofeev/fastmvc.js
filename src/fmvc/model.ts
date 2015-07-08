@@ -8,7 +8,10 @@ module fmvc {
 
     export var ModelState = {
         None: 'none',
+        Parsing: 'parsing', // parsing from source
+        Parsed: 'parsed', // parsed
         Loading: 'loading', // load from local/remote source
+        Loaded: 'loaded', // load from local/remote source
         Updating: 'updating', // actualize changes @todo? можно исползовать syncing вместо loading/updating
         Syncing: 'syncing', // saving changes, updating actual data from remote ...
         Synced: 'synced', //
@@ -115,6 +118,15 @@ module fmvc {
         }
 
         //-----------------------------------------------------------------------------
+        // Queue
+        //-----------------------------------------------------------------------------
+
+        public get queue():ModelQueue {
+            return new ModelQueue(this);
+        }
+
+
+        //-----------------------------------------------------------------------------
         // VALIDATOR PATH
         //-----------------------------------------------------------------------------
 
@@ -146,6 +158,111 @@ module fmvc {
             this.sendEvent(fmvc.Event.MODEL_VALIDATED, result, null, error);
             return result;
         }
+    }
+
+    export class ModelQueue {
+        private model:fmvc.Model;
+        private currentPromise:any;
+
+        constructor(model:fmvc.Model) {
+            this.model = model;
+        }
+
+
+        load(object:any) {
+            this.model.setState(ModelState.Loading);
+            this.async($.ajax, [object], $, { done: ModelState.Loaded, fault: ModelState.Error });
+            return this;
+        }
+
+        loadXml(object:any):ModelQueue {
+            var defaultAjaxRequestObject:any = _.defaults(object, {method: 'get', type:'xml', data: { rnd: (Math.round(Math.random()*1000000)) }});
+            return this.load(defaultAjaxRequestObject);
+        }
+
+        parse(method:any):ModelQueue {
+            this.model.setState(ModelState.Parsing);
+            this.add(method, this, [this.model], { done: ModelState.Parsed, fault: ModelState.Error });
+            return this;
+        }
+
+        async(getPromiseMethod:any,args:any[], context:any, states:any):ModelQueue {
+            var deferred = $.Deferred();
+            var queuePromise = this.setup();
+            queuePromise.then(
+                function done(value) {
+                    (getPromiseMethod.apply(context, args)).then(function successPromise(result) {deferred.resolve(result);}, function faultPromise(result) {deferred.reject(result);});
+                },
+                function fault() {
+                    deferred.reject();
+                }
+            );
+            this.currentPromise = deferred.promise();
+            return this;
+        }
+
+        add(method:Function,  context:any, args:any[], states:any):ModelQueue {
+            var deferred = $.Deferred();
+            var queuePromise = this.setup();
+            queuePromise.then(
+                function done(value) {
+                    var result = obj[method].apply(context, [value].concat(args));
+                    deferred.resolve(result);
+                },
+                function fault() {
+                    deferred.reject();
+                }
+            );
+            this.currentPromise = deferred.promise();
+            return this;
+        }
+
+        complete(method:Function,  context:any, args:any[], states:any):void {
+            this.add(method, context, args, states);
+        }
+
+        setup() {
+            var queueDeferred = $.Deferred();
+            $.when(this.currentPromise).then(function done(value) {queueDeferred.resolve(value);}, function fault() {queueDeferred.reject()});
+            return queueDeferred.promise();
+        }
+
+        /*
+        var Queue = function() {
+        var lastPromise = null;
+
+        this.add = function(obj, method, args, context) {
+            var methodDeferred = $.Deferred();
+            var queueDeferred = this.setup();
+            if(context === undefined) { context = obj; }
+
+            // execute next queue method
+            queueDeferred.done(function() {
+
+
+                // call actual method and wrap output in deferred
+                setTimeout(function() {
+                    obj[method].apply(context, args);
+                    methodDeferred.resolve();
+                }, 100);
+
+
+            });
+            lastPromise = methodDeferred.promise();
+        };
+
+        this.setup = function() {
+            var queueDeferred = $.Deferred();
+
+            // when the previous method returns, resolve this one
+            $.when(lastPromise).always(function() {
+                queueDeferred.resolve();
+            });
+
+            return queueDeferred.promise();
+        }
+        */
+
     }
 
     export class Validator {

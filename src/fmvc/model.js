@@ -9,7 +9,10 @@ var fmvc;
 (function (fmvc) {
     fmvc.ModelState = {
         None: 'none',
+        Parsing: 'parsing',
+        Parsed: 'parsed',
         Loading: 'loading',
+        Loaded: 'loaded',
         Updating: 'updating',
         Syncing: 'syncing',
         Synced: 'synced',
@@ -122,6 +125,16 @@ var fmvc;
         };
         Model.prototype.destroy = function () {
         };
+        Object.defineProperty(Model.prototype, "queue", {
+            //-----------------------------------------------------------------------------
+            // Queue
+            //-----------------------------------------------------------------------------
+            get: function () {
+                return new ModelQueue(this);
+            },
+            enumerable: true,
+            configurable: true
+        });
         Model.prototype.addValidator = function (value) {
             this._validators = this._validators ? this._validators : [];
             if (this._validators.indexOf(value) >= 0)
@@ -150,6 +163,58 @@ var fmvc;
         return Model;
     })(fmvc.Notifier);
     fmvc.Model = Model;
+    var ModelQueue = (function () {
+        function ModelQueue(model) {
+            this.model = model;
+        }
+        ModelQueue.prototype.load = function (object) {
+            this.model.setState(fmvc.ModelState.Loading);
+            this.async($.ajax, [object], $, { done: fmvc.ModelState.Loaded, fault: fmvc.ModelState.Error });
+            return this;
+        };
+        ModelQueue.prototype.loadXml = function (object) {
+            var defaultAjaxRequestObject = _.defaults(object, { method: 'get', type: 'xml', data: { rnd: (Math.round(Math.random() * 1000000)) } });
+            return this.load(defaultAjaxRequestObject);
+        };
+        ModelQueue.prototype.parse = function (method) {
+            this.model.setState(fmvc.ModelState.Parsing);
+            this.add(method, this, [this.model], { done: fmvc.ModelState.Parsed, fault: fmvc.ModelState.Error });
+            return this;
+        };
+        ModelQueue.prototype.async = function (getPromiseMethod, args, context, states) {
+            var deferred = $.Deferred();
+            var queuePromise = this.setup();
+            queuePromise.then(function done(value) {
+                (getPromiseMethod.apply(context, args)).then(function successPromise(result) { deferred.resolve(result); }, function faultPromise(result) { deferred.reject(result); });
+            }, function fault() {
+                deferred.reject();
+            });
+            this.currentPromise = deferred.promise();
+            return this;
+        };
+        ModelQueue.prototype.add = function (method, context, args, states) {
+            var deferred = $.Deferred();
+            var queuePromise = this.setup();
+            queuePromise.then(function done(value) {
+                var result = obj[method].apply(context, [value].concat(args));
+                deferred.resolve(result);
+            }, function fault() {
+                deferred.reject();
+            });
+            this.currentPromise = deferred.promise();
+            return this;
+        };
+        ModelQueue.prototype.complete = function (method, context, args, states) {
+            this.add(method, context, args, states);
+        };
+        ModelQueue.prototype.setup = function () {
+            var queueDeferred = $.Deferred();
+            $.when(this.currentPromise).then(function done(value) { queueDeferred.resolve(value); }, function fault() { queueDeferred.reject(); });
+            return queueDeferred.promise();
+        };
+        return ModelQueue;
+    })();
+    fmvc.ModelQueue = ModelQueue;
     var Validator = (function () {
         function Validator(name, fnc) {
             this.name = null;
