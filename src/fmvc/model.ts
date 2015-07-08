@@ -95,7 +95,8 @@ module fmvc {
                 // primitive || array || no data && any value (object etc)
                 if (data !== value) {
                     hasChanges = true;
-                    this._data = _.isObject(value)?_.extend(this._data, value) : value;
+                    var resultData = (_.isObject(this._data) && _.isObject(value))?_.extend(this._data, value): value;
+                    this._data = resultData;
                 }
             }
 
@@ -176,22 +177,23 @@ module fmvc {
         }
 
         loadXml(object:any):ModelQueue {
-            var defaultAjaxRequestObject:any = _.defaults(object, {method: 'get', type:'xml', data: { rnd: (Math.round(Math.random()*1000000)) }});
+            var defaultAjaxRequestObject:any = _.defaults(object, {method: 'GET', dataType:'xml', data: { rnd: (Math.round(Math.random()*1000000)) }});
             return this.load(defaultAjaxRequestObject);
         }
 
         parse(method:any):ModelQueue {
             this.model.setState(ModelState.Parsing);
-            this.add(method, this, [this.model], { done: ModelState.Parsed, fault: ModelState.Error });
+            this.sync(method, [this.model], this, { done: ModelState.Parsed, fault: ModelState.Error });
             return this;
         }
 
-        async(getPromiseMethod:any,args:any[], context:any, states:any):ModelQueue {
+        async(getPromiseMethod:any, args:any[], context:any, states:any):ModelQueue {
             var deferred = $.Deferred();
             var queuePromise = this.setup();
             queuePromise.then(
                 function done(value) {
-                    (getPromiseMethod.apply(context, args)).then(function successPromise(result) {deferred.resolve(result);}, function faultPromise(result) {deferred.reject(result);});
+                    console.log('Call async method args ', args);
+                    (getPromiseMethod.apply(context, args)).then(function successPromise(result) { console.log('Async success ', result); deferred.resolve(result);}, function faultPromise(result) { console.log('Async fault ', arguments);  deferred.reject(result);});
                 },
                 function fault() {
                     deferred.reject();
@@ -201,29 +203,29 @@ module fmvc {
             return this;
         }
 
-        add(method:Function,  context:any, args:any[], states:any):ModelQueue {
+        sync(method:Function, args?:any[], context?:any, states?:any):ModelQueue {
             var deferred = $.Deferred();
             var queuePromise = this.setup();
-            queuePromise.then(
-                function done(value) {
-                    var result = obj[method].apply(context, [value].concat(args));
-                    deferred.resolve(result);
-                },
-                function fault() {
-                    deferred.reject();
-                }
-            );
+            queuePromise.done(
+                function doneQueue(value) {
+                    var methodArgs = [value].concat(args);
+
+                    var result = method.apply(context, methodArgs);
+                    console.log('Call sync method ', result, ' args ', methodArgs)
+                    if (result) deferred.resolve(result);
+                    else deferred.reject();
+                });
             this.currentPromise = deferred.promise();
             return this;
         }
 
-        complete(method:Function,  context:any, args:any[], states:any):void {
-            this.add(method, context, args, states);
+        complete(method:Function,  args?:any[], context?:any,  states?:any):void {
+            this.sync(method, context, args, states);
         }
 
         setup() {
             var queueDeferred = $.Deferred();
-            $.when(this.currentPromise).then(function done(value) {queueDeferred.resolve(value);}, function fault() {queueDeferred.reject()});
+            $.when(this.currentPromise).then(function doneQueue(value) {queueDeferred.resolve(value);}, function faultQueue() {queueDeferred.reject()});
             return queueDeferred.promise();
         }
 

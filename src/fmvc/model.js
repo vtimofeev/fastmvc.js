@@ -99,7 +99,8 @@ var fmvc;
                     // primitive || array || no data && any value (object etc)
                     if (data !== value) {
                         hasChanges = true;
-                        this._data = _.isObject(value) ? _.extend(this._data, value) : value;
+                        var resultData = (_.isObject(this._data) && _.isObject(value)) ? _.extend(this._data, value) : value;
+                        this._data = resultData;
                     }
                 }
                 if (hasChanges)
@@ -173,43 +174,47 @@ var fmvc;
             return this;
         };
         ModelQueue.prototype.loadXml = function (object) {
-            var defaultAjaxRequestObject = _.defaults(object, { method: 'get', type: 'xml', data: { rnd: (Math.round(Math.random() * 1000000)) } });
+            var defaultAjaxRequestObject = _.defaults(object, { method: 'GET', dataType: 'xml', data: { rnd: (Math.round(Math.random() * 1000000)) } });
             return this.load(defaultAjaxRequestObject);
         };
         ModelQueue.prototype.parse = function (method) {
             this.model.setState(fmvc.ModelState.Parsing);
-            this.add(method, this, [this.model], { done: fmvc.ModelState.Parsed, fault: fmvc.ModelState.Error });
+            this.sync(method, [this.model], this, { done: fmvc.ModelState.Parsed, fault: fmvc.ModelState.Error });
             return this;
         };
         ModelQueue.prototype.async = function (getPromiseMethod, args, context, states) {
             var deferred = $.Deferred();
             var queuePromise = this.setup();
             queuePromise.then(function done(value) {
-                (getPromiseMethod.apply(context, args)).then(function successPromise(result) { deferred.resolve(result); }, function faultPromise(result) { deferred.reject(result); });
+                console.log('Call async method args ', args);
+                (getPromiseMethod.apply(context, args)).then(function successPromise(result) { console.log('Async success ', result); deferred.resolve(result); }, function faultPromise(result) { console.log('Async fault ', arguments); deferred.reject(result); });
             }, function fault() {
                 deferred.reject();
             });
             this.currentPromise = deferred.promise();
             return this;
         };
-        ModelQueue.prototype.add = function (method, context, args, states) {
+        ModelQueue.prototype.sync = function (method, args, context, states) {
             var deferred = $.Deferred();
             var queuePromise = this.setup();
-            queuePromise.then(function done(value) {
-                var result = obj[method].apply(context, [value].concat(args));
-                deferred.resolve(result);
-            }, function fault() {
-                deferred.reject();
+            queuePromise.done(function doneQueue(value) {
+                var methodArgs = [value].concat(args);
+                var result = method.apply(context, methodArgs);
+                console.log('Call sync method ', result, ' args ', methodArgs);
+                if (result)
+                    deferred.resolve(result);
+                else
+                    deferred.reject();
             });
             this.currentPromise = deferred.promise();
             return this;
         };
-        ModelQueue.prototype.complete = function (method, context, args, states) {
-            this.add(method, context, args, states);
+        ModelQueue.prototype.complete = function (method, args, context, states) {
+            this.sync(method, context, args, states);
         };
         ModelQueue.prototype.setup = function () {
             var queueDeferred = $.Deferred();
-            $.when(this.currentPromise).then(function done(value) { queueDeferred.resolve(value); }, function fault() { queueDeferred.reject(); });
+            $.when(this.currentPromise).then(function doneQueue(value) { queueDeferred.resolve(value); }, function faultQueue() { queueDeferred.reject(); });
             return queueDeferred.promise();
         };
         return ModelQueue;

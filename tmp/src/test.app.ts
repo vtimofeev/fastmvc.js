@@ -34,6 +34,9 @@ class TestModel extends fmvc.Model {
 
 var testApp:fmvc.Facade = new fmvc.Facade('testApp', window);
 var testModel:TestModel = new TestModel('testModel', {content: 'Hello world'});
+testModel.queue.loadXml({url: 'config.xml'}).parse(_.identity).complete((v)=>testModel.set({xml:v}), null, this);
+testModel.queue.loadXml({url: 'config2.xml'}).parse(_.identity).complete((v)=>testModel.set({xml2:v}), null, this);
+
 
 testApp
     .register((new TestStatMediator(TestMediator.NAME, document.body)).setFacade(testApp).addViews([new ui.Button('btn1', testModel),((new ui.Button('btn2', null, {events: { click: ViewEvent.EDIT }} )).setState('content', 'The value')) ]))
