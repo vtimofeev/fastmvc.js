@@ -52,7 +52,7 @@ module fmvc
             var e = {name: name, sub:sub, data: data, error: error, target: this};
             if(log) this.log('Send event ' + name);
             if(this._facade) this._facade.eventHandler(e);
-            if(this._listeners && this._listeners.length) this._sendToListners(name, data);
+            if(this._listeners && this._listeners.length) this._sendToListners(e);
         }
 
 
@@ -104,10 +104,10 @@ module fmvc
             this._listeners = null;
         }
 
-        private _sendToListners(event, data)
+        private _sendToListners(e)
         {
             this._listeners.forEach(function(lo:IListener) {
-                if(!lo.target.disposed) (lo.handler).apply(lo.target, [event, data]);
+                if(!lo.target.disposed) (lo.handler).apply(lo.target, [e]);
             });
         }
 

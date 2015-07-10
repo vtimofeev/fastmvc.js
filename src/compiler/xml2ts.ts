@@ -46,7 +46,6 @@ module fmvc {
         RAW: 'raw',
         DATA: 'data',
         STATES: 'states',
-
         STYLE: 'style',
         HREF: 'href',
         VALUE: 'value',
@@ -159,7 +158,7 @@ module fmvc {
                             break;
                         case F_ELEMENTS.STATE:
                             if(!statesJs) statesJs = [];
-                            var type = value.attribs.type || 'boolean';
+                            var type = value.attribs.type || 'string';
                             statesJs.push({name: value.attribs.name, type: type, default: Xml2TsUtils.getTypedValue(value.attribs.default || '', type) });
                     }
                 }
@@ -221,7 +220,9 @@ module fmvc {
         public static MATCH_REGEXP:RegExp = /\{([\@A-Za-z\, \|0-9\.]+)\}/g;
         public static DATA_MATCH_REGEXP:RegExp = /\{([\(\)\\,\.\|'"@A-Za-z 0-9]+)\}/g;
         public static BRACKETS_MATCH:RegExp = /\([^()]+\)/gi;
-        public static VARS_MATCH:RegExp = /([A-Za-z0-9'\.]+)/gi;
+        public static VARS_MATCH:RegExp = /([A-Za-z0-9_\-'\.]+)/gi;
+        public static JS_VARS_MATCH:RegExp = /(^[A-Za-z0-9_\-\.]+$)/gi;
+
         public static PROPERTY_DATA_MATCH:RegExp = /^\{[A-Za-z0-9\.]+\}$/;
 
 
@@ -265,7 +266,7 @@ module fmvc {
             var matches = value.match(Xml2TsUtils.DATA_MATCH_REGEXP);
             if(!(matches && matches.length)) return value;
 
-            var expressions:IExpression[] = _.map(matches, (v)=>this.parseDynamicContent(v.substring(1,v.length-1)), this);
+            var expressions:fmvc.IExpression[] = _.map(matches, (v)=>this.parseDynamicContent(v.substring(1,v.length-1)), this);
             var expressionVars = [];
             var result = _.reduce(matches, function(r, v, i) { var e = '$' + i; expressionVars.push(e); return r.replace(v, '{' + e + '}'); }, value, this);
             return {content: value, result:result, vars: expressionVars, expressions: expressions};
@@ -279,55 +280,50 @@ module fmvc {
             // {(a||b?'one':'two')} // expression
             // {(a||b) as V, c as D, (a||b||c) as E|i18n.t|s|d} // expression
 
-            //console.log('Start ' ,value);
-            var result:IExpression = {
+            var result:fmvc.IExpression = {
                 content: value,
                 vars: [], // переменные которые участвуют
                 values: [], // упорядоченные значения до получения любого истинного значения {a,b,c}
                 args: {}, // аргументы для i18n
                 filters: [], // фильтры
-                expression: [] // выражения для расчет
+                expressions: [] // выражения для расчета
             };
 
             var expressionMatches = Xml2TsUtils.getExpressionFromString(value);//value.match(Xml2TsUtils.BRACKETS_MATCH);
-            //console.log('expression matches: ', expressionMatches);
 
             if (expressionMatches && expressionMatches.length) _.each(expressionMatches,
                 function(expression:string, index:number) {
-                    //console.log('Start expression ' , expression);
                     value = value.replace(expression, '$' + index);
-                    var variables = _.uniq(_.filter(expression.match(Xml2TsUtils.VARS_MATCH), function (v) { return  v.indexOf('\'') === -1 && v.match(/[A-Za-z]+/gi); }));
+                    var variables = _.uniq(_.filter(expression.match(Xml2TsUtils.VARS_MATCH), function (v) { return  v.indexOf('\'') === -1 && v.match(/^[A-Za-z]+/gi); }));
+                    console.log('--- vars : ' , variables);
                     if (!_.isEmpty(variables)) variables = variables.sort((a:string,b:string)=>a.length>b.length?-1:1);
                     result.vars = result.vars.concat(variables);
                     var reducedExpression = _.reduce(variables, function(memo, v) {
                         var requestVariable = ((v.indexOf('.')>-1 && v.indexOf('state.') === -1)?('this.' + v):('this.getState("' + v.replace('state.', '') + '")'));
                         return memo.replace(new RegExp(v, 'g'),  requestVariable);
                     }, expression, this);
-                    //console.log('Reduces expression: ', reducedExpression);
-                    result.expression.push(reducedExpression);
+                    result.expressions.push(reducedExpression);
                 });
-
-            //console.log('value after expressions ' , value);
 
             var valueSpitByFilter = value.split('|');
             value = _.first(valueSpitByFilter);
 
-            //console.log('value after filter ' , value);
-
             result.filters = _.rest(valueSpitByFilter);
-            //result.expression = expressionMatches;
 
-            var arguments = Xml2TsUtils.parseArguments(value);
+            var args = Xml2TsUtils.parseArguments(value);
             //console.log('arguments ' , arguments, _.isObject(arguments), value.split(','));
 
-            if(_.isObject(arguments)) {
-                result.args = arguments;
-                result.vars = result.vars.concat(_.filter(_.values(arguments), (v)=>v.indexOf('$')===-1));
+            if(_.isObject(args)) {
+                result.args = args;
+                result.vars = result.vars.concat(_.filter(_.values(args), (v)=>v.indexOf('$')===-1));
                 result.values = [];
             } else {
                 result.vars = result.vars.concat(value.split(','));
                 result.values = result.values.concat(value.split(','));
             }
+
+            // remove empty keys
+            _.each(_.keys(result), (key)=>(_.isEmpty(result[key])?delete result[key]:null) );
             console.dir(result);
             return result;
         }
@@ -345,9 +341,9 @@ module fmvc {
         }
 
         public static parseArgument(value:string) {
-            if(value.indexOf('as') === -1) return value.trim();
+            if(value.indexOf(' as ') === -1) return value.trim();
             else {
-                var result = value.split('as');
+                var result = value.split(' as ');
                 var object = {};
                 object[result[1].trim()] = result[0].trim();
                 return object;
@@ -394,7 +390,7 @@ module fmvc {
 
                         var dataFields = data.split(',');
                         _.each(dataFields, function(dataFieldContent) {
-                            var content = dataFieldContent.split('as');
+                            var content = dataFieldContent.split(' as ');
                             var dataPropName:string = content[0].trim();
                             var dataPropKey:string = content[1]?content[1].trim():'VALUE';
                             filterResult.args[dataPropKey] = dataPropName;
@@ -440,7 +436,7 @@ module fmvc {
 
         public static recreateJsNode(data:any, path:string, rootObject?:fmvc.IRootDomObject):any {
             var a:any = data.attribs;
-            var object:fmvc.IDomObject = {path: path, type: data.type, data: data.data, staticAttributes: {}, children: [], links: [], handlers: {}, bounds: {}};
+            var object:fmvc.IDomObject = {path: path, type: data.type, data: data.data, attribs: {}, staticAttributes: {}, children: [], links: [], handlers: {}, bounds: {}};
             if (!rootObject) {
                 rootObject = object;
                 rootObject.dynamicSummary = {};
@@ -461,50 +457,18 @@ module fmvc {
                 if (a.states) object.states = a.states;
             }
 
-            // handlers, create static attributes
-            _.each(a, function (value:any, key:any) {
-                //console.log('Check: ', key, value);
-                if (_.values(EVENT_KEYS).indexOf(key) > -1) {
-                    //console.log('--- Handler ' , key, value);
-                    object.handlers[key.replace('on','')] = value;
-                }
-
-                if (DOM_KEYS.indexOf(key) < 0) return;
-                var result = null;
-                switch (key) {
-                    case KEYS.CLASS:
-                        result = Xml2TsUtils.getStaticValueOfDynamicObject(value, ' ');
-                        break;
-                    case KEYS.STYLE:
-                        result = Xml2TsUtils.getStaticValueOfDynamicObject(value, ';');
-                        break;
-                }
-
-                //create dynamic maps summary for  root
-                if (_.isObject(value)) {
-                    _.each(value.vars, (dynamicName)=>Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, dynamicName, key, path, value));
-
-
-                    _.each(value.dynamic, function (dynamicValueArray:any, dynamicName) {
-                        Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, dynamicName, key, path, dynamicValueArray);
-                    });
-
-                    _.each(value.bounds, function (boundValue, boundObject) {
-                       object.bounds[key] = {};
-                       object.bounds[key][boundObject] = boundValue;
-                       object.handlers['change'] = 'set,' + boundObject + ',' + boundValue;
-                    });
-                }
-
-                if (result) object.staticAttributes[key] = result;
+            // Проверяем аттрибуты объекта для дальнейшего прокидывания в объекты
+            var skipAttribs = ['link', 'enableStates', 'extend', 'states', 'class', 'style'];
+            _.each(a, function(v,k) {
+                if(!_.has(skipAttribs, k)) object.attribs[k] = v;
             });
 
-            if (_.isObject(data.data)) {
-                var key:string = 'data';
-                _.each(data.data.dynamic, function (dynamicValueArray:any, dynamicName) {
-                    Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, dynamicName, key, path, dynamicValueArray); //create dynamic maps summary for root
-                });
-            }
+            // handlers, create static attributes
+            // create dynamic array
+            var commonDatas = _.isObject(data.data)?_.extend({}, a, {data: data.data}):a;
+            _.each(commonDatas, function (value:any, key:any) {
+                Xml2TsUtils.writeSummaryForNode(object, rootObject, key, path, value);
+            });
 
             _.forEach(data.children, function (node, index) {
                 var childPath:string = path + ',' + index;
@@ -520,6 +484,50 @@ module fmvc {
             return object;
         }
 
+        public static writeSummaryForNode(object:IDomObject, rootObject:IRootDomObject, key:string, path:string, value:any) {
+            //console.log('Check: ', key, value);
+            var result = null;
+
+            if (_.values(EVENT_KEYS).indexOf(key) > -1) {
+                //console.log('--- Handler ' , key, value);
+                object.handlers[key.replace('on','')] = value;
+            }
+
+            if (!(DOM_KEYS.indexOf(key) > -1 || key.indexOf('data') > -1)) return;
+
+            var result = null;
+            switch (key) {
+                case KEYS.CLASS:
+                    result = Xml2TsUtils.getStaticValueOfDynamicObject(value, ' ');
+                    break;
+                case KEYS.STYLE:
+                    result = Xml2TsUtils.getStaticValueOfDynamicObject(value, ';');
+                    break;
+            }
+            if (result) object.staticAttributes[key] = result;
+
+            //create dynamic maps summary for root
+            if (_.isObject(value)) {
+                var expressionVars = Xml2TsUtils.getExpressionVars(value);
+                console.log('Full vars list --> ' , path, key, value.vars, '===', expressionVars);
+
+                _.each(expressionVars, (varName:string)=>Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, varName, key, path, value));
+                _.each(value.dynamic, (dynamicValueArray:any, dynamicName)=>Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, dynamicName, key, path, dynamicValueArray));
+                _.each(value.bounds, function (boundValue, boundObject) {
+                    object.bounds[key] = {};
+                    object.bounds[key][boundObject] = boundValue;
+                    object.handlers['change'] = 'set,' + boundObject + ',' + boundValue;
+                });
+            }
+
+        }
+
+        public static getExpressionVars(ex:IMultiExpression) {
+            var r = [].concat(ex.vars?ex.vars:[]);
+            _.each(ex.expressions, function(childEx:IExpression|string) { if(_.isObject(childEx)) r = [].concat(r, Xml2TsUtils.getExpressionVars(childEx)); });
+            //console.log('ex vars is ' , r);
+            return _.uniq(_.filter(r, (v)=>(v.match(Xml2TsUtils.JS_VARS_MATCH))));
+        }
 
         public static getNameValue(name:string, value:any):fmvc.INameValue {
             return {name: name, value: value};
@@ -538,7 +546,7 @@ module fmvc {
         public static getTypedValue(s:any, type:string):any {
             switch (type) {
                 case fmvc.Type.String:
-                    return s;
+                    return String(s);
                 case fmvc.Type.Int:
                     return parseInt(s,10);
                 case fmvc.Type.Float:

@@ -50,7 +50,7 @@ module fmvc {
 
         public getView(name:string):any
         {
-            for(var i in this.views) { if(this.views[i].name() == name) return this.views[i]; }
+            for(var i in this.views) { if(this.views[i].name == name) return this.views[i]; }
             return null;
         }
 

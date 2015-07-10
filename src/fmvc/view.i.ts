@@ -40,6 +40,7 @@ module fmvc {
         name:string;
         value:any;
         type:string;
+        default?:any;
     }
 
 
@@ -55,6 +56,11 @@ module fmvc {
         args?:any;
         filters?:string[];
     }
+
+    export interface IMultiExpression extends IExpression {
+        result:string;
+    }
+
 
 
 
@@ -74,6 +80,8 @@ module fmvc {
 
         element?:HTMLElement;
         virtualElement?:HTMLElement;
+
+        attribs:any;
 
         enableStates?:(string|ITypeNameValue)[];
         states?:any;

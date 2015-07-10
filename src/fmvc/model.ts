@@ -19,29 +19,6 @@ module fmvc {
         Error: 'error',
     };
 
-    /*
-        Загрузка данных
-        var configModel = new Model('config', { default data } , { enabedState: true , state: 'synced' } );
-        var loaderProxy = new LoaderProxy(configModel, configUrl);
-        loaderProxy.load().then(function(data) {
-         var parserProxy = new ParserProxy(data, parserFunction, configModel);
-         parserProxy.parser().then(function() { });
-
-         configModel(
-            defaultConfig,
-            { url : { load: [template], update: [template], remove: [template] },
-              loadProxy: {} // universary queue manager,
-              parserProxy: {} // parserFunction(data=>result),
-              validateProxy: {} // validatorFunction
-              onError
-            }) // option init
-            .load(callback?):Promise // load in model context
-            .sync(callback?). // if changed -> save , if synced -> update
-            .parse(callback?);
-        });
-
-     */
-
     export class Model extends fmvc.Notifier {
         private _data:any;
         private _previousState:string;
@@ -49,7 +26,7 @@ module fmvc {
         private _state:string;
 
         public enabledEvents:boolean = true;
-        public enabledState:boolean = false;
+        public enabledState:boolean = true;
         public watchChanges:boolean = true;
 
         constructor(name:string, data:any = {}, opts?:IModelOptions) {
@@ -63,6 +40,7 @@ module fmvc {
             if(!this.enabledState || this._state === value) return this;
             this._previousState = value;
             this._state = value;
+            this.sendEvent(fmvc.Event.MODEL_CHANGED, this._state);
             return this;
         }
 
@@ -106,6 +84,7 @@ module fmvc {
         public get data():any {
             return this._data;
         }
+
 
         public get state():string {
             return this._state;

@@ -3,6 +3,7 @@ var fmvc;
     var Event = (function () {
         function Event() {
         }
+        Event.MODEL_STATE_CHANGED = 'model.state.changed';
         Event.MODEL_CHANGED = 'model.changed';
         Event.MODEL_CREATED = 'model.created';
         Event.MODEL_VALIDATED = 'model.validated';
@@ -236,7 +237,7 @@ var fmvc;
             if (this._facade)
                 this._facade.eventHandler(e);
             if (this._listeners && this._listeners.length)
-                this._sendToListners(name, data);
+                this._sendToListners(e);
         };
         Notifier.prototype.log = function (message, level) {
             // @todo remove facade reference
@@ -275,10 +276,10 @@ var fmvc;
         Notifier.prototype.removeAllListeners = function () {
             this._listeners = null;
         };
-        Notifier.prototype._sendToListners = function (event, data) {
+        Notifier.prototype._sendToListners = function (e) {
             this._listeners.forEach(function (lo) {
                 if (!lo.target.disposed)
-                    (lo.handler).apply(lo.target, [event, data]);
+                    (lo.handler).apply(lo.target, [e]);
             });
         };
         Notifier.prototype.dispose = function () {
@@ -494,42 +495,24 @@ var fmvc;
 var fmvc;
 (function (fmvc) {
     fmvc.ModelState = {
-        NONE: 'none',
-        LOADING: 'loading',
-        UPDATING: 'updating',
-        SYNCING: 'syncing',
-        SYNCED: 'synced',
-        CHANGED: 'changed',
+        None: 'none',
+        Parsing: 'parsing',
+        Parsed: 'parsed',
+        Loading: 'loading',
+        Loaded: 'loaded',
+        Updating: 'updating',
+        Syncing: 'syncing',
+        Synced: 'synced',
+        Changed: 'changed',
+        Error: 'error',
     };
-    /*
-        Загрузка данных
-        var configModel = new Model('config', { default data } , { enabedState: true , state: 'synced' } );
-        var loaderProxy = new LoaderProxy(configModel, configUrl);
-        loaderProxy.load().then(function(data) {
-         var parserProxy = new ParserProxy(data, parserFunction, configModel);
-         parserProxy.parser().then(function() { });
-
-         configModel(
-            defaultConfig,
-            { url : { load: [template], update: [template], remove: [template] },
-              loadProxy: {} // universary queue manager,
-              parserProxy: {} // parserFunction(data=>result),
-              validateProxy: {} // validatorFunction
-              onError
-            }) // option init
-            .load(callback?) // load in model context
-            .sync(callback?). // if changed -> save , if synced -> update
-            .parse(callback?);
-        });
-
-     */
     var Model = (function (_super) {
         __extends(Model, _super);
         function Model(name, data, opts) {
             if (data === void 0) { data = {}; }
             _super.call(this, name);
             this.enabledEvents = true;
-            this.enabledState = false;
+            this.enabledState = true;
             this.watchChanges = true;
             if (opts)
                 _.extend(this, opts);
@@ -542,6 +525,18 @@ var fmvc;
                 return this;
             this._previousState = value;
             this._state = value;
+            this.sendEvent(fmvc.Event.MODEL_CHANGED, this._state);
+            return this;
+        };
+        Model.prototype.set = function (value, direct, reset) {
+            if (direct === void 0) { direct = false; }
+            if (reset === void 0) { reset = false; }
+            if (reset)
+                this._data = null;
+            if (direct)
+                this._data = value;
+            else
+                this.data = value;
             return this;
         };
         Object.defineProperty(Model.prototype, "data", {
@@ -570,11 +565,19 @@ var fmvc;
                     // primitive || array || no data && any value (object etc)
                     if (data !== value) {
                         hasChanges = true;
-                        this._data = _.isObject(value) ? _.extend(this._data, value) : value;
+                        var resultData = (_.isObject(this._data) && _.isObject(value)) ? _.extend(this._data, value) : value;
+                        this._data = resultData;
                     }
                 }
                 if (hasChanges)
                     this.sendEvent(fmvc.Event.MODEL_CHANGED, changes || this._data);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Model.prototype, "state", {
+            get: function () {
+                return this._state;
             },
             enumerable: true,
             configurable: true
@@ -589,6 +592,16 @@ var fmvc;
         };
         Model.prototype.destroy = function () {
         };
+        Object.defineProperty(Model.prototype, "queue", {
+            //-----------------------------------------------------------------------------
+            // Queue
+            //-----------------------------------------------------------------------------
+            get: function () {
+                return new ModelQueue(this);
+            },
+            enumerable: true,
+            configurable: true
+        });
         Model.prototype.addValidator = function (value) {
             this._validators = this._validators ? this._validators : [];
             if (this._validators.indexOf(value) >= 0)
@@ -617,6 +630,72 @@ var fmvc;
         return Model;
     })(fmvc.Notifier);
     fmvc.Model = Model;
+    var ModelQueue = (function () {
+        function ModelQueue(model) {
+            this.model = model;
+        }
+        ModelQueue.prototype.load = function (object) {
+            this.model.setState(fmvc.ModelState.Loading);
+            this.async($.ajax, [object], $, { done: fmvc.ModelState.Loaded, fault: fmvc.ModelState.Error });
+            return this;
+        };
+        ModelQueue.prototype.loadXml = function (object) {
+            var defaultAjaxRequestObject = _.defaults(object, { method: 'GET', dataType: 'xml', data: { rnd: (Math.round(Math.random() * 1000000)) } });
+            return this.load(defaultAjaxRequestObject);
+        };
+        ModelQueue.prototype.parse = function (method) {
+            this.model.setState(fmvc.ModelState.Parsing);
+            this.sync(method, [this.model], this, { done: fmvc.ModelState.Parsed, fault: fmvc.ModelState.Error });
+            return this;
+        };
+        ModelQueue.prototype.async = function (getPromiseMethod, args, context, states) {
+            var deferred = $.Deferred();
+            var queuePromise = this.setup();
+            queuePromise.then(function done(value) {
+                console.log('Call async method args ', args);
+                (getPromiseMethod.apply(context, args)).then(function successPromise(result) {
+                    console.log('Async success ', result);
+                    deferred.resolve(result);
+                }, function faultPromise(result) {
+                    console.log('Async fault ', arguments);
+                    deferred.reject(result);
+                });
+            }, function fault() {
+                deferred.reject();
+            });
+            this.currentPromise = deferred.promise();
+            return this;
+        };
+        ModelQueue.prototype.sync = function (method, args, context, states) {
+            var deferred = $.Deferred();
+            var queuePromise = this.setup();
+            queuePromise.done(function doneQueue(value) {
+                var methodArgs = [value].concat(args);
+                var result = method.apply(context, methodArgs);
+                console.log('Call sync method ', result, ' args ', methodArgs);
+                if (result)
+                    deferred.resolve(result);
+                else
+                    deferred.reject();
+            });
+            this.currentPromise = deferred.promise();
+            return this;
+        };
+        ModelQueue.prototype.complete = function (method, args, context, states) {
+            this.sync(method, context, args, states);
+        };
+        ModelQueue.prototype.setup = function () {
+            var queueDeferred = $.Deferred();
+            $.when(this.currentPromise).then(function doneQueue(value) {
+                queueDeferred.resolve(value);
+            }, function faultQueue() {
+                queueDeferred.reject();
+            });
+            return queueDeferred.promise();
+        };
+        return ModelQueue;
+    })();
+    fmvc.ModelQueue = ModelQueue;
     var Validator = (function () {
         function Validator(name, fnc) {
             this.name = null;
@@ -636,67 +715,38 @@ var fmvc;
 (function (fmvc) {
     var ModelList = (function (_super) {
         __extends(ModelList, _super);
-        function ModelList(name, data) {
-            if (data === void 0) { data = null; }
-            _super.call(this, name);
-            this.data = data;
+        function ModelList(name, data, opts) {
+            if (data === void 0) { data = []; }
+            _super.call(this, name, data, opts);
         }
         Object.defineProperty(ModelList.prototype, "data", {
-            get: function () {
-                return this._data;
-            },
             set: function (value) {
-                if (!this._data)
-                    this._data = [];
-                for (var i in value) {
-                    this._data.push(this.createModel(value[i]));
-                }
+                if (!_.isArray(value))
+                    throw Error('Cant set modelList from not array data');
+                var data = this.data || [];
+                _.each(value, function (item) {
+                    var modelValue = (item instanceof fmvc.Model) ? item : this.getModel(item);
+                    data.push(modelValue);
+                }, this);
+                this.set(data, true, true);
                 this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
             },
             enumerable: true,
             configurable: true
         });
-        ModelList.prototype.createModel = function (value) {
+        // @overrided
+        ModelList.prototype.getModel = function (value) {
             return new fmvc.Model(this.name + '-item', value);
         };
-        ModelList.prototype.add = function (value) {
-            this._data.push(this.createModel(value));
-            this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
-            return true;
-        };
-        ModelList.prototype.remove = function (value) {
-            var data = this._data;
-            var result = false;
-            var index = data.indexOf(value);
-            if (index > -1) {
-                data.splice(index, 1);
-                result = true;
-            }
-            this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
-            return result;
-        };
-        ModelList.prototype.update = function (value) {
-            var data = this._data;
-            var result = false;
-            var index = this.getIndexOfModelData(value);
-            if (index > -1) {
-                data[index].setData(value);
-                result = true;
-            }
-            this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
-            return result;
-        };
-        ModelList.prototype.getIndexOfModelData = function (value) {
-            for (var i in this._data) {
-                var model = this._data[i];
-                console.log('Check ' + model.data + ', ' + value);
-                if (model.data === value)
-                    return Number(i);
-            }
-            return -1;
-        };
+        Object.defineProperty(ModelList.prototype, "count", {
+            get: function () {
+                return this.data && this.data.length ? this.data.length : 0;
+            },
+            enumerable: true,
+            configurable: true
+        });
         return ModelList;
-    })(fmvc.Notifier);
+    })(fmvc.Model);
     fmvc.ModelList = ModelList;
 })(fmvc || (fmvc = {}));
 ///<reference path='./d.ts'/>
@@ -740,6 +790,7 @@ var fmvc;
         __extends(View, _super);
         function View(name, modelOrData, jsTemplate) {
             _super.call(this, name, fmvc.TYPE_VIEW);
+            this._data = null;
             this.dynamicPropertyValue = {}; // те которые были установлены
             this.elementPaths = {};
             this.componentPaths = {};
@@ -751,7 +802,7 @@ var fmvc;
             this._avaibleInheritedStates = null;
             this._locale = 'ru';
             this._id = null;
-            _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler', 'getDataObjectValue');
+            _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler');
             this.template = this.jsTemplate;
             if (modelOrData) {
                 if (modelOrData.type === fmvc.TYPE_MODEL)
@@ -813,7 +864,7 @@ var fmvc;
                 else if (_.isObject(value)) {
                     var ivalue = (value);
                     this._statesType[ivalue.name] = ivalue.type;
-                    this._states[ivalue.name] = ivalue.value;
+                    this._states[ivalue.name] = ivalue.value || ivalue.default;
                 }
             }, this);
         };
@@ -854,10 +905,23 @@ var fmvc;
                     this.updateData(value, nextPrefix, depth);
                 }
                 else {
-                    //console.log('Set data ' , prefix + name);
+                    console.log('Set data ', prefix + name);
                     this.dynamicProperties[prefix + name] ? this.updateDynamicProperty(prefix + name, value) : null;
                 }
             }, this);
+        };
+        View.prototype.updateApp = function () {
+            if (!this.dynamicProperties || !this.app)
+                return;
+            var appProps = _.filter(_.keys(this.dynamicProperties), function (v) { return v.indexOf('app.') === 0; });
+            _.each(appProps, function (name) {
+                this.updateAppProp(name);
+            }, this);
+        };
+        View.prototype.updateAppProp = function (name) {
+            var appValue = eval('this.' + name);
+            console.log('Set APP !!! --- !!! --- ', name, appValue);
+            this.updateDynamicProperty(name, appValue);
         };
         // @todo
         View.prototype.getStyleValue = function (name) {
@@ -870,12 +934,13 @@ var fmvc;
                 return templateString.replace('{' + propertyName + '}', propertyValue);
             }
         };
-        View.prototype.getDataStringValue = function (propertyName, propertyValue, templateStringOrObject) {
-            if (_.isString(templateStringOrObject)) {
-                return templateStringOrObject.replace('{' + propertyName + '}', propertyValue);
+        View.prototype.getDataStringValue = function (propertyName, propertyValue, strOrExOrMEx) {
+            console.log('*** get data ', propertyName);
+            if (_.isString(strOrExOrMEx)) {
+                return strOrExOrMEx.replace('{' + propertyName + '}', propertyValue);
             }
-            else if (_.isObject(templateStringOrObject)) {
-                return this.getDataObjectValue(propertyName, propertyValue, templateStringOrObject);
+            else if (_.isObject(strOrExOrMEx)) {
+                return this.executeMultiExpression(strOrExOrMEx);
             }
         };
         View.prototype.executeFilters = function (value, filters) {
@@ -888,8 +953,6 @@ var fmvc;
                     return this.executePlainFilter(filter, memo);
             }, this);
         };
-        View.prototype.executeComplexFilter = function (filterArrayData, value) {
-        };
         View.prototype.executePlainFilter = function (filter, value) {
             switch (filter) {
                 case fmvc.Filter.FIRST:
@@ -901,17 +964,16 @@ var fmvc;
             }
             return value;
         };
-        View.prototype.getDataObjectValue = function (propertyName, propertyValue, templateObject) {
-            var getFilterValue = function (reducedValue, filter) {
-                if (_.isArray(filter)) {
-                    if (filter[0] === 'i18n') {
+        /*
+        public getDataObjectValue(propertyName, propertyValue, templateObject:any):string {
+            var getFilterValue = function (reducedValue:string, filter:string | string[]):string {
+                if(_.isArray(filter)) {
+                    if(filter[0] === 'i18n') {
                         var secondName = filter[1];
-                        if (!this.i18n[secondName])
-                            return 'Error:View.getDataObjectValue has no i18n property';
-                        var data = {};
-                        _.each(templateObject.args, function (value, key) {
-                            if (value)
-                                data[key] = this.data[value.replace('data.', '')];
+                        if (!this.i18n[secondName]) return 'Error:View.getDataObjectValue has no i18n property';
+                        var data:any = {};
+                        _.each(templateObject.args, function (value:string, key:string) {
+                            if (value) data[key] = this.data[value.replace('data.', '')];
                         }, this);
                         var result = this.getFormattedMessage(this.i18n[secondName], data);
                         return templateObject.source.replace('{replace}', result);
@@ -924,8 +986,10 @@ var fmvc;
                     return this.executePlainFilter(filter, reducedValue);
                 }
             };
+
             return _.reduce(templateObject.filters, getFilterValue, propertyValue, this);
-        };
+        }
+        */
         View.prototype.updatePaths = function (paths, type, name, value, GetValue, each) {
             _.each(paths, function (valueOrValues, path) {
                 var r = '';
@@ -1029,6 +1093,8 @@ var fmvc;
         // Event handlers
         //------------------------------------------------------------------------------------------------
         View.prototype.enterDocument = function () {
+            var _this = this;
+            this.log('... enter document');
             if (this._inDocument)
                 return;
             this._inDocument = true;
@@ -1044,7 +1110,20 @@ var fmvc;
                 this.dispatcher.listen(this.element, fmvc.BrowserEvent.CLICK, function () { return t.setState(fmvc.State.SELECTED, !t.getState(fmvc.State.SELECTED)); });
             }
             this.enterDocumentElement(this.jsTemplate, this.elementPaths);
-            this.invalidate(1);
+            this.invalidate(1 | 2);
+            var appModels = _.filter(_.keys(this.dynamicProperties), function (v) { return v.indexOf('app.') === 0; });
+            var modelNames = _.map(appModels, function (v) { return v.split('.')[1]; });
+            _.each(modelNames, function (n) { return (_this.app[n]).bind(_this, _this.appModelHandler); }, this);
+        };
+        View.prototype.appModelHandler = function (e) {
+            var _this = this;
+            var modelName = e.target.name;
+            var appProps = _.filter(_.keys(this.dynamicProperties), function (v) { return v.indexOf('app.' + modelName) === 0; });
+            _.each(appProps, function (n) { return _this.updateAppProp(n); }, this);
+        };
+        View.prototype.exitDocument = function () {
+            this.dispatcher.unlistenAll(this.element);
+            this._inDocument = false;
         };
         View.prototype.applyEventHandlers = function (e) {
             var path = e.target.getAttribute('data-path');
@@ -1149,6 +1228,7 @@ var fmvc;
             if (!isStated)
                 return;
             var isIncluded = value.states ? this.isStateEnabled(value.states) : true;
+            this.log(['Apply change state element: ', value.path, isIncluded, value.states].join(', '));
             var isEnabled = (e.nodeType === 1);
             //console.log('path, included, enabled ', value.tagName, value.path, isIncluded, isEnabled);
             if (isIncluded && !isEnabled) {
@@ -1172,10 +1252,6 @@ var fmvc;
             else {
             }
         };
-        View.prototype.exitDocument = function () {
-            this._inDocument = false;
-            this.delegateEventHandlers(false);
-        };
         View.prototype.getFormattedMessage = function (value, data) {
             View.__formatter[value] = View.__formatter[value] ? View.__formatter[value] : this.getCompiledFormatter(value);
             return (View.__formatter[value](data));
@@ -1184,50 +1260,16 @@ var fmvc;
             View.__messageFormat[this.locale] = View.__messageFormat[this.locale] ? View.__messageFormat[this.locale] : new MessageFormat(this.locale);
             return View.__messageFormat[this.locale].compile(value);
         };
-        View.prototype.delegateEventHandlers = function (init) {
-            /*
-             private eventHandlers:any[];
-
-             private static delegateEventSplitter = /^(\S+)\s*(.*)$/;
-             var _t:View = this;
-             this.log('Events: ' + (JSON.stringify(this.eventHandlers)));
-
-             for (var commonHandlerData in this.eventHandlers) {
-             var eventName:string = this.eventHandlers[commonHandlerData];
-             var match:any = commonHandlerData.match(View.delegateEventSplitter);
-             var handledEvents:string = match[1];
-             var selector:string = match[2];
-
-             // add handlers
-             if (init) {
-             this.log('Add listeners [' + handledEvents + '] of the [' + selector + ']');
-             var eventClosure = function (name) {
-             return function (e) {
-             _t.eventHandler(name, e);
-             };
-             }(eventName);
-             if (selector === '') {
-             this.$root.on(handledEvents, eventClosure);
-             } else {
-             this.$root.on(handledEvents, selector, eventClosure);
-             }
-             }
-             // remove handlers
-             else {
-             if (selector === '') {
-             this.$root.off(handledEvents);
-             } else {
-             this.$root(selector).on(handledEvents, selector);
-             }
-             }
-             }
-             */
-        };
         //------------------------------------------------------------------------------------------------
         // States
         //------------------------------------------------------------------------------------------------
         View.prototype.hasState = function (name) {
             return _.isBoolean(this._states[name]);
+        };
+        View.prototype.setStates = function (value) {
+            var _this = this;
+            _.each(value, function (v, k) { return _this.setState(k, v); }, this);
+            return this;
         };
         View.prototype.setState = function (name, value) {
             if (!(name in this._states))
@@ -1297,12 +1339,17 @@ var fmvc;
                 this._invalidateTimeout = setTimeout(this.invalidateHandler, 20);
         };
         View.prototype.invalidateHandler = function () {
+            var _this = this;
             this.removeInvalidateTimeout();
             //console.log('invalid ' , this._invalidate , this._inDocument);
             if (!this._invalidate || !this._inDocument)
                 return;
-            if (this._invalidate & 1)
+            if (this._invalidate & 1) {
                 this.updateData(this.data, 'data.', 2);
+                this.updateApp();
+            }
+            if (this._invalidate & 2)
+                _.each(this._states, function (value, key) { return value ? _this.applyState(key, value) : null; }, this);
             this._invalidate = 0;
         };
         View.prototype.removeInvalidateTimeout = function () {
@@ -1348,7 +1395,7 @@ var fmvc;
         };
         Object.defineProperty(View.prototype, "data", {
             get: function () {
-                return this._data;
+                return this._data === null ? View.__emptyData : this._data;
             },
             //------------------------------------------------------------------------------------------------
             // Data & model
@@ -1362,9 +1409,6 @@ var fmvc;
             configurable: true
         });
         Object.defineProperty(View.prototype, "model", {
-            get: function () {
-                return this._model;
-            },
             set: function (data) {
                 this._model = data;
                 this.data = data.data;
@@ -1372,9 +1416,16 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(View.prototype, "app", {
+            get: function () {
+                return (this._mediator && this._mediator.facade) ? this._mediator.facade.model : null;
+            },
+            enumerable: true,
+            configurable: true
+        });
         View.prototype.setModelWithListener = function (value) {
             this.model = value;
-            this.model.bind(true, this, this.modelHandler);
+            this.model.bind(this, this.modelHandler);
         };
         View.prototype.modelHandler = function (name, data) {
             this.log('modelHandler ' + name);
@@ -1410,7 +1461,11 @@ var fmvc;
         };
         View.prototype.log = function (message, level) {
             if (this._mediator)
-                this._mediator.facade.logger.log(this.name, message, level);
+                this._mediator.facade.logger.add(this.name, message, level);
+            else {
+                console.log('[c]', this.name, message, level);
+            }
+            return this;
         };
         // Overrided
         View.prototype.viewEventsHandler = function (name, e) {
@@ -1424,8 +1479,7 @@ var fmvc;
         // Overrided
         View.prototype.dispose = function () {
             if (this.model)
-                this.model.bind(false, this, this.modelHandler);
-            this.delegateEventHandlers(false);
+                this.model.unbind(this, this.modelHandler);
             _super.prototype.dispose.call(this);
         };
         Object.defineProperty(View.prototype, "dynamicProperties", {
@@ -1472,42 +1526,57 @@ var fmvc;
             configurable: true
         });
         View.prototype.isStateEnabled = function (states) {
-            /*
-            var statesLength = states.length;
-            for(var i = 0; i < statesLength; i++) {
-                var stateValue = states[i];
-                return _.isArray(stateValue)?this.getState(stateValue[0]) === stateValue[1]:!!this.getState(states[i]);
-            }
-            */
             return this.executeExpression(states);
         };
         View.prototype.executeEval = function (value) {
             return eval(value);
         };
         View.prototype.getVarValue = function (v, ex) {
-            if (v.indexOf('data.') === 0)
-                return this.data[v.replace('data.', '')];
-            else if (v.indexOf('$') === 0)
-                return this.executeEval(ex.expressions[parseInt(v.replace('$', ''), 10)]);
-            else if (v.indexOf('.') === -1)
-                return this.getState(v);
+            //this.log('Get var ' + v);
+            if (v.indexOf('data.') === 0) {
+                var varName = v.replace('data.', '');
+                return (this.data && this.data[varName]) ? this.data[varName] : null;
+            }
+            else if (v.indexOf('app.') === 0) {
+                return eval('this.' + v);
+            }
+            else if (v.indexOf('$') === 0) {
+                var varEx = ex.expressions[parseInt(v.replace('$', ''), 10)];
+                return (typeof varEx === 'string') ? this.executeEval(varEx) : this.executeExpression(varEx);
+            }
+            else if (v.indexOf('.') === -1 || v.indexOf('state.') === 0) {
+                var varName = v.replace('state.', '');
+                return this.getState(varName);
+            }
             else
                 throw new Error('Not supported variable in ' + this.name + ', ' + v);
         };
+        View.prototype.executeMultiExpression = function (mex) {
+            var _this = this;
+            console.log('------------------------------ *** --------------------------');
+            console.log(mex);
+            return _.reduce(mex.vars, function (memo, value) { return memo.replace('{' + value + '}', _this.getVarValue(value, mex)); }, mex.result, this);
+        };
         View.prototype.executeExpression = function (ex) {
             var _this = this;
+            console.log(ex);
             var r = null;
             // we create object to send to first filter (like i18n method) that returns a string value
             if (ex.args && ex.filters) {
-                r = _.reduce(ex.args, function (r, v, k) { return r[k] = _this.getVarValue(v, ex); }, {}, this);
+                r = {};
+                _.each(ex.args, function (v, k) { return r[k] = _this.getVarValue(v, ex); }, this);
             }
             else if (ex.values) {
-                var i = 0, l = ex.values.length;
-                while (!r && i < l)
-                    r = this.getVarValue(ex.values[i++], ex);
+                var i = 0, length = ex.values.length;
+                while (!r && i < length) {
+                    r = this.getVarValue(ex.values[i], ex);
+                    //this.log(['Search positive ' + i + ' value in [', ex.values[i], ']=',  r].join(''));
+                    i++;
+                }
             }
             else
                 throw Error('Expression must has args and filter or values');
+            this.log(['ExecuteExpression result=', JSON.stringify(r), ', of content: ', ex.content].join(''));
             r = this.executeFilters(r, ex.filters);
             return r;
         };
@@ -1519,6 +1588,7 @@ var fmvc;
                 if (value.tagName.indexOf('.') > -1) {
                     //console.log('Create component, ' + value.tagName);
                     var component = new (fmvc.global.ui[value.tagName.split('.')[1]])();
+                    component.setStates(value.attribs);
                     this.componentPaths[value.path] = component;
                     e = component.createDom().element;
                 }
@@ -1583,6 +1653,7 @@ var fmvc;
         View.__messageFormat = {};
         View.__className = 'View';
         View.__inheritedStates = [fmvc.State.DISABLED];
+        View.__emptyData = {};
         View.Counters = { element: { added: 0, removed: 0, handlers: 0 } };
         View.dispatcher = new fmvc.EventDispatcher();
         View.Name = 'View';
@@ -1707,7 +1778,7 @@ var fmvc;
         };
         Mediator.prototype.getView = function (name) {
             for (var i in this.views) {
-                if (this.views[i].name() == name)
+                if (this.views[i].name == name)
                     return this.views[i];
             }
             return null;
@@ -1763,6 +1834,7 @@ var fmvc;
 ///<reference path='./view.list.ts'/>
 ///<reference path='./mediator.ts'/>
 ///<reference path='../../../DefinitelyTyped/lodash/lodash.d.ts'/>
+///<reference path='../../../DefinitelyTyped/jquery/jquery.d.ts'/>
 ///<reference path='../../src/fmvc/d.ts'/>
 /* start object */
 var ui;
@@ -1778,13 +1850,6 @@ var ui;
             return this;
         };
         Object.defineProperty(Button.prototype, "jsTemplate", {
-            /*
-            public isDynamicStylesEnabled(value?:boolean):boolean {
-                 if(_.isBoolean(value)) Button.__isDynamicStylesEnabled = value;
-                    return Button.__isDynamicStylesEnabled;
-            }
-            private static __isDynamicStylesEnabled:boolean = false;
-            */
             get: function () {
                 return Button.__jsTemplate;
             },
@@ -1794,203 +1859,45 @@ var ui;
         Button.__jsTemplate = {
             "path": "0",
             "type": "tag",
+            "attribs": {
+                "className": "Button",
+                "extend": "fmvc.View",
+                "enableStates": "hover,selected,disabled,error,open",
+                "class": {
+                    "static": ["button"],
+                    "dynamic": {
+                        "selected": ["button-{selected}"],
+                        "disabled": ["button-{disabled}"],
+                        "hover": ["button-{hover}"],
+                        "error": ["button-{error}"],
+                        "open": ["button-{open}"],
+                        "exClass": ["{exClass}"]
+                    },
+                    "bounds": null
+                }
+            },
             "staticAttributes": {
                 "class": "button"
             },
             "children": [{
                 "path": "0,0",
                 "type": "text",
-                "data": "\n     "
-            }, {
-                "path": "0,1",
-                "type": "tag",
-                "children": [{
-                    "path": "0,1,0",
-                    "type": "text",
-                    "data": {
-                        "content": "{data.contentFirst,contentFirst,'custom text'}",
-                        "result": "{$0}",
-                        "vars": ["$0"],
-                        "expressions": [{
-                            "content": "data.contentFirst,contentFirst,'custom text'",
-                            "vars": ["data.contentFirst", "contentFirst", "'custom text'"],
-                            "values": ["data.contentFirst", "contentFirst", "'custom text'"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
-                        }]
-                    }
-                }],
-                "tagName": "div",
-                "states": {
-                    "content": "contentFirst",
-                    "vars": ["contentFirst"],
-                    "values": ["contentFirst"],
-                    "args": {},
-                    "filters": [],
-                    "expression": []
-                }
-            }, {
-                "path": "0,2",
-                "type": "text",
-                "data": "\n     "
-            }, {
-                "path": "0,3",
-                "type": "tag",
-                "children": [{
-                    "path": "0,3,0",
-                    "type": "text",
-                    "data": {
-                        "content": "{data.contentFirst,contentFirst,'custom text'}",
-                        "result": "{$0}",
-                        "vars": ["$0"],
-                        "expressions": [{
-                            "content": "data.contentFirst,contentFirst,'custom text'",
-                            "vars": ["data.contentFirst", "contentFirst", "'custom text'"],
-                            "values": ["data.contentFirst", "contentFirst", "'custom text'"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
-                        }]
-                    }
-                }],
-                "tagName": "div",
-                "states": {
-                    "content": "(contentFirst||contentSecond)",
-                    "vars": ["contentSecond", "contentFirst", "$0"],
-                    "values": ["$0"],
-                    "args": {},
-                    "filters": [],
-                    "expression": ["(this.getState(\"contentFirst\")||this.getState(\"contentSecond\"))"]
-                }
-            }, {
-                "path": "0,4",
-                "type": "text",
-                "data": "\n     "
-            }, {
-                "path": "0,5",
-                "type": "tag",
-                "children": [{
-                    "path": "0,5,0",
-                    "type": "text",
-                    "data": {
-                        "content": "{data.title} a button content can be {(data.title||title)}",
-                        "result": "{$0} a button content can be {$1}",
-                        "vars": ["$0", "$1"],
-                        "expressions": [{
-                            "content": "data.title",
-                            "vars": ["data.title"],
-                            "values": ["data.title"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
-                        }, {
-                            "content": "(data.title||title)",
-                            "vars": ["data.title", "title", "$0"],
-                            "values": ["$0"],
-                            "args": {},
-                            "filters": [],
-                            "expression": ["(this.data.this.getState(\"title\")||this.getState(\"title\"))"]
-                        }]
-                    }
-                }],
-                "tagName": "div",
-                "states": {
-                    "content": "(data.content1 && (state.content1 === 'pizda' || state.content1 === 'ebatnya'))",
-                    "vars": ["state.content1", "data.content1", "$0"],
-                    "values": ["$0"],
-                    "args": {},
-                    "filters": [],
-                    "expression": ["(this.data.content1 && (this.getState(\"content1\") === 'pizda' || this.getState(\"content1\") === 'ebatnya'))"]
-                }
-            }, {
-                "path": "0,6",
-                "type": "text",
-                "data": "\n     "
-            }, {
-                "path": "0,7",
-                "type": "tag",
-                "children": [{
-                    "path": "0,7,0",
-                    "type": "text",
-                    "data": {
-                        "content": "{data.title} a button content can be {(data.title||title)}",
-                        "result": "{$0} a button content can be {$1}",
-                        "vars": ["$0", "$1"],
-                        "expressions": [{
-                            "content": "data.title",
-                            "vars": ["data.title"],
-                            "values": ["data.title"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
-                        }, {
-                            "content": "(data.title||title)",
-                            "vars": ["data.title", "title", "$0"],
-                            "values": ["$0"],
-                            "args": {},
-                            "filters": [],
-                            "expression": ["(this.data.this.getState(\"title\")||this.getState(\"title\"))"]
-                        }]
-                    }
-                }],
-                "tagName": "div",
-                "states": {
-                    "content": "(data.content2||state.content2) as VALUE2, data.content3 as VALUE3|i18n.checkValue",
-                    "vars": ["state.content2", "data.content2", "data.content3"],
-                    "values": [],
-                    "args": {
-                        "VALUE2": "$0",
-                        "VALUE3": "data.content3"
-                    },
-                    "filters": ["i18n.checkValue"],
-                    "expression": ["(this.data.content2||this.getState(\"content2\"))"]
-                }
-            }, {
-                "path": "0,8",
-                "type": "text",
-                "data": "\n     "
-            }, {
-                "path": "0,9",
-                "type": "tag",
-                "children": [{
-                    "path": "0,9,0",
-                    "type": "tag",
-                    "children": [{
-                        "path": "0,9,0,1",
-                        "type": "text",
-                        "data": {
-                            "content": "{data.title} a button content can be {(data.title||title)}",
-                            "result": "{$0} a button content can be {$1}",
-                            "vars": ["$0", "$1"],
-                            "expressions": [{
-                                "content": "data.title",
-                                "vars": ["data.title"],
-                                "values": ["data.title"],
-                                "args": {},
-                                "filters": [],
-                                "expression": []
-                            }, {
-                                "content": "(data.title||title)",
-                                "vars": ["data.title", "title", "$0"],
-                                "values": ["$0"],
-                                "args": {},
-                                "filters": [],
-                                "expression": ["(this.data.this.getState(\"title\")||this.getState(\"title\"))"]
-                            }]
-                        }
-                    }],
-                    "tagName": "10||state.content4"
-                }],
-                "tagName": "div",
-                "states": {
-                    "content": "states",
-                    "vars": ["states"],
-                    "values": ["states"],
-                    "args": {},
-                    "filters": [],
-                    "expression": []
-                }
+                "data": {
+                    "content": "{(state.content||data.content)} {exClass}\n",
+                    "result": "{$0} {$1}\n",
+                    "vars": ["$0", "$1"],
+                    "expressions": [{
+                        "content": "(state.content||data.content)",
+                        "vars": ["state.content", "data.content", "$0"],
+                        "values": ["$0"],
+                        "expressions": ["(this.getState(\"content\")||this.data.content)"]
+                    }, {
+                        "content": "exClass",
+                        "vars": ["exClass"],
+                        "values": ["exClass"]
+                    }]
+                },
+                "attribs": {}
             }],
             "dynamicSummary": {
                 "selected": {
@@ -2017,28 +1924,637 @@ var ui;
                     "class": {
                         "0": "button-{open}"
                     }
+                },
+                "exClass": {
+                    "class": {
+                        "0": "{exClass}"
+                    },
+                    "data": {
+                        "0,0": {
+                            "content": "{(state.content||data.content)} {exClass}\n",
+                            "result": "{$0} {$1}\n",
+                            "vars": ["$0", "$1"],
+                            "expressions": [{
+                                "content": "(state.content||data.content)",
+                                "vars": ["state.content", "data.content", "$0"],
+                                "values": ["$0"],
+                                "expressions": ["(this.getState(\"content\")||this.data.content)"]
+                            }, {
+                                "content": "exClass",
+                                "vars": ["exClass"],
+                                "values": ["exClass"]
+                            }]
+                        }
+                    }
+                },
+                "state.content": {
+                    "data": {
+                        "0,0": {
+                            "content": "{(state.content||data.content)} {exClass}\n",
+                            "result": "{$0} {$1}\n",
+                            "vars": ["$0", "$1"],
+                            "expressions": [{
+                                "content": "(state.content||data.content)",
+                                "vars": ["state.content", "data.content", "$0"],
+                                "values": ["$0"],
+                                "expressions": ["(this.getState(\"content\")||this.data.content)"]
+                            }, {
+                                "content": "exClass",
+                                "vars": ["exClass"],
+                                "values": ["exClass"]
+                            }]
+                        }
+                    }
+                },
+                "data.content": {
+                    "data": {
+                        "0,0": {
+                            "content": "{(state.content||data.content)} {exClass}\n",
+                            "result": "{$0} {$1}\n",
+                            "vars": ["$0", "$1"],
+                            "expressions": [{
+                                "content": "(state.content||data.content)",
+                                "vars": ["state.content", "data.content", "$0"],
+                                "values": ["$0"],
+                                "expressions": ["(this.getState(\"content\")||this.data.content)"]
+                            }, {
+                                "content": "exClass",
+                                "vars": ["exClass"],
+                                "values": ["exClass"]
+                            }]
+                        }
+                    }
                 }
             },
             "tagName": "div",
             "enableStates": ["hover", "selected", "disabled", "error", "open", {
                 "name": "content",
                 "type": "string",
-                "default": "Default caption"
+                "default": ""
             }, {
-                "name": "title",
+                "name": "exClass",
                 "type": "string",
-                "default": "Can be also a content"
+                "default": ""
             }],
             "extend": "fmvc.View",
             "className": "Button",
             "css": {
-                "content": ".button{display:inline-block;min-width:120px;width:100;background-color:#0a0;color:#fff;font-size:1}.button-hover{background-color:#0f0}.button-selected{font-weight:bold;border-bottom:2px solid #000}",
+                "content": ".button{display:inline-block;min-width:120px;width:100;background-color:#0a0;color:#fff;font-size:1}.button-hover{background-color:#0f0}.button-selected{font-weight:bold;border-bottom:2px solid #000}.buttonDefault{background-color:#f00}",
                 "enabled": false
             }
         };
         return Button;
     })(fmvc.View);
     ui.Button = Button;
+})(ui || (ui = {}));
+///<reference path='../../src/fmvc/d.ts'/>
+/* start object */
+var ui;
+(function (ui) {
+    var TestButton = (function (_super) {
+        __extends(TestButton, _super);
+        function TestButton(name, modelOrData, jsTemplate) {
+            _super.call(this, name, modelOrData, jsTemplate);
+        }
+        TestButton.prototype.createDom = function () {
+            this.element = this.templateElement;
+            this.childrenContainer = this.childrenContainer || this.element;
+            return this;
+        };
+        Object.defineProperty(TestButton.prototype, "jsTemplate", {
+            get: function () {
+                return TestButton.__jsTemplate;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        TestButton.__jsTemplate = {
+            "path": "0",
+            "type": "tag",
+            "attribs": {
+                "className": "TestButton",
+                "extend": "fmvc.View",
+                "enableStates": "hover,selected,disabled,error,open",
+                "class": {
+                    "static": ["button"],
+                    "dynamic": {
+                        "selected": ["button-{selected}"],
+                        "disabled": ["button-{disabled}"],
+                        "hover": ["button-{hover}"],
+                        "error": ["button-{error}"],
+                        "open": ["button-{open}"]
+                    },
+                    "bounds": null
+                }
+            },
+            "staticAttributes": {
+                "class": "button"
+            },
+            "children": [{
+                "path": "0,1",
+                "type": "tag",
+                "attribs": {
+                    "states": {
+                        "content": "(content==='TheContent')",
+                        "vars": ["content", "$0"],
+                        "values": ["$0"],
+                        "expressions": ["(this.getState(\"content\")==='TheContent')"]
+                    }
+                },
+                "children": [{
+                    "path": "0,1,0",
+                    "type": "text",
+                    "data": {
+                        "content": "{data.content,content,'custom content inline in html'} - test of list vars, text",
+                        "result": "{$0} - test of list vars, text",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "data.content,content,'custom content inline in html'",
+                            "vars": ["data.content", "content", "'custom content inline in html'"],
+                            "values": ["data.content", "content", "'custom content inline in html'"]
+                        }]
+                    },
+                    "attribs": {}
+                }],
+                "tagName": "div",
+                "states": {
+                    "content": "(content==='TheContent')",
+                    "vars": ["content", "$0"],
+                    "values": ["$0"],
+                    "expressions": ["(this.getState(\"content\")==='TheContent')"]
+                }
+            }, {
+                "path": "0,3",
+                "type": "tag",
+                "attribs": {
+                    "states": {
+                        "content": "(state.content2)",
+                        "vars": ["state.content2", "$0"],
+                        "values": ["$0"],
+                        "expressions": ["(this.getState(\"content2\"))"]
+                    }
+                },
+                "tagName": "div",
+                "states": {
+                    "content": "(state.content2)",
+                    "vars": ["state.content2", "$0"],
+                    "values": ["$0"],
+                    "expressions": ["(this.getState(\"content2\"))"]
+                }
+            }, {
+                "path": "0,5",
+                "type": "tag",
+                "attribs": {
+                    "states": {
+                        "content": "(state.content2)",
+                        "vars": ["state.content2", "$0"],
+                        "values": ["$0"],
+                        "expressions": ["(this.getState(\"content2\"))"]
+                    }
+                },
+                "children": [{
+                    "path": "0,5,0",
+                    "type": "text",
+                    "data": {
+                        "content": "{state.content}, {data.content}: content, data.content with text",
+                        "result": "{$0}, {$1}: content, data.content with text",
+                        "vars": ["$0", "$1"],
+                        "expressions": [{
+                            "content": "state.content",
+                            "vars": ["state.content"],
+                            "values": ["state.content"]
+                        }, {
+                            "content": "data.content",
+                            "vars": ["data.content"],
+                            "values": ["data.content"]
+                        }]
+                    },
+                    "attribs": {}
+                }],
+                "tagName": "div",
+                "states": {
+                    "content": "(state.content2)",
+                    "vars": ["state.content2", "$0"],
+                    "values": ["$0"],
+                    "expressions": ["(this.getState(\"content2\"))"]
+                }
+            }, {
+                "path": "0,7",
+                "type": "tag",
+                "attribs": {
+                    "states": {
+                        "content": "((state.content2 === 'Default content2' || data.content))",
+                        "vars": ["state.content2", "data.content", "$0"],
+                        "values": ["$0"],
+                        "expressions": ["((this.getState(\"content2\") === 'Default content2' || this.data.content))"]
+                    }
+                },
+                "children": [{
+                    "path": "0,7,0",
+                    "type": "text",
+                    "data": {
+                        "content": "{data.title} - data.title, data expression (data.title||state.title) {(data.title||state.title)}",
+                        "result": "{$0} - data.title, data expression (data.title||state.title) {$1}",
+                        "vars": ["$0", "$1"],
+                        "expressions": [{
+                            "content": "data.title",
+                            "vars": ["data.title"],
+                            "values": ["data.title"]
+                        }, {
+                            "content": "(data.title||state.title)",
+                            "vars": ["state.title", "data.title", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(this.data.title||this.getState(\"title\"))"]
+                        }]
+                    },
+                    "attribs": {}
+                }],
+                "tagName": "div",
+                "states": {
+                    "content": "((state.content2 === 'Default content2' || data.content))",
+                    "vars": ["state.content2", "data.content", "$0"],
+                    "values": ["$0"],
+                    "expressions": ["((this.getState(\"content2\") === 'Default content2' || this.data.content))"]
+                }
+            }, {
+                "path": "0,9",
+                "type": "tag",
+                "attribs": {},
+                "children": [{
+                    "path": "0,9,0",
+                    "type": "text",
+                    "data": {
+                        "content": "{(data.content2||state.content2) as VALUE2, data.content as VALUE|i18n.test} - expression with i18n",
+                        "result": "{$0} - expression with i18n",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "(data.content2||state.content2) as VALUE2, data.content as VALUE|i18n.test",
+                            "vars": ["state.content2", "data.content2", "data.content"],
+                            "args": {
+                                "VALUE2": "$0",
+                                "VALUE": "data.content"
+                            },
+                            "filters": ["i18n.test"],
+                            "expressions": ["(this.data.content2||this.getState(\"content2\"))"]
+                        }]
+                    },
+                    "attribs": {}
+                }],
+                "tagName": "div"
+            }],
+            "dynamicSummary": {
+                "selected": {
+                    "class": {
+                        "0": "button-{selected}"
+                    }
+                },
+                "disabled": {
+                    "class": {
+                        "0": "button-{disabled}"
+                    }
+                },
+                "hover": {
+                    "class": {
+                        "0": "button-{hover}"
+                    }
+                },
+                "error": {
+                    "class": {
+                        "0": "button-{error}"
+                    }
+                },
+                "open": {
+                    "class": {
+                        "0": "button-{open}"
+                    }
+                },
+                "data.content": {
+                    "data": {
+                        "0,1,0": {
+                            "content": "{data.content,content,'custom content inline in html'} - test of list vars, text",
+                            "result": "{$0} - test of list vars, text",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.content,content,'custom content inline in html'",
+                                "vars": ["data.content", "content", "'custom content inline in html'"],
+                                "values": ["data.content", "content", "'custom content inline in html'"]
+                            }]
+                        },
+                        "0,5,0": {
+                            "content": "{state.content}, {data.content}: content, data.content with text",
+                            "result": "{$0}, {$1}: content, data.content with text",
+                            "vars": ["$0", "$1"],
+                            "expressions": [{
+                                "content": "state.content",
+                                "vars": ["state.content"],
+                                "values": ["state.content"]
+                            }, {
+                                "content": "data.content",
+                                "vars": ["data.content"],
+                                "values": ["data.content"]
+                            }]
+                        },
+                        "0,9,0": {
+                            "content": "{(data.content2||state.content2) as VALUE2, data.content as VALUE|i18n.test} - expression with i18n",
+                            "result": "{$0} - expression with i18n",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "(data.content2||state.content2) as VALUE2, data.content as VALUE|i18n.test",
+                                "vars": ["state.content2", "data.content2", "data.content"],
+                                "args": {
+                                    "VALUE2": "$0",
+                                    "VALUE": "data.content"
+                                },
+                                "filters": ["i18n.test"],
+                                "expressions": ["(this.data.content2||this.getState(\"content2\"))"]
+                            }]
+                        }
+                    }
+                },
+                "content": {
+                    "data": {
+                        "0,1,0": {
+                            "content": "{data.content,content,'custom content inline in html'} - test of list vars, text",
+                            "result": "{$0} - test of list vars, text",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.content,content,'custom content inline in html'",
+                                "vars": ["data.content", "content", "'custom content inline in html'"],
+                                "values": ["data.content", "content", "'custom content inline in html'"]
+                            }]
+                        }
+                    }
+                },
+                "state.content": {
+                    "data": {
+                        "0,5,0": {
+                            "content": "{state.content}, {data.content}: content, data.content with text",
+                            "result": "{$0}, {$1}: content, data.content with text",
+                            "vars": ["$0", "$1"],
+                            "expressions": [{
+                                "content": "state.content",
+                                "vars": ["state.content"],
+                                "values": ["state.content"]
+                            }, {
+                                "content": "data.content",
+                                "vars": ["data.content"],
+                                "values": ["data.content"]
+                            }]
+                        }
+                    }
+                },
+                "data.title": {
+                    "data": {
+                        "0,7,0": {
+                            "content": "{data.title} - data.title, data expression (data.title||state.title) {(data.title||state.title)}",
+                            "result": "{$0} - data.title, data expression (data.title||state.title) {$1}",
+                            "vars": ["$0", "$1"],
+                            "expressions": [{
+                                "content": "data.title",
+                                "vars": ["data.title"],
+                                "values": ["data.title"]
+                            }, {
+                                "content": "(data.title||state.title)",
+                                "vars": ["state.title", "data.title", "$0"],
+                                "values": ["$0"],
+                                "expressions": ["(this.data.title||this.getState(\"title\"))"]
+                            }]
+                        }
+                    }
+                },
+                "state.title": {
+                    "data": {
+                        "0,7,0": {
+                            "content": "{data.title} - data.title, data expression (data.title||state.title) {(data.title||state.title)}",
+                            "result": "{$0} - data.title, data expression (data.title||state.title) {$1}",
+                            "vars": ["$0", "$1"],
+                            "expressions": [{
+                                "content": "data.title",
+                                "vars": ["data.title"],
+                                "values": ["data.title"]
+                            }, {
+                                "content": "(data.title||state.title)",
+                                "vars": ["state.title", "data.title", "$0"],
+                                "values": ["$0"],
+                                "expressions": ["(this.data.title||this.getState(\"title\"))"]
+                            }]
+                        }
+                    }
+                },
+                "state.content2": {
+                    "data": {
+                        "0,9,0": {
+                            "content": "{(data.content2||state.content2) as VALUE2, data.content as VALUE|i18n.test} - expression with i18n",
+                            "result": "{$0} - expression with i18n",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "(data.content2||state.content2) as VALUE2, data.content as VALUE|i18n.test",
+                                "vars": ["state.content2", "data.content2", "data.content"],
+                                "args": {
+                                    "VALUE2": "$0",
+                                    "VALUE": "data.content"
+                                },
+                                "filters": ["i18n.test"],
+                                "expressions": ["(this.data.content2||this.getState(\"content2\"))"]
+                            }]
+                        }
+                    }
+                },
+                "data.content2": {
+                    "data": {
+                        "0,9,0": {
+                            "content": "{(data.content2||state.content2) as VALUE2, data.content as VALUE|i18n.test} - expression with i18n",
+                            "result": "{$0} - expression with i18n",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "(data.content2||state.content2) as VALUE2, data.content as VALUE|i18n.test",
+                                "vars": ["state.content2", "data.content2", "data.content"],
+                                "args": {
+                                    "VALUE2": "$0",
+                                    "VALUE": "data.content"
+                                },
+                                "filters": ["i18n.test"],
+                                "expressions": ["(this.data.content2||this.getState(\"content2\"))"]
+                            }]
+                        }
+                    }
+                }
+            },
+            "tagName": "div",
+            "enableStates": ["hover", "selected", "disabled", "error", "open", {
+                "name": "content",
+                "type": "string",
+                "default": ""
+            }, {
+                "name": "content2",
+                "type": "string",
+                "default": "Default content2"
+            }, {
+                "name": "title",
+                "type": "string",
+                "default": "Default title"
+            }, {
+                "name": "counter",
+                "type": "int",
+                "default": 0
+            }],
+            "extend": "fmvc.View",
+            "className": "TestButton",
+            "css": {
+                "content": ".button{display:inline-block;min-width:120px;width:100;background-color:#0a0;color:#fff;font-size:1}.button-hover{background-color:#0f0}.button-selected{font-weight:bold;border-bottom:2px solid #000}.buttonDefault{background-color:#f00}",
+                "enabled": false
+            }
+        };
+        return TestButton;
+    })(fmvc.View);
+    ui.TestButton = TestButton;
+})(ui || (ui = {}));
+///<reference path='../../src/fmvc/d.ts'/>
+/* start object */
+var ui;
+(function (ui) {
+    var TestButtons = (function (_super) {
+        __extends(TestButtons, _super);
+        function TestButtons(name, modelOrData, jsTemplate) {
+            _super.call(this, name, modelOrData, jsTemplate);
+        }
+        TestButtons.prototype.createDom = function () {
+            this.element = this.templateElement;
+            this.b1 = this.elementPaths["0,5"];
+            this.b2 = this.elementPaths["0,7"];
+            this.childrenContainer = this.childrenContainer || this.element;
+            return this;
+        };
+        Object.defineProperty(TestButtons.prototype, "jsTemplate", {
+            get: function () {
+                return TestButtons.__jsTemplate;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        TestButtons.__jsTemplate = {
+            "path": "0",
+            "type": "tag",
+            "attribs": {
+                "class": "containerButtons"
+            },
+            "staticAttributes": {
+                "class": "containerButtons"
+            },
+            "children": [{
+                "path": "0,1",
+                "type": "tag",
+                "attribs": {
+                    "states": {
+                        "content": "(app.test.data.custom%2===0)",
+                        "vars": ["app.test.data.custom", "$0"],
+                        "values": ["$0"],
+                        "expressions": ["(this.app.test.data.custom%2===0)"]
+                    }
+                },
+                "children": [{
+                    "path": "0,1,0",
+                    "type": "text",
+                    "data": {
+                        "content": "{app.test.data.custom}",
+                        "result": "{$0}",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "app.test.data.custom",
+                            "vars": ["app.test.data.custom"],
+                            "values": ["app.test.data.custom"]
+                        }]
+                    },
+                    "attribs": {}
+                }],
+                "tagName": "div",
+                "states": {
+                    "content": "(app.test.data.custom%2===0)",
+                    "vars": ["app.test.data.custom", "$0"],
+                    "values": ["$0"],
+                    "expressions": ["(this.app.test.data.custom%2===0)"]
+                }
+            }, {
+                "path": "0,3",
+                "type": "tag",
+                "attribs": {},
+                "children": [{
+                    "path": "0,3,0",
+                    "type": "text",
+                    "data": {
+                        "content": "{app.test.state} - has model data, sure ?",
+                        "result": "{$0} - has model data, sure ?",
+                        "vars": ["$0"],
+                        "expressions": [{
+                            "content": "app.test.state",
+                            "vars": ["app.test.state"],
+                            "values": ["app.test.state"]
+                        }]
+                    },
+                    "attribs": {}
+                }],
+                "tagName": "div"
+            }, {
+                "path": "0,5",
+                "type": "tag",
+                "attribs": {
+                    "link": "b1",
+                    "content": "SimpleButtonContentFromProperty"
+                },
+                "tagName": "ui.Button"
+            }, {
+                "path": "0,7",
+                "type": "tag",
+                "attribs": {
+                    "link": "b2",
+                    "exClass": "buttonOne"
+                },
+                "tagName": "ui.Button"
+            }],
+            "links": [{
+                "name": "b1",
+                "value": "0,5"
+            }, {
+                "name": "b2",
+                "value": "0,7"
+            }],
+            "dynamicSummary": {
+                "app.test.data.custom": {
+                    "data": {
+                        "0,1,0": {
+                            "content": "{app.test.data.custom}",
+                            "result": "{$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "app.test.data.custom",
+                                "vars": ["app.test.data.custom"],
+                                "values": ["app.test.data.custom"]
+                            }]
+                        }
+                    }
+                },
+                "app.test.state": {
+                    "data": {
+                        "0,3,0": {
+                            "content": "{app.test.state} - has model data, sure ?",
+                            "result": "{$0} - has model data, sure ?",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "app.test.state",
+                                "vars": ["app.test.state"],
+                                "values": ["app.test.state"]
+                            }]
+                        }
+                    }
+                }
+            },
+            "tagName": "div",
+            "className": "TestButtons",
+            "enableStates": [null, null]
+        };
+        return TestButtons;
+    })(fmvc.View);
+    ui.TestButtons = TestButtons;
 })(ui || (ui = {}));
 ///<reference path='../../src/fmvc/d.ts'/>
 /* start object */
@@ -2058,13 +2574,6 @@ var ui;
             return this;
         };
         Object.defineProperty(UserView.prototype, "jsTemplate", {
-            /*
-            public isDynamicStylesEnabled(value?:boolean):boolean {
-                 if(_.isBoolean(value)) UserView.__isDynamicStylesEnabled = value;
-                    return UserView.__isDynamicStylesEnabled;
-            }
-            private static __isDynamicStylesEnabled:boolean = false;
-            */
             get: function () {
                 return UserView.__jsTemplate;
             },
@@ -2074,6 +2583,35 @@ var ui;
         UserView.__jsTemplate = {
             "path": "0",
             "type": "tag",
+            "attribs": {
+                "className": "UserView",
+                "extend": "fmvc.View",
+                "enableStates": "hover,selected,disabled=true,counter=100",
+                "selected": {
+                    "static": null,
+                    "dynamic": {
+                        "selected": ["{selected}"]
+                    },
+                    "bounds": null
+                },
+                "style": {
+                    "static": ["background-color:blue", "color: red", ""],
+                    "dynamic": {
+                        "state.top": [" top:{state.top}px"]
+                    },
+                    "bounds": null
+                },
+                "class": {
+                    "static": ["userview"],
+                    "dynamic": {
+                        "selected": ["userview-{selected}"],
+                        "disabled": ["userview-{disabled}"],
+                        "hover": ["userview-{hover}"]
+                    },
+                    "bounds": null
+                },
+                "fx": "hover:animation-hover,2s;hover=false:animation-hover-out,2s;{data.online}:animation-online,2s"
+            },
             "staticAttributes": {
                 "style": "background-color:blue;color: red;",
                 "class": "userview"
@@ -2081,6 +2619,7 @@ var ui;
             "children": [{
                 "path": "0,1",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,1,0",
                     "type": "text",
@@ -2091,17 +2630,16 @@ var ui;
                         "expressions": [{
                             "content": "data.firstname",
                             "vars": ["data.firstname"],
-                            "values": ["data.firstname"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["data.firstname"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,3",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,3,0",
                     "type": "text",
@@ -2112,17 +2650,16 @@ var ui;
                         "expressions": [{
                             "content": "data.secondname",
                             "vars": ["data.secondname"],
-                            "values": ["data.secondname"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["data.secondname"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,5",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,5,0",
                     "type": "text",
@@ -2133,17 +2670,16 @@ var ui;
                         "expressions": [{
                             "content": "data.age",
                             "vars": ["data.age"],
-                            "values": ["data.age"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["data.age"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,7",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,7,0",
                     "type": "text",
@@ -2154,17 +2690,16 @@ var ui;
                         "expressions": [{
                             "content": "i18n.template",
                             "vars": ["i18n.template"],
-                            "values": ["i18n.template"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["i18n.template"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,9",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,9,0",
                     "type": "text",
@@ -2176,16 +2711,16 @@ var ui;
                             "content": "data.firstname|i18n.template",
                             "vars": ["data.firstname"],
                             "values": ["data.firstname"],
-                            "args": {},
-                            "filters": ["i18n.template"],
-                            "expression": []
+                            "filters": ["i18n.template"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,11",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,11,0",
                     "type": "text",
@@ -2196,20 +2731,23 @@ var ui;
                         "expressions": [{
                             "content": "data.age as AGE, data.firstname as FIRST|i18n.template",
                             "vars": ["data.age", "data.firstname"],
-                            "values": [],
                             "args": {
                                 "AGE": "data.age",
                                 "FIRST": "data.firstname"
                             },
-                            "filters": ["i18n.template"],
-                            "expression": []
+                            "filters": ["i18n.template"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,13",
                 "type": "tag",
+                "attribs": {
+                    "onmouseover": "overText",
+                    "onmouseout": "outText"
+                },
                 "children": [{
                     "path": "0,13,0",
                     "type": "text",
@@ -2220,15 +2758,14 @@ var ui;
                         "expressions": [{
                             "content": "data.age as AGE, data.firstname as FIRST|i18n.template2",
                             "vars": ["data.age", "data.firstname"],
-                            "values": [],
                             "args": {
                                 "AGE": "data.age",
                                 "FIRST": "data.firstname"
                             },
-                            "filters": ["i18n.template2"],
-                            "expression": []
+                            "filters": ["i18n.template2"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "handlers": {
                     "mouseover": "overText",
@@ -2238,6 +2775,7 @@ var ui;
             }, {
                 "path": "0,15",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,15,0",
                     "type": "text",
@@ -2248,17 +2786,16 @@ var ui;
                         "expressions": [{
                             "content": "data.value",
                             "vars": ["data.value"],
-                            "values": ["data.value"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["data.value"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,17",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,17,0",
                     "type": "text",
@@ -2269,24 +2806,39 @@ var ui;
                         "expressions": [{
                             "content": "data.coordinates.x",
                             "vars": ["data.coordinates.x"],
-                            "values": ["data.coordinates.x"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["data.coordinates.x"]
                         }, {
                             "content": "data.coordinates.y",
                             "vars": ["data.coordinates.y"],
-                            "values": ["data.coordinates.y"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["data.coordinates.y"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,19",
                 "type": "tag",
+                "attribs": {
+                    "states": {
+                        "content": "selected",
+                        "vars": ["selected"],
+                        "values": ["selected"]
+                    },
+                    "type": "text",
+                    "value": {
+                        "static": null,
+                        "dynamic": {
+                            "data.value": ["{data.value}"]
+                        },
+                        "bounds": {
+                            "data.value": "{data.value}"
+                        }
+                    },
+                    "onkeydown": "changeValueOnKeyUp",
+                    "onkeyup": "changeValueOnKeyDown",
+                    "validators": ""
+                },
                 "handlers": {
                     "change": "set,data.value,{data.value}",
                     "keydown": "changeValueOnKeyUp",
@@ -2301,14 +2853,20 @@ var ui;
                 "states": {
                     "content": "selected",
                     "vars": ["selected"],
-                    "values": ["selected"],
-                    "args": {},
-                    "filters": [],
-                    "expression": []
+                    "values": ["selected"]
                 }
             }, {
                 "path": "0,21",
                 "type": "tag",
+                "attribs": {
+                    "link": "hellobutton",
+                    "id": "{c.id}-ui-hellobutton",
+                    "enableStates": "hover,selected,disabled",
+                    "model": "{model.button}",
+                    "base": "hellobutton",
+                    "events": "click:helloButtonClick,mouseover:helloButtonOver,mouseout:helloButtonOut",
+                    "fx": "hover=true:animation-hover,2s;hover=false:animation-hover-out,2s"
+                },
                 "children": [{
                     "path": "0,21,0",
                     "type": "text",
@@ -2320,16 +2878,27 @@ var ui;
                             "content": "data.firstname|second|first",
                             "vars": ["data.firstname"],
                             "values": ["data.firstname"],
-                            "args": {},
-                            "filters": ["second", "first"],
-                            "expression": []
+                            "filters": ["second", "first"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "ui.Button"
             }, {
                 "path": "0,23",
                 "type": "tag",
+                "attribs": {
+                    "link": "close2",
+                    "class": "close",
+                    "states": {
+                        "content": "states",
+                        "vars": ["states"],
+                        "values": ["states"]
+                    },
+                    "selected,custom": "==",
+                    "one": "one",
+                    ",counter": ",counter"
+                },
                 "staticAttributes": {
                     "class": "close"
                 },
@@ -2344,24 +2913,31 @@ var ui;
                             "content": "data.firstname|first",
                             "vars": ["data.firstname"],
                             "values": ["data.firstname"],
-                            "args": {},
-                            "filters": ["first"],
-                            "expression": []
+                            "filters": ["first"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div",
                 "states": {
                     "content": "states",
                     "vars": ["states"],
-                    "values": ["states"],
-                    "args": {},
-                    "filters": [],
-                    "expression": []
+                    "values": ["states"]
                 }
             }, {
                 "path": "0,25",
                 "type": "tag",
+                "attribs": {
+                    "link": "close",
+                    "class": "close",
+                    "states": {
+                        "content": "app.config.close&&(state==='one'||state==='two'))",
+                        "vars": ["state", "app.config.close&&$0)"],
+                        "values": ["app.config.close&&$0)"],
+                        "expressions": ["(this.getState(\"state\")==='one'||this.getState(\"state\")==='two')"]
+                    },
+                    "style": "background-color:red"
+                },
                 "staticAttributes": {
                     "class": "close",
                     "style": "background-color:red"
@@ -2371,26 +2947,31 @@ var ui;
                     "content": "app.config.close&&(state==='one'||state==='two'))",
                     "vars": ["state", "app.config.close&&$0)"],
                     "values": ["app.config.close&&$0)"],
-                    "args": {},
-                    "filters": [],
-                    "expression": ["(this.getState(\"state\")==='one'||this.getState(\"state\")==='two')"]
+                    "expressions": ["(this.getState(\"state\")==='one'||this.getState(\"state\")==='two')"]
                 }
             }, {
                 "path": "0,27",
                 "type": "tag",
+                "attribs": {
+                    "id": "{id}-ui-view",
+                    "states": {
+                        "content": "states",
+                        "vars": ["states"],
+                        "values": ["states"]
+                    },
+                    "{(hellobutton.hover": "true||counter"
+                },
                 "tagName": "div",
                 "states": {
                     "content": "states",
                     "vars": ["states"],
-                    "values": ["states"],
-                    "args": {},
-                    "filters": [],
-                    "expression": []
+                    "values": ["states"]
                 }
             }, {
                 "path": "0,29",
                 "type": "comment",
-                "data": " Comment "
+                "data": " Comment ",
+                "attribs": {}
             }],
             "links": [{
                 "name": "hellobutton",
@@ -2426,9 +3007,202 @@ var ui;
                         "0": "userview-{hover}"
                     }
                 },
+                "data.firstname": {
+                    "data": {
+                        "0,1,0": {
+                            "content": "F: {data.firstname}",
+                            "result": "F: {$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.firstname",
+                                "vars": ["data.firstname"],
+                                "values": ["data.firstname"]
+                            }]
+                        },
+                        "0,9,0": {
+                            "content": "{data.firstname|i18n.template}",
+                            "result": "{$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.firstname|i18n.template",
+                                "vars": ["data.firstname"],
+                                "values": ["data.firstname"],
+                                "filters": ["i18n.template"]
+                            }]
+                        },
+                        "0,11,0": {
+                            "content": "Hello man ! Yo Yo {data.age as AGE, data.firstname as FIRST|i18n.template}",
+                            "result": "Hello man ! Yo Yo {$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.age as AGE, data.firstname as FIRST|i18n.template",
+                                "vars": ["data.age", "data.firstname"],
+                                "args": {
+                                    "AGE": "data.age",
+                                    "FIRST": "data.firstname"
+                                },
+                                "filters": ["i18n.template"]
+                            }]
+                        },
+                        "0,13,0": {
+                            "content": "{data.age as AGE, data.firstname as FIRST|i18n.template2}",
+                            "result": "{$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.age as AGE, data.firstname as FIRST|i18n.template2",
+                                "vars": ["data.age", "data.firstname"],
+                                "args": {
+                                    "AGE": "data.age",
+                                    "FIRST": "data.firstname"
+                                },
+                                "filters": ["i18n.template2"]
+                            }]
+                        },
+                        "0,21,0": {
+                            "content": "{data.firstname|second|first} The Text Of The button\n    ",
+                            "result": "{$0} The Text Of The button\n    ",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.firstname|second|first",
+                                "vars": ["data.firstname"],
+                                "values": ["data.firstname"],
+                                "filters": ["second", "first"]
+                            }]
+                        },
+                        "0,23,1": {
+                            "content": "{data.firstname|first} Close Text get from .",
+                            "result": "{$0} Close Text get from .",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.firstname|first",
+                                "vars": ["data.firstname"],
+                                "values": ["data.firstname"],
+                                "filters": ["first"]
+                            }]
+                        }
+                    }
+                },
+                "data.secondname": {
+                    "data": {
+                        "0,3,0": {
+                            "content": "S: {data.secondname}",
+                            "result": "S: {$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.secondname",
+                                "vars": ["data.secondname"],
+                                "values": ["data.secondname"]
+                            }]
+                        }
+                    }
+                },
+                "data.age": {
+                    "data": {
+                        "0,5,0": {
+                            "content": "A: {data.age}",
+                            "result": "A: {$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.age",
+                                "vars": ["data.age"],
+                                "values": ["data.age"]
+                            }]
+                        },
+                        "0,11,0": {
+                            "content": "Hello man ! Yo Yo {data.age as AGE, data.firstname as FIRST|i18n.template}",
+                            "result": "Hello man ! Yo Yo {$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.age as AGE, data.firstname as FIRST|i18n.template",
+                                "vars": ["data.age", "data.firstname"],
+                                "args": {
+                                    "AGE": "data.age",
+                                    "FIRST": "data.firstname"
+                                },
+                                "filters": ["i18n.template"]
+                            }]
+                        },
+                        "0,13,0": {
+                            "content": "{data.age as AGE, data.firstname as FIRST|i18n.template2}",
+                            "result": "{$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.age as AGE, data.firstname as FIRST|i18n.template2",
+                                "vars": ["data.age", "data.firstname"],
+                                "args": {
+                                    "AGE": "data.age",
+                                    "FIRST": "data.firstname"
+                                },
+                                "filters": ["i18n.template2"]
+                            }]
+                        }
+                    }
+                },
+                "i18n.template": {
+                    "data": {
+                        "0,7,0": {
+                            "content": "{i18n.template}",
+                            "result": "{$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "i18n.template",
+                                "vars": ["i18n.template"],
+                                "values": ["i18n.template"]
+                            }]
+                        }
+                    }
+                },
                 "data.value": {
+                    "data": {
+                        "0,15,0": {
+                            "content": "The value is {data.value}",
+                            "result": "The value is {$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.value",
+                                "vars": ["data.value"],
+                                "values": ["data.value"]
+                            }]
+                        }
+                    },
                     "value": {
                         "0,19": "{data.value}"
+                    }
+                },
+                "data.coordinates.x": {
+                    "data": {
+                        "0,17,0": {
+                            "content": "Cooridnates {data.coordinates.x} & {data.coordinates.y}",
+                            "result": "Cooridnates {$0} & {$1}",
+                            "vars": ["$0", "$1"],
+                            "expressions": [{
+                                "content": "data.coordinates.x",
+                                "vars": ["data.coordinates.x"],
+                                "values": ["data.coordinates.x"]
+                            }, {
+                                "content": "data.coordinates.y",
+                                "vars": ["data.coordinates.y"],
+                                "values": ["data.coordinates.y"]
+                            }]
+                        }
+                    }
+                },
+                "data.coordinates.y": {
+                    "data": {
+                        "0,17,0": {
+                            "content": "Cooridnates {data.coordinates.x} & {data.coordinates.y}",
+                            "result": "Cooridnates {$0} & {$1}",
+                            "vars": ["$0", "$1"],
+                            "expressions": [{
+                                "content": "data.coordinates.x",
+                                "vars": ["data.coordinates.x"],
+                                "values": ["data.coordinates.x"]
+                            }, {
+                                "content": "data.coordinates.y",
+                                "vars": ["data.coordinates.y"],
+                                "values": ["data.coordinates.y"]
+                            }]
+                        }
                     }
                 }
             },

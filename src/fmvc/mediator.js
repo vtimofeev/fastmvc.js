@@ -47,7 +47,7 @@ var fmvc;
         };
         Mediator.prototype.getView = function (name) {
             for (var i in this.views) {
-                if (this.views[i].name() == name)
+                if (this.views[i].name == name)
                     return this.views[i];
             }
             return null;

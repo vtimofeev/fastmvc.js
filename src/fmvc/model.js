@@ -19,35 +19,13 @@ var fmvc;
         Changed: 'changed',
         Error: 'error',
     };
-    /*
-        Загрузка данных
-        var configModel = new Model('config', { default data } , { enabedState: true , state: 'synced' } );
-        var loaderProxy = new LoaderProxy(configModel, configUrl);
-        loaderProxy.load().then(function(data) {
-         var parserProxy = new ParserProxy(data, parserFunction, configModel);
-         parserProxy.parser().then(function() { });
-
-         configModel(
-            defaultConfig,
-            { url : { load: [template], update: [template], remove: [template] },
-              loadProxy: {} // universary queue manager,
-              parserProxy: {} // parserFunction(data=>result),
-              validateProxy: {} // validatorFunction
-              onError
-            }) // option init
-            .load(callback?):Promise // load in model context
-            .sync(callback?). // if changed -> save , if synced -> update
-            .parse(callback?);
-        });
-
-     */
     var Model = (function (_super) {
         __extends(Model, _super);
         function Model(name, data, opts) {
             if (data === void 0) { data = {}; }
             _super.call(this, name);
             this.enabledEvents = true;
-            this.enabledState = false;
+            this.enabledState = true;
             this.watchChanges = true;
             if (opts)
                 _.extend(this, opts);
@@ -60,6 +38,7 @@ var fmvc;
                 return this;
             this._previousState = value;
             this._state = value;
+            this.sendEvent(fmvc.Event.MODEL_CHANGED, this._state);
             return this;
         };
         Model.prototype.set = function (value, direct, reset) {

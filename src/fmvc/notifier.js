@@ -58,7 +58,7 @@ var fmvc;
             if (this._facade)
                 this._facade.eventHandler(e);
             if (this._listeners && this._listeners.length)
-                this._sendToListners(name, data);
+                this._sendToListners(e);
         };
         Notifier.prototype.log = function (message, level) {
             // @todo remove facade reference
@@ -97,10 +97,10 @@ var fmvc;
         Notifier.prototype.removeAllListeners = function () {
             this._listeners = null;
         };
-        Notifier.prototype._sendToListners = function (event, data) {
+        Notifier.prototype._sendToListners = function (e) {
             this._listeners.forEach(function (lo) {
                 if (!lo.target.disposed)
-                    (lo.handler).apply(lo.target, [event, data]);
+                    (lo.handler).apply(lo.target, [e]);
             });
         };
         Notifier.prototype.dispose = function () {

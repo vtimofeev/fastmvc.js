@@ -5,7 +5,7 @@ module ui {
         public hellobutton: Element;
         public close2: Element;
         public close: Element;
-        constructor(name: string, modelOrData ? : fmvc.Model | any, jsTemplate ? : IDomObject) {
+        constructor(name: string, modelOrData ? : fmvc.Model | any, jsTemplate ? : fmvc.IDomObject) {
             super(name, modelOrData, jsTemplate);
         }
         createDom() {
@@ -16,19 +16,41 @@ module ui {
             this.childrenContainer = this.childrenContainer || this.element;
             return this;
         }
-        /*
-        public isDynamicStylesEnabled(value?:boolean):boolean {
-             if(_.isBoolean(value)) UserView.__isDynamicStylesEnabled = value;
-                return UserView.__isDynamicStylesEnabled;
-        }
-        private static __isDynamicStylesEnabled:boolean = false;
-        */
         public get jsTemplate(): fmvc.IRootDomObject {
             return UserView.__jsTemplate;
         }
         private static __jsTemplate: fmvc.IRootDomObject = {
             "path": "0",
             "type": "tag",
+            "attribs": {
+                "className": "UserView",
+                "extend": "fmvc.View",
+                "enableStates": "hover,selected,disabled=true,counter=100",
+                "selected": {
+                    "static": null,
+                    "dynamic": {
+                        "selected": ["{selected}"]
+                    },
+                    "bounds": null
+                },
+                "style": {
+                    "static": ["background-color:blue", "color: red", ""],
+                    "dynamic": {
+                        "state.top": [" top:{state.top}px"]
+                    },
+                    "bounds": null
+                },
+                "class": {
+                    "static": ["userview"],
+                    "dynamic": {
+                        "selected": ["userview-{selected}"],
+                        "disabled": ["userview-{disabled}"],
+                        "hover": ["userview-{hover}"]
+                    },
+                    "bounds": null
+                },
+                "fx": "hover:animation-hover,2s;hover=false:animation-hover-out,2s;{data.online}:animation-online,2s"
+            },
             "staticAttributes": {
                 "style": "background-color:blue;color: red;",
                 "class": "userview"
@@ -36,6 +58,7 @@ module ui {
             "children": [{
                 "path": "0,1",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,1,0",
                     "type": "text",
@@ -46,17 +69,16 @@ module ui {
                         "expressions": [{
                             "content": "data.firstname",
                             "vars": ["data.firstname"],
-                            "values": ["data.firstname"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["data.firstname"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,3",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,3,0",
                     "type": "text",
@@ -67,17 +89,16 @@ module ui {
                         "expressions": [{
                             "content": "data.secondname",
                             "vars": ["data.secondname"],
-                            "values": ["data.secondname"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["data.secondname"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,5",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,5,0",
                     "type": "text",
@@ -88,17 +109,16 @@ module ui {
                         "expressions": [{
                             "content": "data.age",
                             "vars": ["data.age"],
-                            "values": ["data.age"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["data.age"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,7",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,7,0",
                     "type": "text",
@@ -109,17 +129,16 @@ module ui {
                         "expressions": [{
                             "content": "i18n.template",
                             "vars": ["i18n.template"],
-                            "values": ["i18n.template"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["i18n.template"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,9",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,9,0",
                     "type": "text",
@@ -131,16 +150,16 @@ module ui {
                             "content": "data.firstname|i18n.template",
                             "vars": ["data.firstname"],
                             "values": ["data.firstname"],
-                            "args": {},
-                            "filters": ["i18n.template"],
-                            "expression": []
+                            "filters": ["i18n.template"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,11",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,11,0",
                     "type": "text",
@@ -151,20 +170,23 @@ module ui {
                         "expressions": [{
                             "content": "data.age as AGE, data.firstname as FIRST|i18n.template",
                             "vars": ["data.age", "data.firstname"],
-                            "values": [],
                             "args": {
                                 "AGE": "data.age",
                                 "FIRST": "data.firstname"
                             },
-                            "filters": ["i18n.template"],
-                            "expression": []
+                            "filters": ["i18n.template"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,13",
                 "type": "tag",
+                "attribs": {
+                    "onmouseover": "overText",
+                    "onmouseout": "outText"
+                },
                 "children": [{
                     "path": "0,13,0",
                     "type": "text",
@@ -175,15 +197,14 @@ module ui {
                         "expressions": [{
                             "content": "data.age as AGE, data.firstname as FIRST|i18n.template2",
                             "vars": ["data.age", "data.firstname"],
-                            "values": [],
                             "args": {
                                 "AGE": "data.age",
                                 "FIRST": "data.firstname"
                             },
-                            "filters": ["i18n.template2"],
-                            "expression": []
+                            "filters": ["i18n.template2"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "handlers": {
                     "mouseover": "overText",
@@ -193,6 +214,7 @@ module ui {
             }, {
                 "path": "0,15",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,15,0",
                     "type": "text",
@@ -203,17 +225,16 @@ module ui {
                         "expressions": [{
                             "content": "data.value",
                             "vars": ["data.value"],
-                            "values": ["data.value"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["data.value"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,17",
                 "type": "tag",
+                "attribs": {},
                 "children": [{
                     "path": "0,17,0",
                     "type": "text",
@@ -224,24 +245,39 @@ module ui {
                         "expressions": [{
                             "content": "data.coordinates.x",
                             "vars": ["data.coordinates.x"],
-                            "values": ["data.coordinates.x"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["data.coordinates.x"]
                         }, {
                             "content": "data.coordinates.y",
                             "vars": ["data.coordinates.y"],
-                            "values": ["data.coordinates.y"],
-                            "args": {},
-                            "filters": [],
-                            "expression": []
+                            "values": ["data.coordinates.y"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div"
             }, {
                 "path": "0,19",
                 "type": "tag",
+                "attribs": {
+                    "states": {
+                        "content": "selected",
+                        "vars": ["selected"],
+                        "values": ["selected"]
+                    },
+                    "type": "text",
+                    "value": {
+                        "static": null,
+                        "dynamic": {
+                            "data.value": ["{data.value}"]
+                        },
+                        "bounds": {
+                            "data.value": "{data.value}"
+                        }
+                    },
+                    "onkeydown": "changeValueOnKeyUp",
+                    "onkeyup": "changeValueOnKeyDown",
+                    "validators": ""
+                },
                 "handlers": {
                     "change": "set,data.value,{data.value}",
                     "keydown": "changeValueOnKeyUp",
@@ -256,14 +292,20 @@ module ui {
                 "states": {
                     "content": "selected",
                     "vars": ["selected"],
-                    "values": ["selected"],
-                    "args": {},
-                    "filters": [],
-                    "expression": []
+                    "values": ["selected"]
                 }
             }, {
                 "path": "0,21",
                 "type": "tag",
+                "attribs": {
+                    "link": "hellobutton",
+                    "id": "{c.id}-ui-hellobutton",
+                    "enableStates": "hover,selected,disabled",
+                    "model": "{model.button}",
+                    "base": "hellobutton",
+                    "events": "click:helloButtonClick,mouseover:helloButtonOver,mouseout:helloButtonOut",
+                    "fx": "hover=true:animation-hover,2s;hover=false:animation-hover-out,2s"
+                },
                 "children": [{
                     "path": "0,21,0",
                     "type": "text",
@@ -275,16 +317,27 @@ module ui {
                             "content": "data.firstname|second|first",
                             "vars": ["data.firstname"],
                             "values": ["data.firstname"],
-                            "args": {},
-                            "filters": ["second", "first"],
-                            "expression": []
+                            "filters": ["second", "first"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "ui.Button"
             }, {
                 "path": "0,23",
                 "type": "tag",
+                "attribs": {
+                    "link": "close2",
+                    "class": "close",
+                    "states": {
+                        "content": "states",
+                        "vars": ["states"],
+                        "values": ["states"]
+                    },
+                    "selected,custom": "==",
+                    "one": "one",
+                    ",counter": ",counter"
+                },
                 "staticAttributes": {
                     "class": "close"
                 },
@@ -299,24 +352,31 @@ module ui {
                             "content": "data.firstname|first",
                             "vars": ["data.firstname"],
                             "values": ["data.firstname"],
-                            "args": {},
-                            "filters": ["first"],
-                            "expression": []
+                            "filters": ["first"]
                         }]
-                    }
+                    },
+                    "attribs": {}
                 }],
                 "tagName": "div",
                 "states": {
                     "content": "states",
                     "vars": ["states"],
-                    "values": ["states"],
-                    "args": {},
-                    "filters": [],
-                    "expression": []
+                    "values": ["states"]
                 }
             }, {
                 "path": "0,25",
                 "type": "tag",
+                "attribs": {
+                    "link": "close",
+                    "class": "close",
+                    "states": {
+                        "content": "app.config.close&&(state==='one'||state==='two'))",
+                        "vars": ["state", "app.config.close&&$0)"],
+                        "values": ["app.config.close&&$0)"],
+                        "expressions": ["(this.getState(\"state\")==='one'||this.getState(\"state\")==='two')"]
+                    },
+                    "style": "background-color:red"
+                },
                 "staticAttributes": {
                     "class": "close",
                     "style": "background-color:red"
@@ -326,26 +386,31 @@ module ui {
                     "content": "app.config.close&&(state==='one'||state==='two'))",
                     "vars": ["state", "app.config.close&&$0)"],
                     "values": ["app.config.close&&$0)"],
-                    "args": {},
-                    "filters": [],
-                    "expression": ["(this.getState(\"state\")==='one'||this.getState(\"state\")==='two')"]
+                    "expressions": ["(this.getState(\"state\")==='one'||this.getState(\"state\")==='two')"]
                 }
             }, {
                 "path": "0,27",
                 "type": "tag",
+                "attribs": {
+                    "id": "{id}-ui-view",
+                    "states": {
+                        "content": "states",
+                        "vars": ["states"],
+                        "values": ["states"]
+                    },
+                    "{(hellobutton.hover": "true||counter"
+                },
                 "tagName": "div",
                 "states": {
                     "content": "states",
                     "vars": ["states"],
-                    "values": ["states"],
-                    "args": {},
-                    "filters": [],
-                    "expression": []
+                    "values": ["states"]
                 }
             }, {
                 "path": "0,29",
                 "type": "comment",
-                "data": " Comment "
+                "data": " Comment ",
+                "attribs": {}
             }],
             "links": [{
                 "name": "hellobutton",
@@ -381,9 +446,202 @@ module ui {
                         "0": "userview-{hover}"
                     }
                 },
+                "data.firstname": {
+                    "data": {
+                        "0,1,0": {
+                            "content": "F: {data.firstname}",
+                            "result": "F: {$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.firstname",
+                                "vars": ["data.firstname"],
+                                "values": ["data.firstname"]
+                            }]
+                        },
+                        "0,9,0": {
+                            "content": "{data.firstname|i18n.template}",
+                            "result": "{$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.firstname|i18n.template",
+                                "vars": ["data.firstname"],
+                                "values": ["data.firstname"],
+                                "filters": ["i18n.template"]
+                            }]
+                        },
+                        "0,11,0": {
+                            "content": "Hello man ! Yo Yo {data.age as AGE, data.firstname as FIRST|i18n.template}",
+                            "result": "Hello man ! Yo Yo {$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.age as AGE, data.firstname as FIRST|i18n.template",
+                                "vars": ["data.age", "data.firstname"],
+                                "args": {
+                                    "AGE": "data.age",
+                                    "FIRST": "data.firstname"
+                                },
+                                "filters": ["i18n.template"]
+                            }]
+                        },
+                        "0,13,0": {
+                            "content": "{data.age as AGE, data.firstname as FIRST|i18n.template2}",
+                            "result": "{$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.age as AGE, data.firstname as FIRST|i18n.template2",
+                                "vars": ["data.age", "data.firstname"],
+                                "args": {
+                                    "AGE": "data.age",
+                                    "FIRST": "data.firstname"
+                                },
+                                "filters": ["i18n.template2"]
+                            }]
+                        },
+                        "0,21,0": {
+                            "content": "{data.firstname|second|first} The Text Of The button\n    ",
+                            "result": "{$0} The Text Of The button\n    ",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.firstname|second|first",
+                                "vars": ["data.firstname"],
+                                "values": ["data.firstname"],
+                                "filters": ["second", "first"]
+                            }]
+                        },
+                        "0,23,1": {
+                            "content": "{data.firstname|first} Close Text get from .",
+                            "result": "{$0} Close Text get from .",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.firstname|first",
+                                "vars": ["data.firstname"],
+                                "values": ["data.firstname"],
+                                "filters": ["first"]
+                            }]
+                        }
+                    }
+                },
+                "data.secondname": {
+                    "data": {
+                        "0,3,0": {
+                            "content": "S: {data.secondname}",
+                            "result": "S: {$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.secondname",
+                                "vars": ["data.secondname"],
+                                "values": ["data.secondname"]
+                            }]
+                        }
+                    }
+                },
+                "data.age": {
+                    "data": {
+                        "0,5,0": {
+                            "content": "A: {data.age}",
+                            "result": "A: {$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.age",
+                                "vars": ["data.age"],
+                                "values": ["data.age"]
+                            }]
+                        },
+                        "0,11,0": {
+                            "content": "Hello man ! Yo Yo {data.age as AGE, data.firstname as FIRST|i18n.template}",
+                            "result": "Hello man ! Yo Yo {$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.age as AGE, data.firstname as FIRST|i18n.template",
+                                "vars": ["data.age", "data.firstname"],
+                                "args": {
+                                    "AGE": "data.age",
+                                    "FIRST": "data.firstname"
+                                },
+                                "filters": ["i18n.template"]
+                            }]
+                        },
+                        "0,13,0": {
+                            "content": "{data.age as AGE, data.firstname as FIRST|i18n.template2}",
+                            "result": "{$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.age as AGE, data.firstname as FIRST|i18n.template2",
+                                "vars": ["data.age", "data.firstname"],
+                                "args": {
+                                    "AGE": "data.age",
+                                    "FIRST": "data.firstname"
+                                },
+                                "filters": ["i18n.template2"]
+                            }]
+                        }
+                    }
+                },
+                "i18n.template": {
+                    "data": {
+                        "0,7,0": {
+                            "content": "{i18n.template}",
+                            "result": "{$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "i18n.template",
+                                "vars": ["i18n.template"],
+                                "values": ["i18n.template"]
+                            }]
+                        }
+                    }
+                },
                 "data.value": {
+                    "data": {
+                        "0,15,0": {
+                            "content": "The value is {data.value}",
+                            "result": "The value is {$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                "content": "data.value",
+                                "vars": ["data.value"],
+                                "values": ["data.value"]
+                            }]
+                        }
+                    },
                     "value": {
                         "0,19": "{data.value}"
+                    }
+                },
+                "data.coordinates.x": {
+                    "data": {
+                        "0,17,0": {
+                            "content": "Cooridnates {data.coordinates.x} & {data.coordinates.y}",
+                            "result": "Cooridnates {$0} & {$1}",
+                            "vars": ["$0", "$1"],
+                            "expressions": [{
+                                "content": "data.coordinates.x",
+                                "vars": ["data.coordinates.x"],
+                                "values": ["data.coordinates.x"]
+                            }, {
+                                "content": "data.coordinates.y",
+                                "vars": ["data.coordinates.y"],
+                                "values": ["data.coordinates.y"]
+                            }]
+                        }
+                    }
+                },
+                "data.coordinates.y": {
+                    "data": {
+                        "0,17,0": {
+                            "content": "Cooridnates {data.coordinates.x} & {data.coordinates.y}",
+                            "result": "Cooridnates {$0} & {$1}",
+                            "vars": ["$0", "$1"],
+                            "expressions": [{
+                                "content": "data.coordinates.x",
+                                "vars": ["data.coordinates.x"],
+                                "values": ["data.coordinates.x"]
+                            }, {
+                                "content": "data.coordinates.y",
+                                "vars": ["data.coordinates.y"],
+                                "values": ["data.coordinates.y"]
+                            }]
+                        }
                     }
                 }
             },

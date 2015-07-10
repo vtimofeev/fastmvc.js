@@ -26,9 +26,13 @@ var TestMediator = (function (_super) {
     function TestMediator() {
         _super.apply(this, arguments);
     }
-    TestMediator.prototype.events = function () {
-        return [ViewEvent.EDIT, ViewEvent.SAVE, ViewEvent.CANCEL];
-    };
+    Object.defineProperty(TestMediator.prototype, "events", {
+        get: function () {
+            return [ViewEvent.EDIT, ViewEvent.SAVE, ViewEvent.CANCEL];
+        },
+        enumerable: true,
+        configurable: true
+    });
     TestMediator.NAME = 'TestMediator';
     return TestMediator;
 })(fmvc.Mediator);
@@ -37,9 +41,13 @@ var TestStatMediator = (function (_super) {
     function TestStatMediator() {
         _super.apply(this, arguments);
     }
-    TestStatMediator.prototype.events = function () {
-        return [ViewEvent.EDIT, ViewEvent.SAVE, ViewEvent.CANCEL];
-    };
+    Object.defineProperty(TestStatMediator.prototype, "events", {
+        get: function () {
+            return [ViewEvent.EDIT, ViewEvent.SAVE, ViewEvent.CANCEL];
+        },
+        enumerable: true,
+        configurable: true
+    });
     TestStatMediator.NAME = 'TestMediator';
     return TestStatMediator;
 })(fmvc.Mediator);
@@ -51,10 +59,24 @@ var TestModel = (function (_super) {
     return TestModel;
 })(fmvc.Model);
 var testApp = new fmvc.Facade('testApp', window);
-var testModel = new TestModel('testModel', { content: 'Hello world' });
-testModel.queue.loadXml({ url: 'config.xml' }).parse(_.identity).complete(function (v) { return testModel.set({ xml: v }); }, null, this);
-testModel.queue.loadXml({ url: 'config2.xml' }).parse(_.identity).complete(function (v) { return testModel.set({ xml2: v }); }, null, this);
+var testModel = new TestModel('test', { content: 'Hello world', title: 'Hello Title', custom: 0 });
+testModel.queue.loadXml({ url: 'config.xml' }).parse(function ($xml) { return { statUrl: $xml.find('stat_url').text() }; }).complete(function (obj) { return testModel.set(obj); }, null, this);
+testModel.queue.loadXml({ url: 'config2.xml' }).parse(_.identity).complete(function (v) { return testModel.set({ title: v.toString() }); }, null, this);
+testModel.setState('customState');
+testApp.register(testModel);
+setTimeout(function () {
+    testModel.setState('changedState');
+}, 1000);
+setInterval(function () { return testModel.data = { custom: (testModel.data.custom + 1) }; }, 1000);
+var btn1 = new ui.TestButtons('tbtns1');
+/*
+btn1.setState('content', 'TheContent2');
+btn1.setState('title', 'StateTitle');
+btn1.data = { title: 'Data:Title', content: 'Data:Content'};
+*/
+console.log(btn1);
 testApp
-    .register((new TestStatMediator(TestMediator.NAME, document.body)).setFacade(testApp).addViews([new ui.Button('btn1', testModel), ((new ui.Button('btn2', null, { events: { click: ViewEvent.EDIT } })).setState('content', 'The value'))]))
+    .register((new TestStatMediator(TestMediator.NAME, document.body)).setFacade(testApp).addViews([btn1, ((new ui.Button('btn2', testModel, { events: { click: ViewEvent.EDIT } })).setState('content', 'The value'))]))
     .register((new TestMediator(TestMediator.NAME, document.body)).setFacade(testApp).addViews([new ui.Button('btn3'), new ui.Button('btn4', testModel)]));
+testModel.data = { title: 'Updated Title' };
 //# sourceMappingURL=test.app.js.map

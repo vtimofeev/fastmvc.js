@@ -2,6 +2,7 @@ module fmvc
 {
     export class Event
     {
+        public static MODEL_STATE_CHANGED:string = 'model.state.changed';
         public static MODEL_CHANGED:string = 'model.changed';
         public static MODEL_CREATED:string = 'model.created';
         public static MODEL_VALIDATED:string = 'model.validated';

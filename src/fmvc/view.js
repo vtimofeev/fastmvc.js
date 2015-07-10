@@ -35,6 +35,7 @@ var fmvc;
         __extends(View, _super);
         function View(name, modelOrData, jsTemplate) {
             _super.call(this, name, fmvc.TYPE_VIEW);
+            this._data = null;
             this.dynamicPropertyValue = {}; // те которые были установлены
             this.elementPaths = {};
             this.componentPaths = {};
@@ -46,7 +47,7 @@ var fmvc;
             this._avaibleInheritedStates = null;
             this._locale = 'ru';
             this._id = null;
-            _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler', 'getDataObjectValue');
+            _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler' /*, 'getDataObjectValue'*/);
             this.template = this.jsTemplate;
             if (modelOrData) {
                 if (modelOrData.type === fmvc.TYPE_MODEL)
@@ -108,7 +109,7 @@ var fmvc;
                 else if (_.isObject(value)) {
                     var ivalue = (value);
                     this._statesType[ivalue.name] = ivalue.type;
-                    this._states[ivalue.name] = ivalue.value;
+                    this._states[ivalue.name] = ivalue.value || ivalue.default;
                 }
             }, this);
         };
@@ -149,10 +150,23 @@ var fmvc;
                     this.updateData(value, nextPrefix, depth);
                 }
                 else {
-                    //console.log('Set data ' , prefix + name);
+                    console.log('Set data ', prefix + name);
                     this.dynamicProperties[prefix + name] ? this.updateDynamicProperty(prefix + name, value) : null;
                 }
             }, this);
+        };
+        View.prototype.updateApp = function () {
+            if (!this.dynamicProperties || !this.app)
+                return;
+            var appProps = _.filter(_.keys(this.dynamicProperties), function (v) { return v.indexOf('app.') === 0; });
+            _.each(appProps, function (name) {
+                this.updateAppProp(name);
+            }, this);
+        };
+        View.prototype.updateAppProp = function (name) {
+            var appValue = eval('this.' + name);
+            console.log('Set APP !!! --- !!! --- ', name, appValue);
+            this.updateDynamicProperty(name, appValue);
         };
         // @todo
         View.prototype.getStyleValue = function (name) {
@@ -165,12 +179,13 @@ var fmvc;
                 return templateString.replace('{' + propertyName + '}', propertyValue);
             }
         };
-        View.prototype.getDataStringValue = function (propertyName, propertyValue, templateStringOrObject) {
-            if (_.isString(templateStringOrObject)) {
-                return templateStringOrObject.replace('{' + propertyName + '}', propertyValue);
+        View.prototype.getDataStringValue = function (propertyName, propertyValue, strOrExOrMEx) {
+            console.log('*** get data ', propertyName);
+            if (_.isString(strOrExOrMEx)) {
+                return strOrExOrMEx.replace('{' + propertyName + '}', propertyValue);
             }
-            else if (_.isObject(templateStringOrObject)) {
-                return this.getDataObjectValue(propertyName, propertyValue, templateStringOrObject);
+            else if (_.isObject(strOrExOrMEx)) {
+                return this.executeMultiExpression(strOrExOrMEx);
             }
         };
         View.prototype.executeFilters = function (value, filters) {
@@ -183,8 +198,6 @@ var fmvc;
                     return this.executePlainFilter(filter, memo);
             }, this);
         };
-        View.prototype.executeComplexFilter = function (filterArrayData, value) {
-        };
         View.prototype.executePlainFilter = function (filter, value) {
             switch (filter) {
                 case fmvc.Filter.FIRST:
@@ -196,17 +209,16 @@ var fmvc;
             }
             return value;
         };
-        View.prototype.getDataObjectValue = function (propertyName, propertyValue, templateObject) {
-            var getFilterValue = function (reducedValue, filter) {
-                if (_.isArray(filter)) {
-                    if (filter[0] === 'i18n') {
+        /*
+        public getDataObjectValue(propertyName, propertyValue, templateObject:any):string {
+            var getFilterValue = function (reducedValue:string, filter:string | string[]):string {
+                if(_.isArray(filter)) {
+                    if(filter[0] === 'i18n') {
                         var secondName = filter[1];
-                        if (!this.i18n[secondName])
-                            return 'Error:View.getDataObjectValue has no i18n property';
-                        var data = {};
-                        _.each(templateObject.args, function (value, key) {
-                            if (value)
-                                data[key] = this.data[value.replace('data.', '')];
+                        if (!this.i18n[secondName]) return 'Error:View.getDataObjectValue has no i18n property';
+                        var data:any = {};
+                        _.each(templateObject.args, function (value:string, key:string) {
+                            if (value) data[key] = this.data[value.replace('data.', '')];
                         }, this);
                         var result = this.getFormattedMessage(this.i18n[secondName], data);
                         return templateObject.source.replace('{replace}', result);
@@ -219,8 +231,10 @@ var fmvc;
                     return this.executePlainFilter(filter, reducedValue);
                 }
             };
+
             return _.reduce(templateObject.filters, getFilterValue, propertyValue, this);
-        };
+        }
+        */
         View.prototype.updatePaths = function (paths, type, name, value, GetValue, each) {
             _.each(paths, function (valueOrValues, path) {
                 var r = '';
@@ -325,6 +339,8 @@ var fmvc;
         // Event handlers
         //------------------------------------------------------------------------------------------------
         View.prototype.enterDocument = function () {
+            var _this = this;
+            this.log('... enter document');
             if (this._inDocument)
                 return;
             this._inDocument = true;
@@ -340,9 +356,25 @@ var fmvc;
                 this.dispatcher.listen(this.element, fmvc.BrowserEvent.CLICK, function () { return t.setState(fmvc.State.SELECTED, !t.getState(fmvc.State.SELECTED)); });
             }
             this.enterDocumentElement(this.jsTemplate, this.elementPaths);
-            this.invalidate(1);
+            this.invalidate(1 | 2);
+            var appModels = _.filter(_.keys(this.dynamicProperties), function (v) { return v.indexOf('app.') === 0; });
+            var modelNames = _.map(appModels, function (v) { return v.split('.')[1]; });
+            _.each(modelNames, function (n) { return (_this.app[n]).bind(_this, _this.appModelHandler); }, this);
+        };
+        View.prototype.appModelHandler = function (e) {
+            var _this = this;
+            if (!this._inDocument)
+                return;
+            var modelName = e.target.name;
+            var appProps = _.filter(_.keys(this.dynamicProperties), function (v) { return v.indexOf('app.' + modelName) === 0; });
+            _.each(appProps, function (n) { return _this.updateAppProp(n); }, this);
+            this.applyChangeStateElement(this.jsTemplate, this.elementPaths);
         };
         View.prototype.exitDocument = function () {
+            var _this = this;
+            var appModels = _.filter(_.keys(this.dynamicProperties), function (v) { return v.indexOf('app.') === 0; });
+            var modelNames = _.map(appModels, function (v) { return v.split('.')[1]; });
+            _.each(modelNames, function (n) { return (_this.app[n]).unbind(_this, _this.appModelHandler); }, this);
             this.dispatcher.unlistenAll(this.element);
             this._inDocument = false;
         };
@@ -449,6 +481,7 @@ var fmvc;
             if (!isStated)
                 return;
             var isIncluded = value.states ? this.isStateEnabled(value.states) : true;
+            this.log(['Apply change state element: ', value.path, isIncluded, value.states].join(', '));
             var isEnabled = (e.nodeType === 1);
             //console.log('path, included, enabled ', value.tagName, value.path, isIncluded, isEnabled);
             if (isIncluded && !isEnabled) {
@@ -485,6 +518,11 @@ var fmvc;
         //------------------------------------------------------------------------------------------------
         View.prototype.hasState = function (name) {
             return _.isBoolean(this._states[name]);
+        };
+        View.prototype.setStates = function (value) {
+            var _this = this;
+            _.each(value, function (v, k) { return _this.setState(k, v); }, this);
+            return this;
         };
         View.prototype.setState = function (name, value) {
             if (!(name in this._states))
@@ -554,12 +592,17 @@ var fmvc;
                 this._invalidateTimeout = setTimeout(this.invalidateHandler, 20);
         };
         View.prototype.invalidateHandler = function () {
+            var _this = this;
             this.removeInvalidateTimeout();
             //console.log('invalid ' , this._invalidate , this._inDocument);
             if (!this._invalidate || !this._inDocument)
                 return;
-            if (this._invalidate & 1)
+            if (this._invalidate & 1) {
                 this.updateData(this.data, 'data.', 2);
+                this.updateApp();
+            }
+            if (this._invalidate & 2)
+                _.each(this._states, function (value, key) { return value ? _this.applyState(key, value) : null; }, this);
             this._invalidate = 0;
         };
         View.prototype.removeInvalidateTimeout = function () {
@@ -605,7 +648,7 @@ var fmvc;
         };
         Object.defineProperty(View.prototype, "data", {
             get: function () {
-                return this._data;
+                return this._data === null ? View.__emptyData : this._data;
             },
             //------------------------------------------------------------------------------------------------
             // Data & model
@@ -619,12 +662,16 @@ var fmvc;
             configurable: true
         });
         Object.defineProperty(View.prototype, "model", {
-            get: function () {
-                return this._model;
-            },
             set: function (data) {
                 this._model = data;
                 this.data = data.data;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(View.prototype, "app", {
+            get: function () {
+                return (this._mediator && this._mediator.facade) ? this._mediator.facade.model : null;
             },
             enumerable: true,
             configurable: true
@@ -668,6 +715,9 @@ var fmvc;
         View.prototype.log = function (message, level) {
             if (this._mediator)
                 this._mediator.facade.logger.add(this.name, message, level);
+            else {
+                console.log('[c]', this.name, message, level);
+            }
             return this;
         };
         // Overrided
@@ -729,43 +779,57 @@ var fmvc;
             configurable: true
         });
         View.prototype.isStateEnabled = function (states) {
-            /*
-            var statesLength = states.length;
-            for(var i = 0; i < statesLength; i++) {
-                var stateValue = states[i];
-                return _.isArray(stateValue)?this.getState(stateValue[0]) === stateValue[1]:!!this.getState(states[i]);
-            }
-            */
             return this.executeExpression(states);
         };
         View.prototype.executeEval = function (value) {
             return eval(value);
         };
         View.prototype.getVarValue = function (v, ex) {
-            if (v.indexOf('data.') === 0)
-                return this.data[v.replace('data.', '')];
-            else if (v.indexOf('$') === 0)
-                return this.executeEval(ex.expressions[parseInt(v.replace('$', ''), 10)]);
-            else if (v.indexOf('.') === -1)
-                return this.getState(v);
+            //this.log('Get var ' + v);
+            if (v.indexOf('data.') === 0) {
+                var varName = v.replace('data.', '');
+                return (this.data && this.data[varName]) ? this.data[varName] : null;
+            }
+            else if (v.indexOf('app.') === 0) {
+                return eval('this.' + v);
+            }
+            else if (v.indexOf('$') === 0) {
+                var varEx = ex.expressions[parseInt(v.replace('$', ''), 10)];
+                return (typeof varEx === 'string') ? this.executeEval(varEx) : this.executeExpression(varEx);
+            }
+            else if (v.indexOf('.') === -1 || v.indexOf('state.') === 0) {
+                var varName = v.replace('state.', '');
+                return this.getState(varName);
+            }
             else
                 throw new Error('Not supported variable in ' + this.name + ', ' + v);
         };
+        View.prototype.executeMultiExpression = function (mex) {
+            var _this = this;
+            console.log('------------------------------ *** --------------------------');
+            console.log(mex);
+            return _.reduce(mex.vars, function (memo, value) { return memo.replace('{' + value + '}', _this.getVarValue(value, mex)); }, mex.result, this);
+        };
         View.prototype.executeExpression = function (ex) {
             var _this = this;
+            console.log(ex);
             var r = null;
             // we create object to send to first filter (like i18n method) that returns a string value
             if (ex.args && ex.filters) {
                 r = {};
-                r = _.each(ex.args, function (v, k) { return r[k] = _this.getVarValue(v, ex); }, this);
+                _.each(ex.args, function (v, k) { return r[k] = _this.getVarValue(v, ex); }, this);
             }
             else if (ex.values) {
-                var i = 0, l = ex.values.length;
-                while (!r && i < l)
-                    r = this.getVarValue(ex.values[i++], ex);
+                var i = 0, length = ex.values.length;
+                while (!r && i < length) {
+                    r = this.getVarValue(ex.values[i], ex);
+                    //this.log(['Search positive ' + i + ' value in [', ex.values[i], ']=',  r].join(''));
+                    i++;
+                }
             }
             else
                 throw Error('Expression must has args and filter or values');
+            this.log(['ExecuteExpression result=', JSON.stringify(r), ', of content: ', ex.content].join(''));
             r = this.executeFilters(r, ex.filters);
             return r;
         };
@@ -777,6 +841,7 @@ var fmvc;
                 if (value.tagName.indexOf('.') > -1) {
                     //console.log('Create component, ' + value.tagName);
                     var component = new (fmvc.global.ui[value.tagName.split('.')[1]])();
+                    component.setStates(value.attribs);
                     this.componentPaths[value.path] = component;
                     e = component.createDom().element;
                 }
@@ -841,6 +906,7 @@ var fmvc;
         View.__messageFormat = {};
         View.__className = 'View';
         View.__inheritedStates = [fmvc.State.DISABLED];
+        View.__emptyData = {};
         View.Counters = { element: { added: 0, removed: 0, handlers: 0 } };
         View.dispatcher = new fmvc.EventDispatcher();
         View.Name = 'View';
