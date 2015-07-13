@@ -133,7 +133,7 @@ module fmvc {
         // Глобальный получатель событий от системы
         public eventHandler(e:IEvent):void {
             var objects:any = this._events[e.name];
-            _.each(objects, (object:IMediator) => object.eventHandler(e.name));
+            _.each(objects, (object:IMediator) => object.eventHandler(e));
         }
 
         public get logger():Logger {

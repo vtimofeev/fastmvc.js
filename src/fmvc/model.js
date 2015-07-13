@@ -38,52 +38,55 @@ var fmvc;
                 return this;
             this._previousState = value;
             this._state = value;
+            this.log('New state: ' + value);
             this.sendEvent(fmvc.Event.MODEL_CHANGED, this._state);
             return this;
         };
-        Model.prototype.set = function (value, direct, reset) {
-            if (direct === void 0) { direct = false; }
-            if (reset === void 0) { reset = false; }
-            if (reset)
-                this._data = null;
-            if (direct)
-                this._data = value;
-            else
-                this.data = value;
-            return this;
+        Model.prototype.parseValue = function (value) {
+            var result = null;
+            var prevData = this.data;
+            var changes = null;
+            var hasChanges = false;
+            if (value instanceof Model) {
+                console.log(value);
+                this.log('Check errors in this');
+                throw Error('Cant set model data, data must be object, array or primitive');
+            }
+            //@todo check type of data and value
+            if (_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
+                for (var i in value) {
+                    if (prevData[i] !== value[i]) {
+                        if (!changes)
+                            changes = {};
+                        hasChanges = true;
+                        changes[i] = value[i];
+                        prevData[i] = value[i];
+                    }
+                }
+                // if watch object property change
+                if (hasChanges)
+                    this.sendEvent(fmvc.Event.MODEL_CHANGED, changes);
+                result = prevData;
+            }
+            else {
+                // primitive || array || no data && any value (object etc)
+                if (prevData !== value) {
+                    result = (_.isObject(prevData) && _.isObject(value)) ? _.extend({}, prevData, value) : value;
+                }
+            }
+            return result;
         };
         Object.defineProperty(Model.prototype, "data", {
             get: function () {
                 return this._data;
             },
             set: function (value) {
-                var data = this._data;
-                var changes = null;
-                var hasChanges = false;
-                if (value instanceof Model)
-                    throw Error('Cant set model data, data must be object, array or primitive');
-                //@todo check type of data and value
-                if (_.isObject(data) && _.isObject(value) && this.watchChanges) {
-                    for (var i in value) {
-                        if (data[i] !== value[i]) {
-                            if (!changes)
-                                changes = {};
-                            hasChanges = true;
-                            changes[i] = value[i];
-                            data[i] = value[i];
-                        }
-                    }
+                var previousData = this._data;
+                var result = this.parseValue(value);
+                if (previousData !== result) {
+                    this._data = result;
+                    this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
                 }
-                else {
-                    // primitive || array || no data && any value (object etc)
-                    if (data !== value) {
-                        hasChanges = true;
-                        var resultData = (_.isObject(this._data) && _.isObject(value)) ? _.extend(this._data, value) : value;
-                        this._data = resultData;
-                    }
-                }
-                if (hasChanges)
-                    this.sendEvent(fmvc.Event.MODEL_CHANGED, changes || this._data);
             },
             enumerable: true,
             configurable: true

@@ -3,7 +3,6 @@
 ///<reference path='../d.ts/async/async.d.ts'/>
 //<reference path='../d.ts/lodash/lodash.d.ts'/>
 ///<reference path='../d.ts/dustjs-linkedin/dustjs-linkedin.d.ts'/>
-
 import util = require('util');
 import fs = require('fs');
 import htmlparser = require("htmlparser");
@@ -15,6 +14,13 @@ import async = require('async');
 import beautify = require('js-beautify');
 import stylus = require('stylus');
 import tsc = require('typescript-compiler');
+
+var VERSION = '0.1';
+var argv = require('optimist').
+    usage('FMVC xml2ts compiler. Version ' + VERSION + '.\nCreates view components ts classes from like html notation.\n\nUsage: $0 -p [string] -o [string]').
+    demand(['p']).
+    describe('p', 'Path to directory').
+    describe('o', 'Out directory').argv;
 
 require('dustjs-helpers');
 dust.config.whitespace = true;
@@ -65,7 +71,7 @@ module fmvc {
         ONMOUSEOUT: 'onmouseout'
     };
 
-    const DOM_KEYS:string[] = [KEYS.VALUE, KEYS.HREF, KEYS.STYLE, KEYS.CLASS, KEYS.CHECKED, KEYS.DISABLED, KEYS.SELECTED, KEYS.FOCUSED];
+    const DOM_AND_STATES_KEYS:string[] = [KEYS.VALUE, KEYS.HREF, KEYS.STYLE, KEYS.CLASS, KEYS.CHECKED, KEYS.DISABLED, KEYS.SELECTED, KEYS.FOCUSED, KEYS.STATES];
     const ALLOWED_KEYS:string[] = [].concat(_.values(KEYS), _.values(EVENT_KEYS) );
     const ALLOWED_VARIABLES_IN_EXPRESSION = [].concat(_.values(KEYS), ['data', 'app']);
 
@@ -84,7 +90,6 @@ module fmvc {
                     }, function (err, content, filename, next) {
                         if (err) throw err;
                         var base = path.basename(filename);
-                        //console.log('Compile ', filename, base);
                         dust.loadSource(dust.compile(content, base, true));
                         next();
                     },
@@ -98,8 +103,7 @@ module fmvc {
 
         loadSources() {
             var t = this;
-            var loadSrc = path.normalize(__dirname + '/' + this.srcIn);
-            //console.log('loadSource from ' + loadSrc);
+            var loadSrc = path.normalize(this.srcIn);
             dir.readFiles(loadSrc,
                 {
                     match: /.html$/,
@@ -113,8 +117,7 @@ module fmvc {
         }
 
         complete() {
-
-            var jsClassPath:string = path.normalize(__dirname + '/' + this.srcOut + '/compiled.js');
+            var jsClassPath:string = path.normalize(this.srcOut + '/compiled.js');
             tsc.compile(tsClasses, '-m commonjs -t ES5 --out ' + jsClassPath);
             console.log('Compiled ts to %s, for %d ms', jsClassPath , (Date.now() - start));
             console.log('*** complete all ***');
@@ -124,10 +127,10 @@ module fmvc {
             var t = this;
             var handler:any = new htmlparser.DefaultHandler(function (error, dom) {
                 if (error) {
-                    //console.log('error parse html ' + fileName);
+                    console.log('error parse html ' + fileName);
                 }
                 else {
-                    //console.log('success parse html ' + fileName);
+
                 }
             }, {enforceEmptyTags: false, verbose: false});
 
@@ -153,7 +156,7 @@ module fmvc {
                             styleJs = value;
                             break;
                         case F_ELEMENTS.I18N:
-                            var i18nPath:string = path.normalize(__dirname + '/' + t.srcIn + '/' + value.attribs.src);
+                            var i18nPath:string = path.resolve(t.srcIn + '/' + value.attribs.src);
                             i18nJs = require(i18nPath);
                             break;
                         case F_ELEMENTS.STATE:
@@ -168,23 +171,23 @@ module fmvc {
 
             rootDom = Xml2TsUtils.recreateJsNode(rootJs, '0');
             rootDom.className = path.basename(fileName).replace(path.extname(fileName), '');
+            var paths = this.srcIn.split('/'); //@todo check winpaths
+            rootDom.moduleName = paths[paths.length - 1];
             rootDom.enableStates = [].concat(rootDom.enableStates, statesJs);
 
 
             if (i18nJs) rootDom.i18n = i18nJs;
-            var tsClassPath:string = path.normalize(__dirname + '/' + t.srcOut + '/' + rootDom.className + '.ts');
-            var jsClassPath:string = path.normalize(__dirname + '/' + t.srcOut + '/' + rootDom.className + '.js');
+            var tsClassPath:string = path.normalize(t.srcOut + '/' + rootDom.className + '.ts');
+            var jsClassPath:string = path.normalize(t.srcOut + '/' + rootDom.className + '.js');
 
             async.series(
                 [
                     function loadStylus(cb) {
-                        //console.log('styleJs' , styleJs);
                         if (!styleJs) {
                             cb(null, null);
                             return;
                         }
-                        var stylusSrc = path.normalize(__dirname + '/' + t.srcIn + '/' + styleJs.attribs.src);
-                        //console.log('Style source is ' + stylusSrc)
+                        var stylusSrc = path.normalize(t.srcIn + '/' + styleJs.attribs.src);
                         var stylusSrc = fs.readFileSync(stylusSrc, 'utf8');
 
                         stylus(stylusSrc, {compress: true})
@@ -198,7 +201,6 @@ module fmvc {
                         dust.render('object.ts.dust', rootDom,
                             function dustCompileHandler(e, result) {
                                 var reformattedContent = beautify.js_beautify(result, {"max_preserve_newlines": 1});
-                                //console.log('Write file ' + tsClassPath);
                                 fs.writeFile(tsClassPath, reformattedContent, function tsSaveHandler(e, result) {
                                     if (!e) cb();
                                     else throw new Error('Cant write content to ' + tsClassPath);
@@ -217,17 +219,16 @@ module fmvc {
     }
 
     class Xml2TsUtils {
-        public static MATCH_REGEXP:RegExp = /\{([\@A-Za-z\, \|0-9\.]+)\}/g;
-        public static DATA_MATCH_REGEXP:RegExp = /\{([\(\)\\,\.\|'"@A-Za-z 0-9]+)\}/g;
-        public static BRACKETS_MATCH:RegExp = /\([^()]+\)/gi;
+        //public static MATCH_REGEXP:RegExp = /\{([\@A-Za-z\, \|0-9\.]+)\}/g;
+        public static DATA_MATCH_REGEXP:RegExp = /\{([\(\)\\,\.\|'"@A-Za-z \+\-\/\*0-9]+)\}/g;
+        //public static BRACKETS_MATCH:RegExp = /\([^()]+\)/gi;
         public static VARS_MATCH:RegExp = /([A-Za-z0-9_\-'\.]+)/gi;
         public static JS_VARS_MATCH:RegExp = /(^[A-Za-z0-9_\-\.]+$)/gi;
 
-        public static PROPERTY_DATA_MATCH:RegExp = /^\{[A-Za-z0-9\.]+\}$/;
+        //public static PROPERTY_DATA_MATCH:RegExp = /^\{[A-Za-z0-9\.]+\}$/;
 
 
         public static jsonReplacer(key:string, value:any):any {
-            ////console.log(key, _.isString(value));
             if(!_.isString(value)) return value;
 
             switch (key) {
@@ -240,27 +241,16 @@ module fmvc {
                 case KEYS.STATES:
                     return Xml2TsUtils.parseDynamicContent(value);
 
-                    //return _.map(value.split(','), function(value) { return value.indexOf('=')>-1?value.split('='):value });
                 default:
                 {
                     if (key in EVENT_KEYS) return value;// {event: key.replace('on', null), value: value};
                     else  {
-                        ////console.log('Check replacer dynamic ' , key , _.isString(value) , ALLOWED_KEYS.indexOf(key) );
                         return (_.isString(value) && ALLOWED_KEYS.indexOf(key) > -1 ) ? Xml2TsUtils.getDynamicValues(key, value) : value
                     }
                 }
             }
         }
 
-        // todo review
-        public static getDataDynamicValue(key, value) {
-            if(value.match(Xml2TsUtils.PROPERTY_DATA_MATCH)) {
-                return value;
-            }
-            else {
-                // each match {...} return result array
-            }
-        }
 
         public static parseMultidynamicContent(value:string):any {
             var matches = value.match(Xml2TsUtils.DATA_MATCH_REGEXP);
@@ -295,7 +285,7 @@ module fmvc {
                 function(expression:string, index:number) {
                     value = value.replace(expression, '$' + index);
                     var variables = _.uniq(_.filter(expression.match(Xml2TsUtils.VARS_MATCH), function (v) { return  v.indexOf('\'') === -1 && v.match(/^[A-Za-z]+/gi); }));
-                    console.log('--- vars : ' , variables);
+                    //console.log('--- vars : ' , variables);
                     if (!_.isEmpty(variables)) variables = variables.sort((a:string,b:string)=>a.length>b.length?-1:1);
                     result.vars = result.vars.concat(variables);
                     var reducedExpression = _.reduce(variables, function(memo, v) {
@@ -311,7 +301,6 @@ module fmvc {
             result.filters = _.rest(valueSpitByFilter);
 
             var args = Xml2TsUtils.parseArguments(value);
-            //console.log('arguments ' , arguments, _.isObject(arguments), value.split(','));
 
             if(_.isObject(args)) {
                 result.args = args;
@@ -324,7 +313,7 @@ module fmvc {
 
             // remove empty keys
             _.each(_.keys(result), (key)=>(_.isEmpty(result[key])?delete result[key]:null) );
-            console.dir(result);
+            //console.dir(result);
             return result;
         }
 
@@ -334,7 +323,6 @@ module fmvc {
             var result = {};
             _.each(value.split(','), function(argument, index) {
                 var parsedArgs = Xml2TsUtils.parseArgument(argument);
-                //console.log('Parsed arguments', parsedArgs);
                 if(_.isObject(parsedArgs)) result = _.extend(result, parsedArgs);
             });
             return _.isEmpty(result)?null:result;
@@ -351,7 +339,6 @@ module fmvc {
         }
 
         public static getDynamicValues(key:string, value:any, delimiter?:string) {
-            ////console.log('Check for ' , key, value);
             if (!_.isString(value)) return value;
 
 
@@ -366,7 +353,6 @@ module fmvc {
                 _.each(matches, function(match, index) {
                     var matchValue = match.replace(/[\{\}]/g, '');
                     var filterResult = null;
-                    ////console.log('Check dv of ' , matchValue);
                     if(matchValue.indexOf('@') > -1) {
                         var cleanMatchValue:string = matchValue.replace('@', '');
                         var cleanResultValue:string = '{' + cleanMatchValue + '}';
@@ -413,13 +399,10 @@ module fmvc {
             });
 
             if (dynamicValues) {
-                ////console.log('Return dynamic for ' , key, dynamicValues);
                 return {static: staticValues, dynamic: dynamicValues, bounds: boundValues };
             } else {
-                //console.log('Return static for ', key, value);
                 return value;
             }
-
         }
 
         public static getStaticValueOfDynamicObject(value:any, delimiter:string):string {
@@ -428,7 +411,6 @@ module fmvc {
         }
 
         public static extendDynamicSummary(dynamic:fmvc.IDynamicSummary, dynamicName:string, domName:string, elementPath:string, values:string[]) {
-            //console.log('[ex2ds] ' , dynamicName, domName, elementPath, values);
             if (!dynamic[dynamicName]) dynamic[dynamicName] = {};
             if (!dynamic[dynamicName][domName]) dynamic[dynamicName][domName] = {};
             if (!dynamic[dynamicName][domName][elementPath]) dynamic[dynamicName][domName][elementPath] = (values.length === 1) ? values[0] : values;
@@ -446,15 +428,20 @@ module fmvc {
 
             // skip empty text node
             if(object.type === 'text'  && _.isString(object.data))  {
-                var empty = (object.data.replace(/[\n\t ]./gi, ''));
-                if(empty) { console.log('Empty ' + path); return null; }
+                var empty = (object.data.trim().replace(/[\n\t ]./gi, ''));
+                if(_.isEmpty(empty)) { console.log('Empty ', empty, path); return null; }
+                else object.data = object.data.trim().replace(/[\n\t]./gi, '');
             }
 
             if (a) {
-                if (a.link) rootObject.links.push(Xml2TsUtils.getNameValue(a.link, path));
+                if (a.link) {
+                    rootObject.links.push(Xml2TsUtils.getNameValue(a.link, path));
+                    object.link = a.link;
+                }
                 if (a.enableStates) rootObject.enableStates = Xml2TsUtils.getValueArrayFromString(a.enableStates, ',');
                 if (a.extend) object.extend = a.extend;
                 if (a.states) object.states = a.states;
+
             }
 
             // Проверяем аттрибуты объекта для дальнейшего прокидывания в объекты
@@ -485,17 +472,15 @@ module fmvc {
         }
 
         public static writeSummaryForNode(object:IDomObject, rootObject:IRootDomObject, key:string, path:string, value:any) {
-            //console.log('Check: ', key, value);
-            var result = null;
-
+            if(key === 'states') console.log('Check summary for ', key, value);
             if (_.values(EVENT_KEYS).indexOf(key) > -1) {
-                //console.log('--- Handler ' , key, value);
                 object.handlers[key.replace('on','')] = value;
             }
 
-            if (!(DOM_KEYS.indexOf(key) > -1 || key.indexOf('data') > -1)) return;
+            if (!(DOM_AND_STATES_KEYS.indexOf(key) > -1 || key.indexOf('data') > -1)) return;
 
             var result = null;
+
             switch (key) {
                 case KEYS.CLASS:
                     result = Xml2TsUtils.getStaticValueOfDynamicObject(value, ' ');
@@ -509,7 +494,7 @@ module fmvc {
             //create dynamic maps summary for root
             if (_.isObject(value)) {
                 var expressionVars = Xml2TsUtils.getExpressionVars(value);
-                console.log('Full vars list --> ' , path, key, value.vars, '===', expressionVars);
+                if(key === 'states') console.log('Full vars list --> ' , path, key, value.vars, '===', expressionVars);
 
                 _.each(expressionVars, (varName:string)=>Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, varName, key, path, value));
                 _.each(value.dynamic, (dynamicValueArray:any, dynamicName)=>Xml2TsUtils.extendDynamicSummary(rootObject.dynamicSummary, dynamicName, key, path, dynamicValueArray));
@@ -525,7 +510,6 @@ module fmvc {
         public static getExpressionVars(ex:IMultiExpression) {
             var r = [].concat(ex.vars?ex.vars:[]);
             _.each(ex.expressions, function(childEx:IExpression|string) { if(_.isObject(childEx)) r = [].concat(r, Xml2TsUtils.getExpressionVars(childEx)); });
-            //console.log('ex vars is ' , r);
             return _.uniq(_.filter(r, (v)=>(v.match(Xml2TsUtils.JS_VARS_MATCH))));
         }
 
@@ -575,8 +559,18 @@ module fmvc {
             _.each(brackets, function(v) { r.push(value.substring(v[0],v[1]+1)); })
             return r.length?r:null;
         }
-
     }
 }
 
-new fmvc.Xml2Ts('../ui' , '../ui');
+function resolvePath(value:string) {
+    var r:string = path.normalize(process.cwd() + '/' + value);
+    return value;
+}
+
+
+var sourceOut:any =
+    _.isArray(argv.p)?
+        _.map(argv.p, (v:string,k:number)=>({src: resolvePath(v), out: resolvePath(_.isArray(argv.o)?argv.o[k]:argv.o||v)}) ):
+        {src:resolvePath(argv.p), out: resolvePath(argv.o || argv.p)};
+
+_.each(sourceOut, (v)=>new fmvc.Xml2Ts(v.src,v.out));

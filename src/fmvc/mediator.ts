@@ -68,8 +68,9 @@ module fmvc {
         }
 
         public eventHandler(e:any):void {
-            this.log('Handled ' + e.name + ' from ' + e.target.name + ":" + e.target.type);
-            switch (e.target.type()) {
+            console.log('Mediator handled ... ' , e);
+            //this.log('Handled ' + e.name + ' from ' + e.target.name + ":" + e.target.type);
+            switch (e && e.target?e.target.type:null) {
                 case fmvc.TYPE_MEDIATOR:
                     this.mediatorEventHandler(e);
                     break;

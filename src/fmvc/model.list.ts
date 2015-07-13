@@ -7,16 +7,14 @@ module fmvc {
             super(name, data, opts);
         }
 
-        public set data(value:any) {
+        public parseValue(value:any):any {
             if (!_.isArray(value)) throw Error('Cant set modelList from not array data');
-            var data = this.data || [];
+            var data = [];
             _.each(value, function(item) {
                 var modelValue:Model  = (item instanceof Model)?item:this.getModel(item);
                 data.push(modelValue);
             }, this);
-
-            this.set(data, true, true);
-            this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
+            return data;
         }
 
         // @overrided
@@ -25,7 +23,8 @@ module fmvc {
         }
 
         public get count():number {
-            return this.data && this.data.length ? this.data.length : 0;
+            var data = this.data;
+            return (data && data.length)?data.length:0;
         }
 
         /*

@@ -11,7 +11,6 @@ module fmvc {
         CLICK: 'click',
         KEYUP: 'keyup',
         KEYDOWN: 'keydown',
-
         MOUSEOVER: 'mouseover',
         MOUSEOUT: 'mouseout',
         CHANGE: 'change'
@@ -48,17 +47,20 @@ module fmvc {
                 console.warn('Incorrect listener on ' , el, id, type);
                 return;
             }
-            //if(!this.elementIdMap[id]) this.elementIdMap[id] = el;
+
             this.executionMap[id] = this.executionMap[id] || {};
 
+            var listenerData = {handler: handler, context: context};
             if(!this.executionMap[id][type]){
-                this.executionMap[id][type] = {handler: handler, context: context};
-                console.log(id, type, this.executionMap[id][type]);
-                this.__createListener(el, id, type, handler, context);
+                this.executionMap[id][type] = [listenerData];
             } else
             {
-                console.warn('Cant listen cause exist ', id , type);
+                this.executionMap[id][type].push(listenerData);
             }
+
+            console.log('Create listener ' , id, type, this.executionMap[id]);
+            this.__createListener(el, id, type, handler, context);
+
 
             return this;
         }
@@ -99,10 +101,15 @@ module fmvc {
             var id = el.getAttribute('id');
             if(!id) return;
 
-            _.each(this.executionMap[id], function(handlerObject, type:string) {
+            _.each(this.executionMap[id], function(handlerObjectsArray, type:string) {
                 el.removeEventListener(type, this.browserHandler);
-                delete handlerObject.handler;
-                delete handlerObject.context;
+
+                _.each(handlerObjectsArray, function(handlerObject) {
+                    delete handlerObject.handler;
+                    delete handlerObject.context;
+                });
+
+
             }, this);
 
             delete this.executionMap[id];
@@ -112,10 +119,14 @@ module fmvc {
         unlisten(el:Element, type:string) {
             var id = el.getAttribute('id');
             if(!id) return;
-            var handlerObject = this.executionMap[id][type];
+            var handlerObjectsArray = this.executionMap[id][type];
             el.removeEventListener(type, this.browserHandler);
-            delete handlerObject.handler;
-            delete handlerObject.context;
+
+            _.each(handlerObjectsArray, function(handlerObject) {
+                delete handlerObject.handler;
+                delete handlerObject.context;
+            });
+
             delete this.executionMap[id][type];
         }
 
@@ -128,8 +139,10 @@ module fmvc {
 
             console.log(id, type, this.executionMap[id]);
             if(this.executionMap[id] && this.executionMap[id][type]) {
-                var handlerObject:any = this.executionMap[id][type];
-                handlerObject.handler.call(handlerObject.context,e);
+                var handlerObjectsArray:any = this.executionMap[id][type];
+                _.each(handlerObjectsArray, function(handlerObject:any) {
+                    handlerObject.handler.call(handlerObject.context,e);
+                });
             }
         }
 

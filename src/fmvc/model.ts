@@ -40,45 +40,54 @@ module fmvc {
             if(!this.enabledState || this._state === value) return this;
             this._previousState = value;
             this._state = value;
+            this.log('New state: ' + value);
             this.sendEvent(fmvc.Event.MODEL_CHANGED, this._state);
             return this;
         }
 
-        public set(value:any, direct:boolean = false, reset:boolean = false):Model {
-            if(reset) this._data = null;
-            if (direct) this._data = value;
-            else this.data = value;
-            return this;
-        }
 
-        public set data(value:any) {
-            var data = this._data;
+        public parseValue(value:any):any {
+            var result = null;
+            var prevData = this.data;
             var changes:{[id:string]:any} = null;
             var hasChanges:boolean = false;
 
-            if (value instanceof Model) throw Error('Cant set model data, data must be object, array or primitive');
+            if (value instanceof Model) {
+                console.log(value);
+                this.log('Check errors in this');
+                throw Error('Cant set model data, data must be object, array or primitive');
+            }
             //@todo check type of data and value
 
-            if(_.isObject(data) && _.isObject(value) && this.watchChanges) {
+            if(_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
                 for (var i in value) {
-                    if (data[i] !== value[i]) {
+                    if (prevData[i] !== value[i]) {
                         if (!changes) changes = {};
                         hasChanges = true;
                         changes[i] = value[i];
-                        data[i] = value[i];
+                        prevData[i] = value[i];
                     }
                 }
+                // if watch object property change
+                if (hasChanges) this.sendEvent(fmvc.Event.MODEL_CHANGED, changes);
+                result = prevData;
             }
             else {
                 // primitive || array || no data && any value (object etc)
-                if (data !== value) {
-                    hasChanges = true;
-                    var resultData = (_.isObject(this._data) && _.isObject(value))?_.extend(this._data, value): value;
-                    this._data = resultData;
+                if (prevData !== value) {
+                    result = (_.isObject(prevData) && _.isObject(value))?_.extend({}, prevData, value):value;
                 }
             }
+            return result;
+        }
 
-            if (hasChanges) this.sendEvent(fmvc.Event.MODEL_CHANGED, changes || this._data);
+        public set data(value:any) {
+            var previousData = this._data;
+            var result = this.parseValue(value);
+            if(previousData !== result) {
+                this._data = result;
+                this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
+            }
         }
 
         public get data():any {

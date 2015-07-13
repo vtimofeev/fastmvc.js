@@ -1,11 +1,10 @@
-<f:style src="./styl/button.styl"/>
+<!--<f:style src="./styl/button.styl"/>-->
 <f:state name="content"></f:state>
 <f:state name="exClass"></f:state>
 
-<div
-        className="Button"
-        extend="fmvc.View"
-        enableStates="hover,selected,disabled,error,open"
-        class="button button-{selected} button-{disabled} button-{hover} button-{error} button-{open} {exClass}"
-        >{(state.content||data.content)} {exClass}
+<div className="Button"
+     extend="fmvc.View"
+     enableStates="hover,selected,disabled,error,open"
+     class="button button-{selected} button-{disabled} button-{hover} button-{error} button-{open} {exClass}">
+    {(state.content||data.content)}
 </div>

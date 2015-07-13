@@ -1,11 +1,11 @@
-///<reference path='../../src/fmvc/d.ts'/>
-/* start object */
+///<reference path='../d.ts'/>
+/* start compiled view */
 
-module ui {
+module {moduleName} {
   export class {className} extends {?extend}{extend}{:else}fmvc.View{/extend}
   {
     {#links}
-    public {name}:Element;
+    public {name}:any;
     {/links}
 
     constructor(name:string, modelOrData?:fmvc.Model|any, jsTemplate?:fmvc.IDomObject) {
@@ -15,8 +15,9 @@ module ui {
     createDom() {
       this.element = this.templateElement;
       {#links}
-      this.{name} = this.elementPaths[{value|js|s}];
+      this.{name} = this.componentPaths[{value|js|s}] || this.elementPaths[{value|js|s}];
       {/links}
+
       this.childrenContainer = this.childrenContainer || this.element;
       return this;
     }
@@ -27,6 +28,5 @@ module ui {
 
     private static __jsTemplate:fmvc.IRootDomObject = {.|js|s};
   }
-
 }
 

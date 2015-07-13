@@ -53,12 +53,11 @@ var fmvc;
             if (error === void 0) { error = null; }
             if (log === void 0) { log = true; }
             var e = { name: name, sub: sub, data: data, error: error, target: this };
-            if (log)
-                this.log('Send event ' + name);
-            if (this._facade)
-                this._facade.eventHandler(e);
+            this.log('Send event ' + name);
             if (this._listeners && this._listeners.length)
                 this._sendToListners(e);
+            if (this._facade)
+                this._facade.eventHandler(e);
         };
         Notifier.prototype.log = function (message, level) {
             // @todo remove facade reference

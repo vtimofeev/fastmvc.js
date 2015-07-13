@@ -4,10 +4,10 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-///<reference path='../../src/fmvc/d.ts'/>
-/* start object */
-var ui;
-(function (ui) {
+///<reference path='../d.ts'/>
+/* start compiled view */
+var test;
+(function (test) {
     var UserView = (function (_super) {
         __extends(UserView, _super);
         function UserView(name, modelOrData, jsTemplate) {
@@ -15,9 +15,9 @@ var ui;
         }
         UserView.prototype.createDom = function () {
             this.element = this.templateElement;
-            this.hellobutton = this.elementPaths["0,21"];
-            this.close2 = this.elementPaths["0,23"];
-            this.close = this.elementPaths["0,25"];
+            this.hellobutton = this.componentPaths["0,21"] || this.elementPaths["0,21"];
+            this.close2 = this.componentPaths["0,23"] || this.elementPaths["0,23"];
+            this.close = this.componentPaths["0,25"] || this.elementPaths["0,25"];
             this.childrenContainer = this.childrenContainer || this.element;
             return this;
         };
@@ -331,7 +331,8 @@ var ui;
                             },
                             "attribs": {}
                         }],
-                    "tagName": "ui.Button"
+                    "tagName": "ui.Button",
+                    "link": "hellobutton"
                 }, {
                     "path": "0,23",
                     "type": "tag",
@@ -351,6 +352,11 @@ var ui;
                         "class": "close"
                     },
                     "children": [{
+                            "path": "0,23,0",
+                            "type": "text",
+                            "data": "=10\" style=\"\"",
+                            "attribs": {}
+                        }, {
                             "path": "0,23,1",
                             "type": "text",
                             "data": {
@@ -367,6 +373,7 @@ var ui;
                             "attribs": {}
                         }],
                     "tagName": "div",
+                    "link": "close2",
                     "states": {
                         "content": "states",
                         "vars": ["states"],
@@ -390,7 +397,14 @@ var ui;
                         "class": "close",
                         "style": "background-color:red"
                     },
+                    "children": [{
+                            "path": "0,25,0",
+                            "type": "text",
+                            "data": "Close Text get from ...",
+                            "attribs": {}
+                        }],
                     "tagName": "div",
+                    "link": "close",
                     "states": {
                         "content": "app.config.close&&(state==='one'||state==='two'))",
                         "vars": ["state", "app.config.close&&$0)"],
@@ -409,6 +423,17 @@ var ui;
                         },
                         "{(hellobutton.hover": "true||counter"
                     },
+                    "children": [{
+                            "path": "0,27,0",
+                            "type": "text",
+                            "data": "=0)}\"",
+                            "attribs": {}
+                        }, {
+                            "path": "0,27,1",
+                            "type": "text",
+                            "data": "Show on ui.Button over/Hide on ui.Button out",
+                            "attribs": {}
+                        }],
                     "tagName": "div",
                     "states": {
                         "content": "states",
@@ -438,6 +463,13 @@ var ui;
                     },
                     "class": {
                         "0": "userview-{selected}"
+                    },
+                    "states": {
+                        "0,19": {
+                            "content": "selected",
+                            "vars": ["selected"],
+                            "values": ["selected"]
+                        }
                     }
                 },
                 "state.top": {
@@ -652,6 +684,30 @@ var ui;
                                 }]
                         }
                     }
+                },
+                "states": {
+                    "states": {
+                        "0,23": {
+                            "content": "states",
+                            "vars": ["states"],
+                            "values": ["states"]
+                        },
+                        "0,27": {
+                            "content": "states",
+                            "vars": ["states"],
+                            "values": ["states"]
+                        }
+                    }
+                },
+                "state": {
+                    "states": {
+                        "0,25": {
+                            "content": "app.config.close&&(state==='one'||state==='two'))",
+                            "vars": ["state", "app.config.close&&$0)"],
+                            "values": ["app.config.close&&$0)"],
+                            "expressions": ["(this.getState(\"state\")==='one'||this.getState(\"state\")==='two')"]
+                        }
+                    }
                 }
             },
             "tagName": "div",
@@ -674,6 +730,7 @@ var ui;
                 }],
             "extend": "fmvc.View",
             "className": "UserView",
+            "moduleName": "test",
             "i18n": {
                 "ru": {
                     "title": "Карточка пользователя",
@@ -697,6 +754,6 @@ var ui;
         };
         return UserView;
     })(fmvc.View);
-    ui.UserView = UserView;
-})(ui || (ui = {}));
+    test.UserView = UserView;
+})(test || (test = {}));
 //# sourceMappingURL=UserView.js.map

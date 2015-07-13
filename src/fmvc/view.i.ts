@@ -25,6 +25,7 @@ module fmvc {
 
     export interface IRootDomObject extends IDomObject {
         className:string;
+        moduleName:string;
         css?:IStyleDefinition;
         links?:{[name:string]:string/* path */}[];
         dynamicSummary?:IDynamicSummary;

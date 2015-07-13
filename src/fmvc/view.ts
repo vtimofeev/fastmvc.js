@@ -2,16 +2,7 @@
 
 module fmvc {
     export var global:any = window || {};
-
     console.log('Global is ' + global);
-
-    /*
-    export var BrowserEvent = {
-        CLICK: 'click',
-        MOUSEOVER: 'mouseover',
-        MOUSEOUT: 'mouseout'
-    };
-    */
 
     export var State = {
         SELECTED: 'selected',
@@ -81,7 +72,6 @@ module fmvc {
 
         public initTemplate(templateExtention:IDomObject) {
             if(templateExtention) this.template = <IRootDomObject> (_.extend(_.clone(this.template), templateExtention));
-            console.log('template: ' , this.template);
             if(this.template && this.template.enableStates) this.enableStates(this.template.enableStates);
         }
 
@@ -172,7 +162,6 @@ module fmvc {
                 if (_.isObject(value) && depth) {
                     this.updateData(value,  nextPrefix , depth );
                 } else {
-                    console.log('Set data ' , prefix + name);
                     this.dynamicProperties[prefix + name] ? this.updateDynamicProperty(prefix + name, value) : null;
                 }
             }, this);
@@ -188,11 +177,8 @@ module fmvc {
 
         public updateAppProp(name:string):void {
             var appValue = eval('this.' + name);
-            console.log('Set APP !!! --- !!! --- ', name, appValue);
             this.updateDynamicProperty(name, appValue);
         }
-
-
 
             // @todo
         private getStyleValue(name:string) {
@@ -207,29 +193,28 @@ module fmvc {
         }
 
         public getDataStringValue(propertyName, propertyValue, strOrExOrMEx):string {
-            console.log('*** get data ', propertyName);
             if (_.isString(strOrExOrMEx)) {
                 return strOrExOrMEx.replace('{' + propertyName + '}', propertyValue);
             }
             else if (_.isObject(strOrExOrMEx)) {
                 return this.executeMultiExpression(strOrExOrMEx);
-                //return this.getDataObjectValue(propertyName, propertyValue, strOrExOrMEx);
             }
         }
-
-
 
         public executeFilters(value:any, filters:string[]):any {
             if(!filters || !filters.length) return value;
 
-            return _.reduce(filters, function(memo:any, filter:string, index:number) {
+            return _.reduce(filters,
+                function(memo:any, filter:string, index:number) {
                 if (filter.indexOf('i18n.') === 0) return this.getFormattedMessage(this.i18n[filter.replace('i18n.', '')],memo);
                 else return this.executePlainFilter(filter, memo);
-            },this);
+            }, value, this);
         }
 
         public executePlainFilter(filter:string, value:string):string {
             switch (filter) {
+                case 'hhmmss':
+                    return ViewHelper.hhmmss(value);
                 case Filter.FIRST:
                     return 'first:' + value;
                     break;
@@ -298,7 +283,6 @@ module fmvc {
             this.dynamicPropertyValue[name] = value;
             if (!domPropsObject) return;
 
-            //console.log('Update dyn prop: ', domPropsObject, name, value);
             _.each(domPropsObject, function (pathsAndValues:any, type:string) {
                 var GetValue = null;
                 var each:Boolean = false;
@@ -308,7 +292,8 @@ module fmvc {
                         each = true;
                         break;
                     case 'style':
-                        GetValue = this.getClassStringValue; //resultValue.replace('{' + name + '}', _.isBoolean(value) ? name : resultValue);
+                        GetValue = this.getDataStringValue;
+                        //this.getClassStringValue; //resultValue.replace('{' + name + '}', _.isBoolean(value) ? name : resultValue);
                         break;
                     case 'data':
                         GetValue = this.getDataStringValue;
@@ -324,17 +309,20 @@ module fmvc {
         public updatePathProperty(path, type, value, resultValue) {
             var element:Element = this.elementPaths[path];
             if (!(element && element.nodeType !== 8 /* comment */)) return; // virtual element or comment
-            //console.log('updated element ', path, type, value);
+            console.log('updated element ', path, type, value, resultValue);
 
             switch (type) {
                 case 'class':
+                    console.log('Class',  path, resultValue, value, this);
                     element.classList.toggle(resultValue, value);
                     break;
 
                 case 'style':
                     var style = resultValue.split(':');
                     var propName = style[0].trim();
-                    (<HTMLElement>element).style[propName] = style[1].trim();
+                    style.splice(0,1);
+                    var propValue = style.join(':');
+                    (<HTMLElement>element).style[propName] = propValue;
                     break;
 
                 case 'data':
@@ -351,6 +339,7 @@ module fmvc {
         public getElementByPath(element:any /* Element */, path:number[], root:boolean = false):Element {
             if (!this.element) throw Error('cant get element by path');
             //console.log('get path of ' , path, element);
+
             if (root) return element;
 
             if (path && path.length && element && element.childNodes.length) {
@@ -372,14 +361,13 @@ module fmvc {
         //------------------------------------------------------------------------------------------------
 
         public enterDocument() {
-            this.log('... enter document');
             if (this._inDocument) return;
             this._inDocument = true;
             var t = this;
 
             if (!this.isDynamicStylesEnabled()) this.enableDynamicStyle(true);
 
-            ViewHelper.checkElementAttribute(this.element, 'id', this.id);
+            ViewHelper.setIfNotExistAttribute(this.element, 'id', this.id);
 
             if (this.hasState(State.HOVER)) {
                 this.dispatcher.listen(this.element, BrowserEvent.MOUSEOVER, ()=>t.setState(State.HOVER, true));
@@ -402,6 +390,7 @@ module fmvc {
         public appModelHandler(e)
         {
             if(!this._inDocument) return;
+            console.log('AppModelHandler ... ', this.name,  e);
             var modelName = e.target.name;
             var appProps = _.filter(_.keys(this.dynamicProperties), (v:string)=>v.indexOf('app.' + modelName)===0);
             _.each(appProps,(n:string)=>this.updateAppProp(n), this);
@@ -451,16 +440,20 @@ module fmvc {
         // if(name==='any') make something
         // if(name==='exit') make exit
         public elementEventHandler(name:string, e:any) {
-            console.log('Event to handle ', name);
+            //console.log('Event to handle ', name, e);
+            this.mediator.viewEventHandler( { name:name, target:this } );
         }
 
         public enterDocumentElement(value:IDomObject, object:any):any {
             if (!value || !object) return;
 
+
             var path = value.path;
             var e:HTMLElement = object[value.path];
             var isTag = e.nodeType === 1;
             var c:View = this.componentPaths[value.path];
+            //if(c) console.log('Create listeners ? ', c , e, value.handlers);
+
             if(c) c.enterDocument();
 
             if (value.type === DomObjectType.TAG && isTag) {
@@ -470,9 +463,10 @@ module fmvc {
                 }, this);
 
                 // add global handlers if not exist
+                //if(c) console.log('Create listeners : ', c , e, value.handlers);
                 if(value.handlers) {
                     var id:string = value.staticAttributes?value.staticAttributes['id']:null || ViewHelper.getId();
-                    ViewHelper.checkElementAttribute(e, 'id', id);
+                    ViewHelper.setIfNotExistAttribute(e, 'id', id);
 
                     _.each(value.handlers, function (name:string, eventType:string) {
                         if (!this.handlers[path] || !this.handlers[path][eventType]) {
@@ -533,14 +527,14 @@ module fmvc {
 
 
             var isIncluded = value.states ? this.isStateEnabled(value.states) : true;
-            this.log(['Apply change state element: ' , value.path, isIncluded, value.states].join(', '));
+            //this.log(['Apply change state element: ' , value.path, isIncluded, value.states].join(', '));
             var isEnabled = (e.nodeType === 1);
             //console.log('path, included, enabled ', value.tagName, value.path, isIncluded, isEnabled);
 
             if(isIncluded && !isEnabled) {
                 var newElement = this.getElement(value, object);
                 var parentNode = e.parentNode;
-                //console.log('Replace node on Real ');
+                console.log('Replace and disable ', e, value.path);
                 parentNode.replaceChild(newElement,e);
                 object[value.path] = newElement;
                 this.enterDocumentElement(value, object);
@@ -550,6 +544,7 @@ module fmvc {
                 this.exitDocumentElement(value, object);
                 var newElement = this.getElement(value, object);
                 var parentNode = e.parentNode;
+                console.log('Replace and enable ', e, value.path);
                 //console.log('Replace node on Comment ');
                 parentNode.replaceChild(newElement,e);
                 object[value.path] = newElement;
@@ -746,7 +741,7 @@ module fmvc {
         }
 
         public modelHandler(name:string, data:any):void {
-            this.log('modelHandler ' + name);
+            //this.log('modelHandler ' + name);
             this.invalidate(1);
         }
 
@@ -840,7 +835,6 @@ module fmvc {
         }
 
         public getVarValue(v:string, ex:IExpression):any {
-            //this.log('Get var ' + v);
             if(v.indexOf('data.') === 0) {
                 var varName:string = v.replace('data.','');
                 return (this.data && this.data[varName])?this.data[varName]:null;
@@ -861,14 +855,17 @@ module fmvc {
         }
 
         public executeMultiExpression(mex:IMultiExpression):string {
-            console.log('------------------------------ *** --------------------------');
-            console.log(mex);
-            return _.reduce(mex.vars, (memo:string, value:string)=>memo.replace('{'+value+'}',this.getVarValue(value, mex)), mex.result, this);
+            //console.log('------------------------------ ?* --------------------------' , mex);
+            //console.log(mex);
+            return _.reduce(mex.vars,
+                function (memo:string, value:string) {
+                    return memo.replace('{'+value+'}',this.getVarValue(value, mex));
+                }, mex.result || '{$0}', this);
         }
 
 
         public executeExpression(ex:IExpression):any {
-            console.log(ex);
+            //console.log(ex);
             var r:any = null;
 
             // we create object to send to first filter (like i18n method) that returns a string value
@@ -888,7 +885,7 @@ module fmvc {
             }
             else throw Error('Expression must has args and filter or values');
 
-            this.log(['ExecuteExpression result=', JSON.stringify(r), ', of content: ', ex.content].join(''));
+            //this.log(['ExecuteExpression result=', JSON.stringify(r), ', of content: ', ex.content].join(''));
             r = this.executeFilters(r, ex.filters);
             return r;
         }
@@ -899,19 +896,25 @@ module fmvc {
             var isIncluded = value.states ? this.isStateEnabled(value.states) : true;
             if (isIncluded && value.type === DomObjectType.TAG) {
                 if(value.tagName.indexOf('.') > -1) {
-                    //console.log('Create component, ' + value.tagName);
-                    var component:View = new (global.ui[value.tagName.split('.')[1]])();
+                    //console.log('Create component, ' , value.tagName, value.path);
+
+                    var componentPath = value.tagName.split('.');
+                    var component:View = new (global[componentPath[0]][componentPath[1]])();
+                    component.mediator = this.mediator;
                     component.setStates(value.attribs);
                     this.componentPaths[value.path] = component;
-
+                    if(value.link) this[value.link] = component;
                     e = component.createDom().element;
+
+
                 } else {
+                    //console.log('Create element ', value.tagName, value.path);
                     e = document.createElement(value.tagName);
                     _.each(value.staticAttributes, function (v,key) {
                         e.setAttribute(key, v);
                     });
 
-                    if(value.handlers || String(value.path) === '0') e.setAttribute('id', 'id-' + View.Counters.element.added );
+                    //if(value.handlers || String(value.path) === '0') ViewHelper.checkElementAttribute(e, 'id',   'id-' + View.Counters.element.added);
                 }
 
                 _.each(value.children, function (child:IDomObject, index) {
@@ -919,12 +922,9 @@ module fmvc {
                     if (ce) e.appendChild(ce);
                 }, this);
             }
-            else if (value.type === DomObjectType.TEXT) n = document.createTextNode(value.data || '');
+            else if (value.type === DomObjectType.TEXT) n = document.createTextNode( (_.isString(value.data)?value.data:'') );
             else n = document.createComment(value.path);
             View.Counters.element.added++;
-
-
-
             object[value.path] = e || n;
             return <Element>(e || n);
         }
@@ -976,8 +976,35 @@ module fmvc {
 
         public static checkElementAttribute(el:Element, name:string, value:string) {
             if(!el || !name) return;
-            if(el.getAttribute(name) !== String(value)) el.setAttribute(name, value);
+            if(el.getAttribute(name) !== String(value)) {
+                el.setAttribute(name, value);
+            }
         }
+
+        public static setIfNotExistAttribute(el:Element, name:string, value:string):boolean {
+            if(!el || !name) return;
+            if(!el.getAttribute(name)) {
+                el.setAttribute(name, value);
+                return true;
+            }
+            return false;
+        }
+
+        public static hhmmss(value:number) {
+            value = parseInt(value);
+            var hours = Math.floor(value / 3600);
+            value -= hours * 3600;
+            var minutes = Math.floor(value / 60);
+            value -= minutes * 60;
+            var seconds = Math.floor(value % 60);
+
+            hours = (hours < 10) ? "0" + hours : hours;
+            minutes = (minutes < 10) ? "0" + minutes : minutes;
+            seconds = (seconds < 10) ? "0" + seconds : seconds;
+            var values = value >= 3600 ? [ hours, minutes, seconds ] : [ minutes, seconds ];
+            return values.join(":");
+        }
+
 
 
     }

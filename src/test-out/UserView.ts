@@ -1,18 +1,18 @@
-///<reference path='../../src/fmvc/d.ts'/>
-/* start object */
-module ui {
+///<reference path='../d.ts'/>
+/* start compiled view */
+module test {
     export class UserView extends fmvc.View {
-        public hellobutton: Element;
-        public close2: Element;
-        public close: Element;
+        public hellobutton: any;
+        public close2: any;
+        public close: any;
         constructor(name: string, modelOrData ? : fmvc.Model | any, jsTemplate ? : fmvc.IDomObject) {
             super(name, modelOrData, jsTemplate);
         }
         createDom() {
             this.element = this.templateElement;
-            this.hellobutton = this.elementPaths["0,21"];
-            this.close2 = this.elementPaths["0,23"];
-            this.close = this.elementPaths["0,25"];
+            this.hellobutton = this.componentPaths["0,21"] || this.elementPaths["0,21"];
+            this.close2 = this.componentPaths["0,23"] || this.elementPaths["0,23"];
+            this.close = this.componentPaths["0,25"] || this.elementPaths["0,25"];
             this.childrenContainer = this.childrenContainer || this.element;
             return this;
         }
@@ -322,7 +322,8 @@ module ui {
                     },
                     "attribs": {}
                 }],
-                "tagName": "ui.Button"
+                "tagName": "ui.Button",
+                "link": "hellobutton"
             }, {
                 "path": "0,23",
                 "type": "tag",
@@ -342,6 +343,11 @@ module ui {
                     "class": "close"
                 },
                 "children": [{
+                    "path": "0,23,0",
+                    "type": "text",
+                    "data": "=10\" style=\"\"",
+                    "attribs": {}
+                }, {
                     "path": "0,23,1",
                     "type": "text",
                     "data": {
@@ -358,6 +364,7 @@ module ui {
                     "attribs": {}
                 }],
                 "tagName": "div",
+                "link": "close2",
                 "states": {
                     "content": "states",
                     "vars": ["states"],
@@ -381,7 +388,14 @@ module ui {
                     "class": "close",
                     "style": "background-color:red"
                 },
+                "children": [{
+                    "path": "0,25,0",
+                    "type": "text",
+                    "data": "Close Text get from ...",
+                    "attribs": {}
+                }],
                 "tagName": "div",
+                "link": "close",
                 "states": {
                     "content": "app.config.close&&(state==='one'||state==='two'))",
                     "vars": ["state", "app.config.close&&$0)"],
@@ -400,6 +414,17 @@ module ui {
                     },
                     "{(hellobutton.hover": "true||counter"
                 },
+                "children": [{
+                    "path": "0,27,0",
+                    "type": "text",
+                    "data": "=0)}\"",
+                    "attribs": {}
+                }, {
+                    "path": "0,27,1",
+                    "type": "text",
+                    "data": "Show on ui.Button over/Hide on ui.Button out",
+                    "attribs": {}
+                }],
                 "tagName": "div",
                 "states": {
                     "content": "states",
@@ -429,6 +454,13 @@ module ui {
                     },
                     "class": {
                         "0": "userview-{selected}"
+                    },
+                    "states": {
+                        "0,19": {
+                            "content": "selected",
+                            "vars": ["selected"],
+                            "values": ["selected"]
+                        }
                     }
                 },
                 "state.top": {
@@ -643,6 +675,30 @@ module ui {
                             }]
                         }
                     }
+                },
+                "states": {
+                    "states": {
+                        "0,23": {
+                            "content": "states",
+                            "vars": ["states"],
+                            "values": ["states"]
+                        },
+                        "0,27": {
+                            "content": "states",
+                            "vars": ["states"],
+                            "values": ["states"]
+                        }
+                    }
+                },
+                "state": {
+                    "states": {
+                        "0,25": {
+                            "content": "app.config.close&&(state==='one'||state==='two'))",
+                            "vars": ["state", "app.config.close&&$0)"],
+                            "values": ["app.config.close&&$0)"],
+                            "expressions": ["(this.getState(\"state\")==='one'||this.getState(\"state\")==='two')"]
+                        }
+                    }
                 }
             },
             "tagName": "div",
@@ -665,6 +721,7 @@ module ui {
             }],
             "extend": "fmvc.View",
             "className": "UserView",
+            "moduleName": "test",
             "i18n": {
                 "ru": {
                     "title": "Карточка пользователя",

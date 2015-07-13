@@ -9,13 +9,6 @@ var fmvc;
 (function (fmvc) {
     fmvc.global = window || {};
     console.log('Global is ' + fmvc.global);
-    /*
-    export var BrowserEvent = {
-        CLICK: 'click',
-        MOUSEOVER: 'mouseover',
-        MOUSEOUT: 'mouseout'
-    };
-    */
     fmvc.State = {
         SELECTED: 'selected',
         HOVER: 'hover',
@@ -62,7 +55,6 @@ var fmvc;
         View.prototype.initTemplate = function (templateExtention) {
             if (templateExtention)
                 this.template = (_.extend(_.clone(this.template), templateExtention));
-            console.log('template: ', this.template);
             if (this.template && this.template.enableStates)
                 this.enableStates(this.template.enableStates);
         };
@@ -150,7 +142,6 @@ var fmvc;
                     this.updateData(value, nextPrefix, depth);
                 }
                 else {
-                    console.log('Set data ', prefix + name);
                     this.dynamicProperties[prefix + name] ? this.updateDynamicProperty(prefix + name, value) : null;
                 }
             }, this);
@@ -165,7 +156,6 @@ var fmvc;
         };
         View.prototype.updateAppProp = function (name) {
             var appValue = eval('this.' + name);
-            console.log('Set APP !!! --- !!! --- ', name, appValue);
             this.updateDynamicProperty(name, appValue);
         };
         // @todo
@@ -180,7 +170,6 @@ var fmvc;
             }
         };
         View.prototype.getDataStringValue = function (propertyName, propertyValue, strOrExOrMEx) {
-            console.log('*** get data ', propertyName);
             if (_.isString(strOrExOrMEx)) {
                 return strOrExOrMEx.replace('{' + propertyName + '}', propertyValue);
             }
@@ -196,10 +185,12 @@ var fmvc;
                     return this.getFormattedMessage(this.i18n[filter.replace('i18n.', '')], memo);
                 else
                     return this.executePlainFilter(filter, memo);
-            }, this);
+            }, value, this);
         };
         View.prototype.executePlainFilter = function (filter, value) {
             switch (filter) {
+                case 'hhmmss':
+                    return ViewHelper.hhmmss(value);
                 case fmvc.Filter.FIRST:
                     return 'first:' + value;
                     break;
@@ -267,7 +258,6 @@ var fmvc;
             this.dynamicPropertyValue[name] = value;
             if (!domPropsObject)
                 return;
-            //console.log('Update dyn prop: ', domPropsObject, name, value);
             _.each(domPropsObject, function (pathsAndValues, type) {
                 var GetValue = null;
                 var each = false;
@@ -277,7 +267,8 @@ var fmvc;
                         each = true;
                         break;
                     case 'style':
-                        GetValue = this.getClassStringValue; //resultValue.replace('{' + name + '}', _.isBoolean(value) ? name : resultValue);
+                        GetValue = this.getDataStringValue;
+                        //this.getClassStringValue; //resultValue.replace('{' + name + '}', _.isBoolean(value) ? name : resultValue);
                         break;
                     case 'data':
                         GetValue = this.getDataStringValue;
@@ -293,15 +284,18 @@ var fmvc;
             var element = this.elementPaths[path];
             if (!(element && element.nodeType !== 8 /* comment */))
                 return; // virtual element or comment
-            //console.log('updated element ', path, type, value);
+            console.log('updated element ', path, type, value, resultValue);
             switch (type) {
                 case 'class':
+                    console.log('Class', path, resultValue, value, this);
                     element.classList.toggle(resultValue, value);
                     break;
                 case 'style':
                     var style = resultValue.split(':');
                     var propName = style[0].trim();
-                    element.style[propName] = style[1].trim();
+                    style.splice(0, 1);
+                    var propValue = style.join(':');
+                    element.style[propName] = propValue;
                     break;
                 case 'data':
                     //console.log('Set data ', element, element.nodeType, element.textContent);
@@ -340,14 +334,13 @@ var fmvc;
         //------------------------------------------------------------------------------------------------
         View.prototype.enterDocument = function () {
             var _this = this;
-            this.log('... enter document');
             if (this._inDocument)
                 return;
             this._inDocument = true;
             var t = this;
             if (!this.isDynamicStylesEnabled())
                 this.enableDynamicStyle(true);
-            ViewHelper.checkElementAttribute(this.element, 'id', this.id);
+            ViewHelper.setIfNotExistAttribute(this.element, 'id', this.id);
             if (this.hasState(fmvc.State.HOVER)) {
                 this.dispatcher.listen(this.element, fmvc.BrowserEvent.MOUSEOVER, function () { return t.setState(fmvc.State.HOVER, true); });
                 this.dispatcher.listen(this.element, fmvc.BrowserEvent.MOUSEOUT, function () { return t.setState(fmvc.State.HOVER, false); });
@@ -365,6 +358,7 @@ var fmvc;
             var _this = this;
             if (!this._inDocument)
                 return;
+            console.log('AppModelHandler ... ', this.name, e);
             var modelName = e.target.name;
             var appProps = _.filter(_.keys(this.dynamicProperties), function (v) { return v.indexOf('app.' + modelName) === 0; });
             _.each(appProps, function (n) { return _this.updateAppProp(n); }, this);
@@ -408,7 +402,8 @@ var fmvc;
         // if(name==='any') make something
         // if(name==='exit') make exit
         View.prototype.elementEventHandler = function (name, e) {
-            console.log('Event to handle ', name);
+            //console.log('Event to handle ', name, e);
+            this.mediator.viewEventHandler({ name: name, target: this });
         };
         View.prototype.enterDocumentElement = function (value, object) {
             if (!value || !object)
@@ -417,6 +412,7 @@ var fmvc;
             var e = object[value.path];
             var isTag = e.nodeType === 1;
             var c = this.componentPaths[value.path];
+            //if(c) console.log('Create listeners ? ', c , e, value.handlers);
             if (c)
                 c.enterDocument();
             if (value.type === fmvc.DomObjectType.TAG && isTag) {
@@ -425,9 +421,10 @@ var fmvc;
                     this.enterDocumentElement(child, object);
                 }, this);
                 // add global handlers if not exist
+                //if(c) console.log('Create listeners : ', c , e, value.handlers);
                 if (value.handlers) {
                     var id = value.staticAttributes ? value.staticAttributes['id'] : null || ViewHelper.getId();
-                    ViewHelper.checkElementAttribute(e, 'id', id);
+                    ViewHelper.setIfNotExistAttribute(e, 'id', id);
                     _.each(value.handlers, function (name, eventType) {
                         if (!this.handlers[path] || !this.handlers[path][eventType]) {
                             if (!this.handlers[path])
@@ -481,13 +478,13 @@ var fmvc;
             if (!isStated)
                 return;
             var isIncluded = value.states ? this.isStateEnabled(value.states) : true;
-            this.log(['Apply change state element: ', value.path, isIncluded, value.states].join(', '));
+            //this.log(['Apply change state element: ' , value.path, isIncluded, value.states].join(', '));
             var isEnabled = (e.nodeType === 1);
             //console.log('path, included, enabled ', value.tagName, value.path, isIncluded, isEnabled);
             if (isIncluded && !isEnabled) {
                 var newElement = this.getElement(value, object);
                 var parentNode = e.parentNode;
-                //console.log('Replace node on Real ');
+                console.log('Replace and disable ', e, value.path);
                 parentNode.replaceChild(newElement, e);
                 object[value.path] = newElement;
                 this.enterDocumentElement(value, object);
@@ -497,6 +494,7 @@ var fmvc;
                 this.exitDocumentElement(value, object);
                 var newElement = this.getElement(value, object);
                 var parentNode = e.parentNode;
+                console.log('Replace and enable ', e, value.path);
                 //console.log('Replace node on Comment ');
                 parentNode.replaceChild(newElement, e);
                 object[value.path] = newElement;
@@ -681,7 +679,7 @@ var fmvc;
             this.model.bind(this, this.modelHandler);
         };
         View.prototype.modelHandler = function (name, data) {
-            this.log('modelHandler ' + name);
+            //this.log('modelHandler ' + name);
             this.invalidate(1);
         };
         Object.defineProperty(View.prototype, "locale", {
@@ -785,7 +783,6 @@ var fmvc;
             return eval(value);
         };
         View.prototype.getVarValue = function (v, ex) {
-            //this.log('Get var ' + v);
             if (v.indexOf('data.') === 0) {
                 var varName = v.replace('data.', '');
                 return (this.data && this.data[varName]) ? this.data[varName] : null;
@@ -805,14 +802,15 @@ var fmvc;
                 throw new Error('Not supported variable in ' + this.name + ', ' + v);
         };
         View.prototype.executeMultiExpression = function (mex) {
-            var _this = this;
-            console.log('------------------------------ *** --------------------------');
-            console.log(mex);
-            return _.reduce(mex.vars, function (memo, value) { return memo.replace('{' + value + '}', _this.getVarValue(value, mex)); }, mex.result, this);
+            //console.log('------------------------------ ?* --------------------------' , mex);
+            //console.log(mex);
+            return _.reduce(mex.vars, function (memo, value) {
+                return memo.replace('{' + value + '}', this.getVarValue(value, mex));
+            }, mex.result || '{$0}', this);
         };
         View.prototype.executeExpression = function (ex) {
             var _this = this;
-            console.log(ex);
+            //console.log(ex);
             var r = null;
             // we create object to send to first filter (like i18n method) that returns a string value
             if (ex.args && ex.filters) {
@@ -829,7 +827,7 @@ var fmvc;
             }
             else
                 throw Error('Expression must has args and filter or values');
-            this.log(['ExecuteExpression result=', JSON.stringify(r), ', of content: ', ex.content].join(''));
+            //this.log(['ExecuteExpression result=', JSON.stringify(r), ', of content: ', ex.content].join(''));
             r = this.executeFilters(r, ex.filters);
             return r;
         };
@@ -839,19 +837,22 @@ var fmvc;
             var isIncluded = value.states ? this.isStateEnabled(value.states) : true;
             if (isIncluded && value.type === fmvc.DomObjectType.TAG) {
                 if (value.tagName.indexOf('.') > -1) {
-                    //console.log('Create component, ' + value.tagName);
-                    var component = new (fmvc.global.ui[value.tagName.split('.')[1]])();
+                    //console.log('Create component, ' , value.tagName, value.path);
+                    var componentPath = value.tagName.split('.');
+                    var component = new (fmvc.global[componentPath[0]][componentPath[1]])();
+                    component.mediator = this.mediator;
                     component.setStates(value.attribs);
                     this.componentPaths[value.path] = component;
+                    if (value.link)
+                        this[value.link] = component;
                     e = component.createDom().element;
                 }
                 else {
+                    //console.log('Create element ', value.tagName, value.path);
                     e = document.createElement(value.tagName);
                     _.each(value.staticAttributes, function (v, key) {
                         e.setAttribute(key, v);
                     });
-                    if (value.handlers || String(value.path) === '0')
-                        e.setAttribute('id', 'id-' + View.Counters.element.added);
                 }
                 _.each(value.children, function (child, index) {
                     var ce = this.getElement(child, object);
@@ -860,7 +861,7 @@ var fmvc;
                 }, this);
             }
             else if (value.type === fmvc.DomObjectType.TEXT)
-                n = document.createTextNode(value.data || '');
+                n = document.createTextNode((_.isString(value.data) ? value.data : ''));
             else
                 n = document.createComment(value.path);
             View.Counters.element.added++;
@@ -923,8 +924,31 @@ var fmvc;
         ViewHelper.checkElementAttribute = function (el, name, value) {
             if (!el || !name)
                 return;
-            if (el.getAttribute(name) !== String(value))
+            if (el.getAttribute(name) !== String(value)) {
                 el.setAttribute(name, value);
+            }
+        };
+        ViewHelper.setIfNotExistAttribute = function (el, name, value) {
+            if (!el || !name)
+                return;
+            if (!el.getAttribute(name)) {
+                el.setAttribute(name, value);
+                return true;
+            }
+            return false;
+        };
+        ViewHelper.hhmmss = function (value) {
+            value = parseInt(value);
+            var hours = Math.floor(value / 3600);
+            value -= hours * 3600;
+            var minutes = Math.floor(value / 60);
+            value -= minutes * 60;
+            var seconds = Math.floor(value % 60);
+            hours = (hours < 10) ? "0" + hours : hours;
+            minutes = (minutes < 10) ? "0" + minutes : minutes;
+            seconds = (seconds < 10) ? "0" + seconds : seconds;
+            var values = value >= 3600 ? [hours, minutes, seconds] : [minutes, seconds];
+            return values.join(":");
         };
         return ViewHelper;
     })();

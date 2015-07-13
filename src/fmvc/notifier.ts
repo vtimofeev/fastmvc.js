@@ -50,9 +50,9 @@ module fmvc
         public sendEvent(name:string, data:any = null, sub:string = null, error:any = null, log:boolean = true):void
         {
             var e = {name: name, sub:sub, data: data, error: error, target: this};
-            if(log) this.log('Send event ' + name);
-            if(this._facade) this._facade.eventHandler(e);
+            this.log('Send event ' + name);
             if(this._listeners && this._listeners.length) this._sendToListners(e);
+            if(this._facade) this._facade.eventHandler(e);
         }
 
 

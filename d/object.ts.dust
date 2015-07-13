@@ -1,4 +1,4 @@
-///<reference path='../src/fmvc/d.ts'/>
+///<reference path='../d.ts'/>
 /* start object */
 
 module fui {

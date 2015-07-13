@@ -132,7 +132,7 @@ var fmvc;
         // Глобальный получатель событий от системы
         Facade.prototype.eventHandler = function (e) {
             var objects = this._events[e.name];
-            _.each(objects, function (object) { return object.eventHandler(e.name); });
+            _.each(objects, function (object) { return object.eventHandler(e); });
         };
         Object.defineProperty(Facade.prototype, "logger", {
             get: function () {

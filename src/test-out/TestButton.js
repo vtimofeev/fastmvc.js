@@ -4,10 +4,10 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-///<reference path='../../src/fmvc/d.ts'/>
-/* start object */
-var ui;
-(function (ui) {
+///<reference path='../d.ts'/>
+/* start compiled view */
+var test;
+(function (test) {
     var TestButton = (function (_super) {
         __extends(TestButton, _super);
         function TestButton(name, modelOrData, jsTemplate) {
@@ -91,6 +91,12 @@ var ui;
                             "expressions": ["(this.getState(\"content2\"))"]
                         }
                     },
+                    "children": [{
+                            "path": "0,3,0",
+                            "type": "text",
+                            "data": "only text without vars",
+                            "attribs": {}
+                        }],
                     "tagName": "div",
                     "states": {
                         "content": "(state.content2)",
@@ -225,6 +231,28 @@ var ui;
                         "0": "button-{open}"
                     }
                 },
+                "content": {
+                    "states": {
+                        "0,1": {
+                            "content": "(content==='TheContent')",
+                            "vars": ["content", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(this.getState(\"content\")==='TheContent')"]
+                        }
+                    },
+                    "data": {
+                        "0,1,0": {
+                            "content": "{data.content,content,'custom content inline in html'} - test of list vars, text",
+                            "result": "{$0} - test of list vars, text",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                    "content": "data.content,content,'custom content inline in html'",
+                                    "vars": ["data.content", "content", "'custom content inline in html'"],
+                                    "values": ["data.content", "content", "'custom content inline in html'"]
+                                }]
+                        }
+                    }
+                },
                 "data.content": {
                     "data": {
                         "0,1,0": {
@@ -266,18 +294,51 @@ var ui;
                                     "expressions": ["(this.data.content2||this.getState(\"content2\"))"]
                                 }]
                         }
+                    },
+                    "states": {
+                        "0,7": {
+                            "content": "((state.content2 === 'Default content2' || data.content))",
+                            "vars": ["state.content2", "data.content", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["((this.getState(\"content2\") === 'Default content2' || this.data.content))"]
+                        }
                     }
                 },
-                "content": {
+                "state.content2": {
+                    "states": {
+                        "0,3": {
+                            "content": "(state.content2)",
+                            "vars": ["state.content2", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(this.getState(\"content2\"))"]
+                        },
+                        "0,5": {
+                            "content": "(state.content2)",
+                            "vars": ["state.content2", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(this.getState(\"content2\"))"]
+                        },
+                        "0,7": {
+                            "content": "((state.content2 === 'Default content2' || data.content))",
+                            "vars": ["state.content2", "data.content", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["((this.getState(\"content2\") === 'Default content2' || this.data.content))"]
+                        }
+                    },
                     "data": {
-                        "0,1,0": {
-                            "content": "{data.content,content,'custom content inline in html'} - test of list vars, text",
-                            "result": "{$0} - test of list vars, text",
+                        "0,9,0": {
+                            "content": "{(data.content2||state.content2) as VALUE2, data.content as VALUE|i18n.test} - expression with i18n",
+                            "result": "{$0} - expression with i18n",
                             "vars": ["$0"],
                             "expressions": [{
-                                    "content": "data.content,content,'custom content inline in html'",
-                                    "vars": ["data.content", "content", "'custom content inline in html'"],
-                                    "values": ["data.content", "content", "'custom content inline in html'"]
+                                    "content": "(data.content2||state.content2) as VALUE2, data.content as VALUE|i18n.test",
+                                    "vars": ["state.content2", "data.content2", "data.content"],
+                                    "args": {
+                                        "VALUE2": "$0",
+                                        "VALUE": "data.content"
+                                    },
+                                    "filters": ["i18n.test"],
+                                    "expressions": ["(this.data.content2||this.getState(\"content2\"))"]
                                 }]
                         }
                     }
@@ -338,25 +399,6 @@ var ui;
                         }
                     }
                 },
-                "state.content2": {
-                    "data": {
-                        "0,9,0": {
-                            "content": "{(data.content2||state.content2) as VALUE2, data.content as VALUE|i18n.test} - expression with i18n",
-                            "result": "{$0} - expression with i18n",
-                            "vars": ["$0"],
-                            "expressions": [{
-                                    "content": "(data.content2||state.content2) as VALUE2, data.content as VALUE|i18n.test",
-                                    "vars": ["state.content2", "data.content2", "data.content"],
-                                    "args": {
-                                        "VALUE2": "$0",
-                                        "VALUE": "data.content"
-                                    },
-                                    "filters": ["i18n.test"],
-                                    "expressions": ["(this.data.content2||this.getState(\"content2\"))"]
-                                }]
-                        }
-                    }
-                },
                 "data.content2": {
                     "data": {
                         "0,9,0": {
@@ -397,13 +439,10 @@ var ui;
                 }],
             "extend": "fmvc.View",
             "className": "TestButton",
-            "css": {
-                "content": ".button{display:inline-block;min-width:120px;width:100;background-color:#0a0;color:#fff;font-size:1}.button-hover{background-color:#0f0}.button-selected{font-weight:bold;border-bottom:2px solid #000}.buttonDefault{background-color:#f00}",
-                "enabled": false
-            }
+            "moduleName": "test"
         };
         return TestButton;
     })(fmvc.View);
-    ui.TestButton = TestButton;
-})(ui || (ui = {}));
+    test.TestButton = TestButton;
+})(test || (test = {}));
 //# sourceMappingURL=TestButton.js.map

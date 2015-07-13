@@ -44,16 +44,16 @@ var fmvc;
                 console.warn('Incorrect listener on ', el, id, type);
                 return;
             }
-            //if(!this.elementIdMap[id]) this.elementIdMap[id] = el;
             this.executionMap[id] = this.executionMap[id] || {};
+            var listenerData = { handler: handler, context: context };
             if (!this.executionMap[id][type]) {
-                this.executionMap[id][type] = { handler: handler, context: context };
-                console.log(id, type, this.executionMap[id][type]);
-                this.__createListener(el, id, type, handler, context);
+                this.executionMap[id][type] = [listenerData];
             }
             else {
-                console.warn('Cant listen cause exist ', id, type);
+                this.executionMap[id][type].push(listenerData);
             }
+            console.log('Create listener ', id, type, this.executionMap[id]);
+            this.__createListener(el, id, type, handler, context);
             return this;
         };
         EventDispatcher.prototype.__createListener = function (el, id, type, handler, context) {
@@ -88,10 +88,12 @@ var fmvc;
             var id = el.getAttribute('id');
             if (!id)
                 return;
-            _.each(this.executionMap[id], function (handlerObject, type) {
+            _.each(this.executionMap[id], function (handlerObjectsArray, type) {
                 el.removeEventListener(type, this.browserHandler);
-                delete handlerObject.handler;
-                delete handlerObject.context;
+                _.each(handlerObjectsArray, function (handlerObject) {
+                    delete handlerObject.handler;
+                    delete handlerObject.context;
+                });
             }, this);
             delete this.executionMap[id];
             //delete this.elementIdMap[id];
@@ -100,10 +102,12 @@ var fmvc;
             var id = el.getAttribute('id');
             if (!id)
                 return;
-            var handlerObject = this.executionMap[id][type];
+            var handlerObjectsArray = this.executionMap[id][type];
             el.removeEventListener(type, this.browserHandler);
-            delete handlerObject.handler;
-            delete handlerObject.context;
+            _.each(handlerObjectsArray, function (handlerObject) {
+                delete handlerObject.handler;
+                delete handlerObject.context;
+            });
             delete this.executionMap[id][type];
         };
         EventDispatcher.prototype.browserHandler = function (e) {
@@ -114,8 +118,10 @@ var fmvc;
                 return;
             console.log(id, type, this.executionMap[id]);
             if (this.executionMap[id] && this.executionMap[id][type]) {
-                var handlerObject = this.executionMap[id][type];
-                handlerObject.handler.call(handlerObject.context, e);
+                var handlerObjectsArray = this.executionMap[id][type];
+                _.each(handlerObjectsArray, function (handlerObject) {
+                    handlerObject.handler.call(handlerObject.context, e);
+                });
             }
         };
         EventDispatcher.prototype.createWindowListener = function (type) {

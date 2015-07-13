@@ -4,8 +4,8 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-///<reference path='../../src/fmvc/d.ts'/>
-/* start object */
+///<reference path='../d.ts'/>
+/* start compiled view */
 var ui;
 (function (ui) {
     var Button = (function (_super) {
@@ -52,18 +52,14 @@ var ui;
                     "path": "0,0",
                     "type": "text",
                     "data": {
-                        "content": "{(state.content||data.content)} {exClass}\n",
-                        "result": "{$0} {$1}\n",
-                        "vars": ["$0", "$1"],
+                        "content": "\n    {(state.content||data.content)}\n",
+                        "result": "\n    {$0}\n",
+                        "vars": ["$0"],
                         "expressions": [{
                                 "content": "(state.content||data.content)",
                                 "vars": ["state.content", "data.content", "$0"],
                                 "values": ["$0"],
                                 "expressions": ["(this.getState(\"content\")||this.data.content)"]
-                            }, {
-                                "content": "exClass",
-                                "vars": ["exClass"],
-                                "values": ["exClass"]
                             }]
                     },
                     "attribs": {}
@@ -97,40 +93,19 @@ var ui;
                 "exClass": {
                     "class": {
                         "0": "{exClass}"
-                    },
-                    "data": {
-                        "0,0": {
-                            "content": "{(state.content||data.content)} {exClass}\n",
-                            "result": "{$0} {$1}\n",
-                            "vars": ["$0", "$1"],
-                            "expressions": [{
-                                    "content": "(state.content||data.content)",
-                                    "vars": ["state.content", "data.content", "$0"],
-                                    "values": ["$0"],
-                                    "expressions": ["(this.getState(\"content\")||this.data.content)"]
-                                }, {
-                                    "content": "exClass",
-                                    "vars": ["exClass"],
-                                    "values": ["exClass"]
-                                }]
-                        }
                     }
                 },
                 "state.content": {
                     "data": {
                         "0,0": {
-                            "content": "{(state.content||data.content)} {exClass}\n",
-                            "result": "{$0} {$1}\n",
-                            "vars": ["$0", "$1"],
+                            "content": "\n    {(state.content||data.content)}\n",
+                            "result": "\n    {$0}\n",
+                            "vars": ["$0"],
                             "expressions": [{
                                     "content": "(state.content||data.content)",
                                     "vars": ["state.content", "data.content", "$0"],
                                     "values": ["$0"],
                                     "expressions": ["(this.getState(\"content\")||this.data.content)"]
-                                }, {
-                                    "content": "exClass",
-                                    "vars": ["exClass"],
-                                    "values": ["exClass"]
                                 }]
                         }
                     }
@@ -138,18 +113,14 @@ var ui;
                 "data.content": {
                     "data": {
                         "0,0": {
-                            "content": "{(state.content||data.content)} {exClass}\n",
-                            "result": "{$0} {$1}\n",
-                            "vars": ["$0", "$1"],
+                            "content": "\n    {(state.content||data.content)}\n",
+                            "result": "\n    {$0}\n",
+                            "vars": ["$0"],
                             "expressions": [{
                                     "content": "(state.content||data.content)",
                                     "vars": ["state.content", "data.content", "$0"],
                                     "values": ["$0"],
                                     "expressions": ["(this.getState(\"content\")||this.data.content)"]
-                                }, {
-                                    "content": "exClass",
-                                    "vars": ["exClass"],
-                                    "values": ["exClass"]
                                 }]
                         }
                     }
@@ -167,10 +138,7 @@ var ui;
                 }],
             "extend": "fmvc.View",
             "className": "Button",
-            "css": {
-                "content": ".button{display:inline-block;min-width:120px;width:100;background-color:#0a0;color:#fff;font-size:1}.button-hover{background-color:#0f0}.button-selected{font-weight:bold;border-bottom:2px solid #000}.buttonDefault{background-color:#f00}",
-                "enabled": false
-            }
+            "moduleName": "ui"
         };
         return Button;
     })(fmvc.View);

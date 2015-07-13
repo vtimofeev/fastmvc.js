@@ -13,28 +13,24 @@ var fmvc;
             if (data === void 0) { data = []; }
             _super.call(this, name, data, opts);
         }
-        Object.defineProperty(ModelList.prototype, "data", {
-            set: function (value) {
-                if (!_.isArray(value))
-                    throw Error('Cant set modelList from not array data');
-                var data = this.data || [];
-                _.each(value, function (item) {
-                    var modelValue = (item instanceof fmvc.Model) ? item : this.getModel(item);
-                    data.push(modelValue);
-                }, this);
-                this.set(data, true, true);
-                this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
-            },
-            enumerable: true,
-            configurable: true
-        });
+        ModelList.prototype.parseValue = function (value) {
+            if (!_.isArray(value))
+                throw Error('Cant set modelList from not array data');
+            var data = [];
+            _.each(value, function (item) {
+                var modelValue = (item instanceof fmvc.Model) ? item : this.getModel(item);
+                data.push(modelValue);
+            }, this);
+            return data;
+        };
         // @overrided
         ModelList.prototype.getModel = function (value) {
             return new fmvc.Model(this.name + '-item', value);
         };
         Object.defineProperty(ModelList.prototype, "count", {
             get: function () {
-                return this.data && this.data.length ? this.data.length : 0;
+                var data = this.data;
+                return (data && data.length) ? data.length : 0;
             },
             enumerable: true,
             configurable: true
