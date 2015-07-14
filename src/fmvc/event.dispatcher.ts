@@ -118,7 +118,11 @@ module fmvc {
 
         unlisten(el:Element, type:string) {
             var id = el.getAttribute('id');
-            if(!id) return;
+            if(!id || !this.executionMap[id]) {
+                console.warn('Cant unlisten ', el, id, type);
+                return;
+            }
+
             var handlerObjectsArray = this.executionMap[id][type];
             el.removeEventListener(type, this.browserHandler);
 

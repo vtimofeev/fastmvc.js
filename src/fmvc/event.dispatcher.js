@@ -100,8 +100,10 @@ var fmvc;
         };
         EventDispatcher.prototype.unlisten = function (el, type) {
             var id = el.getAttribute('id');
-            if (!id)
+            if (!id || !this.executionMap[id]) {
+                console.warn('Cant unlisten ', el, id, type);
                 return;
+            }
             var handlerObjectsArray = this.executionMap[id][type];
             el.removeEventListener(type, this.browserHandler);
             _.each(handlerObjectsArray, function (handlerObject) {

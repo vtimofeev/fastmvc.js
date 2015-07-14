@@ -40,7 +40,8 @@ var fmvc;
             this._avaibleInheritedStates = null;
             this._locale = 'ru';
             this._id = null;
-            _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler' /*, 'getDataObjectValue'*/);
+            this.tmp = {};
+            _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler', 'appModelHandler' /*, 'getDataObjectValue'*/);
             this.template = this.jsTemplate;
             if (modelOrData) {
                 if (modelOrData.type === fmvc.TYPE_MODEL)
@@ -233,24 +234,24 @@ var fmvc;
                     var result = GetValue(name, value, valueOrValues);
                     r += result;
                     if (each)
-                        this.updatePathProperty(path, type, value, result);
+                        this.updatePathProperty(path, type, name, value, result, valueOrValues);
                 }
                 else if (_.isArray(valueOrValues)) {
                     _.each(valueOrValues, function (stringValue) {
                         var result = GetValue(name, value, stringValue);
                         r += result;
                         if (each)
-                            this.updatePathProperty(path, type, value, stringValue);
+                            this.updatePathProperty(path, type, name, value, stringValue);
                     }, this);
                 }
                 else if (_.isObject(valueOrValues)) {
                     var result = GetValue(name, value, valueOrValues);
                     r += result;
                     if (each)
-                        this.updatePathProperty(path, type, value, result);
+                        this.updatePathProperty(path, type, name, value, result);
                 }
                 if (!each)
-                    this.updatePathProperty(path, type, value, r);
+                    this.updatePathProperty(path, type, name, value, r);
             }, this);
         };
         View.prototype.updateDynamicProperty = function (name, value) {
@@ -280,15 +281,24 @@ var fmvc;
                 this.updatePaths(pathsAndValues, type, name, value, GetValue, each);
             }, this);
         };
-        View.prototype.updatePathProperty = function (path, type, value, resultValue) {
+        View.prototype.updatePathProperty = function (path, type, name, value, resultValue, template) {
             var element = this.elementPaths[path];
             if (!(element && element.nodeType !== 8 /* comment */))
                 return; // virtual element or comment
-            console.log('updated element ', path, type, value, resultValue);
+            //console.log('updated element ', path, type, value, resultValue);
             switch (type) {
                 case 'class':
-                    console.log('Class', path, resultValue, value, this);
-                    element.classList.toggle(resultValue, value);
+                    console.log('Class: path %s, type %s, name %s, value %s, result %s, template %s, ', path, type, name, value, resultValue, template, this);
+                    var prevClassValue;
+                    // удаляем предыдушее значение для sting типов значения классов
+                    if (template && !!(prevClassValue = this.tmp[template])) {
+                        if (prevClassValue === resultValue)
+                            return;
+                        element.classList.toggle(prevClassValue, false);
+                        this.tmp[template] = resultValue;
+                    }
+                    element.classList.toggle(resultValue, !!value);
+                    View.Counters.update.class++;
                     break;
                 case 'style':
                     var style = resultValue.split(':');
@@ -296,14 +306,17 @@ var fmvc;
                     style.splice(0, 1);
                     var propValue = style.join(':');
                     element.style[propName] = propValue;
+                    View.Counters.update.style++;
                     break;
                 case 'data':
                     //console.log('Set data ', element, element.nodeType, element.textContent);
                     if (element.nodeType === 3 && element.textContent != resultValue)
                         element.textContent = resultValue;
+                    View.Counters.update.data++;
                     break;
                 default:
                     element.setAttribute(type, resultValue);
+                    View.Counters.update.other++;
                     break;
             }
         };
@@ -358,7 +371,7 @@ var fmvc;
             var _this = this;
             if (!this._inDocument)
                 return;
-            console.log('AppModelHandler ... ', this.name, e);
+            console.log('AppModelHandler: ', e.target.name, ' view: ', this.name, ', ', JSON.stringify(e.target.data));
             var modelName = e.target.name;
             var appProps = _.filter(_.keys(this.dynamicProperties), function (v) { return v.indexOf('app.' + modelName) === 0; });
             _.each(appProps, function (n) { return _this.updateAppProp(n); }, this);
@@ -373,7 +386,7 @@ var fmvc;
             this._inDocument = false;
         };
         View.prototype.applyEventHandlers = function (e) {
-            var path = e.target.getAttribute('data-path');
+            var path = e.currentTarget.getAttribute('data-path');
             var name = this.handlers[path][e.type];
             e.stopPropagation();
             if (name === 'stopPropagation') {
@@ -403,7 +416,7 @@ var fmvc;
         // if(name==='exit') make exit
         View.prototype.elementEventHandler = function (name, e) {
             //console.log('Event to handle ', name, e);
-            this.mediator.viewEventHandler({ name: name, target: this });
+            this.mediator.viewEventHandler({ name: name, target: this, event: e });
         };
         View.prototype.enterDocumentElement = function (value, object) {
             if (!value || !object)
@@ -484,7 +497,7 @@ var fmvc;
             if (isIncluded && !isEnabled) {
                 var newElement = this.getElement(value, object);
                 var parentNode = e.parentNode;
-                console.log('Replace and disable ', e, value.path);
+                //console.log('Replace and disable ', e, value.path);
                 parentNode.replaceChild(newElement, e);
                 object[value.path] = newElement;
                 this.enterDocumentElement(value, object);
@@ -494,7 +507,7 @@ var fmvc;
                 this.exitDocumentElement(value, object);
                 var newElement = this.getElement(value, object);
                 var parentNode = e.parentNode;
-                console.log('Replace and enable ', e, value.path);
+                //console.log('Replace and enable ', e, value.path);
                 //console.log('Replace node on Comment ');
                 parentNode.replaceChild(newElement, e);
                 object[value.path] = newElement;
@@ -725,6 +738,7 @@ var fmvc;
         };
         //
         View.prototype.eventHandler = function (name, e) {
+            console.log(e, e.currentTarget);
             this.viewEventsHandler(name, e);
         };
         // Overrided
@@ -908,7 +922,7 @@ var fmvc;
         View.__className = 'View';
         View.__inheritedStates = [fmvc.State.DISABLED];
         View.__emptyData = {};
-        View.Counters = { element: { added: 0, removed: 0, handlers: 0 } };
+        View.Counters = { element: { added: 0, removed: 0, handlers: 0 }, update: { class: 0, data: 0, style: 0, other: 0 } };
         View.dispatcher = new fmvc.EventDispatcher();
         View.Name = 'View';
         return View;

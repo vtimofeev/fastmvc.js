@@ -49,6 +49,7 @@ module fmvc {
         private parentElement:Element;
         private linkedViews:View[];
         private childrenViews:View[];
+        private tmp = {};
 
 
         // Elements
@@ -57,7 +58,7 @@ module fmvc {
 
         constructor(name:string, modelOrData?:fmvc.Model|any, jsTemplate?:IDomObject) {
             super(name, TYPE_VIEW);
-            _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler'/*, 'getDataObjectValue'*/);
+            _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler', 'appModelHandler'/*, 'getDataObjectValue'*/);
             this.template = this.jsTemplate;
 
             if(modelOrData) {
@@ -258,22 +259,22 @@ module fmvc {
                 if (_.isString(valueOrValues)) {
                     var result = GetValue(name, value, valueOrValues);
                     r += result;
-                    if (each) this.updatePathProperty(path, type, value, result);
+                    if (each) this.updatePathProperty(path, type, name, value, result, valueOrValues);
                 }
                 else if (_.isArray(valueOrValues)) {
                     _.each(valueOrValues, function (stringValue) {
                         var result = GetValue(name, value, stringValue);
                         r += result;
-                        if (each) this.updatePathProperty(path, type, value, stringValue);
+                        if (each) this.updatePathProperty(path, type, name, value, stringValue);
                     }, this);
                 }
                 else if (_.isObject(valueOrValues)) {
                     var result = GetValue(name, value, valueOrValues);
                     r += result;
-                    if (each) this.updatePathProperty(path, type, value, result);
+                    if (each) this.updatePathProperty(path, type, name, value, result);
                 }
 
-                if (!each) this.updatePathProperty(path, type, value, r);
+                if (!each) this.updatePathProperty(path, type, name, value, r);
             }, this);
 
         }
@@ -306,15 +307,26 @@ module fmvc {
             }, this);
         }
 
-        public updatePathProperty(path, type, value, resultValue) {
+        public updatePathProperty(path, type, name:string, value, resultValue, template?:string) {
             var element:Element = this.elementPaths[path];
             if (!(element && element.nodeType !== 8 /* comment */)) return; // virtual element or comment
-            console.log('updated element ', path, type, value, resultValue);
+            //console.log('updated element ', path, type, value, resultValue);
+
 
             switch (type) {
                 case 'class':
-                    console.log('Class',  path, resultValue, value, this);
-                    element.classList.toggle(resultValue, value);
+                    console.log('Class: path %s, type %s, name %s, value %s, result %s, template %s, ', path, type, name, value, resultValue, template, this);
+                    var prevClassValue:string;
+
+                    // удаляем предыдушее значение для sting типов значения классов
+                    if(template && !!(prevClassValue = this.tmp[template])) {
+                        if(prevClassValue === resultValue) return;
+                        element.classList.toggle(prevClassValue, false);
+                        this.tmp[template] = resultValue;
+                    }
+
+                    element.classList.toggle(resultValue, !!value);
+                    View.Counters.update.class++;
                     break;
 
                 case 'style':
@@ -323,14 +335,17 @@ module fmvc {
                     style.splice(0,1);
                     var propValue = style.join(':');
                     (<HTMLElement>element).style[propName] = propValue;
+                    View.Counters.update.style++;
                     break;
 
                 case 'data':
                     //console.log('Set data ', element, element.nodeType, element.textContent);
                     if (element.nodeType === 3 && element.textContent != resultValue) element.textContent = resultValue;
+                    View.Counters.update.data++;
                     break;
                 default:
                     element.setAttribute(type, resultValue);
+                    View.Counters.update.other++;
                     break;
             }
         }
@@ -384,13 +399,14 @@ module fmvc {
 
             var appModels = _.filter(_.keys(this.dynamicProperties), (v:string)=>v.indexOf('app.')===0);
             var modelNames = _.map(appModels, (v)=>v.split('.')[1]);
+
             _.each(modelNames, (n:string)=><Model>(this.app[n]).bind(this, this.appModelHandler), this);
         }
 
         public appModelHandler(e)
         {
             if(!this._inDocument) return;
-            console.log('AppModelHandler ... ', this.name,  e);
+            console.log('AppModelHandler: ', e.target.name, ' view: ', this.name, ', ' , JSON.stringify(e.target.data));
             var modelName = e.target.name;
             var appProps = _.filter(_.keys(this.dynamicProperties), (v:string)=>v.indexOf('app.' + modelName)===0);
             _.each(appProps,(n:string)=>this.updateAppProp(n), this);
@@ -409,7 +425,7 @@ module fmvc {
 
 
         public applyEventHandlers(e:any) {
-            var path:string = e.target.getAttribute('data-path');
+            var path:string = e.currentTarget.getAttribute('data-path');
             var name:string = this.handlers[path][e.type];
 
             e.stopPropagation();
@@ -441,7 +457,7 @@ module fmvc {
         // if(name==='exit') make exit
         public elementEventHandler(name:string, e:any) {
             //console.log('Event to handle ', name, e);
-            this.mediator.viewEventHandler( { name:name, target:this } );
+            this.mediator.viewEventHandler( { name:name, target:this, event: e } );
         }
 
         public enterDocumentElement(value:IDomObject, object:any):any {
@@ -534,7 +550,7 @@ module fmvc {
             if(isIncluded && !isEnabled) {
                 var newElement = this.getElement(value, object);
                 var parentNode = e.parentNode;
-                console.log('Replace and disable ', e, value.path);
+                //console.log('Replace and disable ', e, value.path);
                 parentNode.replaceChild(newElement,e);
                 object[value.path] = newElement;
                 this.enterDocumentElement(value, object);
@@ -544,7 +560,7 @@ module fmvc {
                 this.exitDocumentElement(value, object);
                 var newElement = this.getElement(value, object);
                 var parentNode = e.parentNode;
-                console.log('Replace and enable ', e, value.path);
+                //console.log('Replace and enable ', e, value.path);
                 //console.log('Replace node on Comment ');
                 parentNode.replaceChild(newElement,e);
                 object[value.path] = newElement;
@@ -783,6 +799,7 @@ module fmvc {
 
         //
         public eventHandler(name:string, e:any):void {
+            console.log(e, e.currentTarget);
             this.viewEventsHandler(name, e);
         }
 
@@ -955,7 +972,6 @@ module fmvc {
             }
         }
 
-
         private static __isDynamicStylesEnabled:boolean = false;
         private static __jsTemplate:any = null;
         private static __formatter:{[value:string]:Function} = {};
@@ -963,7 +979,7 @@ module fmvc {
         private static __className:string = 'View';
         private static __inheritedStates:string[] = [State.DISABLED];
         private static __emptyData:any = {};
-        static Counters = { element: {added: 0, removed: 0, handlers: 0}};
+        static Counters = { element: {added: 0, removed: 0, handlers: 0}, update: {class: 0, data: 0, style: 0, other: 0}};
         static dispatcher = new EventDispatcher();
         static Name = 'View';
     }
@@ -1005,9 +1021,6 @@ module fmvc {
             return values.join(":");
         }
 
-
-
     }
-
     setInterval(function() { console.log(JSON.stringify(View.Counters))}, 3000);
 }

@@ -81,10 +81,16 @@ module fmvc {
             return result;
         }
 
+        public reset():void {
+            this._data = null;
+        }
+
         public set data(value:any) {
             var previousData = this._data;
             var result = this.parseValue(value);
             if(previousData !== result) {
+                console.log('[' + this.name + ']: New prev, new data ' + this._data + ', ' + result);
+
                 this._data = result;
                 this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
             }

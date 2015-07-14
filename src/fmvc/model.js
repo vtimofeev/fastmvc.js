@@ -76,6 +76,9 @@ var fmvc;
             }
             return result;
         };
+        Model.prototype.reset = function () {
+            this._data = null;
+        };
         Object.defineProperty(Model.prototype, "data", {
             get: function () {
                 return this._data;
@@ -84,6 +87,7 @@ var fmvc;
                 var previousData = this._data;
                 var result = this.parseValue(value);
                 if (previousData !== result) {
+                    console.log('[' + this.name + ']: New prev, new data ' + this._data + ', ' + result);
                     this._data = result;
                     this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
                 }

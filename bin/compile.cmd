@@ -1,0 +1,1 @@
+node ../src/compiler/xml2ts -p ../src/ui -p ../src/test -o ../src/ui-out -o ../src/test-out -c ../src

@@ -86,7 +86,9 @@ module fmvc
         public addListener(object:INotifier, handler:Function):Notifier
         {
             if(!this._listeners) this._listeners = [];
-            this._listeners.push({target: object, handler: handler});
+            var yetListener = _.filter(this._listeners, (v)=>v.handler===handler);
+            if(!(yetListener && yetListener.length)) this._listeners.push({target: object, handler: handler});
+            else console.warn('Try duplicate listener of ' , this.name );
             return this;
         }
 

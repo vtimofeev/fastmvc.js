@@ -13,6 +13,7 @@ var argv = require('optimist').
     usage('FMVC xml2ts compiler. Version ' + VERSION + '.\nCreates view components ts classes from like html notation.\n\nUsage: $0 -p [string] -o [string]').
     demand(['p']).
     describe('p', 'Path to directory').
+    describe('c', 'Out compilied js directory').
     describe('o', 'Out directory').argv;
 require('dustjs-helpers');
 dust.config.whitespace = true;
@@ -98,9 +99,10 @@ var fmvc;
             }, this.complete);
         };
         Xml2Ts.prototype.complete = function () {
+            var jsCompiledPath = (argv.c ? resolvePath(argv.c) : this.srcOut);
             var jsClassPath = path.normalize(this.srcOut + '/compiled.js');
-            tsc.compile(tsClasses, '-m commonjs -t ES5 --out ' + jsClassPath);
-            console.log('Compiled ts to %s, for %d ms', jsClassPath, (Date.now() - start));
+            console.log(tsc.compile(tsClasses, '-m commonjs -t ES5 --out ' + jsClassPath));
+            console.log('Compiled ts to %s, for %d ms', jsClassPath, (Date.now() - start), tsClasses);
             console.log('*** complete all ***');
         };
         Xml2Ts.prototype.parse = function (fileName, content, next) {
