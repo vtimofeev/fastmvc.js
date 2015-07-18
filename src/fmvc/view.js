@@ -269,7 +269,6 @@ var fmvc;
                         break;
                     case 'style':
                         GetValue = this.getDataStringValue;
-                        //this.getClassStringValue; //resultValue.replace('{' + name + '}', _.isBoolean(value) ? name : resultValue);
                         break;
                     case 'data':
                         GetValue = this.getDataStringValue;
@@ -287,6 +286,13 @@ var fmvc;
                 return; // virtual element or comment
             //console.log('updated element ', path, type, value, resultValue);
             switch (type) {
+                case 'selected':
+                    var view = this.componentPaths[path];
+                    if (view) {
+                        console.log('Selected: path %s, type %s, name %s, result %s ', path, type, name, resultValue, _.isString(resultValue), view);
+                        view.setState(type, (resultValue === 'false' ? false : !!resultValue));
+                    }
+                    break;
                 case 'class':
                     console.log('Class: path %s, type %s, name %s, value %s, result %s, template %s, ', path, type, name, value, resultValue, template, this);
                     var prevClassValue;
@@ -297,7 +303,12 @@ var fmvc;
                         element.classList.toggle(prevClassValue, false);
                         this.tmp[template] = resultValue;
                     }
-                    element.classList.toggle(resultValue, !!value);
+                    try {
+                        element.classList.toggle(resultValue, !!value);
+                    }
+                    catch (e) {
+                        console.log(e);
+                    }
                     View.Counters.update.class++;
                     break;
                 case 'style':
@@ -542,6 +553,7 @@ var fmvc;
                 value = View.getTypedValue(value, this._statesType[name]);
             if (this._states[name] === value)
                 return this;
+            console.log('Set state ... ', name, value);
             this._states[name] = value;
             this.applyState(name, value);
             this.applyChildrenState(name, value);

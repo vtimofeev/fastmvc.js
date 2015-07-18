@@ -1,1 +1,1 @@
-node ../src/compiler/xml2ts -p ../src/ui -p ../src/test -o ../src/ui-out -o ../src/test-out -c ../src
+node ../src/compiler/xml2ts -p ../src/ui -p ../src/test -p ../../player-v3/src/view -o ../src/ui-out -o ../src/test-out -o ../../player-v3/src/view-out  -c ../builds

@@ -18,21 +18,28 @@ var fmvc;
             this._root = root;
             return this;
         };
+        Object.defineProperty(Mediator.prototype, "root", {
+            get: function () {
+                return this._root;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Mediator.prototype.setFacade = function (facade) {
             this.facade = facade;
             return this;
         };
         Mediator.prototype.addViews = function (views) {
+            if (!this.views)
+                this.views = [];
             if (views) {
                 if (_.isArray(views)) {
                     for (var i in views) {
                         this.initView(views[i]);
                     }
-                    this.views = views;
                 }
                 else {
                     this.initView((views));
-                    this.views = [views];
                 }
             }
             else {
@@ -44,6 +51,7 @@ var fmvc;
             this.log('Init view ' + view.name);
             view.mediator = this;
             view.render(this._root);
+            this.views.push(view);
         };
         Mediator.prototype.getView = function (name) {
             for (var i in this.views) {

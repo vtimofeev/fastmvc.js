@@ -16,12 +16,6 @@ import stylus = require('stylus');
 import tsc = require('typescript-compiler');
 
 var VERSION = '0.1';
-var argv = require('optimist').
-    usage('FMVC xml2ts compiler. Version ' + VERSION + '.\nCreates view components ts classes from like html notation.\n\nUsage: $0 -p [string] -o [string]').
-    demand(['p']).
-    describe('p', 'Path to directory').
-    describe('c', 'Out compilied js directory').
-    describe('o', 'Out directory').argv;
 
 
 require('dustjs-helpers');
@@ -38,7 +32,6 @@ module fmvc {
         Boolean: 'boolean'
     };
 
-
     // Локальные элементы для расщирения класса
     const F_ELEMENTS = {
         STYLE: 'f:style',
@@ -54,6 +47,7 @@ module fmvc {
         RAW: 'raw',
         DATA: 'data',
         STATES: 'states',
+        SELECTED: 'selected',
         STYLE: 'style',
         HREF: 'href',
         VALUE: 'value',
@@ -78,7 +72,7 @@ module fmvc {
     const ALLOWED_VARIABLES_IN_EXPRESSION = [].concat(_.values(KEYS), ['data', 'app']);
 
     export class Xml2Ts {
-        constructor(public srcIn:string, public srcOut:string) {
+        constructor(public srcIn:string, public srcOut:string, public compiledOut:string) {
             _.bindAll(this, 'loadDustSources', 'loadSources', 'parse', 'complete');
             this.loadDustSources(this.loadSources);
         }
@@ -118,9 +112,15 @@ module fmvc {
         }
 
         complete() {
-            var jsCompiledPath = (argv.c?resolvePath(argv.c):this.srcOut);
-            var jsClassPath:string = path.normalize( this.srcOut  + '/compiled.js');
-            console.log(tsc.compile(tsClasses, '-m commonjs -t ES5 --out ' + jsClassPath));
+            var result = null;
+
+            if(this.compiledOut) {
+                var jsClassPath:string = path.normalize(this.compiledOut + '/fmvc.js');
+                result = tsc.compile(tsClasses, '-m commonjs -t ES5 --out ' + jsClassPath);
+            } else {
+                //result = tsc.compile(tsClasses, '-m commonjs -t ES5 --out ' + jsClassPath);
+            }
+            //console.log(result);
             console.log('Compiled ts to %s, for %d ms', jsClassPath, (Date.now() - start), tsClasses);
             console.log('*** complete all ***');
         }
@@ -168,7 +168,6 @@ module fmvc {
                     }
                 }
             });
-
 
 
             rootDom = Xml2TsUtils.recreateJsNode(rootJs, '0');
@@ -241,6 +240,7 @@ module fmvc {
                 case KEYS.DATA:
                     return Xml2TsUtils.parseMultidynamicContent(value);
                 case KEYS.STATES:
+                case KEYS.SELECTED:
                     return Xml2TsUtils.parseDynamicContent(value);
 
                 default:
@@ -443,13 +443,14 @@ module fmvc {
                 if (a.enableStates) rootObject.enableStates = Xml2TsUtils.getValueArrayFromString(a.enableStates, ',');
                 if (a.extend) object.extend = a.extend;
                 if (a.states) object.states = a.states;
-
+                if (a.selected) object.selected = a.selected;
             }
 
             // Проверяем аттрибуты объекта для дальнейшего прокидывания в объекты
-            var skipAttribs = ['link', 'enableStates', 'extend', 'states', 'class', 'style'];
+            var skipAttribs = ['link', 'enableStates', 'extend', 'states', 'class', 'style', 'selected'];
             _.each(a, function(v,k) {
-                if(!_.has(skipAttribs, k)) object.attribs[k] = v;
+                console.log('INCLUDE ',k, (_.indexOf(skipAttribs, k) === -1) );
+                if( _.indexOf(skipAttribs, k) === -1 ) object.attribs[k] = v;
             });
 
             // handlers, create static attributes
@@ -570,9 +571,4 @@ function resolvePath(value:string) {
 }
 
 
-var sourceOut:any =
-    _.isArray(argv.p)?
-        _.map(argv.p, (v:string,k:number)=>({src: resolvePath(v), out: resolvePath(_.isArray(argv.o)?argv.o[k]:argv.o||v)}) ):
-        {src:resolvePath(argv.p), out: resolvePath(argv.o || argv.p)};
-
-_.each(sourceOut, (v)=>new fmvc.Xml2Ts(v.src,v.out));
+module.exports = { Xml2Ts: fmvc.Xml2Ts };

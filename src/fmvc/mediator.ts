@@ -16,6 +16,10 @@ module fmvc {
             return this;
         }
 
+        public get root():Element {
+            return this._root;
+        }
+
         public setFacade(facade:fmvc.Facade):Mediator {
             this.facade = facade;
             return this;
@@ -23,16 +27,16 @@ module fmvc {
 
         public addViews(views:fmvc.View|fmvc.View[]):Mediator
         {
+            if(!this.views) this.views = [];
+
             if (views) {
                 if (_.isArray(views)) {
                     for (var i in views) {
                         this.initView(views[i]);
                     }
-                    this.views = views;
                 }
                 else {
                     this.initView(<fmvc.View> (views));
-                    this.views = [views];
                 }
             }
             else {
@@ -45,7 +49,8 @@ module fmvc {
         private initView(view:fmvc.View) {
             this.log('Init view ' + view.name);
             view.mediator = this;
-            view.render(this._root)
+            view.render(this._root);
+            this.views.push(view);
         }
 
         public getView(name:string):any

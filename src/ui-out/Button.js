@@ -4,7 +4,7 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-///<reference path='../d.ts'/>
+///<reference path='../fmvc/d.ts'/>
 /* start compiled view */
 var ui;
 (function (ui) {
@@ -29,21 +29,7 @@ var ui;
             "path": "0",
             "type": "tag",
             "attribs": {
-                "className": "Button",
-                "extend": "fmvc.View",
-                "enableStates": "hover,selected,disabled,error,open",
-                "class": {
-                    "static": ["button"],
-                    "dynamic": {
-                        "selected": ["button-{selected}"],
-                        "disabled": ["button-{disabled}"],
-                        "hover": ["button-{hover}"],
-                        "error": ["button-{error}"],
-                        "open": ["button-{open}"],
-                        "exClass": ["{exClass}"]
-                    },
-                    "bounds": null
-                }
+                "className": "Button"
             },
             "staticAttributes": {
                 "class": "button"

@@ -1,8 +1,10 @@
-///<reference path='../d.ts'/>
+///<reference path='../fmvc/d.ts'/>
 /* start compiled view */
 module test {
     export class TestButtons extends fmvc.View {
         public b1: any;
+        public b2: any;
+        public b2: any;
         public b2: any;
         constructor(name: string, modelOrData ? : fmvc.Model | any, jsTemplate ? : fmvc.IDomObject) {
             super(name, modelOrData, jsTemplate);
@@ -11,6 +13,8 @@ module test {
             this.element = this.templateElement;
             this.b1 = this.componentPaths["0,11"] || this.elementPaths["0,11"];
             this.b2 = this.componentPaths["0,13"] || this.elementPaths["0,13"];
+            this.b2 = this.componentPaths["0,15"] || this.elementPaths["0,15"];
+            this.b2 = this.componentPaths["0,17"] || this.elementPaths["0,17"];
             this.childrenContainer = this.childrenContainer || this.element;
             return this;
         }
@@ -20,9 +24,7 @@ module test {
         private static __jsTemplate: fmvc.IRootDomObject = {
             "path": "0",
             "type": "tag",
-            "attribs": {
-                "class": "containerButtons"
-            },
+            "attribs": {},
             "staticAttributes": {
                 "class": "containerButtons"
             },
@@ -51,14 +53,7 @@ module test {
             }, {
                 "path": "0,3",
                 "type": "tag",
-                "attribs": {
-                    "states": {
-                        "content": "(app.test.state==='one')",
-                        "vars": ["app.test.state", "$0"],
-                        "values": ["$0"],
-                        "expressions": ["(this.app.test.state==='one')"]
-                    }
-                },
+                "attribs": {},
                 "children": [{
                     "path": "0,3,0",
                     "type": "text",
@@ -71,18 +66,17 @@ module test {
                     "vars": ["app.test.state", "$0"],
                     "values": ["$0"],
                     "expressions": ["(this.app.test.state==='one')"]
+                },
+                "selected": {
+                    "content": "(app.test.state)",
+                    "vars": ["app.test.state", "$0"],
+                    "values": ["$0"],
+                    "expressions": ["(this.app.test.state)"]
                 }
             }, {
                 "path": "0,5",
                 "type": "tag",
-                "attribs": {
-                    "states": {
-                        "content": "(app.test.state==='two')",
-                        "vars": ["app.test.state", "$0"],
-                        "values": ["$0"],
-                        "expressions": ["(this.app.test.state==='two')"]
-                    }
-                },
+                "attribs": {},
                 "children": [{
                     "path": "0,5,0",
                     "type": "text",
@@ -95,18 +89,17 @@ module test {
                     "vars": ["app.test.state", "$0"],
                     "values": ["$0"],
                     "expressions": ["(this.app.test.state==='two')"]
+                },
+                "selected": {
+                    "content": "(!!app.test.state)",
+                    "vars": ["app.test.state", "$0"],
+                    "values": ["$0"],
+                    "expressions": ["(!!this.app.test.state)"]
                 }
             }, {
                 "path": "0,7",
                 "type": "tag",
-                "attribs": {
-                    "states": {
-                        "content": "(app.test.state==='three')",
-                        "vars": ["app.test.state", "$0"],
-                        "values": ["$0"],
-                        "expressions": ["(this.app.test.state==='three')"]
-                    }
-                },
+                "attribs": {},
                 "children": [{
                     "path": "0,7,0",
                     "type": "text",
@@ -155,26 +148,76 @@ module test {
                 "path": "0,11",
                 "type": "tag",
                 "attribs": {
-                    "link": "b1",
                     "content": "SimpleButtonContentFromProperty"
                 },
                 "tagName": "ui.Button",
-                "link": "b1"
+                "link": "b1",
+                "selected": {
+                    "content": "(app.test.state)",
+                    "vars": ["app.test.state", "$0"],
+                    "values": ["$0"],
+                    "expressions": ["(this.app.test.state)"]
+                }
             }, {
                 "path": "0,13",
                 "type": "tag",
                 "attribs": {
-                    "link": "b2",
                     "exClass": "buttonOne"
                 },
                 "children": [{
                     "path": "0,13,0",
                     "type": "text",
-                    "data": "TheContentFromContainer",
+                    "data": "Selected TheContentFromContainer And Text 2",
                     "attribs": {}
                 }],
                 "tagName": "ui.Button",
-                "link": "b2"
+                "link": "b2",
+                "selected": {
+                    "content": "(app.test.state==='one')",
+                    "vars": ["app.test.state", "$0"],
+                    "values": ["$0"],
+                    "expressions": ["(this.app.test.state==='one')"]
+                }
+            }, {
+                "path": "0,15",
+                "type": "tag",
+                "attribs": {
+                    "exClass": "buttonOne"
+                },
+                "children": [{
+                    "path": "0,15,0",
+                    "type": "text",
+                    "data": "Button 3 / And a lot of text",
+                    "attribs": {}
+                }],
+                "tagName": "ui.Button",
+                "link": "b2",
+                "selected": {
+                    "content": "(app.test.state==='one')",
+                    "vars": ["app.test.state", "$0"],
+                    "values": ["$0"],
+                    "expressions": ["(this.app.test.state==='one')"]
+                }
+            }, {
+                "path": "0,17",
+                "type": "tag",
+                "attribs": {
+                    "exClass": "buttonOne"
+                },
+                "children": [{
+                    "path": "0,17,0",
+                    "type": "text",
+                    "data": "Button 4 / And a lot of text",
+                    "attribs": {}
+                }],
+                "tagName": "ui.Button",
+                "link": "b2",
+                "selected": {
+                    "content": "(app.test.state==='one')",
+                    "vars": ["app.test.state", "$0"],
+                    "values": ["$0"],
+                    "expressions": ["(this.app.test.state==='one')"]
+                }
             }],
             "links": [{
                 "name": "b1",
@@ -182,9 +225,53 @@ module test {
             }, {
                 "name": "b2",
                 "value": "0,13"
+            }, {
+                "name": "b2",
+                "value": "0,15"
+            }, {
+                "name": "b2",
+                "value": "0,17"
             }],
             "dynamicSummary": {
                 "app.test.state": {
+                    "selected": {
+                        "0,3": {
+                            "content": "(app.test.state)",
+                            "vars": ["app.test.state", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(this.app.test.state)"]
+                        },
+                        "0,5": {
+                            "content": "(!!app.test.state)",
+                            "vars": ["app.test.state", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(!!this.app.test.state)"]
+                        },
+                        "0,11": {
+                            "content": "(app.test.state)",
+                            "vars": ["app.test.state", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(this.app.test.state)"]
+                        },
+                        "0,13": {
+                            "content": "(app.test.state==='one')",
+                            "vars": ["app.test.state", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(this.app.test.state==='one')"]
+                        },
+                        "0,15": {
+                            "content": "(app.test.state==='one')",
+                            "vars": ["app.test.state", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(this.app.test.state==='one')"]
+                        },
+                        "0,17": {
+                            "content": "(app.test.state==='one')",
+                            "vars": ["app.test.state", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(this.app.test.state==='one')"]
+                        }
+                    },
                     "states": {
                         "0,3": {
                             "content": "(app.test.state==='one')",

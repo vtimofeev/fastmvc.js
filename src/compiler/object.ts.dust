@@ -1,4 +1,4 @@
-///<reference path='../d.ts'/>
+///<reference path='../fmvc/d.ts'/>
 /* start compiled view */
 
 module {moduleName} {

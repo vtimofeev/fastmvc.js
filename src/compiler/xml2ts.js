@@ -9,12 +9,6 @@ var beautify = require('js-beautify');
 var stylus = require('stylus');
 var tsc = require('typescript-compiler');
 var VERSION = '0.1';
-var argv = require('optimist').
-    usage('FMVC xml2ts compiler. Version ' + VERSION + '.\nCreates view components ts classes from like html notation.\n\nUsage: $0 -p [string] -o [string]').
-    demand(['p']).
-    describe('p', 'Path to directory').
-    describe('c', 'Out compilied js directory').
-    describe('o', 'Out directory').argv;
 require('dustjs-helpers');
 dust.config.whitespace = true;
 var start = Date.now();
@@ -40,6 +34,7 @@ var fmvc;
         RAW: 'raw',
         DATA: 'data',
         STATES: 'states',
+        SELECTED: 'selected',
         STYLE: 'style',
         HREF: 'href',
         VALUE: 'value',
@@ -61,9 +56,10 @@ var fmvc;
     var ALLOWED_KEYS = [].concat(_.values(KEYS), _.values(EVENT_KEYS));
     var ALLOWED_VARIABLES_IN_EXPRESSION = [].concat(_.values(KEYS), ['data', 'app']);
     var Xml2Ts = (function () {
-        function Xml2Ts(srcIn, srcOut) {
+        function Xml2Ts(srcIn, srcOut, compiledOut) {
             this.srcIn = srcIn;
             this.srcOut = srcOut;
+            this.compiledOut = compiledOut;
             _.bindAll(this, 'loadDustSources', 'loadSources', 'parse', 'complete');
             this.loadDustSources(this.loadSources);
         }
@@ -99,9 +95,14 @@ var fmvc;
             }, this.complete);
         };
         Xml2Ts.prototype.complete = function () {
-            var jsCompiledPath = (argv.c ? resolvePath(argv.c) : this.srcOut);
-            var jsClassPath = path.normalize(this.srcOut + '/compiled.js');
-            console.log(tsc.compile(tsClasses, '-m commonjs -t ES5 --out ' + jsClassPath));
+            var result = null;
+            if (this.compiledOut) {
+                var jsClassPath = path.normalize(this.compiledOut + '/fmvc.js');
+                result = tsc.compile(tsClasses, '-m commonjs -t ES5 --out ' + jsClassPath);
+            }
+            else {
+            }
+            //console.log(result);
             console.log('Compiled ts to %s, for %d ms', jsClassPath, (Date.now() - start), tsClasses);
             console.log('*** complete all ***');
         };
@@ -204,6 +205,7 @@ var fmvc;
                 case KEYS.DATA:
                     return Xml2TsUtils.parseMultidynamicContent(value);
                 case KEYS.STATES:
+                case KEYS.SELECTED:
                     return Xml2TsUtils.parseDynamicContent(value);
                 default:
                     {
@@ -406,11 +408,14 @@ var fmvc;
                     object.extend = a.extend;
                 if (a.states)
                     object.states = a.states;
+                if (a.selected)
+                    object.selected = a.selected;
             }
             // Проверяем аттрибуты объекта для дальнейшего прокидывания в объекты
-            var skipAttribs = ['link', 'enableStates', 'extend', 'states', 'class', 'style'];
+            var skipAttribs = ['link', 'enableStates', 'extend', 'states', 'class', 'style', 'selected'];
             _.each(a, function (v, k) {
-                if (!_.has(skipAttribs, k))
+                console.log('INCLUDE ', k, (_.indexOf(skipAttribs, k) === -1));
+                if (_.indexOf(skipAttribs, k) === -1)
                     object.attribs[k] = v;
             });
             // handlers, create static attributes
@@ -530,8 +535,5 @@ function resolvePath(value) {
     var r = path.normalize(process.cwd() + '/' + value);
     return value;
 }
-var sourceOut = _.isArray(argv.p) ?
-    _.map(argv.p, function (v, k) { return ({ src: resolvePath(v), out: resolvePath(_.isArray(argv.o) ? argv.o[k] : argv.o || v) }); }) :
-    { src: resolvePath(argv.p), out: resolvePath(argv.o || argv.p) };
-_.each(sourceOut, function (v) { return new fmvc.Xml2Ts(v.src, v.out); });
+module.exports = { Xml2Ts: fmvc.Xml2Ts };
 //# sourceMappingURL=xml2ts.js.map

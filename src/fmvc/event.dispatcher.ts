@@ -104,7 +104,7 @@ module fmvc {
             _.each(this.executionMap[id], function(handlerObjectsArray, type:string) {
                 el.removeEventListener(type, this.browserHandler);
 
-                _.each(handlerObjectsArray, function(handlerObject) {
+                _.each(handlerObjectsArray, function(handlerObject:any) {
                     delete handlerObject.handler;
                     delete handlerObject.context;
                 });
@@ -126,7 +126,7 @@ module fmvc {
             var handlerObjectsArray = this.executionMap[id][type];
             el.removeEventListener(type, this.browserHandler);
 
-            _.each(handlerObjectsArray, function(handlerObject) {
+            _.each(handlerObjectsArray, function(handlerObject:any) {
                 delete handlerObject.handler;
                 delete handlerObject.context;
             });

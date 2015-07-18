@@ -86,6 +86,7 @@ module fmvc {
 
         enableStates?:(string|ITypeNameValue)[];
         states?:any;
+        selected?:any;
         data?:string;
 
         staticAttributes?:{[id:string]:any};
