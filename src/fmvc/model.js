@@ -117,7 +117,7 @@ var fmvc;
             // Queue
             //-----------------------------------------------------------------------------
             get: function () {
-                return new ModelQueue(this);
+                return this._queue ? this._queue : (this._queue = new ModelQueue(this));
             },
             enumerable: true,
             configurable: true

@@ -24,6 +24,7 @@ module fmvc {
         private _previousState:string;
         private _previousData:string;
         private _state:string;
+        private _queue:ModelQueue;
 
         public enabledEvents:boolean = true;
         public enabledState:boolean = true;
@@ -44,7 +45,6 @@ module fmvc {
             this.sendEvent(fmvc.Event.MODEL_CHANGED, this._state);
             return this;
         }
-
 
         public parseValue(value:any):any {
             var result = null;
@@ -117,7 +117,7 @@ module fmvc {
         //-----------------------------------------------------------------------------
 
         public get queue():ModelQueue {
-            return new ModelQueue(this);
+            return this._queue?this._queue:(this._queue = new ModelQueue(this));
         }
 
 
