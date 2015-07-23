@@ -17,8 +17,8 @@ var test;
             this.element = this.templateElement;
             this.b1 = this.componentPaths["0,11"] || this.elementPaths["0,11"];
             this.b2 = this.componentPaths["0,13"] || this.elementPaths["0,13"];
-            this.b2 = this.componentPaths["0,15"] || this.elementPaths["0,15"];
-            this.b2 = this.componentPaths["0,17"] || this.elementPaths["0,17"];
+            this.b3 = this.componentPaths["0,15"] || this.elementPaths["0,15"];
+            this.b4 = this.componentPaths["0,17"] || this.elementPaths["0,17"];
             this.childrenContainer = this.childrenContainer || this.element;
             return this;
         };
@@ -199,7 +199,7 @@ var test;
                             "attribs": {}
                         }],
                     "tagName": "ui.Button",
-                    "link": "b2",
+                    "link": "b3",
                     "selected": {
                         "content": "(app.test.state==='one')",
                         "vars": ["app.test.state", "$0"],
@@ -219,7 +219,7 @@ var test;
                             "attribs": {}
                         }],
                     "tagName": "ui.Button",
-                    "link": "b2",
+                    "link": "b4",
                     "selected": {
                         "content": "(app.test.state==='one')",
                         "vars": ["app.test.state", "$0"],
@@ -234,10 +234,10 @@ var test;
                     "name": "b2",
                     "value": "0,13"
                 }, {
-                    "name": "b2",
+                    "name": "b3",
                     "value": "0,15"
                 }, {
-                    "name": "b2",
+                    "name": "b4",
                     "value": "0,17"
                 }],
             "dynamicSummary": {

@@ -3,13 +3,10 @@ var fmvc;
     var Event = (function () {
         function Event() {
         }
-        Event.MODEL_STATE_CHANGED = 'model.state.changed';
-        Event.MODEL_CHANGED = 'model.changed';
-        Event.MODEL_CREATED = 'model.created';
-        Event.MODEL_VALIDATED = 'model.validated';
-        Event.MODEL_ADDED = 'model.added';
-        Event.MODEL_UPDATED = 'model.updated';
-        Event.MODEL_DELETED = 'model.deleted';
+        Event.Model = {
+            Changed: 'ModelChanged',
+            StateChanged: 'ModelStateChanged',
+        };
         return Event;
     })();
     fmvc.Event = Event;

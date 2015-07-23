@@ -13,7 +13,8 @@ var fmvc;
         SELECTED: 'selected',
         HOVER: 'hover',
         FOCUSED: 'focused',
-        DISABLED: 'disabled'
+        DISABLED: 'disabled',
+        OPEN: 'open'
     };
     fmvc.DomObjectType = {
         TEXT: 'text',
@@ -49,6 +50,7 @@ var fmvc;
                 else
                     this.data = modelOrData;
             }
+            this.enableStates(null);
             this.initTemplate(jsTemplate);
             this.init();
             this.invalidateHandler = this.invalidateHandler.bind(this);
@@ -575,12 +577,9 @@ var fmvc;
         };
         Object.defineProperty(View.prototype, "avaibleInheritedStates", {
             get: function () {
+                var _this = this;
                 if (!this._avaibleInheritedStates) {
-                    this._avaibleInheritedStates = _.filter(_.map(this._states, function (v, k) {
-                        return k;
-                    }), function (k) {
-                        return this.inheritedStates.indexOf(k) > -1;
-                    }, this);
+                    this._avaibleInheritedStates = _.filter(_.map(this._states, function (v, k) { return k; }), function (k) { return _this.inheritedStates.indexOf(k) > -1; }, this);
                 }
                 return this._avaibleInheritedStates;
             },
@@ -594,18 +593,41 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        View.prototype.isSelected = function () {
-            return !!this.getState(fmvc.State.SELECTED);
-        };
-        View.prototype.isHover = function () {
-            return !!this.getState(fmvc.State.HOVER);
-        };
-        View.prototype.isFocused = function () {
-            return !!this.getState(fmvc.State.FOCUSED);
-        };
-        View.prototype.isDisabled = function () {
-            return !!this.getState(fmvc.State.DISABLED);
-        };
+        Object.defineProperty(View.prototype, "isSelected", {
+            get: function () {
+                return !!this.getState(fmvc.State.SELECTED);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(View.prototype, "isHover", {
+            get: function () {
+                return !!this.getState(fmvc.State.HOVER);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(View.prototype, "isFocused", {
+            get: function () {
+                return !!this.getState(fmvc.State.FOCUSED);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(View.prototype, "isDisabled", {
+            get: function () {
+                return !!this.getState(fmvc.State.DISABLED);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(View.prototype, "isOpen", {
+            get: function () {
+                return !!this.getState(fmvc.State.OPEN);
+            },
+            enumerable: true,
+            configurable: true
+        });
         //------------------------------------------------------------------------------------------------
         // VALIDATE
         //------------------------------------------------------------------------------------------------
@@ -621,11 +643,17 @@ var fmvc;
             if (!this._invalidate || !this._inDocument)
                 return;
             if (this._invalidate & 1) {
-                this.updateData(this.data, 'data.', 2);
+                if (_.isObject(this.data))
+                    this.updateData(this.data, 'data.', 2);
+                else
+                    this.updateDynamicProperty('data', this.data);
                 this.updateApp();
             }
             if (this._invalidate & 2)
                 _.each(this._states, function (value, key) { return value ? _this.applyState(key, value) : null; }, this);
+            if (this._invalidate & 4) {
+                this.updateChildren();
+            }
             this._invalidate = 0;
         };
         View.prototype.removeInvalidateTimeout = function () {
@@ -645,6 +673,10 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        View.prototype.setMediator = function (value) {
+            this._mediator = value;
+            return this;
+        };
         //------------------------------------------------------------------------------------------------
         // Children
         //------------------------------------------------------------------------------------------------
@@ -659,7 +691,12 @@ var fmvc;
             this.childrenViews.push(value);
             value.render(this.childrenContainer);
         };
-        View.prototype.removeChild = function (value) {
+        View.prototype.removeChildFrom = function (index) {
+            if (!(this.childrenViews && this.childrenViews.length))
+                return null;
+            var result = this.childrenViews.splice(index); //_.filter(this.childrenViews, (view:View, key:number)=>(key>=index?view.dispose():null) );
+            _.each(result, function (v) { return v.dispose(); });
+            return result;
         };
         View.prototype.removeAllChildren = function () {
             _.each(this.childrenViews, function (view) { return view.dispose(); });
@@ -671,13 +708,13 @@ var fmvc;
         };
         Object.defineProperty(View.prototype, "data", {
             get: function () {
-                return this._data === null ? View.__emptyData : this._data;
+                return this._model ? this._model.data : (this._data === null ? View.__emptyData : this._data);
             },
             //------------------------------------------------------------------------------------------------
             // Data & model
             //------------------------------------------------------------------------------------------------
             set: function (value) {
-                //console.log('View: set data' , value);
+                console.log('View %s set data %s', this.name, value);
                 this._data = value;
                 this.invalidate(1);
             },
@@ -699,12 +736,13 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        View.prototype.setModelWithListener = function (value) {
+        View.prototype.setModel = function (value, listen) {
             this.model = value;
-            this.model.bind(this, this.modelHandler);
+            if (listen)
+                this._model.bind(this, this.modelHandler);
         };
-        View.prototype.modelHandler = function (name, data) {
-            //this.log('modelHandler ' + name);
+        View.prototype.modelHandler = function (e) {
+            console.log('modelHandler ', arguments, this._model);
             this.invalidate(1);
         };
         Object.defineProperty(View.prototype, "locale", {
@@ -756,13 +794,24 @@ var fmvc;
         // Overrided
         View.prototype.dispose = function () {
             if (this.model)
-                this.model.unbind(this, this.modelHandler);
+                this.model.unbind(this);
+            this.exitDocument();
+            if (this.element.parentNode)
+                this.element.parentNode.removeChild(this.element);
             _super.prototype.dispose.call(this);
+            return this;
         };
         Object.defineProperty(View.prototype, "dynamicProperties", {
             /* Overrided by generator */
             get: function () {
                 return this.jsTemplate ? this.jsTemplate.dynamicSummary : null;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(View.prototype, "isDynamicStylesAvaible", {
+            get: function () {
+                return !!(this.jsTemplate && this.jsTemplate.css);
             },
             enumerable: true,
             configurable: true
@@ -776,7 +825,7 @@ var fmvc;
         };
         View.prototype.enableDynamicStyle = function (value) {
             var id = this.className + '__' + Math.random() + 'Style';
-            if (value && !this.isDynamicStylesEnabled()) {
+            if (this.isDynamicStylesAvaible && value && !this.isDynamicStylesEnabled()) {
                 console.log(' *** enable dynamic style *** ', this.jsTemplate.css);
                 var style = document.createElement('style');
                 style.id = id; //@todo create method that setup className at the generator
@@ -853,7 +902,7 @@ var fmvc;
             }
             else
                 throw Error('Expression must has args and filter or values');
-            //this.log(['ExecuteExpression result=', JSON.stringify(r), ', of content: ', ex.content].join(''));
+            console.log([this.name, ' ... ExecuteExpression ', ex, '  result=', JSON.stringify(r), ', of content: ', ex.content].join(''), ex);
             r = this.executeFilters(r, ex.filters);
             return r;
         };
@@ -970,10 +1019,10 @@ var fmvc;
             var minutes = Math.floor(value / 60);
             value -= minutes * 60;
             var seconds = Math.floor(value % 60);
-            hours = (hours < 10) ? "0" + hours : hours;
-            minutes = (minutes < 10) ? "0" + minutes : minutes;
-            seconds = (seconds < 10) ? "0" + seconds : seconds;
-            var values = value >= 3600 ? [hours, minutes, seconds] : [minutes, seconds];
+            var hoursStr = String((hours < 10) ? "0" + hours : hours);
+            var minutesStr = String((minutes < 10) ? "0" + minutes : minutes);
+            var secondsStr = String((seconds < 10) ? "0" + seconds : seconds);
+            var values = value >= 3600 ? [hoursStr, minutesStr, secondsStr] : [minutesStr, secondsStr];
             return values.join(":");
         };
         return ViewHelper;

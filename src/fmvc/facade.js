@@ -105,6 +105,13 @@ var fmvc;
                 _.each(this._events, removeFromObjects, this);
             return this;
         };
+        Object.defineProperty(Facade.prototype, "root", {
+            get: function () {
+                return this._root;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Object.defineProperty(Facade.prototype, "locale", {
             // Текущее значение локали
             get: function () {

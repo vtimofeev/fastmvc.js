@@ -8,7 +8,8 @@ module fmvc {
         SELECTED: 'selected',
         HOVER: 'hover',
         FOCUSED: 'focused',
-        DISABLED: 'disabled'
+        DISABLED: 'disabled',
+        OPEN: 'open'
     };
 
     export var DomObjectType = {
@@ -66,6 +67,7 @@ module fmvc {
                 else this.data = modelOrData;
             }
 
+            this.enableStates(null);
             this.initTemplate(jsTemplate);
             this.init();
             this.invalidateHandler = this.invalidateHandler.bind(this);
@@ -639,11 +641,7 @@ module fmvc {
 
         public get avaibleInheritedStates():string[] {
             if(!this._avaibleInheritedStates) {
-                this._avaibleInheritedStates = _.filter(_.map(this._states, function (v, k) {
-                    return k;
-                }), function (k) {
-                    return this.inheritedStates.indexOf(k) > -1;
-                }, this);
+                this._avaibleInheritedStates = _.filter(_.map(this._states, (v:any, k:string)=>k), (k:string)=>this.inheritedStates.indexOf(k)>-1, this);
             }
 
             return this._avaibleInheritedStates;
@@ -653,20 +651,24 @@ module fmvc {
             return View.__inheritedStates;
         }
 
-        public isSelected():boolean {
+        public get isSelected():boolean {
             return !!this.getState(State.SELECTED);
         }
 
-        public isHover():boolean {
+        public get isHover():boolean {
             return !!this.getState(State.HOVER);
         }
 
-        public isFocused():boolean {
+        public get isFocused():boolean {
             return !!this.getState(State.FOCUSED);
         }
 
-        public isDisabled():boolean {
+        public get isDisabled():boolean {
             return !!this.getState(State.DISABLED);
+        }
+
+        public get isOpen():boolean {
+            return !!this.getState(State.OPEN);
         }
 
         //------------------------------------------------------------------------------------------------
@@ -685,11 +687,19 @@ module fmvc {
             if (!this._invalidate || !this._inDocument) return;
 
             if (this._invalidate & 1) {
-                this.updateData(this.data, 'data.', 2);
+                if(_.isObject(this.data)) this.updateData(this.data, 'data.', 2);
+                else this.updateDynamicProperty('data', this.data);
+
                 this.updateApp();
             }
 
             if (this._invalidate & 2) _.each(this._states, (value, key)=>value?this.applyState(key, value):null, this);
+
+
+            if (this._invalidate & 4) {
+                this.updateChildren();
+            }
+
             this._invalidate = 0;
         }
 
@@ -705,6 +715,12 @@ module fmvc {
 
         public set mediator(value:Mediator) {
             this._mediator = value;
+        }
+
+
+        public setMediator(value:Mediator):View {
+            this._mediator = value;
+            return this;
         }
 
         public get mediator():Mediator {
@@ -729,8 +745,11 @@ module fmvc {
             value.render(this.childrenContainer);
         }
 
-        public removeChild(value:View):void {
-
+        public removeChildFrom(index:number):View[] {
+            if(!(this.childrenViews && this.childrenViews.length)) return null;
+            var result:View[] = this.childrenViews.splice(index);//_.filter(this.childrenViews, (view:View, key:number)=>(key>=index?view.dispose():null) );
+            _.each(result, (v:View)=>v.dispose());
+            return result;
         }
 
         public removeAllChildren():View[] {
@@ -747,13 +766,13 @@ module fmvc {
         // Data & model
         //------------------------------------------------------------------------------------------------
         public set data(value:any) {
-            //console.log('View: set data' , value);
+            console.log('View %s set data %s', this.name , value);
             this._data = value;
             this.invalidate(1);
         }
 
         public get data():any {
-            return this._data === null?View.__emptyData:this._data;
+            return this._model?this._model.data:(this._data === null?View.__emptyData:this._data);
         }
 
         public set model(data:Model) {
@@ -765,13 +784,14 @@ module fmvc {
             return (this._mediator && this._mediator.facade)?this._mediator.facade.model:null;
         }
 
-        public setModelWithListener(value:Model) {
+        public setModel(value:Model, listen?:boolean) {
             this.model = value;
-            this.model.bind(this, this.modelHandler);
+            if(listen) this._model.bind(this, this.modelHandler);
         }
 
-        public modelHandler(name:string, data:any):void {
-            //this.log('modelHandler ' + name);
+        public modelHandler(e:IEvent):void {
+            console.log('modelHandler ', arguments , this._model);
+
             this.invalidate(1);
         }
 
@@ -818,14 +838,21 @@ module fmvc {
         }
 
         // Overrided
-        public dispose():void {
-            if (this.model) this.model.unbind(this, this.modelHandler);
+        public dispose():View {
+            if (this.model) this.model.unbind(this);
+            this.exitDocument();
+            if (this.element.parentNode) this.element.parentNode.removeChild(this.element);
             super.dispose();
+            return this;
         }
 
         /* Overrided by generator */
         public get dynamicProperties():IDynamicSummary {
             return this.jsTemplate ? this.jsTemplate.dynamicSummary : null;
+        }
+
+        public get isDynamicStylesAvaible():boolean {
+            return !!(this.jsTemplate && this.jsTemplate.css);
         }
 
         public isDynamicStylesEnabled(value?:boolean):boolean {
@@ -836,7 +863,7 @@ module fmvc {
 
         public enableDynamicStyle(value:boolean) {
             var id = this.className + '__' + Math.random() + 'Style';
-            if (value && !this.isDynamicStylesEnabled()) {
+            if (this.isDynamicStylesAvaible && value && !this.isDynamicStylesEnabled()) {
                 console.log(' *** enable dynamic style *** ', this.jsTemplate.css);
                 var style:HTMLStyleElement = document.createElement('style');
                 style.id = id; //@todo create method that setup className at the generator
@@ -881,7 +908,6 @@ module fmvc {
                 var varName:string = v.replace('state.','');
                 return this.getState(varName);
             }
-
             else throw new Error('Not supported variable in ' + this.name + ', ' + v);
         }
 
@@ -916,7 +942,7 @@ module fmvc {
             }
             else throw Error('Expression must has args and filter or values');
 
-            //this.log(['ExecuteExpression result=', JSON.stringify(r), ', of content: ', ex.content].join(''));
+            console.log([this.name , ' ... ExecuteExpression ' , ex, '  result=', JSON.stringify(r), ', of content: ', ex.content].join(''), ex);
             r = this.executeFilters(r, ex.filters);
             return r;
         }
@@ -1028,10 +1054,10 @@ module fmvc {
             value -= minutes * 60;
             var seconds = Math.floor(value % 60);
 
-            hours = (hours < 10) ? "0" + hours : hours;
-            minutes = (minutes < 10) ? "0" + minutes : minutes;
-            seconds = (seconds < 10) ? "0" + seconds : seconds;
-            var values = value >= 3600 ? [ hours, minutes, seconds ] : [ minutes, seconds ];
+            var hoursStr:string = String((hours < 10) ? "0" + hours : hours);
+            var minutesStr:string = String((minutes < 10) ? "0" + minutes : minutes);
+            var secondsStr:string = String((seconds < 10) ? "0" + seconds : seconds);
+            var values = value >= 3600 ? [ hoursStr, minutesStr, secondsStr ] : [ minutesStr, secondsStr ];
             return values.join(":");
         }
 

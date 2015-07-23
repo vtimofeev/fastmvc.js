@@ -2,7 +2,7 @@
 
 module fmvc {
     export class Mediator extends fmvc.Notifier implements IMediator {
-        private views:any;
+        private views:View[];
         private _root:Element;
 
         constructor(name:string, root?:Element, facade?:Facade) {
@@ -25,18 +25,23 @@ module fmvc {
             return this;
         }
 
-        public addViews(views:fmvc.View|fmvc.View[]):Mediator
+        public addView(views:fmvc.View|fmvc.View[]):Mediator
         {
             if(!this.views) this.views = [];
-
             if (views) {
                 if (_.isArray(views)) {
                     for (var i in views) {
-                        this.initView(views[i]);
+                        this.addView(views[i]);
                     }
                 }
                 else {
-                    this.initView(<fmvc.View> (views));
+                    var view = <View> views;
+                    if (this.views.indexOf(view) === -1) {
+                        this.views.push(view);
+                        view.setMediator(this).render(this._root);
+                    } else {
+                        this.log('Warn: try to duplicate view');
+                    }
                 }
             }
             else {
@@ -46,21 +51,13 @@ module fmvc {
             return this;
         }
 
-        private initView(view:fmvc.View) {
-            this.log('Init view ' + view.name);
-            view.mediator = this;
-            view.render(this._root);
-            this.views.push(view);
-        }
-
-        public getView(name:string):any
+        public getView(name:string):View
         {
-            for(var i in this.views) { if(this.views[i].name == name) return this.views[i]; }
-            return null;
+            return _.find<View>(this.views,(view:View) => view.name === name);
         }
 
         public get events():string[] {
-            return [];
+            return null;
         }
 
         public internalHandler(e:any):void {
@@ -88,14 +85,13 @@ module fmvc {
             }
         }
 
-        public modelEventHandler(e:any):void {
+        public modelEventHandler(e:IEvent):void {
         }
 
-        public mediatorEventHandler(e:any):void {
-
+        public mediatorEventHandler(e:IEvent):void {
         }
 
-        public viewEventHandler(e:any):void {
+        public viewEventHandler(e:IViewEvent):void {
         }
     }
 
@@ -103,7 +99,7 @@ module fmvc {
         events:string[];
         internalHandler(e:any):void;
         eventHandler(e:any):void;
-        getView(name:string):any;
+        getView(name:string):View;
     }
 }
 

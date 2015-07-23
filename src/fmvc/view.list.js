@@ -9,8 +9,9 @@ var fmvc;
 (function (fmvc) {
     var ViewList = (function (_super) {
         __extends(ViewList, _super);
-        function ViewList(name, $root) {
-            _super.call(this, name, $root);
+        function ViewList(name) {
+            _super.call(this, name);
+            this.ChildrenConstructor = fmvc.View;
         }
         Object.defineProperty(ViewList.prototype, "childrenConstructor", {
             set: function (value) {
@@ -19,17 +20,16 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(ViewList.prototype, "dataset", {
-            get: function () {
-                return this._dataset;
-            },
-            set: function (value) {
-                this._dataset = value;
-                this.invalidate(8);
-            },
-            enumerable: true,
-            configurable: true
-        });
+        /*
+        set dataset(value:any[]) {
+            this._dataset = value;
+            this.invalidate(8);
+        }
+
+        get dataset():any[] {
+            return this._dataset;
+        }
+        */
         ViewList.prototype.applyChildrenState = function (name, value) {
             if (!this.avaibleInheritedStates || this.avaibleInheritedStates.indexOf(name) === -1)
                 return;
@@ -41,15 +41,27 @@ var fmvc;
         ViewList.prototype.updateChildren = function () {
             if (!this.inDocument)
                 return;
-            var children = this.removeAllChildren() || [];
-            _.each(this.dataset, function (value, index) {
-                var view = children[index] || new this.ChildrenConstructor();
-                view.data = value;
+            var children = this.removeChildFrom(this.data.length - 1) || [];
+            console.log('Update children ... ', this._model, this.data);
+            _.each(this.data, function (value, index) {
+                var view = (this.childrenViews && this.childrenViews.length ? this.childrenViews[index] : null)
+                    || (children && children.length ? children.splice(0, 1)[0] : null)
+                    || new this.ChildrenConstructor(ViewList.Name + index);
+                if (value instanceof fmvc.Model)
+                    view.setModel(value, true);
+                else
+                    view.data = value;
+                console.log('Updated view ', view);
                 _.each(this.avaibleInheritedStates, function (name) { view.setState(name, this.getState(name)); }, this);
                 if (!view.inDocument) {
                     this.addChild(view);
                 }
             }, this);
+        };
+        ViewList.prototype.modelHandler = function (e) {
+            //this.log('modelHandler ' + name);
+            _super.prototype.modelHandler.call(this, e);
+            this.invalidate(4);
         };
         return ViewList;
     })(fmvc.View);

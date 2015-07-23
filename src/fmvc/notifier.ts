@@ -106,10 +106,10 @@ module fmvc
             this._listeners = null;
         }
 
-        private _sendToListners(e)
+        private _sendToListners(e:IEvent)
         {
             this._listeners.forEach(function(lo:IListener) {
-                if(!lo.target.disposed) (lo.handler).apply(lo.target, [e]);
+                if(!lo.target.disposed) (lo.handler).call(lo.target, e);
             });
         }
 
@@ -125,12 +125,6 @@ module fmvc
         handler:Function;
     }
 
-    export interface IEvent
-    {
-        name:string;
-        data:any;
-    }
-
     export interface INotifier
     {
         name:string;
@@ -142,4 +136,17 @@ module fmvc
         removeHandler():void;
         dispose():void;
     }
+
+    export interface IEvent {
+        target:INotifier;
+        name:string;
+        data?:any;
+        sub?:any;
+        error?:any;
+    }
+
+    export interface IViewEvent extends IEvent{
+        source?:any; // source browser event, if exist
+    }
+
 }

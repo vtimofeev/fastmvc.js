@@ -17,6 +17,7 @@ var fmvc;
         Syncing: 'syncing',
         Synced: 'synced',
         Changed: 'changed',
+        Complete: 'complete',
         Error: 'error',
     };
     var Model = (function (_super) {
@@ -24,6 +25,9 @@ var fmvc;
         function Model(name, data, opts) {
             if (data === void 0) { data = {}; }
             _super.call(this, name);
+            this._state = null;
+            this._source = false;
+            this._queue = null;
             this.enabledEvents = true;
             this.enabledState = true;
             this.watchChanges = true;
@@ -31,28 +35,25 @@ var fmvc;
                 _.extend(this, opts);
             if (data)
                 this.data = data;
-            this.sendEvent(fmvc.Event.MODEL_CREATED, this.data);
+            if (data)
+                this.setState(fmvc.ModelState.Synced);
         }
         Model.prototype.setState = function (value) {
             if (!this.enabledState || this._state === value)
                 return this;
-            this._previousState = value;
+            this._prevState = value;
             this._state = value;
-            this.log('New state: ' + value);
-            this.sendEvent(fmvc.Event.MODEL_CHANGED, this._state);
+            this.sendEvent(fmvc.Event.Model.StateChanged, this._state);
             return this;
         };
         Model.prototype.parseValue = function (value) {
             var result = null;
-            var prevData = this.data;
+            var prevData = this._data;
             var changes = null;
             var hasChanges = false;
             if (value instanceof Model) {
-                console.log(value);
-                this.log('Check errors in this');
                 throw Error('Cant set model data, data must be object, array or primitive');
             }
-            //@todo check type of data and value
             if (_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
                 for (var i in value) {
                     if (prevData[i] !== value[i]) {
@@ -65,11 +66,11 @@ var fmvc;
                 }
                 // if watch object property change
                 if (hasChanges)
-                    this.sendEvent(fmvc.Event.MODEL_CHANGED, changes);
+                    this.sendEvent(fmvc.Event.Model.Changed, changes);
                 result = prevData;
             }
             else {
-                // primitive || array || no data && any value (object etc)
+                // primitive || array || object && !watchChanges , no data && any value (object etc)
                 if (prevData !== value) {
                     result = (_.isObject(prevData) && _.isObject(value)) ? _.extend({}, prevData, value) : value;
                 }
@@ -78,26 +79,41 @@ var fmvc;
         };
         Model.prototype.reset = function () {
             this._data = null;
+            return this;
         };
         Object.defineProperty(Model.prototype, "data", {
             get: function () {
-                return this._data;
+                return this.getData();
             },
             set: function (value) {
-                var previousData = this._data;
-                var result = this.parseValue(value);
-                if (previousData !== result) {
-                    console.log('[' + this.name + ']: New prev, new data ' + this._data + ', ' + result);
-                    this._data = result;
-                    this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
-                }
+                this.setData(value);
             },
             enumerable: true,
             configurable: true
         });
+        Model.prototype.setData = function (value) {
+            var previousData = this._data;
+            var result = this.parseValue(value);
+            // for primitive, arrays, objects with no changes
+            // console.log('[' + this.name + ']: New prev, new data ' + this._data + ', ' + result);
+            if (previousData !== result) {
+                this._data = result;
+                this.sendEvent(fmvc.Event.Model.Changed, this._data);
+            }
+        };
+        Model.prototype.getData = function () {
+            return this._data;
+        };
         Object.defineProperty(Model.prototype, "state", {
             get: function () {
                 return this._state;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Model.prototype, "prevState", {
+            get: function () {
+                return this._prevState;
             },
             enumerable: true,
             configurable: true
@@ -110,46 +126,108 @@ var fmvc;
             if (this.enabledEvents)
                 _super.prototype.sendEvent.call(this, name, data, sub, error, log);
         };
-        Model.prototype.destroy = function () {
+        Model.prototype.dispose = function () {
+            _super.prototype.dispose.call(this);
+            // remove queue
         };
-        Object.defineProperty(Model.prototype, "queue", {
-            //-----------------------------------------------------------------------------
-            // Queue
-            //-----------------------------------------------------------------------------
-            get: function () {
-                return this._queue ? this._queue : (this._queue = new ModelQueue(this));
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Model.prototype.addValidator = function (value) {
-            this._validators = this._validators ? this._validators : [];
-            if (this._validators.indexOf(value) >= 0)
-                throw 'Cant add validator to model';
-            this._validators.push(value);
-        };
-        Model.prototype.removeValidator = function (value) {
-            var index = this._validators ? this._validators.indexOf(value) : -1;
-            if (index >= 0)
-                this._validators.splice(index, 1);
-        };
-        Model.prototype.validate = function (value) {
-            var result = false;
-            var error = {};
-            for (var i in this._validators) {
-                var validator = this._validators[i];
-                value = validator.execute(value);
-                if (!value) {
-                    result = false;
-                    break;
-                }
-            }
-            this.sendEvent(fmvc.Event.MODEL_VALIDATED, result, null, error);
-            return result;
+        //-----------------------------------------------------------------------------
+        // Source model
+        //-----------------------------------------------------------------------------
+        //-----------------------------------------------------------------------------
+        // Queue
+        //-----------------------------------------------------------------------------
+        Model.prototype.queue = function (create) {
+            if (create === void 0) { create = false; }
+            if (create && this._queue)
+                this._queue.dispose();
+            return this._queue && !create ? this._queue : (this._queue = new ModelQueue(this));
         };
         return Model;
     })(fmvc.Notifier);
     fmvc.Model = Model;
+    var TypeModel = (function (_super) {
+        __extends(TypeModel, _super);
+        function TypeModel(name, data, opts) {
+            _super.call(this, name, data, opts);
+        }
+        Object.defineProperty(TypeModel.prototype, "data", {
+            get: function () {
+                return this.getData();
+            },
+            enumerable: true,
+            configurable: true
+        });
+        return TypeModel;
+    })(Model);
+    fmvc.TypeModel = TypeModel;
+    var SourceModel = (function (_super) {
+        __extends(SourceModel, _super);
+        function SourceModel(name, source, opts) {
+            _super.call(this, name, null, opts);
+            this.throttleApplyChanges = _.throttle(_.bind(this.applyChanges, this), 100);
+            this.addSources(source);
+        }
+        SourceModel.prototype.addSources = function (v) {
+            if (!v)
+                return this;
+            if (!this._sources)
+                this._sources = [];
+            if (_.isArray(v)) {
+                _.each(v, this.addSources, this);
+            }
+            else if (v instanceof Model) {
+                var m = v;
+                m.bind(this, this.sourceChangeHandler);
+                this._sources.push(m);
+            }
+            else {
+                console.warn('Cant add source ', v);
+            }
+            return this;
+        };
+        SourceModel.prototype.removeSource = function (v) {
+            var index = -1;
+            if (this._sources && (index = this._sources.indexOf(v)) > -1) {
+                this._sources.splice(index, 1);
+                v.unbind(v);
+            }
+            return this;
+        };
+        SourceModel.prototype.sourceChangeHandler = function (e) {
+            this.throttleApplyChanges();
+        };
+        SourceModel.prototype.setSourceMethod = function (value) {
+            this._sourceMethod = value;
+            this.throttleApplyChanges();
+            return this;
+        };
+        SourceModel.prototype.setResultMethods = function () {
+            var values = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                values[_i - 0] = arguments[_i];
+            }
+            this._resultMethods = _.flatten([].concat(this._resultMethods ? this._resultMethods : [], values));
+            this.throttleApplyChanges();
+            return this;
+        };
+        SourceModel.prototype.applyChanges = function () {
+            console.log('Apply changes ...', this._sources, this._sourceMethod, this._resultMethods);
+            if (!this._sources || !this._sources.length)
+                this.setData(null);
+            if (this._sourceMethod && this._sources.length === 1)
+                throw new Error('SourceModel: source method not defined');
+            var result = null;
+            var sourcesResult = this._sourceMethod && this._sources.length > 1 ? (this._sourceMethod.apply(this, _.map(this._sources, function (v) { return v.data; }))) : this._sources[0].data;
+            console.log('SourceModel: Source Result is ', sourcesResult);
+            if (sourcesResult)
+                result = _.reduce(this._resultMethods, function (memo, method) { return method.call(this, memo); }, sourcesResult, this);
+            console.log('SourceModel: Result is ', JSON.stringify(result));
+            this.reset().setData(result);
+        };
+        return SourceModel;
+    })(Model);
+    fmvc.SourceModel = SourceModel;
+    // Uses jQuery Deferred model
     var ModelQueue = (function () {
         function ModelQueue(model) {
             this.model = model;
@@ -171,11 +249,12 @@ var fmvc;
         ModelQueue.prototype.async = function (getPromiseMethod, args, context, states) {
             var deferred = $.Deferred();
             var queuePromise = this.setup();
+            var t = this;
             queuePromise.then(function done(value) {
-                console.log('Call async method args ', args);
-                (getPromiseMethod.apply(context, args)).then(function successPromise(result) { console.log('Async success ', result); deferred.resolve(result); }, function faultPromise(result) { console.log('Async fault ', arguments); deferred.reject(result); });
+                (getPromiseMethod.apply(context, args)).then(function successPromise(result) { console.log('Async success ', result); deferred.resolve(result); }, function faultPromise(result) { console.log('Async fault ', arguments); deferred.reject(result); t.executeError(result); });
             }, function fault() {
                 deferred.reject();
+                t.executeError();
             });
             this.currentPromise = deferred.promise();
             return this;
@@ -183,14 +262,17 @@ var fmvc;
         ModelQueue.prototype.sync = function (method, args, context, states) {
             var deferred = $.Deferred();
             var queuePromise = this.setup();
+            var t = this;
             queuePromise.done(function doneQueue(value) {
                 var methodArgs = [value].concat(args);
                 var result = method.apply(context, methodArgs);
                 console.log('Call sync method ', result, ' args ', methodArgs);
                 if (result)
                     deferred.resolve(result);
-                else
+                else {
                     deferred.reject();
+                    t.executeError();
+                }
             });
             this.currentPromise = deferred.promise();
             return this;
@@ -198,10 +280,25 @@ var fmvc;
         ModelQueue.prototype.complete = function (method, args, context, states) {
             this.sync(method, context, args, states);
         };
+        ModelQueue.prototype.executeError = function (err) {
+            console.log('Product error ', arguments);
+            if (this.error) {
+                this.error.method.apply(this.error.context, this.error.args);
+            }
+        };
+        ModelQueue.prototype.fault = function (method, args, context, states) {
+            this.error = { method: method, args: args, context: context, states: states };
+            return this;
+        };
         ModelQueue.prototype.setup = function () {
             var queueDeferred = $.Deferred();
             $.when(this.currentPromise).then(function doneQueue(value) { queueDeferred.resolve(value); }, function faultQueue() { queueDeferred.reject(); });
             return queueDeferred.promise();
+        };
+        ModelQueue.prototype.dispose = function () {
+            this.model = null;
+            this.currentPromise = null;
+            this.error = null;
         };
         return ModelQueue;
     })();

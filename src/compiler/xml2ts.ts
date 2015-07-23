@@ -291,7 +291,7 @@ module fmvc {
                     if (!_.isEmpty(variables)) variables = variables.sort((a:string,b:string)=>a.length>b.length?-1:1);
                     result.vars = result.vars.concat(variables);
                     var reducedExpression = _.reduce(variables, function(memo, v) {
-                        var requestVariable = ((v.indexOf('.')>-1 && v.indexOf('state.') === -1)?('this.' + v):('this.getState("' + v.replace('state.', '') + '")'));
+                        var requestVariable = ((v.indexOf('.')>-1 && v.indexOf('state.') === -1) || v === 'data'?('this.' + v):('this.getState("' + v.replace('state.', '') + '")'));
                         return memo.replace(new RegExp(v, 'g'),  requestVariable);
                     }, expression, this);
                     result.expressions.push(reducedExpression);

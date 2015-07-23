@@ -1,14 +1,42 @@
 /// <reference path="../../DefinitelyTyped/lodash/lodash.d.ts" />
 /// <reference path="../../DefinitelyTyped/jquery/jquery.d.ts" />
+declare var bowser: any;
+declare module fmvc {
+    class BrowserUtils {
+        static getClient(): IBowser;
+    }
+    interface IBowser {
+        name: string;
+        silk?: boolean;
+        webkit?: boolean;
+        gecko?: boolean;
+        opera?: boolean;
+        opera?: boolean;
+        msie?: boolean;
+        msedge?: boolean;
+        phantomjs?: boolean;
+        version: string;
+        mobile?: boolean;
+        tablet?: boolean;
+        ios?: boolean;
+        android?: boolean;
+        blackberry?: boolean;
+        webos?: boolean;
+        bada?: boolean;
+        tizen?: boolean;
+        sailfish?: boolean;
+        osversion?: string;
+        a?: boolean;
+        c?: boolean;
+        x?: boolean;
+    }
+}
 declare module fmvc {
     class Event {
-        static MODEL_STATE_CHANGED: string;
-        static MODEL_CHANGED: string;
-        static MODEL_CREATED: string;
-        static MODEL_VALIDATED: string;
-        static MODEL_ADDED: string;
-        static MODEL_UPDATED: string;
-        static MODEL_DELETED: string;
+        static Model: {
+            Changed: string;
+            StateChanged: string;
+        };
     }
 }
 declare module fmvc {
@@ -38,6 +66,7 @@ declare module fmvc {
         unregister(objects: INotifier | INotifier[]): Facade;
         addListener(object: IMediator, event: string): Facade;
         removeListener(object: IMediator, event?: string): Facade;
+        root: Element;
         locale: string;
         theme: string;
         i18n: any;
@@ -76,10 +105,6 @@ declare module fmvc {
         target: INotifier;
         handler: Function;
     }
-    interface IEvent {
-        name: string;
-        data: any;
-    }
     interface INotifier {
         name: string;
         type: string;
@@ -89,6 +114,16 @@ declare module fmvc {
         registerHandler(): void;
         removeHandler(): void;
         dispose(): void;
+    }
+    interface IEvent {
+        target: INotifier;
+        name: string;
+        data?: any;
+        sub?: any;
+        error?: any;
+    }
+    interface IViewEvent extends IEvent {
+        source?: any;
     }
 }
 /**
@@ -147,33 +182,53 @@ declare module fmvc {
         Syncing: string;
         Synced: string;
         Changed: string;
+        Complete: string;
         Error: string;
     };
     class Model extends fmvc.Notifier {
         private _data;
-        private _previousState;
-        private _previousData;
+        private _prevData;
         private _state;
+        private _prevState;
+        private _source;
+        private _queue;
         enabledEvents: boolean;
         enabledState: boolean;
         watchChanges: boolean;
         constructor(name: string, data?: any, opts?: IModelOptions);
         setState(value: string): Model;
         parseValue(value: any): any;
-        reset(): void;
+        reset(): Model;
         data: any;
+        setData(value: any): void;
+        getData(): any;
         state: string;
+        prevState: string;
         sendEvent(name: string, data?: any, sub?: string, error?: any, log?: boolean): void;
-        destroy(): void;
-        queue: ModelQueue;
-        private _validators;
-        addValidator(value: Validator): void;
-        removeValidator(value: Validator): void;
-        validate(value: any): boolean;
+        dispose(): void;
+        queue(create?: boolean): ModelQueue;
+    }
+    class TypeModel<T> extends Model {
+        constructor(name: string, data: T, opts?: IModelOptions);
+        data: T;
+    }
+    class SourceModel extends Model {
+        private _sources;
+        private _sourceMethod;
+        private _resultMethods;
+        private throttleApplyChanges;
+        constructor(name: string, source: Model | Model[], opts?: IModelOptions);
+        addSources(v: Model | Model[]): SourceModel;
+        removeSource(v: Model): SourceModel;
+        sourceChangeHandler(e: IEvent): void;
+        setSourceMethod(value: any): SourceModel;
+        setResultMethods(...values: any[]): SourceModel;
+        applyChanges(): void;
     }
     class ModelQueue {
         private model;
         private currentPromise;
+        private error;
         constructor(model: fmvc.Model);
         load(object: any): ModelQueue;
         loadXml(object: any): ModelQueue;
@@ -181,7 +236,10 @@ declare module fmvc {
         async(getPromiseMethod: any, args: any[], context: any, states: any): ModelQueue;
         sync(method: Function, args?: any[], context?: any, states?: any): ModelQueue;
         complete(method: Function, args?: any[], context?: any, states?: any): void;
+        executeError(err?: any): any;
+        fault(method: Function, args?: any[], context?: any, states?: any): ModelQueue;
         setup(): JQueryPromise<{}>;
+        dispose(): void;
     }
     class Validator {
         name: string;
@@ -276,6 +334,7 @@ declare module fmvc {
         type: string;
         tagName?: string;
         extend?: string;
+        link?: any;
         isVirtual?: boolean;
         isComponent?: boolean;
         component?: fmvc.View;
@@ -303,6 +362,7 @@ declare module fmvc {
         HOVER: string;
         FOCUSED: string;
         DISABLED: string;
+        OPEN: string;
     };
     var DomObjectType: {
         TEXT: string;
@@ -383,32 +443,35 @@ declare module fmvc {
         private applyChildState();
         avaibleInheritedStates: string[];
         inheritedStates: string[];
-        isSelected(): boolean;
-        isHover(): boolean;
-        isFocused(): boolean;
-        isDisabled(): boolean;
+        isSelected: boolean;
+        isHover: boolean;
+        isFocused: boolean;
+        isDisabled: boolean;
+        isOpen: boolean;
         invalidate(type: number): void;
         invalidateHandler(): void;
         private removeInvalidateTimeout();
         mediator: Mediator;
+        setMediator(value: Mediator): View;
         forEachChild(value: Function): void;
         addChild(value: View): void;
-        removeChild(value: View): void;
+        removeChildFrom(index: number): View[];
         removeAllChildren(): View[];
         removeChildAt(value: View): void;
         data: any;
         model: Model;
         app: any;
-        setModelWithListener(value: Model): void;
-        modelHandler(name: string, data: any): void;
+        setModel(value: Model, listen?: boolean): void;
+        modelHandler(e: IEvent): void;
         locale: string;
         i18n: any;
         sendEvent(name: string, data?: any, sub?: string, error?: any, global?: boolean): void;
         log(message: string, level?: number): View;
         viewEventsHandler(name: string, e: any): void;
         eventHandler(name: string, e: any): void;
-        dispose(): void;
+        dispose(): View;
         dynamicProperties: IDynamicSummary;
+        isDynamicStylesAvaible: boolean;
         isDynamicStylesEnabled(value?: boolean): boolean;
         enableDynamicStyle(value: boolean): void;
         dynamicStyle: string;
@@ -455,15 +518,14 @@ declare module fmvc {
 }
 declare module fmvc {
     class ViewList extends fmvc.View {
-        private _modelList;
         private _dataset;
         ChildrenConstructor: Function;
-        constructor(name: string, $root: any);
+        constructor(name: string);
         childrenConstructor: Function;
-        dataset: any[];
         applyChildrenState(name: string, value: any): void;
         applyViewState(name: string, value: any, view: fmvc.View, index: number): void;
         updateChildren(): void;
+        modelHandler(e: IEvent): void;
     }
 }
 declare module fmvc {
@@ -474,21 +536,20 @@ declare module fmvc {
         setRoot(root: Element): Mediator;
         root: Element;
         setFacade(facade: fmvc.Facade): Mediator;
-        addViews(views: fmvc.View | fmvc.View[]): Mediator;
-        private initView(view);
-        getView(name: string): any;
+        addView(views: fmvc.View | fmvc.View[]): Mediator;
+        getView(name: string): View;
         events: string[];
         internalHandler(e: any): void;
         eventHandler(e: any): void;
-        modelEventHandler(e: any): void;
-        mediatorEventHandler(e: any): void;
-        viewEventHandler(e: any): void;
+        modelEventHandler(e: IEvent): void;
+        mediatorEventHandler(e: IEvent): void;
+        viewEventHandler(e: IViewEvent): void;
     }
     interface IMediator {
         events: string[];
         internalHandler(e: any): void;
         eventHandler(e: any): void;
-        getView(name: string): any;
+        getView(name: string): View;
     }
 }
 declare var MessageFormat: any;
@@ -504,8 +565,8 @@ declare module test {
     class TestButtons extends fmvc.View {
         b1: any;
         b2: any;
-        b2: any;
-        b2: any;
+        b3: any;
+        b4: any;
         constructor(name: string, modelOrData?: fmvc.Model | any, jsTemplate?: fmvc.IDomObject);
         createDom(): TestButtons;
         jsTemplate: fmvc.IRootDomObject;

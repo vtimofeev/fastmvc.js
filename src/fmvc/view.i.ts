@@ -70,6 +70,7 @@ module fmvc {
         type:string; // @tag/string/other
         tagName?:string; // tag name: div/br
         extend?:string;
+        link?:any;
 
         isVirtual?:boolean;
         isComponent?:boolean;

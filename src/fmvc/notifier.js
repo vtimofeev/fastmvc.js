@@ -103,7 +103,7 @@ var fmvc;
         Notifier.prototype._sendToListners = function (e) {
             this._listeners.forEach(function (lo) {
                 if (!lo.target.disposed)
-                    (lo.handler).apply(lo.target, [e]);
+                    (lo.handler).call(lo.target, e);
             });
         };
         Notifier.prototype.dispose = function () {

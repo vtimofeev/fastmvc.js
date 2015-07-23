@@ -115,6 +115,10 @@ module fmvc {
             return this;
         }
 
+        public get root():Element {
+            return this._root;
+        }
+
         // Текущее значение локали
         public get locale():string {
             return this.model[DefaultModel.locale].data.value;

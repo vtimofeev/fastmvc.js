@@ -1,15 +1,24 @@
 var fmvc;
 (function (fmvc) {
+    var BrowserUtils = (function () {
+        function BrowserUtils() {
+        }
+        BrowserUtils.getClient = function () {
+            return bowser;
+        };
+        return BrowserUtils;
+    })();
+    fmvc.BrowserUtils = BrowserUtils;
+})(fmvc || (fmvc = {}));
+var fmvc;
+(function (fmvc) {
     var Event = (function () {
         function Event() {
         }
-        Event.MODEL_STATE_CHANGED = 'model.state.changed';
-        Event.MODEL_CHANGED = 'model.changed';
-        Event.MODEL_CREATED = 'model.created';
-        Event.MODEL_VALIDATED = 'model.validated';
-        Event.MODEL_ADDED = 'model.added';
-        Event.MODEL_UPDATED = 'model.updated';
-        Event.MODEL_DELETED = 'model.deleted';
+        Event.Model = {
+            Changed: 'ModelChanged',
+            StateChanged: 'ModelStateChanged',
+        };
         return Event;
     })();
     fmvc.Event = Event;
@@ -121,6 +130,13 @@ var fmvc;
                 _.each(this._events, removeFromObjects, this);
             return this;
         };
+        Object.defineProperty(Facade.prototype, "root", {
+            get: function () {
+                return this._root;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Object.defineProperty(Facade.prototype, "locale", {
             // Текущее значение локали
             get: function () {
@@ -280,7 +296,7 @@ var fmvc;
         Notifier.prototype._sendToListners = function (e) {
             this._listeners.forEach(function (lo) {
                 if (!lo.target.disposed)
-                    (lo.handler).apply(lo.target, [e]);
+                    (lo.handler).call(lo.target, e);
             });
         };
         Notifier.prototype.dispose = function () {
@@ -442,6 +458,7 @@ var fmvc;
         Syncing: 'syncing',
         Synced: 'synced',
         Changed: 'changed',
+        Complete: 'complete',
         Error: 'error',
     };
     var Model = (function (_super) {
@@ -449,6 +466,9 @@ var fmvc;
         function Model(name, data, opts) {
             if (data === void 0) { data = {}; }
             _super.call(this, name);
+            this._state = null;
+            this._source = false;
+            this._queue = null;
             this.enabledEvents = true;
             this.enabledState = true;
             this.watchChanges = true;
@@ -456,28 +476,25 @@ var fmvc;
                 _.extend(this, opts);
             if (data)
                 this.data = data;
-            this.sendEvent(fmvc.Event.MODEL_CREATED, this.data);
+            if (data)
+                this.setState(fmvc.ModelState.Synced);
         }
         Model.prototype.setState = function (value) {
             if (!this.enabledState || this._state === value)
                 return this;
-            this._previousState = value;
+            this._prevState = value;
             this._state = value;
-            this.log('New state: ' + value);
-            this.sendEvent(fmvc.Event.MODEL_CHANGED, this._state);
+            this.sendEvent(fmvc.Event.Model.StateChanged, this._state);
             return this;
         };
         Model.prototype.parseValue = function (value) {
             var result = null;
-            var prevData = this.data;
+            var prevData = this._data;
             var changes = null;
             var hasChanges = false;
             if (value instanceof Model) {
-                console.log(value);
-                this.log('Check errors in this');
                 throw Error('Cant set model data, data must be object, array or primitive');
             }
-            //@todo check type of data and value
             if (_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
                 for (var i in value) {
                     if (prevData[i] !== value[i]) {
@@ -490,11 +507,11 @@ var fmvc;
                 }
                 // if watch object property change
                 if (hasChanges)
-                    this.sendEvent(fmvc.Event.MODEL_CHANGED, changes);
+                    this.sendEvent(fmvc.Event.Model.Changed, changes);
                 result = prevData;
             }
             else {
-                // primitive || array || no data && any value (object etc)
+                // primitive || array || object && !watchChanges , no data && any value (object etc)
                 if (prevData !== value) {
                     result = (_.isObject(prevData) && _.isObject(value)) ? _.extend({}, prevData, value) : value;
                 }
@@ -503,26 +520,41 @@ var fmvc;
         };
         Model.prototype.reset = function () {
             this._data = null;
+            return this;
         };
         Object.defineProperty(Model.prototype, "data", {
             get: function () {
-                return this._data;
+                return this.getData();
             },
             set: function (value) {
-                var previousData = this._data;
-                var result = this.parseValue(value);
-                if (previousData !== result) {
-                    console.log('[' + this.name + ']: New prev, new data ' + this._data + ', ' + result);
-                    this._data = result;
-                    this.sendEvent(fmvc.Event.MODEL_CHANGED, this.data);
-                }
+                this.setData(value);
             },
             enumerable: true,
             configurable: true
         });
+        Model.prototype.setData = function (value) {
+            var previousData = this._data;
+            var result = this.parseValue(value);
+            // for primitive, arrays, objects with no changes
+            // console.log('[' + this.name + ']: New prev, new data ' + this._data + ', ' + result);
+            if (previousData !== result) {
+                this._data = result;
+                this.sendEvent(fmvc.Event.Model.Changed, this._data);
+            }
+        };
+        Model.prototype.getData = function () {
+            return this._data;
+        };
         Object.defineProperty(Model.prototype, "state", {
             get: function () {
                 return this._state;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Model.prototype, "prevState", {
+            get: function () {
+                return this._prevState;
             },
             enumerable: true,
             configurable: true
@@ -535,46 +567,108 @@ var fmvc;
             if (this.enabledEvents)
                 _super.prototype.sendEvent.call(this, name, data, sub, error, log);
         };
-        Model.prototype.destroy = function () {
+        Model.prototype.dispose = function () {
+            _super.prototype.dispose.call(this);
+            // remove queue
         };
-        Object.defineProperty(Model.prototype, "queue", {
-            //-----------------------------------------------------------------------------
-            // Queue
-            //-----------------------------------------------------------------------------
-            get: function () {
-                return new ModelQueue(this);
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Model.prototype.addValidator = function (value) {
-            this._validators = this._validators ? this._validators : [];
-            if (this._validators.indexOf(value) >= 0)
-                throw 'Cant add validator to model';
-            this._validators.push(value);
-        };
-        Model.prototype.removeValidator = function (value) {
-            var index = this._validators ? this._validators.indexOf(value) : -1;
-            if (index >= 0)
-                this._validators.splice(index, 1);
-        };
-        Model.prototype.validate = function (value) {
-            var result = false;
-            var error = {};
-            for (var i in this._validators) {
-                var validator = this._validators[i];
-                value = validator.execute(value);
-                if (!value) {
-                    result = false;
-                    break;
-                }
-            }
-            this.sendEvent(fmvc.Event.MODEL_VALIDATED, result, null, error);
-            return result;
+        //-----------------------------------------------------------------------------
+        // Source model
+        //-----------------------------------------------------------------------------
+        //-----------------------------------------------------------------------------
+        // Queue
+        //-----------------------------------------------------------------------------
+        Model.prototype.queue = function (create) {
+            if (create === void 0) { create = false; }
+            if (create && this._queue)
+                this._queue.dispose();
+            return this._queue && !create ? this._queue : (this._queue = new ModelQueue(this));
         };
         return Model;
     })(fmvc.Notifier);
     fmvc.Model = Model;
+    var TypeModel = (function (_super) {
+        __extends(TypeModel, _super);
+        function TypeModel(name, data, opts) {
+            _super.call(this, name, data, opts);
+        }
+        Object.defineProperty(TypeModel.prototype, "data", {
+            get: function () {
+                return this.getData();
+            },
+            enumerable: true,
+            configurable: true
+        });
+        return TypeModel;
+    })(Model);
+    fmvc.TypeModel = TypeModel;
+    var SourceModel = (function (_super) {
+        __extends(SourceModel, _super);
+        function SourceModel(name, source, opts) {
+            _super.call(this, name, null, opts);
+            this.throttleApplyChanges = _.throttle(_.bind(this.applyChanges, this), 100);
+            this.addSources(source);
+        }
+        SourceModel.prototype.addSources = function (v) {
+            if (!v)
+                return this;
+            if (!this._sources)
+                this._sources = [];
+            if (_.isArray(v)) {
+                _.each(v, this.addSources, this);
+            }
+            else if (v instanceof Model) {
+                var m = v;
+                m.bind(this, this.sourceChangeHandler);
+                this._sources.push(m);
+            }
+            else {
+                console.warn('Cant add source ', v);
+            }
+            return this;
+        };
+        SourceModel.prototype.removeSource = function (v) {
+            var index = -1;
+            if (this._sources && (index = this._sources.indexOf(v)) > -1) {
+                this._sources.splice(index, 1);
+                v.unbind(v);
+            }
+            return this;
+        };
+        SourceModel.prototype.sourceChangeHandler = function (e) {
+            this.throttleApplyChanges();
+        };
+        SourceModel.prototype.setSourceMethod = function (value) {
+            this._sourceMethod = value;
+            this.throttleApplyChanges();
+            return this;
+        };
+        SourceModel.prototype.setResultMethods = function () {
+            var values = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                values[_i - 0] = arguments[_i];
+            }
+            this._resultMethods = _.flatten([].concat(this._resultMethods ? this._resultMethods : [], values));
+            this.throttleApplyChanges();
+            return this;
+        };
+        SourceModel.prototype.applyChanges = function () {
+            console.log('Apply changes ...', this._sources, this._sourceMethod, this._resultMethods);
+            if (!this._sources || !this._sources.length)
+                this.setData(null);
+            if (this._sourceMethod && this._sources.length === 1)
+                throw new Error('SourceModel: source method not defined');
+            var result = null;
+            var sourcesResult = this._sourceMethod && this._sources.length > 1 ? (this._sourceMethod.apply(this, _.map(this._sources, function (v) { return v.data; }))) : this._sources[0].data;
+            console.log('SourceModel: Source Result is ', sourcesResult);
+            if (sourcesResult)
+                result = _.reduce(this._resultMethods, function (memo, method) { return method.call(this, memo); }, sourcesResult, this);
+            console.log('SourceModel: Result is ', JSON.stringify(result));
+            this.reset().setData(result);
+        };
+        return SourceModel;
+    })(Model);
+    fmvc.SourceModel = SourceModel;
+    // Uses jQuery Deferred model
     var ModelQueue = (function () {
         function ModelQueue(model) {
             this.model = model;
@@ -596,11 +690,12 @@ var fmvc;
         ModelQueue.prototype.async = function (getPromiseMethod, args, context, states) {
             var deferred = $.Deferred();
             var queuePromise = this.setup();
+            var t = this;
             queuePromise.then(function done(value) {
-                console.log('Call async method args ', args);
-                (getPromiseMethod.apply(context, args)).then(function successPromise(result) { console.log('Async success ', result); deferred.resolve(result); }, function faultPromise(result) { console.log('Async fault ', arguments); deferred.reject(result); });
+                (getPromiseMethod.apply(context, args)).then(function successPromise(result) { console.log('Async success ', result); deferred.resolve(result); }, function faultPromise(result) { console.log('Async fault ', arguments); deferred.reject(result); t.executeError(result); });
             }, function fault() {
                 deferred.reject();
+                t.executeError();
             });
             this.currentPromise = deferred.promise();
             return this;
@@ -608,14 +703,17 @@ var fmvc;
         ModelQueue.prototype.sync = function (method, args, context, states) {
             var deferred = $.Deferred();
             var queuePromise = this.setup();
+            var t = this;
             queuePromise.done(function doneQueue(value) {
                 var methodArgs = [value].concat(args);
                 var result = method.apply(context, methodArgs);
                 console.log('Call sync method ', result, ' args ', methodArgs);
                 if (result)
                     deferred.resolve(result);
-                else
+                else {
                     deferred.reject();
+                    t.executeError();
+                }
             });
             this.currentPromise = deferred.promise();
             return this;
@@ -623,10 +721,25 @@ var fmvc;
         ModelQueue.prototype.complete = function (method, args, context, states) {
             this.sync(method, context, args, states);
         };
+        ModelQueue.prototype.executeError = function (err) {
+            console.log('Product error ', arguments);
+            if (this.error) {
+                this.error.method.apply(this.error.context, this.error.args);
+            }
+        };
+        ModelQueue.prototype.fault = function (method, args, context, states) {
+            this.error = { method: method, args: args, context: context, states: states };
+            return this;
+        };
         ModelQueue.prototype.setup = function () {
             var queueDeferred = $.Deferred();
             $.when(this.currentPromise).then(function doneQueue(value) { queueDeferred.resolve(value); }, function faultQueue() { queueDeferred.reject(); });
             return queueDeferred.promise();
+        };
+        ModelQueue.prototype.dispose = function () {
+            this.model = null;
+            this.currentPromise = null;
+            this.error = null;
         };
         return ModelQueue;
     })();
@@ -770,7 +883,8 @@ var fmvc;
         SELECTED: 'selected',
         HOVER: 'hover',
         FOCUSED: 'focused',
-        DISABLED: 'disabled'
+        DISABLED: 'disabled',
+        OPEN: 'open'
     };
     fmvc.DomObjectType = {
         TEXT: 'text',
@@ -806,6 +920,7 @@ var fmvc;
                 else
                     this.data = modelOrData;
             }
+            this.enableStates(null);
             this.initTemplate(jsTemplate);
             this.init();
             this.invalidateHandler = this.invalidateHandler.bind(this);
@@ -1332,12 +1447,9 @@ var fmvc;
         };
         Object.defineProperty(View.prototype, "avaibleInheritedStates", {
             get: function () {
+                var _this = this;
                 if (!this._avaibleInheritedStates) {
-                    this._avaibleInheritedStates = _.filter(_.map(this._states, function (v, k) {
-                        return k;
-                    }), function (k) {
-                        return this.inheritedStates.indexOf(k) > -1;
-                    }, this);
+                    this._avaibleInheritedStates = _.filter(_.map(this._states, function (v, k) { return k; }), function (k) { return _this.inheritedStates.indexOf(k) > -1; }, this);
                 }
                 return this._avaibleInheritedStates;
             },
@@ -1351,18 +1463,41 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        View.prototype.isSelected = function () {
-            return !!this.getState(fmvc.State.SELECTED);
-        };
-        View.prototype.isHover = function () {
-            return !!this.getState(fmvc.State.HOVER);
-        };
-        View.prototype.isFocused = function () {
-            return !!this.getState(fmvc.State.FOCUSED);
-        };
-        View.prototype.isDisabled = function () {
-            return !!this.getState(fmvc.State.DISABLED);
-        };
+        Object.defineProperty(View.prototype, "isSelected", {
+            get: function () {
+                return !!this.getState(fmvc.State.SELECTED);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(View.prototype, "isHover", {
+            get: function () {
+                return !!this.getState(fmvc.State.HOVER);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(View.prototype, "isFocused", {
+            get: function () {
+                return !!this.getState(fmvc.State.FOCUSED);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(View.prototype, "isDisabled", {
+            get: function () {
+                return !!this.getState(fmvc.State.DISABLED);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(View.prototype, "isOpen", {
+            get: function () {
+                return !!this.getState(fmvc.State.OPEN);
+            },
+            enumerable: true,
+            configurable: true
+        });
         //------------------------------------------------------------------------------------------------
         // VALIDATE
         //------------------------------------------------------------------------------------------------
@@ -1378,11 +1513,17 @@ var fmvc;
             if (!this._invalidate || !this._inDocument)
                 return;
             if (this._invalidate & 1) {
-                this.updateData(this.data, 'data.', 2);
+                if (_.isObject(this.data))
+                    this.updateData(this.data, 'data.', 2);
+                else
+                    this.updateDynamicProperty('data', this.data);
                 this.updateApp();
             }
             if (this._invalidate & 2)
                 _.each(this._states, function (value, key) { return value ? _this.applyState(key, value) : null; }, this);
+            if (this._invalidate & 4) {
+                this.updateChildren();
+            }
             this._invalidate = 0;
         };
         View.prototype.removeInvalidateTimeout = function () {
@@ -1402,6 +1543,10 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        View.prototype.setMediator = function (value) {
+            this._mediator = value;
+            return this;
+        };
         //------------------------------------------------------------------------------------------------
         // Children
         //------------------------------------------------------------------------------------------------
@@ -1416,7 +1561,12 @@ var fmvc;
             this.childrenViews.push(value);
             value.render(this.childrenContainer);
         };
-        View.prototype.removeChild = function (value) {
+        View.prototype.removeChildFrom = function (index) {
+            if (!(this.childrenViews && this.childrenViews.length))
+                return null;
+            var result = this.childrenViews.splice(index); //_.filter(this.childrenViews, (view:View, key:number)=>(key>=index?view.dispose():null) );
+            _.each(result, function (v) { return v.dispose(); });
+            return result;
         };
         View.prototype.removeAllChildren = function () {
             _.each(this.childrenViews, function (view) { return view.dispose(); });
@@ -1428,13 +1578,13 @@ var fmvc;
         };
         Object.defineProperty(View.prototype, "data", {
             get: function () {
-                return this._data === null ? View.__emptyData : this._data;
+                return this._model ? this._model.data : (this._data === null ? View.__emptyData : this._data);
             },
             //------------------------------------------------------------------------------------------------
             // Data & model
             //------------------------------------------------------------------------------------------------
             set: function (value) {
-                //console.log('View: set data' , value);
+                console.log('View %s set data %s', this.name, value);
                 this._data = value;
                 this.invalidate(1);
             },
@@ -1456,12 +1606,13 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        View.prototype.setModelWithListener = function (value) {
+        View.prototype.setModel = function (value, listen) {
             this.model = value;
-            this.model.bind(this, this.modelHandler);
+            if (listen)
+                this._model.bind(this, this.modelHandler);
         };
-        View.prototype.modelHandler = function (name, data) {
-            //this.log('modelHandler ' + name);
+        View.prototype.modelHandler = function (e) {
+            console.log('modelHandler ', arguments, this._model);
             this.invalidate(1);
         };
         Object.defineProperty(View.prototype, "locale", {
@@ -1513,13 +1664,24 @@ var fmvc;
         // Overrided
         View.prototype.dispose = function () {
             if (this.model)
-                this.model.unbind(this, this.modelHandler);
+                this.model.unbind(this);
+            this.exitDocument();
+            if (this.element.parentNode)
+                this.element.parentNode.removeChild(this.element);
             _super.prototype.dispose.call(this);
+            return this;
         };
         Object.defineProperty(View.prototype, "dynamicProperties", {
             /* Overrided by generator */
             get: function () {
                 return this.jsTemplate ? this.jsTemplate.dynamicSummary : null;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(View.prototype, "isDynamicStylesAvaible", {
+            get: function () {
+                return !!(this.jsTemplate && this.jsTemplate.css);
             },
             enumerable: true,
             configurable: true
@@ -1533,7 +1695,7 @@ var fmvc;
         };
         View.prototype.enableDynamicStyle = function (value) {
             var id = this.className + '__' + Math.random() + 'Style';
-            if (value && !this.isDynamicStylesEnabled()) {
+            if (this.isDynamicStylesAvaible && value && !this.isDynamicStylesEnabled()) {
                 console.log(' *** enable dynamic style *** ', this.jsTemplate.css);
                 var style = document.createElement('style');
                 style.id = id; //@todo create method that setup className at the generator
@@ -1610,7 +1772,7 @@ var fmvc;
             }
             else
                 throw Error('Expression must has args and filter or values');
-            //this.log(['ExecuteExpression result=', JSON.stringify(r), ', of content: ', ex.content].join(''));
+            console.log([this.name, ' ... ExecuteExpression ', ex, '  result=', JSON.stringify(r), ', of content: ', ex.content].join(''), ex);
             r = this.executeFilters(r, ex.filters);
             return r;
         };
@@ -1727,10 +1889,10 @@ var fmvc;
             var minutes = Math.floor(value / 60);
             value -= minutes * 60;
             var seconds = Math.floor(value % 60);
-            hours = (hours < 10) ? "0" + hours : hours;
-            minutes = (minutes < 10) ? "0" + minutes : minutes;
-            seconds = (seconds < 10) ? "0" + seconds : seconds;
-            var values = value >= 3600 ? [hours, minutes, seconds] : [minutes, seconds];
+            var hoursStr = String((hours < 10) ? "0" + hours : hours);
+            var minutesStr = String((minutes < 10) ? "0" + minutes : minutes);
+            var secondsStr = String((seconds < 10) ? "0" + seconds : seconds);
+            var values = value >= 3600 ? [hoursStr, minutesStr, secondsStr] : [minutesStr, secondsStr];
             return values.join(":");
         };
         return ViewHelper;
@@ -1743,8 +1905,9 @@ var fmvc;
 (function (fmvc) {
     var ViewList = (function (_super) {
         __extends(ViewList, _super);
-        function ViewList(name, $root) {
-            _super.call(this, name, $root);
+        function ViewList(name) {
+            _super.call(this, name);
+            this.ChildrenConstructor = fmvc.View;
         }
         Object.defineProperty(ViewList.prototype, "childrenConstructor", {
             set: function (value) {
@@ -1753,17 +1916,16 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(ViewList.prototype, "dataset", {
-            get: function () {
-                return this._dataset;
-            },
-            set: function (value) {
-                this._dataset = value;
-                this.invalidate(8);
-            },
-            enumerable: true,
-            configurable: true
-        });
+        /*
+        set dataset(value:any[]) {
+            this._dataset = value;
+            this.invalidate(8);
+        }
+
+        get dataset():any[] {
+            return this._dataset;
+        }
+        */
         ViewList.prototype.applyChildrenState = function (name, value) {
             if (!this.avaibleInheritedStates || this.avaibleInheritedStates.indexOf(name) === -1)
                 return;
@@ -1775,15 +1937,27 @@ var fmvc;
         ViewList.prototype.updateChildren = function () {
             if (!this.inDocument)
                 return;
-            var children = this.removeAllChildren() || [];
-            _.each(this.dataset, function (value, index) {
-                var view = children[index] || new this.ChildrenConstructor();
-                view.data = value;
+            var children = this.removeChildFrom(this.data.length - 1) || [];
+            console.log('Update children ... ', this._model, this.data);
+            _.each(this.data, function (value, index) {
+                var view = (this.childrenViews && this.childrenViews.length ? this.childrenViews[index] : null)
+                    || (children && children.length ? children.splice(0, 1)[0] : null)
+                    || new this.ChildrenConstructor(ViewList.Name + index);
+                if (value instanceof fmvc.Model)
+                    view.setModel(value, true);
+                else
+                    view.data = value;
+                console.log('Updated view ', view);
                 _.each(this.avaibleInheritedStates, function (name) { view.setState(name, this.getState(name)); }, this);
                 if (!view.inDocument) {
                     this.addChild(view);
                 }
             }, this);
+        };
+        ViewList.prototype.modelHandler = function (e) {
+            //this.log('modelHandler ' + name);
+            _super.prototype.modelHandler.call(this, e);
+            this.invalidate(4);
         };
         return ViewList;
     })(fmvc.View);
@@ -1814,17 +1988,24 @@ var fmvc;
             this.facade = facade;
             return this;
         };
-        Mediator.prototype.addViews = function (views) {
+        Mediator.prototype.addView = function (views) {
             if (!this.views)
                 this.views = [];
             if (views) {
                 if (_.isArray(views)) {
                     for (var i in views) {
-                        this.initView(views[i]);
+                        this.addView(views[i]);
                     }
                 }
                 else {
-                    this.initView((views));
+                    var view = views;
+                    if (this.views.indexOf(view) === -1) {
+                        this.views.push(view);
+                        view.setMediator(this).render(this._root);
+                    }
+                    else {
+                        this.log('Warn: try to duplicate view');
+                    }
                 }
             }
             else {
@@ -1832,22 +2013,12 @@ var fmvc;
             }
             return this;
         };
-        Mediator.prototype.initView = function (view) {
-            this.log('Init view ' + view.name);
-            view.mediator = this;
-            view.render(this._root);
-            this.views.push(view);
-        };
         Mediator.prototype.getView = function (name) {
-            for (var i in this.views) {
-                if (this.views[i].name == name)
-                    return this.views[i];
-            }
-            return null;
+            return _.find(this.views, function (view) { return view.name === name; });
         };
         Object.defineProperty(Mediator.prototype, "events", {
             get: function () {
-                return [];
+                return null;
             },
             enumerable: true,
             configurable: true
@@ -1932,14 +2103,14 @@ var ui;
                     "path": "0,0",
                     "type": "text",
                     "data": {
-                        "content": "\n    {(state.content||data.content)}\n",
+                        "content": "\n    {(state.content||data)}\n",
                         "result": "\n    {$0}\n",
                         "vars": ["$0"],
                         "expressions": [{
-                                "content": "(state.content||data.content)",
-                                "vars": ["state.content", "data.content", "$0"],
+                                "content": "(state.content||data)",
+                                "vars": ["state.content", "data", "$0"],
                                 "values": ["$0"],
-                                "expressions": ["(this.getState(\"content\")||this.data.content)"]
+                                "expressions": ["(this.getState(\"content\")||this.data)"]
                             }]
                     },
                     "attribs": {}
@@ -1978,29 +2149,29 @@ var ui;
                 "state.content": {
                     "data": {
                         "0,0": {
-                            "content": "\n    {(state.content||data.content)}\n",
+                            "content": "\n    {(state.content||data)}\n",
                             "result": "\n    {$0}\n",
                             "vars": ["$0"],
                             "expressions": [{
-                                    "content": "(state.content||data.content)",
-                                    "vars": ["state.content", "data.content", "$0"],
+                                    "content": "(state.content||data)",
+                                    "vars": ["state.content", "data", "$0"],
                                     "values": ["$0"],
-                                    "expressions": ["(this.getState(\"content\")||this.data.content)"]
+                                    "expressions": ["(this.getState(\"content\")||this.data)"]
                                 }]
                         }
                     }
                 },
-                "data.content": {
+                "data": {
                     "data": {
                         "0,0": {
-                            "content": "\n    {(state.content||data.content)}\n",
+                            "content": "\n    {(state.content||data)}\n",
                             "result": "\n    {$0}\n",
                             "vars": ["$0"],
                             "expressions": [{
-                                    "content": "(state.content||data.content)",
-                                    "vars": ["state.content", "data.content", "$0"],
+                                    "content": "(state.content||data)",
+                                    "vars": ["state.content", "data", "$0"],
                                     "values": ["$0"],
-                                    "expressions": ["(this.getState(\"content\")||this.data.content)"]
+                                    "expressions": ["(this.getState(\"content\")||this.data)"]
                                 }]
                         }
                     }
@@ -2037,8 +2208,8 @@ var test;
             this.element = this.templateElement;
             this.b1 = this.componentPaths["0,11"] || this.elementPaths["0,11"];
             this.b2 = this.componentPaths["0,13"] || this.elementPaths["0,13"];
-            this.b2 = this.componentPaths["0,15"] || this.elementPaths["0,15"];
-            this.b2 = this.componentPaths["0,17"] || this.elementPaths["0,17"];
+            this.b3 = this.componentPaths["0,15"] || this.elementPaths["0,15"];
+            this.b4 = this.componentPaths["0,17"] || this.elementPaths["0,17"];
             this.childrenContainer = this.childrenContainer || this.element;
             return this;
         };
@@ -2219,7 +2390,7 @@ var test;
                             "attribs": {}
                         }],
                     "tagName": "ui.Button",
-                    "link": "b2",
+                    "link": "b3",
                     "selected": {
                         "content": "(app.test.state==='one')",
                         "vars": ["app.test.state", "$0"],
@@ -2239,7 +2410,7 @@ var test;
                             "attribs": {}
                         }],
                     "tagName": "ui.Button",
-                    "link": "b2",
+                    "link": "b4",
                     "selected": {
                         "content": "(app.test.state==='one')",
                         "vars": ["app.test.state", "$0"],
@@ -2254,10 +2425,10 @@ var test;
                     "name": "b2",
                     "value": "0,13"
                 }, {
-                    "name": "b2",
+                    "name": "b3",
                     "value": "0,15"
                 }, {
-                    "name": "b2",
+                    "name": "b4",
                     "value": "0,17"
                 }],
             "dynamicSummary": {

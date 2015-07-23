@@ -29,17 +29,24 @@ var fmvc;
             this.facade = facade;
             return this;
         };
-        Mediator.prototype.addViews = function (views) {
+        Mediator.prototype.addView = function (views) {
             if (!this.views)
                 this.views = [];
             if (views) {
                 if (_.isArray(views)) {
                     for (var i in views) {
-                        this.initView(views[i]);
+                        this.addView(views[i]);
                     }
                 }
                 else {
-                    this.initView((views));
+                    var view = views;
+                    if (this.views.indexOf(view) === -1) {
+                        this.views.push(view);
+                        view.setMediator(this).render(this._root);
+                    }
+                    else {
+                        this.log('Warn: try to duplicate view');
+                    }
                 }
             }
             else {
@@ -47,22 +54,12 @@ var fmvc;
             }
             return this;
         };
-        Mediator.prototype.initView = function (view) {
-            this.log('Init view ' + view.name);
-            view.mediator = this;
-            view.render(this._root);
-            this.views.push(view);
-        };
         Mediator.prototype.getView = function (name) {
-            for (var i in this.views) {
-                if (this.views[i].name == name)
-                    return this.views[i];
-            }
-            return null;
+            return _.find(this.views, function (view) { return view.name === name; });
         };
         Object.defineProperty(Mediator.prototype, "events", {
             get: function () {
-                return [];
+                return null;
             },
             enumerable: true,
             configurable: true

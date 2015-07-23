@@ -38,14 +38,14 @@ var ui;
                     "path": "0,0",
                     "type": "text",
                     "data": {
-                        "content": "\n    {(state.content||data.content)}\n",
+                        "content": "\n    {(state.content||data)}\n",
                         "result": "\n    {$0}\n",
                         "vars": ["$0"],
                         "expressions": [{
-                                "content": "(state.content||data.content)",
-                                "vars": ["state.content", "data.content", "$0"],
+                                "content": "(state.content||data)",
+                                "vars": ["state.content", "data", "$0"],
                                 "values": ["$0"],
-                                "expressions": ["(this.getState(\"content\")||this.data.content)"]
+                                "expressions": ["(this.getState(\"content\")||this.data)"]
                             }]
                     },
                     "attribs": {}
@@ -84,29 +84,29 @@ var ui;
                 "state.content": {
                     "data": {
                         "0,0": {
-                            "content": "\n    {(state.content||data.content)}\n",
+                            "content": "\n    {(state.content||data)}\n",
                             "result": "\n    {$0}\n",
                             "vars": ["$0"],
                             "expressions": [{
-                                    "content": "(state.content||data.content)",
-                                    "vars": ["state.content", "data.content", "$0"],
+                                    "content": "(state.content||data)",
+                                    "vars": ["state.content", "data", "$0"],
                                     "values": ["$0"],
-                                    "expressions": ["(this.getState(\"content\")||this.data.content)"]
+                                    "expressions": ["(this.getState(\"content\")||this.data)"]
                                 }]
                         }
                     }
                 },
-                "data.content": {
+                "data": {
                     "data": {
                         "0,0": {
-                            "content": "\n    {(state.content||data.content)}\n",
+                            "content": "\n    {(state.content||data)}\n",
                             "result": "\n    {$0}\n",
                             "vars": ["$0"],
                             "expressions": [{
-                                    "content": "(state.content||data.content)",
-                                    "vars": ["state.content", "data.content", "$0"],
+                                    "content": "(state.content||data)",
+                                    "vars": ["state.content", "data", "$0"],
                                     "values": ["$0"],
-                                    "expressions": ["(this.getState(\"content\")||this.data.content)"]
+                                    "expressions": ["(this.getState(\"content\")||this.data)"]
                                 }]
                         }
                     }
