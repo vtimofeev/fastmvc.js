@@ -293,20 +293,6 @@ declare module fmvc {
         mediator: fmvc.Mediator;
         eventHandler(name: string, e: any): void;
     }
-    interface IRootDomObject extends IDomObject {
-        className: string;
-        moduleName: string;
-        css?: IStyleDefinition;
-        links?: {
-            [name: string]: string;
-        }[];
-        dynamicSummary?: IDynamicSummary;
-        i18n?: any;
-    }
-    interface INameValue {
-        name: string;
-        value: any;
-    }
     interface ITypeNameValue {
         name: string;
         value: any;
@@ -354,6 +340,20 @@ declare module fmvc {
         };
         children?: IDomObject[];
     }
+    interface IRootDomObject extends IDomObject {
+        className: string;
+        moduleName: string;
+        css?: IStyleDefinition;
+        links?: {
+            [name: string]: string;
+        }[];
+        dynamicSummary?: IDynamicSummary;
+        i18n?: any;
+    }
+    interface INameValue {
+        name: string;
+        value: any;
+    }
 }
 declare module fmvc {
     var global: any;
@@ -399,6 +399,7 @@ declare module fmvc {
         private linkedViews;
         private childrenViews;
         private tmp;
+        private expr;
         element: Element;
         childrenContainer: Element;
         constructor(name: string, modelOrData?: fmvc.Model | any, jsTemplate?: IDomObject);
@@ -414,11 +415,6 @@ declare module fmvc {
         updateData(data: any, prefix?: string, depth?: number): void;
         updateApp(): void;
         updateAppProp(name: string): void;
-        private getStyleValue(name);
-        getClassStringValue(propertyName: any, propertyValue: any, templateString: any): string;
-        getDataStringValue(propertyName: any, propertyValue: any, strOrExOrMEx: any): string;
-        executeFilters(value: any, filters: string[]): any;
-        executePlainFilter(filter: string, value: string): string;
         updatePaths(paths: any, type: any, name: any, value: any, GetValue: Function, each: Boolean): void;
         updateDynamicProperty(name: string, value: any): void;
         updatePathProperty(path: any, type: any, name: string, value: any, resultValue: any, template?: string): void;
@@ -479,8 +475,6 @@ declare module fmvc {
         isStateEnabled(states: any): boolean;
         private executeEval(value);
         getVarValue(v: string, ex: IExpression): any;
-        executeMultiExpression(mex: IMultiExpression): string;
-        executeExpression(ex: IExpression): any;
         getElement(value: IDomObject, object: any): Element;
         jsTemplate: IRootDomObject;
         className: any;
@@ -553,6 +547,19 @@ declare module fmvc {
     }
 }
 declare var MessageFormat: any;
+declare module fmvc {
+    class Expression {
+        private static __instance;
+        static instance(): Expression;
+        private getStyleValue(name);
+        getClassStringValue(propertyName: any, propertyValue: any, templateString: any): string;
+        getDataStringValue(propertyName: any, propertyValue: any, strOrExOrMEx: any): string;
+        executeFilters(value: any, filters: string[]): any;
+        executePlainFilter(filter: string, value: string): string;
+        executeMultiExpression(view: View, mex: IMultiExpression): string;
+        executeExpression(view: View, ex: IExpression): any;
+    }
+}
 declare module ui {
     class Button extends fmvc.View {
         constructor(name: string, modelOrData?: fmvc.Model | any, jsTemplate?: fmvc.IDomObject);
@@ -569,6 +576,14 @@ declare module test {
         b4: any;
         constructor(name: string, modelOrData?: fmvc.Model | any, jsTemplate?: fmvc.IDomObject);
         createDom(): TestButtons;
+        jsTemplate: fmvc.IRootDomObject;
+        private static __jsTemplate;
+    }
+}
+declare module test {
+    class TestInput extends fmvc.View {
+        constructor(name: string, modelOrData?: fmvc.Model | any, jsTemplate?: fmvc.IDomObject);
+        createDom(): TestInput;
         jsTemplate: fmvc.IRootDomObject;
         private static __jsTemplate;
     }

@@ -8,7 +8,7 @@ var async = require('async');
 var beautify = require('js-beautify');
 var stylus = require('stylus');
 var tsc = require('typescript-compiler');
-var VERSION = '0.1';
+exports.VERSION = '0.1';
 require('dustjs-helpers');
 dust.config.whitespace = true;
 var start = Date.now();
@@ -27,34 +27,219 @@ var fmvc;
         STATE: 'f:state',
         I18N: 'f:i18n'
     };
+    /*
+     const KEYS = {
+     EXTEND: 'extend',
+     CREATE_STATES: 'setStates',
+     LINK: 'link',
+     //DATA: 'data',
+     STATES: 'states'
+     //RAW: 'raw',
+     /*
+     SELECTED: 'selected',
+     STYLE: 'style',
+     HREF: 'href',
+     VALUE: 'value',
+     CLASS: 'class',
+     CHECKED: 'checked',
+     DISABLED: 'disabled',
+     SELECTED: 'selected',
+     FOCUSED: 'focused'
+     }
+     */
+    var ViewProperties = {
+        className: 'className',
+        extend: 'extend',
+        setStates: 'setStates',
+        link: 'link',
+        states: 'states' //
+    };
+    var MUST_USE_ATTRIBUTE = 1;
+    var MUST_USE_PROPERTY = 2;
+    var HAS_BOOLEAN_VALUE = 4;
+    var HAS_SIDE_EFFECTS = 8;
+    var HAS_NUMERIC_VALUE = 16;
+    var HAS_POSITIVE_NUMERIC_VALUE = 32;
+    var HAS_OVERLOADED_BOOLEAN_VALUE = 64;
+    var HAS_MULTI_VALUE = 128;
+    var HAS_TEXT_VALUE = 256;
+    var Properties = {
+        /**
+         * Standard Properties
+         */
+        accept: null,
+        acceptCharset: null,
+        accessKey: null,
+        action: null,
+        allowFullScreen: MUST_USE_ATTRIBUTE | HAS_BOOLEAN_VALUE,
+        allowTransparency: MUST_USE_ATTRIBUTE,
+        alt: null,
+        async: HAS_BOOLEAN_VALUE,
+        autoComplete: null,
+        // autoFocus is polyfilled/normalized by AutoFocusUtils
+        // autoFocus: HAS_BOOLEAN_VALUE,
+        autoPlay: HAS_BOOLEAN_VALUE,
+        capture: MUST_USE_ATTRIBUTE | HAS_BOOLEAN_VALUE,
+        cellPadding: null,
+        cellSpacing: null,
+        charSet: MUST_USE_ATTRIBUTE,
+        challenge: MUST_USE_ATTRIBUTE,
+        checked: MUST_USE_PROPERTY | HAS_BOOLEAN_VALUE,
+        classID: MUST_USE_ATTRIBUTE,
+        // To set className on SVG elements, it's necessary to use .setAttribute;
+        // this works on HTML elements too in all browsers except IE8. Conveniently,
+        // IE8 doesn't support SVG and so we can simply use the attribute in
+        // browsers that support SVG and the property in browsers that don't,
+        // regardless of whether the element is HTML or SVG.
+        className: MUST_USE_ATTRIBUTE,
+        class: HAS_MULTI_VALUE,
+        cols: MUST_USE_ATTRIBUTE | HAS_POSITIVE_NUMERIC_VALUE,
+        colSpan: HAS_POSITIVE_NUMERIC_VALUE,
+        content: null,
+        contentEditable: null,
+        contextMenu: MUST_USE_ATTRIBUTE,
+        controls: MUST_USE_PROPERTY | HAS_BOOLEAN_VALUE,
+        coords: null,
+        crossOrigin: null,
+        data: null,
+        dateTime: MUST_USE_ATTRIBUTE,
+        defer: HAS_BOOLEAN_VALUE,
+        dir: null,
+        disabled: MUST_USE_ATTRIBUTE | HAS_BOOLEAN_VALUE,
+        download: HAS_OVERLOADED_BOOLEAN_VALUE,
+        draggable: null,
+        encType: null,
+        form: MUST_USE_ATTRIBUTE,
+        formAction: MUST_USE_ATTRIBUTE,
+        formEncType: MUST_USE_ATTRIBUTE,
+        formMethod: MUST_USE_ATTRIBUTE,
+        formNoValidate: HAS_BOOLEAN_VALUE,
+        formTarget: MUST_USE_ATTRIBUTE,
+        frameBorder: MUST_USE_ATTRIBUTE,
+        headers: null,
+        height: MUST_USE_ATTRIBUTE,
+        hidden: MUST_USE_ATTRIBUTE | HAS_BOOLEAN_VALUE,
+        high: null,
+        href: null,
+        hrefLang: null,
+        htmlFor: null,
+        httpEquiv: null,
+        icon: null,
+        id: MUST_USE_PROPERTY,
+        inputMode: MUST_USE_ATTRIBUTE,
+        is: MUST_USE_ATTRIBUTE,
+        keyParams: MUST_USE_ATTRIBUTE,
+        keyType: MUST_USE_ATTRIBUTE,
+        label: null,
+        lang: null,
+        list: MUST_USE_ATTRIBUTE,
+        loop: MUST_USE_PROPERTY | HAS_BOOLEAN_VALUE,
+        low: null,
+        manifest: MUST_USE_ATTRIBUTE,
+        marginHeight: null,
+        marginWidth: null,
+        max: null,
+        maxLength: MUST_USE_ATTRIBUTE,
+        media: MUST_USE_ATTRIBUTE,
+        mediaGroup: null,
+        method: null,
+        min: null,
+        minLength: MUST_USE_ATTRIBUTE,
+        multiple: MUST_USE_PROPERTY | HAS_BOOLEAN_VALUE,
+        muted: MUST_USE_PROPERTY | HAS_BOOLEAN_VALUE,
+        name: null,
+        noValidate: HAS_BOOLEAN_VALUE,
+        open: HAS_BOOLEAN_VALUE,
+        optimum: null,
+        pattern: null,
+        placeholder: HAS_TEXT_VALUE,
+        poster: null,
+        preload: null,
+        radioGroup: null,
+        readOnly: MUST_USE_PROPERTY | HAS_BOOLEAN_VALUE,
+        rel: null,
+        required: HAS_BOOLEAN_VALUE,
+        role: MUST_USE_ATTRIBUTE,
+        rows: MUST_USE_ATTRIBUTE | HAS_POSITIVE_NUMERIC_VALUE,
+        rowSpan: null,
+        sandbox: null,
+        scope: null,
+        scoped: HAS_BOOLEAN_VALUE,
+        scrolling: null,
+        seamless: MUST_USE_ATTRIBUTE | HAS_BOOLEAN_VALUE,
+        selected: MUST_USE_PROPERTY | HAS_BOOLEAN_VALUE,
+        shape: null,
+        size: MUST_USE_ATTRIBUTE | HAS_POSITIVE_NUMERIC_VALUE,
+        sizes: MUST_USE_ATTRIBUTE,
+        span: HAS_POSITIVE_NUMERIC_VALUE,
+        spellCheck: null,
+        src: null,
+        srcDoc: MUST_USE_PROPERTY,
+        srcSet: MUST_USE_ATTRIBUTE,
+        start: HAS_NUMERIC_VALUE,
+        step: null,
+        style: null,
+        tabIndex: null,
+        target: null,
+        title: HAS_TEXT_VALUE,
+        type: null,
+        useMap: null,
+        value: HAS_TEXT_VALUE | MUST_USE_PROPERTY | HAS_SIDE_EFFECTS,
+        width: HAS_NUMERIC_VALUE | MUST_USE_ATTRIBUTE,
+        wmode: HAS_NUMERIC_VALUE | MUST_USE_ATTRIBUTE,
+        wrap: null,
+        /**
+         * Non-standard Properties
+         */
+        // autoCapitalize and autoCorrect are supported in Mobile Safari for
+        // keyboard hints.
+        autoCapitalize: null,
+        autoCorrect: null,
+        // itemProp, itemScope, itemType are for
+        // Microdata support. See http://schema.org/docs/gs.html
+        itemProp: MUST_USE_ATTRIBUTE,
+        itemScope: MUST_USE_ATTRIBUTE | HAS_BOOLEAN_VALUE,
+        itemType: MUST_USE_ATTRIBUTE,
+        // itemID and itemRef are for Microdata support as well but
+        // only specified in the the WHATWG spec document. See
+        // https://html.spec.whatwg.org/multipage/microdata.html#microdata-dom-api
+        itemID: MUST_USE_ATTRIBUTE,
+        itemRef: MUST_USE_ATTRIBUTE,
+        // property is supported for OpenGraph in meta tags.
+        property: null,
+        // IE-only attribute that specifies security restrictions on an iframe
+        // as an alternative to the sandbox attribute on IE<10
+        security: MUST_USE_ATTRIBUTE,
+        // IE-only attribute that controls focus behavior
+        unselectable: MUST_USE_ATTRIBUTE,
+    };
+    var defaultAttibuteMap = function (mask) {
+        return function (v, k) { return (v & mask) ? k : null; };
+    };
+    var DomAttibutesByType = {
+        multi: _.compact(_.map(Properties, defaultAttibuteMap(HAS_MULTI_VALUE))),
+        text: _.compact(_.map(Properties, defaultAttibuteMap(HAS_TEXT_VALUE))),
+        boolean: _.compact(_.map(Properties, defaultAttibuteMap(HAS_BOOLEAN_VALUE))),
+    };
     var KEYS = {
-        EXTEND: 'extend',
-        CREATE_STATES: 'enableStates',
-        LINK: 'link',
-        RAW: 'raw',
         DATA: 'data',
         STATES: 'states',
-        SELECTED: 'selected',
         STYLE: 'style',
-        HREF: 'href',
-        VALUE: 'value',
-        CLASS: 'class',
-        CHECKED: 'checked',
-        DISABLED: 'disabled',
-        SELECTED: 'selected',
-        FOCUSED: 'focused'
+        RAW: 'raw',
     };
     var EVENT_KEYS = {
         ONKEYDOWN: 'onkeydown',
         ONKEYUP: 'onkeyup',
         ONACTION: 'onaction',
         ONCLICK: 'onclick',
+        ONDBLCLICK: 'ondblclick',
         ONMOUSEOVER: 'onmouseover',
-        ONMOUSEOUT: 'onmouseout'
+        ONMOUSEOUT: 'onmouseout',
+        ONFOCUS: 'onfocus'
     };
-    var DOM_AND_STATES_KEYS = [KEYS.VALUE, KEYS.HREF, KEYS.STYLE, KEYS.CLASS, KEYS.CHECKED, KEYS.DISABLED, KEYS.SELECTED, KEYS.FOCUSED, KEYS.STATES];
-    var ALLOWED_KEYS = [].concat(_.values(KEYS), _.values(EVENT_KEYS));
-    var ALLOWED_VARIABLES_IN_EXPRESSION = [].concat(_.values(KEYS), ['data', 'app']);
+    //const DOM_AND_STATES_KEYS:string[] = [KEYS.VALUE, KEYS.HREF, KEYS.STYLE, KEYS.CLASS, KEYS.CHECKED, KEYS.DISABLED, KEYS.SELECTED, KEYS.FOCUSED, KEYS.STATES];
+    //const ALLOWED_KEYS:string[] = [].concat(_.values(KEYS), _.values(EVENT_KEYS) );
+    //const ALLOWED_VARIABLES_IN_EXPRESSION = [].concat(_.values(KEYS), ['data', 'app']);
     var Xml2Ts = (function () {
         function Xml2Ts(srcIn, srcOut, compiledOut) {
             this.srcIn = srcIn;
@@ -83,6 +268,7 @@ var fmvc;
         Xml2Ts.prototype.loadSources = function () {
             var t = this;
             var loadSrc = path.normalize(this.srcIn);
+            console.log('Read files ', loadSrc);
             dir.readFiles(loadSrc, {
                 match: /.html$/,
                 exclude: /^\./,
@@ -95,6 +281,7 @@ var fmvc;
             }, this.complete);
         };
         Xml2Ts.prototype.complete = function () {
+            return;
             var result = null;
             if (this.compiledOut) {
                 var jsClassPath = path.normalize(this.compiledOut + '/fmvc.js');
@@ -107,6 +294,7 @@ var fmvc;
             console.log('*** complete all ***');
         };
         Xml2Ts.prototype.parse = function (fileName, content, next) {
+            console.log('Prepare Parsing: ', fileName);
             var t = this;
             var handler = new htmlparser.DefaultHandler(function (error, dom) {
                 if (error) {
@@ -117,7 +305,10 @@ var fmvc;
             }, { enforceEmptyTags: false, verbose: false });
             var parser = new htmlparser.Parser(handler, { strict: false });
             parser.parseComplete(content);
+            //var resultHtmlJs:any = JSON.parse(JSON.stringify(handler.dom));
             var resultHtmlJs = JSON.parse(JSON.stringify(handler.dom, Xml2TsUtils.jsonReplacer, '\t'));
+            //console.log('Result Parsing: ', JSON.stringify(resultHtmlJs));
+            console.dir(resultHtmlJs, { depth: 10 });
             var rootJs = null;
             var rootDom = null;
             var styleJs = null;
@@ -141,7 +332,11 @@ var fmvc;
                             if (!statesJs)
                                 statesJs = [];
                             var type = value.attribs.type || 'string';
-                            statesJs.push({ name: value.attribs.name, type: type, default: Xml2TsUtils.getTypedValue(value.attribs.default || '', type) });
+                            statesJs.push({
+                                name: value.attribs.name,
+                                type: type,
+                                default: Xml2TsUtils.getTypedValue(value.attribs.default || '', type)
+                            });
                     }
                 }
             });
@@ -197,23 +392,35 @@ var fmvc;
         Xml2TsUtils.jsonReplacer = function (key, value) {
             if (!_.isString(value))
                 return value;
+            value = value.trim();
+            //if(value) value = value.replace(/[\n\t]+/gi, '');
+            if (!value)
+                return undefined;
             switch (key) {
                 case KEYS.RAW:
                     return undefined;
                 case KEYS.STYLE:
                     return Xml2TsUtils.getDynamicValues(key, value, ';');
+                case KEYS.STATES:
+                    return Xml2TsUtils.parseDynamicContent(value);
                 case KEYS.DATA:
                     return Xml2TsUtils.parseMultidynamicContent(value);
-                case KEYS.STATES:
-                case KEYS.SELECTED:
-                    return Xml2TsUtils.parseDynamicContent(value);
                 default:
-                    {
-                        if (key in EVENT_KEYS)
-                            return value; // {event: key.replace('on', null), value: value};
-                        else {
-                            return (_.isString(value) && ALLOWED_KEYS.indexOf(key) > -1) ? Xml2TsUtils.getDynamicValues(key, value) : value;
-                        }
+                    if (key.indexOf('data-') === 0 || key.indexOf('aria-') === 0 || key.indexOf('.') > 0 || key.indexOf('on') === 0) {
+                        return Xml2TsUtils.parseMultidynamicContent(value);
+                    }
+                    else if (DomAttibutesByType.multi.indexOf(key) > -1) {
+                        return Xml2TsUtils.getDynamicValues(key, value, ' ');
+                    }
+                    else if (DomAttibutesByType.text.indexOf(key) > -1) {
+                        return Xml2TsUtils.parseMultidynamicContent(value);
+                    }
+                    else if (DomAttibutesByType.boolean.indexOf(key) > -1) {
+                        return Xml2TsUtils.parseMultidynamicContent(value);
+                    }
+                    else {
+                        console.log('Skip', key, value);
+                        return value;
                     }
             }
         };
@@ -224,7 +431,11 @@ var fmvc;
                 return value;
             var expressions = _.map(matches, function (v) { return _this.parseDynamicContent(v.substring(1, v.length - 1)); }, this);
             var expressionVars = [];
-            var result = _.reduce(matches, function (r, v, i) { var e = '$' + i; expressionVars.push(e); return r.replace(v, '{' + e + '}'); }, value, this);
+            var result = _.reduce(matches, function (r, v, i) {
+                var e = '$' + i;
+                expressionVars.push(e);
+                return r.replace(v, '{' + e + '}');
+            }, value, this);
             return { content: value, result: result, vars: expressionVars, expressions: expressions };
         };
         Xml2TsUtils.parseDynamicContent = function (value) {
@@ -234,6 +445,9 @@ var fmvc;
             // {(a||b||c)} // expression
             // {(a||b?'one':'two')} // expression
             // {(a||b) as V, c as D, (a||b||c) as E|i18n.t|s|d} // expression
+            var expressionMatches = Xml2TsUtils.getExpressionFromString(value); //value.match(Xml2TsUtils.BRACKETS_MATCH);
+            if (!(expressionMatches && expressionMatches.length))
+                return value;
             var result = {
                 content: value,
                 vars: [],
@@ -242,12 +456,13 @@ var fmvc;
                 filters: [],
                 expressions: [] // выражения для расчета
             };
-            var expressionMatches = Xml2TsUtils.getExpressionFromString(value); //value.match(Xml2TsUtils.BRACKETS_MATCH);
             if (expressionMatches && expressionMatches.length)
                 _.each(expressionMatches, function (expression, index) {
                     value = value.replace(expression, '$' + index);
-                    var variables = _.uniq(_.filter(expression.match(Xml2TsUtils.VARS_MATCH), function (v) { return v.indexOf('\'') === -1 && v.match(/^[A-Za-z]+/gi); }));
-                    //console.log('--- vars : ' , variables);
+                    var variables = _.uniq(_.filter(expression.match(Xml2TsUtils.VARS_MATCH), function (v) {
+                        return v.indexOf('\'') === -1 && v.match(/^[A-Za-z]+/gi);
+                    }));
+                    //console.log('--- vars : ', variables);
                     if (!_.isEmpty(variables))
                         variables = variables.sort(function (a, b) { return a.length > b.length ? -1 : 1; });
                     result.vars = result.vars.concat(variables);
@@ -300,71 +515,87 @@ var fmvc;
             if (!_.isString(value))
                 return value;
             var values = delimiter !== null ? (value.split(delimiter ? delimiter : ' ')) : [value];
-            var dynamicValues = null;
-            var staticValues = null;
-            var boundValues = null;
+            var r = { static: [], dynamic: [] };
+            _.each(values, function (value) {
+                var parts = (key === 'style') ? value.split(':') : null;
+                value = parts && parts.length > 1 ? parts[1] : value;
+                var re = Xml2TsUtils.parseMultidynamicContent(value);
+                var ro = re;
+                if (key === 'style') {
+                    var o = {};
+                    o[parts[0].trim()] = re;
+                    ro = o;
+                }
+                if (re === value) {
+                    r.static.push(ro);
+                }
+                else {
+                    r.dynamic.push(ro);
+                }
+            });
+            return r;
+            /*
+            var dynamicValues:{[property:string]:string} = null;
+            var staticValues:string[] = null;
+            var boundValues:string[] = null;
+
             _.each(values, function (v) {
                 var matches = v.match(Xml2TsUtils.DATA_MATCH_REGEXP);
+
                 _.each(matches, function (match, index) {
                     var matchValue = match.replace(/[\{\}]/g, '');
                     var filterResult = null;
                     if (matchValue.indexOf('@') > -1) {
-                        var cleanMatchValue = matchValue.replace('@', '');
-                        var cleanResultValue = '{' + cleanMatchValue + '}';
-                        if (!dynamicValues)
-                            dynamicValues = {};
-                        if (!dynamicValues[cleanMatchValue])
-                            dynamicValues[cleanMatchValue] = [cleanResultValue];
-                        else
-                            dynamicValues[cleanMatchValue].push(cleanResultValue);
-                        if (!boundValues)
-                            boundValues = {};
-                        if (!boundValues[cleanMatchValue])
-                            boundValues[cleanMatchValue] = cleanResultValue;
+                        var cleanMatchValue:string = matchValue.replace('@', '');
+                        var cleanResultValue:string = '{' + cleanMatchValue + '}';
+
+                        if (!dynamicValues) dynamicValues = {};
+                        if (!dynamicValues[cleanMatchValue]) dynamicValues[cleanMatchValue] = [cleanResultValue];
+                        else dynamicValues[cleanMatchValue].push(cleanResultValue);
+
+                        if (!boundValues) boundValues = {};
+                        if (!boundValues[cleanMatchValue]) boundValues[cleanMatchValue] = cleanResultValue;
                     }
                     else if (matchValue.indexOf('|') > -1) {
                         var filters = matchValue.split('|');
                         var data = filters.splice(0, 1)[0];
-                        filterResult = { args: {}, filters: [], source: v.replace(matches[0], '{replace}') };
+                        filterResult = {args: {}, filters: [], source: v.replace(matches[0], '{replace}')};
+
                         _.each(filters, function (v, k) {
                             var filter = v.indexOf('.') > -1 ? v.split('.') : v;
                             filterResult.filters.push(filter);
                         });
+
                         var dataFields = data.split(',');
                         _.each(dataFields, function (dataFieldContent) {
                             var content = dataFieldContent.split(' as ');
-                            var dataPropName = content[0].trim();
-                            var dataPropKey = content[1] ? content[1].trim() : 'VALUE';
+                            var dataPropName:string = content[0].trim();
+                            var dataPropKey:string = content[1] ? content[1].trim() : 'VALUE';
                             filterResult.args[dataPropKey] = dataPropName;
-                            if (!dynamicValues)
-                                dynamicValues = {};
-                            if (!dynamicValues[dataPropName])
-                                dynamicValues[dataPropName] = [filterResult];
-                            else
-                                dynamicValues[dataPropName].push(filterResult);
+
+                            if (!dynamicValues) dynamicValues = {};
+                            if (!dynamicValues[dataPropName]) dynamicValues[dataPropName] = [filterResult];
+                            else dynamicValues[dataPropName].push(filterResult);
                         });
                     }
                     else {
-                        if (!dynamicValues)
-                            dynamicValues = {};
-                        if (!dynamicValues[matchValue])
-                            dynamicValues[matchValue] = [v];
-                        else
-                            dynamicValues[matchValue].push(v);
+                        if (!dynamicValues) dynamicValues = {};
+                        if (!dynamicValues[matchValue]) dynamicValues[matchValue] = [v];
+                        else dynamicValues[matchValue].push(v);
                     }
                 });
                 if (!(matches && matches.length)) {
-                    if (!staticValues)
-                        staticValues = [];
+                    if (!staticValues) staticValues = [];
                     staticValues.push(v);
                 }
             });
+
             if (dynamicValues) {
-                return { static: staticValues, dynamic: dynamicValues, bounds: boundValues };
-            }
-            else {
+                return {static: staticValues, dynamic: dynamicValues, bounds: boundValues};
+            } else {
                 return value;
             }
+            */
         };
         Xml2TsUtils.getStaticValueOfDynamicObject = function (value, delimiter) {
             delimiter = delimiter ? delimiter : ' ';
@@ -380,7 +611,19 @@ var fmvc;
         };
         Xml2TsUtils.recreateJsNode = function (data, path, rootObject) {
             var a = data.attribs;
-            var object = { path: path, type: data.type, data: data.data, attribs: {}, staticAttributes: {}, children: [], links: [], handlers: {}, bounds: {} };
+            var object = {
+                path: path,
+                type: data.type,
+                data: data.data,
+                properties: {},
+                attribs: {},
+                static: {},
+                dynamic: {},
+                children: [],
+                links: [],
+                handlers: {},
+                bounds: {}
+            };
             if (!rootObject) {
                 rootObject = object;
                 rootObject.dynamicSummary = {};
@@ -394,8 +637,6 @@ var fmvc;
                     console.log('Empty ', empty, path);
                     return null;
                 }
-                else
-                    object.data = object.data.trim().replace(/[\n\t]./gi, '');
             }
             if (a) {
                 if (a.link) {
@@ -412,10 +653,10 @@ var fmvc;
                     object.selected = a.selected;
             }
             // Проверяем аттрибуты объекта для дальнейшего прокидывания в объекты
-            var skipAttribs = ['link', 'enableStates', 'extend', 'states', 'class', 'style', 'selected'];
+            var properties = ['link', 'enableStates', 'extend', 'states', 'selected'];
             _.each(a, function (v, k) {
-                console.log('INCLUDE ', k, (_.indexOf(skipAttribs, k) === -1));
-                if (_.indexOf(skipAttribs, k) === -1)
+                console.log('INCLUDE ', k, (_.indexOf(properties, k) === -1));
+                if (_.indexOf(properties, k) === -1)
                     object.attribs[k] = v;
             });
             // handlers, create static attributes
@@ -448,7 +689,7 @@ var fmvc;
             if (_.values(EVENT_KEYS).indexOf(key) > -1) {
                 object.handlers[key.replace('on', '')] = value;
             }
-            if (!(DOM_AND_STATES_KEYS.indexOf(key) > -1 || key.indexOf('data') > -1))
+            if (!(key.indexOf('data') > -1))
                 return;
             var result = null;
             switch (key) {
@@ -477,8 +718,10 @@ var fmvc;
         };
         Xml2TsUtils.getExpressionVars = function (ex) {
             var r = [].concat(ex.vars ? ex.vars : []);
-            _.each(ex.expressions, function (childEx) { if (_.isObject(childEx))
-                r = [].concat(r, Xml2TsUtils.getExpressionVars(childEx)); });
+            _.each(ex.expressions, function (childEx) {
+                if (_.isObject(childEx))
+                    r = [].concat(r, Xml2TsUtils.getExpressionVars(childEx));
+            });
             return _.uniq(_.filter(r, function (v) { return (v.match(Xml2TsUtils.JS_VARS_MATCH)); }));
         };
         Xml2TsUtils.getNameValue = function (name, value) {
@@ -486,7 +729,9 @@ var fmvc;
         };
         Xml2TsUtils.getValueArrayFromString = function (enableStates, s) {
             var r = enableStates.split(s);
-            return _.map(r, function (v, k) { return (v.indexOf('=') > -1) ? Xml2TsUtils.getNameValueObjectFromString(v, '=') : v; });
+            return _.map(r, function (v, k) {
+                return (v.indexOf('=') > -1) ? Xml2TsUtils.getNameValueObjectFromString(v, '=') : v;
+            });
         };
         Xml2TsUtils.getNameValueObjectFromString = function (v, s) {
             var r = v.split(s);
@@ -520,7 +765,9 @@ var fmvc;
                     open--;
                 }
             });
-            _.each(brackets, function (v) { r.push(value.substring(v[0], v[1] + 1)); });
+            _.each(brackets, function (v) {
+                r.push(value.substring(v[0], v[1] + 1));
+            });
             return r.length ? r : null;
         };
         //public static MATCH_REGEXP:RegExp = /\{([\@A-Za-z\, \|0-9\.]+)\}/g;
