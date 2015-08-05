@@ -1,9 +1,12 @@
 <div class="containerButtons">
-    <div>Simple div without anything <b>ola!</b></div>
+    <div>Simple div without anything <b>ola!</b> model data: <i>{app.test.data.title}</i></div>
+    <div states="(app.test.state==='one')">{app.test.data.title} - has model data, sure ?</div>
     <div selected="(app.test.state)"  states="(app.test.state==='one')">State one</div>
     <ui.Button selected="(!!app.test.state)" states="(app.test.state==='two')">State two button</ui.Button>
     <div states="(app.test.state==='three')">State three</div>
     <div><b>{app.test.state}</b> - has model data, sure ?</div>
+
+
     <ui.Button selected="(app.test.state)" link="b1" content="SimpleButtonContentFromProperty"></ui.Button>
     <ui.Button selected="(app.test.state==='one')" link="b2" exClass="buttonOne">Selected TheContentFromContainer And Text 2</ui.Button>
     <ui.Button selected="(app.test.state==='one')" link="b3" exClass="buttonOne">Button 3 / And a lot of text</ui.Button>

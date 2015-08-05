@@ -33,8 +33,8 @@ module fmvc {
             return this._modules;
         }
 
-        public add(name:string, message:string, level:number = 0):Logger {
-            var data = {name: name, message: message, level: level, date: new Date() };
+        public add(name:string, messages:any[] = null, level:number = 0):Logger {
+            var data = {name: name, data: messages, level: level, date: new Date() };
             var dataArray:any[] = this.data;
             var config = this._config;
             dataArray.push(data);
@@ -49,7 +49,7 @@ module fmvc {
 
             // console
             if (config && config.console && ('console' in window)) {
-                console.log('[' + name + '] ' + level + ' ' + message);
+                console.log('[' + name + '] ' + level + ' ' , messages);
             }
 
             // clean: remove part of logs
@@ -58,8 +58,7 @@ module fmvc {
             }
 
             // send event
-            if(this.enabledEvents) this.sendEvent('log', data, null, null, false);
-
+            if(this.enabledEvents) this.sendEvent('log', data, null, null);
             return this;
         }
     }

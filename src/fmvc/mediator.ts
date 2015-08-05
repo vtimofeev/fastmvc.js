@@ -5,10 +5,10 @@ module fmvc {
         private views:View[];
         private _root:Element;
 
-        constructor(name:string, root?:Element, facade?:Facade) {
+        constructor(name:string, root?:Element) {
             super(name, fmvc.TYPE_MEDIATOR);
-            this._root = root;
-            this.facade = facade;
+            this.setRoot(root);
+            this.views = [];
         }
 
         public setRoot(root:Element):Mediator {
@@ -20,40 +20,29 @@ module fmvc {
             return this._root;
         }
 
-        public setFacade(facade:fmvc.Facade):Mediator {
-            this.facade = facade;
+        public addView(...views:fmvc.View[]):Mediator
+        {
+            _.each(views, this._addView, this);
             return this;
         }
 
-        public addView(views:fmvc.View|fmvc.View[]):Mediator
-        {
-            if(!this.views) this.views = [];
-            if (views) {
-                if (_.isArray(views)) {
-                    for (var i in views) {
-                        this.addView(views[i]);
-                    }
-                }
-                else {
-                    var view = <View> views;
-                    if (this.views.indexOf(view) === -1) {
-                        this.views.push(view);
-                        view.setMediator(this).render(this._root);
-                    } else {
-                        this.log('Warn: try to duplicate view');
-                    }
-                }
+        private _addView(view:fmvc.View):void {
+            if (this.views.indexOf(view) === -1) {
+                this.views.push(view);
+                view.setMediator(this).render(this.root);
+            } else {
+                this.log('Warn: try to duplicate view');
             }
-            else {
-                this.log('Has no views to add');
-            }
-
-            return this;
         }
 
         public getView(name:string):View
         {
             return _.find<View>(this.views,(view:View) => view.name === name);
+        }
+
+        public removeView(name:string):Mediator {
+            this.views = _.without(this.views, this.getView(name));
+            return this;
         }
 
         public get events():string[] {
@@ -69,9 +58,7 @@ module fmvc {
             }
         }
 
-        public eventHandler(e:any):void {
-            //console.log('Mediator handled ... ' , e);
-            //this.log('Handled ' + e.name + ' from ' + e.target.name + ":" + e.target.type);
+        public eventHandler(e:IEvent):void {
             switch (e && e.target?e.target.type:null) {
                 case fmvc.TYPE_MEDIATOR:
                     this.mediatorEventHandler(e);

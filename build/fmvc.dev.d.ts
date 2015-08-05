@@ -1,36 +1,5 @@
 /// <reference path="../../DefinitelyTyped/lodash/lodash.d.ts" />
 /// <reference path="../../DefinitelyTyped/jquery/jquery.d.ts" />
-declare var bowser: any;
-declare module fmvc {
-    class BrowserUtils {
-        static getClient(): IBowser;
-    }
-    interface IBowser {
-        name: string;
-        silk?: boolean;
-        webkit?: boolean;
-        gecko?: boolean;
-        opera?: boolean;
-        opera?: boolean;
-        msie?: boolean;
-        msedge?: boolean;
-        phantomjs?: boolean;
-        version: string;
-        mobile?: boolean;
-        tablet?: boolean;
-        ios?: boolean;
-        android?: boolean;
-        blackberry?: boolean;
-        webos?: boolean;
-        bada?: boolean;
-        tizen?: boolean;
-        sailfish?: boolean;
-        osversion?: string;
-        a?: boolean;
-        c?: boolean;
-        x?: boolean;
-    }
-}
 declare module fmvc {
     class Event {
         static Model: {
@@ -44,14 +13,12 @@ declare module fmvc {
     var TYPE_MEDIATOR: string;
     var TYPE_MODEL: string;
     var TYPE_VIEW: string;
-    var DefaultModel: {
-        locale: string;
-        i18n: string;
-        theme: string;
-        log: string;
+    var FacadeModel: {
+        Log: string;
     };
     class Facade {
         private _name;
+        private _type;
         private _events;
         private _root;
         model: {
@@ -60,21 +27,27 @@ declare module fmvc {
         mediator: {
             [id: string]: Mediator;
         };
-        constructor(name: string, root: Element | Window, theme?: string, locale?: string, i18nDict?: any);
-        init(): void;
-        register(objects: INotifier | INotifier[]): Facade;
-        unregister(objects: INotifier | INotifier[]): Facade;
-        addListener(object: IMediator, event: string): Facade;
-        removeListener(object: IMediator, event?: string): Facade;
         root: Element;
-        locale: string;
-        theme: string;
-        i18n: any;
+        name: string;
+        type: string;
+        constructor(name: string, type: string, root: Element);
+        init(): void;
+        register(...objects: INotifier[]): Facade;
+        private _register(object);
+        unregister(...objects: INotifier[]): Facade;
+        private _unregister(object);
+        get(name: string): INotifier;
+        private addListener(object, event);
+        private removeListener(object, event?);
         eventHandler(e: IEvent): void;
         logger: Logger;
-        log(message: string, level?: number): Facade;
-        static getInstance(name: string): Facade;
-        private static __facades;
+        log(...args: any[]): Facade;
+        private static __facadesByName;
+        private static __facadesByType;
+        static registerInstance(facade: Facade): void;
+        static unregisterInstance(facade: Facade): void;
+        static getFacadeByName(name: string): Facade;
+        static getFacadesByType(type: string): Facade[];
     }
 }
 declare module fmvc {
@@ -89,15 +62,17 @@ declare module fmvc {
         name: string;
         disposed: boolean;
         type: string;
-        sendEvent(name: string, data?: any, sub?: string, error?: any, log?: boolean): void;
-        log(message: string, level?: number): Notifier;
+        listenerCount: number;
+        setFacade(facade: fmvc.Facade): Notifier;
+        sendEvent(name: string, data?: any, changes?: any, sub?: string, error?: any): void;
+        log(...messages: string[]): Notifier;
         registerHandler(): void;
         removeHandler(): void;
-        bind(object: any, handler?: any): Notifier;
-        unbind(object: any, handler?: any): Notifier;
-        addListener(object: INotifier, handler: Function): Notifier;
-        removeListener(object: INotifier, handler?: Function): Notifier;
-        removeAllListeners(): void;
+        bind(object: INotifier, handler?: any): Notifier;
+        unbind(object: INotifier): Notifier;
+        private addListener(object, handler);
+        private removeListener(object);
+        private removeAllListeners();
         private _sendToListners(e);
         dispose(): void;
     }
@@ -119,6 +94,7 @@ declare module fmvc {
         target: INotifier;
         name: string;
         data?: any;
+        changes?: any;
         sub?: any;
         error?: any;
     }
@@ -175,42 +151,35 @@ declare module fmvc {
     var ModelState: {
         None: string;
         Parsing: string;
-        Parsed: string;
-        Loading: string;
-        Loaded: string;
-        Updating: string;
         Syncing: string;
         Synced: string;
         Changed: string;
-        Complete: string;
+        Completed: string;
         Error: string;
     };
-    class Model extends fmvc.Notifier {
+    class Model extends fmvc.Notifier implements IModelOptions {
         private _data;
-        private _prevData;
         private _state;
+        private _changes;
         private _prevState;
-        private _source;
         private _queue;
         enabledEvents: boolean;
         enabledState: boolean;
         watchChanges: boolean;
         constructor(name: string, data?: any, opts?: IModelOptions);
         setState(value: string): Model;
-        parseValue(value: any): any;
+        parseValueAndSetChanges(value: any): any;
         reset(): Model;
         data: any;
+        private setChanges(value);
         setData(value: any): void;
+        changes: any;
         getData(): any;
         state: string;
         prevState: string;
-        sendEvent(name: string, data?: any, sub?: string, error?: any, log?: boolean): void;
+        sendEvent(name: string, data?: any, changes?: any, sub?: string, error?: any): void;
         dispose(): void;
         queue(create?: boolean): ModelQueue;
-    }
-    class TypeModel<T> extends Model {
-        constructor(name: string, data: T, opts?: IModelOptions);
-        data: T;
     }
     class SourceModel extends Model {
         private _sources;
@@ -270,7 +239,7 @@ declare module fmvc {
         console: boolean;
         filter: string[];
         modules: any;
-        add(name: string, message: string, level?: number): Logger;
+        add(name: string, messages?: any[], level?: number): Logger;
     }
 }
 declare module fmvc {
@@ -532,15 +501,16 @@ declare module fmvc {
     class Mediator extends fmvc.Notifier implements IMediator {
         private views;
         private _root;
-        constructor(name: string, root?: Element, facade?: Facade);
+        constructor(name: string, root?: Element);
         setRoot(root: Element): Mediator;
         root: Element;
-        setFacade(facade: fmvc.Facade): Mediator;
-        addView(views: fmvc.View | fmvc.View[]): Mediator;
+        addView(...views: fmvc.View[]): Mediator;
+        private _addView(view);
         getView(name: string): View;
+        removeView(name: string): Mediator;
         events: string[];
         internalHandler(e: any): void;
-        eventHandler(e: any): void;
+        eventHandler(e: IEvent): void;
         modelEventHandler(e: IEvent): void;
         mediatorEventHandler(e: IEvent): void;
         viewEventHandler(e: IViewEvent): void;
@@ -553,6 +523,52 @@ declare module fmvc {
     }
 }
 declare var MessageFormat: any;
+declare module fmvc {
+    var DefaultModel: {
+        locale: string;
+        i18n: string;
+        theme: string;
+        log: string;
+    };
+    class AppFacade extends Facade {
+        constructor(name: string, root: Element, theme?: string, locale?: string, i18nDict?: any);
+        init(): void;
+        locale: string;
+        theme: string;
+        i18n: any;
+    }
+}
+declare var bowser: any;
+declare module fmvc {
+    class BrowserUtils {
+        static getClient(): IBowser;
+    }
+    interface IBowser {
+        name: string;
+        silk?: boolean;
+        webkit?: boolean;
+        gecko?: boolean;
+        opera?: boolean;
+        opera?: boolean;
+        msie?: boolean;
+        msedge?: boolean;
+        phantomjs?: boolean;
+        version: string;
+        mobile?: boolean;
+        tablet?: boolean;
+        ios?: boolean;
+        android?: boolean;
+        blackberry?: boolean;
+        webos?: boolean;
+        bada?: boolean;
+        tizen?: boolean;
+        sailfish?: boolean;
+        osversion?: string;
+        a?: boolean;
+        c?: boolean;
+        x?: boolean;
+    }
+}
 declare module ui {
     class Button extends fmvc.View {
         constructor(name: string, modelOrData?: fmvc.Model | any, jsTemplate?: fmvc.IDomObject);

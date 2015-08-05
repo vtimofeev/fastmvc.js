@@ -7,59 +7,59 @@ module fmvc {
     }
 
     export var ModelState = {
-        None: 'none',
+        None: '',
         Parsing: 'parsing', // parsing from source
-        Parsed: 'parsed', // parsed
-        Loading: 'loading', // load from local/remote source
-        Loaded: 'loaded', // load from local/remote source
-        Updating: 'updating', // actualize changes @todo? можно исползовать syncing вместо loading/updating
-        Syncing: 'syncing', // saving changes, updating actual data from remote ...
-        Synced: 'synced', //
-        Changed: 'changed', // changed in system
-        Complete: 'complete',
+        Syncing: 'syncing', // load from local/remote source
+        Synced: 'synced',
+        Changed: 'changed',
+        Completed: 'completed',
         Error: 'error',
     };
 
-    export class Model extends fmvc.Notifier {
+    export class Model extends fmvc.Notifier implements IModelOptions {
+        // data, state, prevState
         private _data:any;
-        private _prevData:string;
-        
-        private _state:string = null;
+        private _state:string;
+        private _changes:any;
         private _prevState:string;
 
-        private _source:boolean = false;
+        // queue
         private _queue:ModelQueue = null;
 
+        // model options
         public enabledEvents:boolean = true;
         public enabledState:boolean = true;
         public watchChanges:boolean = true;
 
         constructor(name:string, data:any = {}, opts?:IModelOptions) {
-            super(name);
+            super(name, TYPE_MODEL);
             if (opts) _.extend(this, opts);
             if (data) this.data = data;
-            if (data) this.setState(ModelState.Synced);
+            if (data) this.setState(ModelState.Completed);
         }
 
         public setState(value:string):Model {
-            if(!this.enabledState || this._state === value) return this;
+            if (!this.enabledState || this._state === value) return this;
             this._prevState = value;
             this._state = value;
             this.sendEvent(fmvc.Event.Model.StateChanged, this._state);
             return this;
         }
 
-        public parseValue(value:any):any {
+        public parseValueAndSetChanges(value:any):any {
+            if (value instanceof Model) throw Error('Cant set model data, data must be object, array or primitive');
+
             var result = null;
             var prevData = this._data;
             var changes:{[id:string]:any} = null;
             var hasChanges:boolean = false;
+            this.setChanges(null);
 
-            if (value instanceof Model) {
-                throw Error('Cant set model data, data must be object, array or primitive');
+            if (_.isArray(value)) {
+                result = value.concat([]); //clone of array
             }
-
-            if(_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
+            else if (_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
+                // check changes and set auto data
                 for (var i in value) {
                     if (prevData[i] !== value[i]) {
                         if (!changes) changes = {};
@@ -68,21 +68,20 @@ module fmvc {
                         prevData[i] = value[i];
                     }
                 }
-                // if watch object property change
-                if (hasChanges) this.sendEvent(fmvc.Event.Model.Changed, changes);
+                this.setChanges(changes);
                 result = prevData;
             }
             else {
-                // primitive || array || object && !watchChanges , no data && any value (object etc)
-                if (prevData !== value) {
-                    result = (_.isObject(prevData) && _.isObject(value))?_.extend({}, prevData, value):value;
-                }
+                result = (_.isObject(value)) ? _.extend((prevData ? prevData : {}), value) : value; // primitive || array || object && !watchChanges , no data && any value (object etc)
             }
             return result;
         }
 
         public reset():Model {
             this._data = null;
+            this._changes = null;
+            this._state = ModelState.None;
+            this.sendEvent(Event.Model.Changed);
             return this;
         }
 
@@ -90,20 +89,25 @@ module fmvc {
             this.setData(value);
         }
 
-        public setData(value:any) {
-            var previousData = this._data;
-            var result = this.parseValue(value);
+        private setChanges(value:any) {
+            this._changes = value;
+       }
 
-            // for primitive, arrays, objects with no changes
-            // console.log('[' + this.name + ']: New prev, new data ' + this._data + ', ' + result);
-            if(previousData !== result) {
+        public setData(value:any) {
+            if (this._data === value) return;
+            const result:any = this.parseValueAndSetChanges(value);
+            if (this._data !== result || this._changes) {
                 this._data = result;
-                this.sendEvent(fmvc.Event.Model.Changed, this._data);
+                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
             }
         }
 
+        public get changes():any {
+            return this._changes;
+        }
+
         public get data():any {
-            return this.getData();
+            return (this.getData());
         }
 
         public getData():any {
@@ -119,8 +123,8 @@ module fmvc {
             return this._prevState;
         }
 
-        public sendEvent(name:string, data:any = null, sub:string = null, error:any = null, log:boolean = true):void {
-            if (this.enabledEvents) super.sendEvent(name, data, sub, error, log);
+        public sendEvent(name:string, data:any = null, changes:any = null, sub:string = null, error:any = null):void {
+            if (this.enabledEvents) super.sendEvent(name, data, changes, sub, error);
         }
 
         public dispose() {
@@ -136,20 +140,22 @@ module fmvc {
         // Queue
         //-----------------------------------------------------------------------------
         public queue(create:boolean = false):ModelQueue {
-            if(create && this._queue) this._queue.dispose();
-            return this._queue && !create?this._queue:(this._queue = new ModelQueue(this));
+            if (create && this._queue) this._queue.dispose();
+            return this._queue && !create ? this._queue : (this._queue = new ModelQueue(this));
         }
     }
 
-    export class TypeModel <T> extends Model {
-        constructor(name:string, data:T, opts?:IModelOptions) {
-            super(name, data, opts);
-        }
+    /*
+     export class TypeModel <T> extends Model {
+     constructor(name:string, data:T, opts?:IModelOptions) {
+     super(name, data, opts);
+     }
 
-        public get data():T {
-            return <T> this.getData();
-        }
-    }
+     public get data():T {
+     return <T>this.getData();
+     }
+     }
+     */
 
     export class SourceModel extends Model {
         private _sources:Model[];
@@ -164,12 +170,12 @@ module fmvc {
         }
 
         addSources(v:Model|Model[]):SourceModel {
-            if(!v) return this;
-            if(!this._sources) this._sources = [];
-            if(_.isArray(v)) {
+            if (!v) return this;
+            if (!this._sources) this._sources = [];
+            if (_.isArray(v)) {
                 _.each(v, this.addSources, this);
             }
-            else if(v instanceof Model) {
+            else if (v instanceof Model) {
                 var m = <Model> v;
                 m.bind(this, this.sourceChangeHandler);
                 this._sources.push(m);
@@ -181,7 +187,7 @@ module fmvc {
 
         removeSource(v:Model):SourceModel {
             var index:number = -1;
-            if(this._sources && (index = this._sources.indexOf(v)) > -1) {
+            if (this._sources && (index = this._sources.indexOf(v)) > -1) {
                 this._sources.splice(index, 1);
                 v.unbind(v);
             }
@@ -199,20 +205,22 @@ module fmvc {
         }
 
         setResultMethods(...values:any[]):SourceModel {
-            this._resultMethods = _.flatten([].concat(this._resultMethods?this._resultMethods:[], values));
+            this._resultMethods = _.flatten([].concat(this._resultMethods ? this._resultMethods : [], values));
             this.throttleApplyChanges();
             return this;
         }
 
         applyChanges() {
-            console.log('Apply changes ...' , this._sources, this._sourceMethod, this._resultMethods );
-            if(!this._sources || !this._sources.length) this.setData(null);
-            if(this._sourceMethod && this._sources.length === 1) throw new Error('SourceModel: source method not defined');
+            console.log('Apply changes ...', this._sources, this._sourceMethod, this._resultMethods);
+            if (!this._sources || !this._sources.length) this.setData(null);
+            if (this._sourceMethod && this._sources.length === 1) throw new Error('SourceModel: source method not defined');
 
             var result = null;
-            var sourcesResult = this._sourceMethod && this._sources.length > 1?(this._sourceMethod.apply(this, _.map(this._sources, (v:Model)=>v.data))):this._sources[0].data;
+            var sourcesResult = this._sourceMethod && this._sources.length > 1 ? (this._sourceMethod.apply(this, _.map(this._sources, (v:Model)=>v.data))) : this._sources[0].data;
             console.log('SourceModel: Source Result is ', sourcesResult);
-            if(sourcesResult) result = _.reduce(this._resultMethods, function(memo, method) { return method.call(this, memo); }, sourcesResult, this);
+            if (sourcesResult) result = _.reduce(this._resultMethods, function (memo, method) {
+                return method.call(this, memo);
+            }, sourcesResult, this);
             console.log('SourceModel: Result is ', JSON.stringify(result));
             this.reset().setData(result);
         }
@@ -231,19 +239,23 @@ module fmvc {
         }
 
         load(object:any) {
-            this.model.setState(ModelState.Loading);
-            this.async($.ajax, [object], $, { done: ModelState.Loaded, fault: ModelState.Error });
+            this.model.setState(ModelState.Syncing);
+            this.async($.ajax, [object], $, {done: ModelState.Synced, fault: ModelState.Error});
             return this;
         }
 
         loadXml(object:any):ModelQueue {
-            var defaultAjaxRequestObject:any = _.defaults(object, {method: 'GET', dataType:'xml', data: { rnd: (Math.round(Math.random()*1000000)) }});
+            var defaultAjaxRequestObject:any = _.defaults(object, {
+                method: 'GET',
+                dataType: 'xml',
+                data: {rnd: (Math.round(Math.random() * 1000000))}
+            });
             return this.load(defaultAjaxRequestObject);
         }
 
         parse(method:any):ModelQueue {
             this.model.setState(ModelState.Parsing);
-            this.sync(method, [this.model], this, { done: ModelState.Parsed, fault: ModelState.Error });
+            this.sync(method, [this.model], this, {done: ModelState.Completed, fault: ModelState.Error});
             return this;
         }
 
@@ -254,8 +266,15 @@ module fmvc {
             queuePromise.then(
                 function done(value) {
                     (getPromiseMethod.apply(context, args)).then(
-                        function successPromise(result) { console.log('Async success ', result); deferred.resolve(result);},
-                        function faultPromise(result) { console.log('Async fault ', arguments);  deferred.reject(result); t.executeError(result); });
+                        function successPromise(result) {
+                            console.log('Async success ', result);
+                            deferred.resolve(result);
+                        },
+                        function faultPromise(result) {
+                            console.log('Async fault ', arguments);
+                            deferred.reject(result);
+                            t.executeError(result);
+                        });
                 },
                 function fault() {
                     deferred.reject();
@@ -285,25 +304,29 @@ module fmvc {
             return this;
         }
 
-        complete(method:Function,  args?:any[], context?:any,  states?:any):void {
+        complete(method:Function, args?:any[], context?:any, states?:any):void {
             this.sync(method, context, args, states);
         }
 
         executeError(err?:any):any {
             console.log('Product error ', arguments);
-            if(this.error) {
+            if (this.error) {
                 this.error.method.apply(this.error.context, this.error.args);
             }
         }
 
-        fault(method:Function,  args?:any[], context?:any,  states?:any):ModelQueue {
-            this.error = { method: method, args: args, context: context, states: states};
+        fault(method:Function, args?:any[], context?:any, states?:any):ModelQueue {
+            this.error = {method: method, args: args, context: context, states: states};
             return this;
         }
 
         setup() {
             var queueDeferred = $.Deferred();
-            $.when(this.currentPromise).then(function doneQueue(value) {queueDeferred.resolve(value);}, function faultQueue() {queueDeferred.reject()});
+            $.when(this.currentPromise).then(function doneQueue(value) {
+                queueDeferred.resolve(value);
+            }, function faultQueue() {
+                queueDeferred.reject()
+            });
             return queueDeferred.promise();
         }
 

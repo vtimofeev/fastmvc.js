@@ -8,26 +8,22 @@ var __extends = this.__extends || function (d, b) {
 var fmvc;
 (function (fmvc) {
     fmvc.ModelState = {
-        None: 'none',
+        None: '',
         Parsing: 'parsing',
-        Parsed: 'parsed',
-        Loading: 'loading',
-        Loaded: 'loaded',
-        Updating: 'updating',
         Syncing: 'syncing',
         Synced: 'synced',
         Changed: 'changed',
-        Complete: 'complete',
+        Completed: 'completed',
         Error: 'error',
     };
     var Model = (function (_super) {
         __extends(Model, _super);
         function Model(name, data, opts) {
             if (data === void 0) { data = {}; }
-            _super.call(this, name);
-            this._state = null;
-            this._source = false;
+            _super.call(this, name, fmvc.TYPE_MODEL);
+            // queue
             this._queue = null;
+            // model options
             this.enabledEvents = true;
             this.enabledState = true;
             this.watchChanges = true;
@@ -36,7 +32,7 @@ var fmvc;
             if (data)
                 this.data = data;
             if (data)
-                this.setState(fmvc.ModelState.Synced);
+                this.setState(fmvc.ModelState.Completed);
         }
         Model.prototype.setState = function (value) {
             if (!this.enabledState || this._state === value)
@@ -46,15 +42,19 @@ var fmvc;
             this.sendEvent(fmvc.Event.Model.StateChanged, this._state);
             return this;
         };
-        Model.prototype.parseValue = function (value) {
+        Model.prototype.parseValueAndSetChanges = function (value) {
+            if (value instanceof Model)
+                throw Error('Cant set model data, data must be object, array or primitive');
             var result = null;
             var prevData = this._data;
             var changes = null;
             var hasChanges = false;
-            if (value instanceof Model) {
-                throw Error('Cant set model data, data must be object, array or primitive');
+            this.setChanges(null);
+            if (_.isArray(value)) {
+                result = value.concat([]); //clone of array
             }
-            if (_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
+            else if (_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
+                // check changes and set auto data
                 for (var i in value) {
                     if (prevData[i] !== value[i]) {
                         if (!changes)
@@ -64,26 +64,24 @@ var fmvc;
                         prevData[i] = value[i];
                     }
                 }
-                // if watch object property change
-                if (hasChanges)
-                    this.sendEvent(fmvc.Event.Model.Changed, changes);
+                this.setChanges(changes);
                 result = prevData;
             }
             else {
-                // primitive || array || object && !watchChanges , no data && any value (object etc)
-                if (prevData !== value) {
-                    result = (_.isObject(prevData) && _.isObject(value)) ? _.extend({}, prevData, value) : value;
-                }
+                result = (_.isObject(value)) ? _.extend((prevData ? prevData : {}), value) : value; // primitive || array || object && !watchChanges , no data && any value (object etc)
             }
             return result;
         };
         Model.prototype.reset = function () {
             this._data = null;
+            this._changes = null;
+            this._state = fmvc.ModelState.None;
+            this.sendEvent(fmvc.Event.Model.Changed);
             return this;
         };
         Object.defineProperty(Model.prototype, "data", {
             get: function () {
-                return this.getData();
+                return (this.getData());
             },
             set: function (value) {
                 this.setData(value);
@@ -91,16 +89,25 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        Model.prototype.setChanges = function (value) {
+            this._changes = value;
+        };
         Model.prototype.setData = function (value) {
-            var previousData = this._data;
-            var result = this.parseValue(value);
-            // for primitive, arrays, objects with no changes
-            // console.log('[' + this.name + ']: New prev, new data ' + this._data + ', ' + result);
-            if (previousData !== result) {
+            if (this._data === value)
+                return;
+            var result = this.parseValueAndSetChanges(value);
+            if (this._data !== result || this._changes) {
                 this._data = result;
-                this.sendEvent(fmvc.Event.Model.Changed, this._data);
+                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
             }
         };
+        Object.defineProperty(Model.prototype, "changes", {
+            get: function () {
+                return this._changes;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Model.prototype.getData = function () {
             return this._data;
         };
@@ -118,13 +125,13 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        Model.prototype.sendEvent = function (name, data, sub, error, log) {
+        Model.prototype.sendEvent = function (name, data, changes, sub, error) {
             if (data === void 0) { data = null; }
+            if (changes === void 0) { changes = null; }
             if (sub === void 0) { sub = null; }
             if (error === void 0) { error = null; }
-            if (log === void 0) { log = true; }
             if (this.enabledEvents)
-                _super.prototype.sendEvent.call(this, name, data, sub, error, log);
+                _super.prototype.sendEvent.call(this, name, data, changes, sub, error);
         };
         Model.prototype.dispose = function () {
             _super.prototype.dispose.call(this);
@@ -145,21 +152,17 @@ var fmvc;
         return Model;
     })(fmvc.Notifier);
     fmvc.Model = Model;
-    var TypeModel = (function (_super) {
-        __extends(TypeModel, _super);
-        function TypeModel(name, data, opts) {
-            _super.call(this, name, data, opts);
-        }
-        Object.defineProperty(TypeModel.prototype, "data", {
-            get: function () {
-                return this.getData();
-            },
-            enumerable: true,
-            configurable: true
-        });
-        return TypeModel;
-    })(Model);
-    fmvc.TypeModel = TypeModel;
+    /*
+     export class TypeModel <T> extends Model {
+     constructor(name:string, data:T, opts?:IModelOptions) {
+     super(name, data, opts);
+     }
+
+     public get data():T {
+     return <T>this.getData();
+     }
+     }
+     */
     var SourceModel = (function (_super) {
         __extends(SourceModel, _super);
         function SourceModel(name, source, opts) {
@@ -220,7 +223,9 @@ var fmvc;
             var sourcesResult = this._sourceMethod && this._sources.length > 1 ? (this._sourceMethod.apply(this, _.map(this._sources, function (v) { return v.data; }))) : this._sources[0].data;
             console.log('SourceModel: Source Result is ', sourcesResult);
             if (sourcesResult)
-                result = _.reduce(this._resultMethods, function (memo, method) { return method.call(this, memo); }, sourcesResult, this);
+                result = _.reduce(this._resultMethods, function (memo, method) {
+                    return method.call(this, memo);
+                }, sourcesResult, this);
             console.log('SourceModel: Result is ', JSON.stringify(result));
             this.reset().setData(result);
         };
@@ -233,17 +238,21 @@ var fmvc;
             this.model = model;
         }
         ModelQueue.prototype.load = function (object) {
-            this.model.setState(fmvc.ModelState.Loading);
-            this.async($.ajax, [object], $, { done: fmvc.ModelState.Loaded, fault: fmvc.ModelState.Error });
+            this.model.setState(fmvc.ModelState.Syncing);
+            this.async($.ajax, [object], $, { done: fmvc.ModelState.Synced, fault: fmvc.ModelState.Error });
             return this;
         };
         ModelQueue.prototype.loadXml = function (object) {
-            var defaultAjaxRequestObject = _.defaults(object, { method: 'GET', dataType: 'xml', data: { rnd: (Math.round(Math.random() * 1000000)) } });
+            var defaultAjaxRequestObject = _.defaults(object, {
+                method: 'GET',
+                dataType: 'xml',
+                data: { rnd: (Math.round(Math.random() * 1000000)) }
+            });
             return this.load(defaultAjaxRequestObject);
         };
         ModelQueue.prototype.parse = function (method) {
             this.model.setState(fmvc.ModelState.Parsing);
-            this.sync(method, [this.model], this, { done: fmvc.ModelState.Parsed, fault: fmvc.ModelState.Error });
+            this.sync(method, [this.model], this, { done: fmvc.ModelState.Completed, fault: fmvc.ModelState.Error });
             return this;
         };
         ModelQueue.prototype.async = function (getPromiseMethod, args, context, states) {
@@ -251,7 +260,14 @@ var fmvc;
             var queuePromise = this.setup();
             var t = this;
             queuePromise.then(function done(value) {
-                (getPromiseMethod.apply(context, args)).then(function successPromise(result) { console.log('Async success ', result); deferred.resolve(result); }, function faultPromise(result) { console.log('Async fault ', arguments); deferred.reject(result); t.executeError(result); });
+                (getPromiseMethod.apply(context, args)).then(function successPromise(result) {
+                    console.log('Async success ', result);
+                    deferred.resolve(result);
+                }, function faultPromise(result) {
+                    console.log('Async fault ', arguments);
+                    deferred.reject(result);
+                    t.executeError(result);
+                });
             }, function fault() {
                 deferred.reject();
                 t.executeError();
@@ -292,7 +308,11 @@ var fmvc;
         };
         ModelQueue.prototype.setup = function () {
             var queueDeferred = $.Deferred();
-            $.when(this.currentPromise).then(function doneQueue(value) { queueDeferred.resolve(value); }, function faultQueue() { queueDeferred.reject(); });
+            $.when(this.currentPromise).then(function doneQueue(value) {
+                queueDeferred.resolve(value);
+            }, function faultQueue() {
+                queueDeferred.reject();
+            });
             return queueDeferred.promise();
         };
         ModelQueue.prototype.dispose = function () {

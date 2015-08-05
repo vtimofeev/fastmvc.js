@@ -1,3 +1,0 @@
-{#staticDomAttribs}
-element.setAttribute('{name}', '{value}');
-{/staticDomAttribs}

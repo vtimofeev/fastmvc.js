@@ -1,17 +1,5 @@
 var fmvc;
 (function (fmvc) {
-    var BrowserUtils = (function () {
-        function BrowserUtils() {
-        }
-        BrowserUtils.getClient = function () {
-            return bowser;
-        };
-        return BrowserUtils;
-    })();
-    fmvc.BrowserUtils = BrowserUtils;
-})(fmvc || (fmvc = {}));
-var fmvc;
-(function (fmvc) {
     var Event = (function () {
         function Event() {
         }
@@ -26,95 +14,101 @@ var fmvc;
 ///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
-    fmvc.VERSION = '0.8.0';
+    fmvc.VERSION = '0.8.1';
     fmvc.TYPE_MEDIATOR = 'mediator';
     fmvc.TYPE_MODEL = 'model';
     fmvc.TYPE_VIEW = 'view';
-    fmvc.DefaultModel = {
-        locale: 'locale',
-        i18n: 'i18n',
-        theme: 'theme',
-        log: 'log'
+    fmvc.FacadeModel = {
+        Log: 'log'
     };
     var Facade = (function () {
-        function Facade(name, root, theme, locale, i18nDict) {
-            if (theme === void 0) { theme = ''; }
-            if (locale === void 0) { locale = 'ru'; }
-            if (i18nDict === void 0) { i18nDict = {}; }
-            this._name = '';
+        function Facade(name, type, root) {
             this._events = {};
             this.model = {};
             this.mediator = {};
-            // Уникальное имя приложения
-            this._name = name;
-            // Контейнер приложения
-            this._root = root;
-            // Регистрируем в синглтоне приложений среды (в дальнейшем используется для взаимойдействий между приложениями)
-            Facade.__facades[name] = this;
-            // создание модели логгера
-            var logModel = new fmvc.Logger(fmvc.DefaultModel.log);
-            // записываем модель в фасад (для глобального доступа и обработки событий из модели)
-            this.register(logModel);
-            // Модель локали, содержит строку указывающую на локализацию
-            var localeModel = new fmvc.Model(fmvc.DefaultModel.locale, { value: locale });
-            // Модель темы, содержит строку указывающую на тему
-            var themeModel = new fmvc.Model(fmvc.DefaultModel.theme, { value: theme });
-            // Объект содержащий глобальные данные i18n
-            var i18nModel = new fmvc.Model(fmvc.DefaultModel.i18n, i18nDict);
-            // Добавляем модели по умолчанию в фасад
-            this.register([localeModel, i18nModel, themeModel]);
+            this._name = name; // Уникальное имя приложения
+            this._type = type; // Тип приложения
+            this._root = root; // Контейнер приложения
+            Facade.registerInstance(this); // Регистрируем в синглтоне приложений среды  - в дальнейшем используется для взаимойдействий между приложениями;
+            this.register(new fmvc.Logger(fmvc.FacadeModel.Log)); // создание модели логгера, записываем модель в фасад (для глобального доступа и обработки событий из модели)
             this.log('Старт приложения ' + name + ', fmvc версия ' + fmvc.VERSION);
             this.init();
         }
+        Object.defineProperty(Facade.prototype, "root", {
+            get: function () {
+                return this._root;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Facade.prototype, "name", {
+            get: function () {
+                return this._name;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Facade.prototype, "type", {
+            get: function () {
+                return this._name;
+            },
+            enumerable: true,
+            configurable: true
+        });
         // В насдедниках переписываем метод, в нем добавляем доменные модели, прокси, медиаторы
         Facade.prototype.init = function () {
         };
         // Регистрация объкта система - модели, медиатора
         // Модели, содержат данные, генерируют события моделей
         // Медиаторы, содержат отображения, а тажке генерируют, проксируют события отображения, слушают события модели
-        Facade.prototype.register = function (objects) {
-            var _this = this;
-            if (_.isArray(objects)) {
-                _.each(objects, this.register, this);
+        Facade.prototype.register = function () {
+            var objects = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                objects[_i - 0] = arguments[_i];
             }
-            else {
-                var object = (objects);
-                object.facade = this;
-                this.log('Register ' + object.name + ', ' + object.type);
-                switch (object.type) {
-                    case fmvc.TYPE_MODEL:
-                        var model = (object);
-                        this.model[object.name] = model;
-                        break;
-                    case fmvc.TYPE_MEDIATOR:
-                        var mediator = (object);
-                        this.mediator[object.name] = mediator;
-                        _.each(mediator.events, function (e) { return _this.addListener(mediator, e); }, this);
-                        break;
-                }
-            }
+            _.each(objects, this._register, this);
             return this;
         };
+        Facade.prototype._register = function (object) {
+            var _this = this;
+            this.log('Register ' + object.name + ', ' + object.type);
+            object.facade = this;
+            switch (object.type) {
+                case fmvc.TYPE_MODEL:
+                    var model = (object);
+                    this.model[object.name] = model;
+                    break;
+                case fmvc.TYPE_MEDIATOR:
+                    var mediator = (object);
+                    this.mediator[object.name] = mediator;
+                    _.each(mediator.events, function (e) { return _this.addListener(mediator, e); }, this);
+                    break;
+            }
+        };
         // Удаление объекта системы - модели, медиатора
-        Facade.prototype.unregister = function (objects) {
-            if (_.isArray(objects)) {
-                _.each(objects, this.unregister, this);
+        Facade.prototype.unregister = function () {
+            var objects = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                objects[_i - 0] = arguments[_i];
             }
-            else {
-                var object = (objects);
-                this.log('Unregister ' + object.name + ', ' + object.type);
-                object.dispose();
-                switch (object.type) {
-                    case fmvc.TYPE_MODEL:
-                        delete this.model[object.name];
-                        break;
-                    case fmvc.TYPE_MEDIATOR:
-                        delete this.model[object.name];
-                        this.removeListener((object));
-                        break;
-                }
-            }
+            _.each(objects, this._unregister, this);
             return this;
+        };
+        Facade.prototype._unregister = function (object) {
+            this.log('Unregister ' + object.name + ', ' + object.type);
+            object.dispose();
+            switch (object.type) {
+                case fmvc.TYPE_MODEL:
+                    delete this.model[object.name];
+                    break;
+                case fmvc.TYPE_MEDIATOR:
+                    delete this.mediator[object.name];
+                    this.removeListener((object));
+                    break;
+            }
+        };
+        Facade.prototype.get = function (name) {
+            return this.model[name] || this.mediator[name];
         };
         Facade.prototype.addListener = function (object, event) {
             this._events[event] ? this._events[event].push(object) : (this._events[event] = [object]);
@@ -130,37 +124,6 @@ var fmvc;
                 _.each(this._events, removeFromObjects, this);
             return this;
         };
-        Object.defineProperty(Facade.prototype, "root", {
-            get: function () {
-                return this._root;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(Facade.prototype, "locale", {
-            // Текущее значение локали
-            get: function () {
-                return this.model[fmvc.DefaultModel.locale].data.value;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(Facade.prototype, "theme", {
-            // Текущее значение темы
-            get: function () {
-                return this.model[fmvc.DefaultModel.locale].data.value;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(Facade.prototype, "i18n", {
-            // i18n
-            get: function () {
-                return this.model[fmvc.DefaultModel.i18n].data;
-            },
-            enumerable: true,
-            configurable: true
-        });
         // Глобальный получатель событий от системы
         Facade.prototype.eventHandler = function (e) {
             var objects = this._events[e.name];
@@ -168,25 +131,47 @@ var fmvc;
         };
         Object.defineProperty(Facade.prototype, "logger", {
             get: function () {
-                return (this.model[fmvc.DefaultModel.log]);
+                return (this.model[fmvc.FacadeModel.Log]);
             },
             enumerable: true,
             configurable: true
         });
-        Facade.prototype.log = function (message, level) {
-            if (this.logger) {
-                this.logger.add(this._name, message, level);
+        Facade.prototype.log = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i - 0] = arguments[_i];
+            }
+            var logger = this.logger;
+            if (logger) {
+                logger.add(this._name, args, 0);
             }
             else {
-                console.log(this._name, message, level);
+                console.log(this._name, args);
             }
             return this;
         };
         // Получение фасада приложения по имени
-        Facade.getInstance = function (name) {
-            return this.__facades[name];
+        Facade.registerInstance = function (facade) {
+            Facade.__facadesByName[facade.name] = facade;
+            var types = Facade.__facadesByType;
+            var type = facade.type;
+            (types[type] ? types[type] : types[type] = []).push(facade);
         };
-        Facade.__facades = {};
+        Facade.unregisterInstance = function (facade) {
+            delete Facade.__facadesByName[facade.name];
+            Facade.__facadesByType[facade.type] = _.without(Facade.__facadesByType[facade.type], facade);
+        };
+        Facade.getFacadeByName = function (name) {
+            return Facade.__facadesByName[name];
+        };
+        Facade.getFacadesByType = function (type) {
+            return Facade.__facadesByType[type];
+        };
+        //-------------------------------------------------------------------------------
+        // Менеджмент фасадов
+        //-------------------------------------------------------------------------------
+        Facade.__facadesByName = {};
+        Facade.__facadesByType = {};
         return Facade;
     })();
     fmvc.Facade = Facade;
@@ -199,7 +184,7 @@ var fmvc;
             if (type === void 0) { type = null; }
             this._disposed = false;
             this._name = name;
-            this._type = type ? type : fmvc.TYPE_MODEL;
+            this._type = type;
         }
         Object.defineProperty(Notifier.prototype, "facade", {
             get: function () {
@@ -208,9 +193,11 @@ var fmvc;
             set: function (value) {
                 if (value) {
                     this._facade = value;
+                    this.bind(this._facade, this._facade.eventHandler);
                     this.registerHandler();
                 }
                 else {
+                    this.unbind(this._facade);
                     this.removeHandler();
                     this._facade = value;
                 }
@@ -239,23 +226,43 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(Notifier.prototype, "listenerCount", {
+            // счетчик прямых слушателей
+            get: function () {
+                return this._listeners ? this._listeners.length : -1;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        // установка фасада для цепочки вызовов
+        Notifier.prototype.setFacade = function (facade) {
+            this.facade = facade;
+            return this;
+        };
         // Послаем сообщение сначала в фасад, потом частным слушателям (для моделей)
-        Notifier.prototype.sendEvent = function (name, data, sub, error, log) {
+        Notifier.prototype.sendEvent = function (name, data, changes, sub, error) {
             if (data === void 0) { data = null; }
+            if (changes === void 0) { changes = null; }
             if (sub === void 0) { sub = null; }
             if (error === void 0) { error = null; }
-            if (log === void 0) { log = true; }
-            var e = { name: name, sub: sub, data: data, error: error, target: this };
-            this.log('Send event ' + name);
-            if (this._listeners && this._listeners.length)
+            this.log('SendEvent: ' + name);
+            if (this._disposed)
+                throw Error('Model ' + this.name + ' is disposed and cant send event');
+            var e = { name: name, sub: sub, data: data, changes: changes, error: error, target: this };
+            if (this._listeners)
                 this._sendToListners(e);
             if (this._facade)
                 this._facade.eventHandler(e);
         };
-        Notifier.prototype.log = function (message, level) {
-            // @todo remove facade reference
-            if (this._facade)
-                this._facade.logger.add(this.name, message, level);
+        Notifier.prototype.log = function () {
+            var messages = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                messages[_i - 0] = arguments[_i];
+            }
+            if (this.facade)
+                this.facade.logger.add(this.name, messages);
+            else
+                console.log(this.name, messages);
             return this;
         };
         Notifier.prototype.registerHandler = function () {
@@ -266,26 +273,26 @@ var fmvc;
             this.addListener(object, handler);
             return this;
         };
-        Notifier.prototype.unbind = function (object, handler) {
-            this.removeListener(object, handler);
+        Notifier.prototype.unbind = function (object) {
+            this.removeListener(object);
             return this;
         };
         Notifier.prototype.addListener = function (object, handler) {
             if (!this._listeners)
                 this._listeners = [];
-            var yetListener = _.filter(this._listeners, function (v) { return v.handler === handler; });
-            if (!(yetListener && yetListener.length))
+            var hasListener = _.filter(this._listeners, function (v) { return v.handler === handler; });
+            if (_.isEmpty(hasListener))
                 this._listeners.push({ target: object, handler: handler });
             else
-                console.warn('Try duplicate listener of ', this.name);
+                this.log('Try duplicate listener ', object.name);
             return this;
         };
-        Notifier.prototype.removeListener = function (object, handler) {
-            var deleted = 0;
+        Notifier.prototype.removeListener = function (object) {
+            var deletedOffset = 0;
             this._listeners.forEach(function (lo, i) {
                 if (lo.target === object) {
-                    this.splice(i - deleted, 1);
-                    deleted++;
+                    this.splice(i - deletedOffset, 1);
+                    deletedOffset++;
                 }
             }, this._listeners);
             return this;
@@ -294,10 +301,8 @@ var fmvc;
             this._listeners = null;
         };
         Notifier.prototype._sendToListners = function (e) {
-            this._listeners.forEach(function (lo) {
-                if (!lo.target.disposed)
-                    (lo.handler).call(lo.target, e);
-            });
+            _.each(this._listeners, function (lo) { if (!lo.target.disposed)
+                (lo.handler).call(lo.target, e); });
         };
         Notifier.prototype.dispose = function () {
             this.removeAllListeners();
@@ -449,26 +454,22 @@ var fmvc;
 var fmvc;
 (function (fmvc) {
     fmvc.ModelState = {
-        None: 'none',
+        None: '',
         Parsing: 'parsing',
-        Parsed: 'parsed',
-        Loading: 'loading',
-        Loaded: 'loaded',
-        Updating: 'updating',
         Syncing: 'syncing',
         Synced: 'synced',
         Changed: 'changed',
-        Complete: 'complete',
+        Completed: 'completed',
         Error: 'error',
     };
     var Model = (function (_super) {
         __extends(Model, _super);
         function Model(name, data, opts) {
             if (data === void 0) { data = {}; }
-            _super.call(this, name);
-            this._state = null;
-            this._source = false;
+            _super.call(this, name, fmvc.TYPE_MODEL);
+            // queue
             this._queue = null;
+            // model options
             this.enabledEvents = true;
             this.enabledState = true;
             this.watchChanges = true;
@@ -477,7 +478,7 @@ var fmvc;
             if (data)
                 this.data = data;
             if (data)
-                this.setState(fmvc.ModelState.Synced);
+                this.setState(fmvc.ModelState.Completed);
         }
         Model.prototype.setState = function (value) {
             if (!this.enabledState || this._state === value)
@@ -487,15 +488,19 @@ var fmvc;
             this.sendEvent(fmvc.Event.Model.StateChanged, this._state);
             return this;
         };
-        Model.prototype.parseValue = function (value) {
+        Model.prototype.parseValueAndSetChanges = function (value) {
+            if (value instanceof Model)
+                throw Error('Cant set model data, data must be object, array or primitive');
             var result = null;
             var prevData = this._data;
             var changes = null;
             var hasChanges = false;
-            if (value instanceof Model) {
-                throw Error('Cant set model data, data must be object, array or primitive');
+            this.setChanges(null);
+            if (_.isArray(value)) {
+                result = value.concat([]); //clone of array
             }
-            if (_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
+            else if (_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
+                // check changes and set auto data
                 for (var i in value) {
                     if (prevData[i] !== value[i]) {
                         if (!changes)
@@ -505,26 +510,24 @@ var fmvc;
                         prevData[i] = value[i];
                     }
                 }
-                // if watch object property change
-                if (hasChanges)
-                    this.sendEvent(fmvc.Event.Model.Changed, changes);
+                this.setChanges(changes);
                 result = prevData;
             }
             else {
-                // primitive || array || object && !watchChanges , no data && any value (object etc)
-                if (prevData !== value) {
-                    result = (_.isObject(prevData) && _.isObject(value)) ? _.extend({}, prevData, value) : value;
-                }
+                result = (_.isObject(value)) ? _.extend((prevData ? prevData : {}), value) : value; // primitive || array || object && !watchChanges , no data && any value (object etc)
             }
             return result;
         };
         Model.prototype.reset = function () {
             this._data = null;
+            this._changes = null;
+            this._state = fmvc.ModelState.None;
+            this.sendEvent(fmvc.Event.Model.Changed);
             return this;
         };
         Object.defineProperty(Model.prototype, "data", {
             get: function () {
-                return this.getData();
+                return (this.getData());
             },
             set: function (value) {
                 this.setData(value);
@@ -532,16 +535,25 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        Model.prototype.setChanges = function (value) {
+            this._changes = value;
+        };
         Model.prototype.setData = function (value) {
-            var previousData = this._data;
-            var result = this.parseValue(value);
-            // for primitive, arrays, objects with no changes
-            // console.log('[' + this.name + ']: New prev, new data ' + this._data + ', ' + result);
-            if (previousData !== result) {
+            if (this._data === value)
+                return;
+            var result = this.parseValueAndSetChanges(value);
+            if (this._data !== result || this._changes) {
                 this._data = result;
-                this.sendEvent(fmvc.Event.Model.Changed, this._data);
+                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
             }
         };
+        Object.defineProperty(Model.prototype, "changes", {
+            get: function () {
+                return this._changes;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Model.prototype.getData = function () {
             return this._data;
         };
@@ -559,13 +571,13 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        Model.prototype.sendEvent = function (name, data, sub, error, log) {
+        Model.prototype.sendEvent = function (name, data, changes, sub, error) {
             if (data === void 0) { data = null; }
+            if (changes === void 0) { changes = null; }
             if (sub === void 0) { sub = null; }
             if (error === void 0) { error = null; }
-            if (log === void 0) { log = true; }
             if (this.enabledEvents)
-                _super.prototype.sendEvent.call(this, name, data, sub, error, log);
+                _super.prototype.sendEvent.call(this, name, data, changes, sub, error);
         };
         Model.prototype.dispose = function () {
             _super.prototype.dispose.call(this);
@@ -586,21 +598,17 @@ var fmvc;
         return Model;
     })(fmvc.Notifier);
     fmvc.Model = Model;
-    var TypeModel = (function (_super) {
-        __extends(TypeModel, _super);
-        function TypeModel(name, data, opts) {
-            _super.call(this, name, data, opts);
-        }
-        Object.defineProperty(TypeModel.prototype, "data", {
-            get: function () {
-                return this.getData();
-            },
-            enumerable: true,
-            configurable: true
-        });
-        return TypeModel;
-    })(Model);
-    fmvc.TypeModel = TypeModel;
+    /*
+     export class TypeModel <T> extends Model {
+     constructor(name:string, data:T, opts?:IModelOptions) {
+     super(name, data, opts);
+     }
+
+     public get data():T {
+     return <T>this.getData();
+     }
+     }
+     */
     var SourceModel = (function (_super) {
         __extends(SourceModel, _super);
         function SourceModel(name, source, opts) {
@@ -661,7 +669,9 @@ var fmvc;
             var sourcesResult = this._sourceMethod && this._sources.length > 1 ? (this._sourceMethod.apply(this, _.map(this._sources, function (v) { return v.data; }))) : this._sources[0].data;
             console.log('SourceModel: Source Result is ', sourcesResult);
             if (sourcesResult)
-                result = _.reduce(this._resultMethods, function (memo, method) { return method.call(this, memo); }, sourcesResult, this);
+                result = _.reduce(this._resultMethods, function (memo, method) {
+                    return method.call(this, memo);
+                }, sourcesResult, this);
             console.log('SourceModel: Result is ', JSON.stringify(result));
             this.reset().setData(result);
         };
@@ -674,17 +684,21 @@ var fmvc;
             this.model = model;
         }
         ModelQueue.prototype.load = function (object) {
-            this.model.setState(fmvc.ModelState.Loading);
-            this.async($.ajax, [object], $, { done: fmvc.ModelState.Loaded, fault: fmvc.ModelState.Error });
+            this.model.setState(fmvc.ModelState.Syncing);
+            this.async($.ajax, [object], $, { done: fmvc.ModelState.Synced, fault: fmvc.ModelState.Error });
             return this;
         };
         ModelQueue.prototype.loadXml = function (object) {
-            var defaultAjaxRequestObject = _.defaults(object, { method: 'GET', dataType: 'xml', data: { rnd: (Math.round(Math.random() * 1000000)) } });
+            var defaultAjaxRequestObject = _.defaults(object, {
+                method: 'GET',
+                dataType: 'xml',
+                data: { rnd: (Math.round(Math.random() * 1000000)) }
+            });
             return this.load(defaultAjaxRequestObject);
         };
         ModelQueue.prototype.parse = function (method) {
             this.model.setState(fmvc.ModelState.Parsing);
-            this.sync(method, [this.model], this, { done: fmvc.ModelState.Parsed, fault: fmvc.ModelState.Error });
+            this.sync(method, [this.model], this, { done: fmvc.ModelState.Completed, fault: fmvc.ModelState.Error });
             return this;
         };
         ModelQueue.prototype.async = function (getPromiseMethod, args, context, states) {
@@ -692,7 +706,14 @@ var fmvc;
             var queuePromise = this.setup();
             var t = this;
             queuePromise.then(function done(value) {
-                (getPromiseMethod.apply(context, args)).then(function successPromise(result) { console.log('Async success ', result); deferred.resolve(result); }, function faultPromise(result) { console.log('Async fault ', arguments); deferred.reject(result); t.executeError(result); });
+                (getPromiseMethod.apply(context, args)).then(function successPromise(result) {
+                    console.log('Async success ', result);
+                    deferred.resolve(result);
+                }, function faultPromise(result) {
+                    console.log('Async fault ', arguments);
+                    deferred.reject(result);
+                    t.executeError(result);
+                });
             }, function fault() {
                 deferred.reject();
                 t.executeError();
@@ -733,7 +754,11 @@ var fmvc;
         };
         ModelQueue.prototype.setup = function () {
             var queueDeferred = $.Deferred();
-            $.when(this.currentPromise).then(function doneQueue(value) { queueDeferred.resolve(value); }, function faultQueue() { queueDeferred.reject(); });
+            $.when(this.currentPromise).then(function doneQueue(value) {
+                queueDeferred.resolve(value);
+            }, function faultQueue() {
+                queueDeferred.reject();
+            });
             return queueDeferred.promise();
         };
         ModelQueue.prototype.dispose = function () {
@@ -834,9 +859,10 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        Logger.prototype.add = function (name, message, level) {
+        Logger.prototype.add = function (name, messages, level) {
+            if (messages === void 0) { messages = null; }
             if (level === void 0) { level = 0; }
-            var data = { name: name, message: message, level: level, date: new Date() };
+            var data = { name: name, data: messages, level: level, date: new Date() };
             var dataArray = this.data;
             var config = this._config;
             dataArray.push(data);
@@ -849,7 +875,7 @@ var fmvc;
             }
             // console
             if (config && config.console && ('console' in window)) {
-                console.log('[' + name + '] ' + level + ' ' + message);
+                console.log('[' + name + '] ' + level + ' ', messages);
             }
             // clean: remove part of logs
             if (dataArray.length > config.length * 2) {
@@ -857,7 +883,7 @@ var fmvc;
             }
             // send event
             if (this.enabledEvents)
-                this.sendEvent('log', data, null, null, false);
+                this.sendEvent('log', data, null, null);
             return this;
         };
         return Logger;
@@ -1192,7 +1218,7 @@ var fmvc;
                     View.Counters.update.style++;
                     break;
                 case 'data':
-                    //console.log('Set data ', element, element.nodeType, element.textContent);
+                    console.log('Set data ', element, element.nodeType, element.textContent);
                     if (element.nodeType === 3 && element.textContent != resultValue)
                         element.textContent = resultValue;
                     View.Counters.update.data++;
@@ -1259,6 +1285,9 @@ var fmvc;
             var appProps = _.filter(_.keys(this.dynamicProperties), function (v) { return v.indexOf('app.' + modelName) === 0; });
             _.each(appProps, function (n) { return _this.updateAppProp(n); }, this);
             this.applyChangeStateElement(this.jsTemplate, this.elementPaths);
+            //@todo remove Для избавления от лишних действий нужно в первую очередь проверять
+            // states элементов, а затем проходится по дереву свойств и значений
+            _.each(appProps, function (n) { return _this.updateAppProp(n); }, this);
         };
         View.prototype.exitDocument = function () {
             var _this = this;
@@ -1968,10 +1997,10 @@ var fmvc;
 (function (fmvc) {
     var Mediator = (function (_super) {
         __extends(Mediator, _super);
-        function Mediator(name, root, facade) {
+        function Mediator(name, root) {
             _super.call(this, name, fmvc.TYPE_MEDIATOR);
-            this._root = root;
-            this.facade = facade;
+            this.setRoot(root);
+            this.views = [];
         }
         Mediator.prototype.setRoot = function (root) {
             this._root = root;
@@ -1984,37 +2013,29 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        Mediator.prototype.setFacade = function (facade) {
-            this.facade = facade;
+        Mediator.prototype.addView = function () {
+            var views = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                views[_i - 0] = arguments[_i];
+            }
+            _.each(views, this._addView, this);
             return this;
         };
-        Mediator.prototype.addView = function (views) {
-            if (!this.views)
-                this.views = [];
-            if (views) {
-                if (_.isArray(views)) {
-                    for (var i in views) {
-                        this.addView(views[i]);
-                    }
-                }
-                else {
-                    var view = views;
-                    if (this.views.indexOf(view) === -1) {
-                        this.views.push(view);
-                        view.setMediator(this).render(this._root);
-                    }
-                    else {
-                        this.log('Warn: try to duplicate view');
-                    }
-                }
+        Mediator.prototype._addView = function (view) {
+            if (this.views.indexOf(view) === -1) {
+                this.views.push(view);
+                view.setMediator(this).render(this.root);
             }
             else {
-                this.log('Has no views to add');
+                this.log('Warn: try to duplicate view');
             }
-            return this;
         };
         Mediator.prototype.getView = function (name) {
             return _.find(this.views, function (view) { return view.name === name; });
+        };
+        Mediator.prototype.removeView = function (name) {
+            this.views = _.without(this.views, this.getView(name));
+            return this;
         };
         Object.defineProperty(Mediator.prototype, "events", {
             get: function () {
@@ -2032,8 +2053,6 @@ var fmvc;
             }
         };
         Mediator.prototype.eventHandler = function (e) {
-            //console.log('Mediator handled ... ' , e);
-            //this.log('Handled ' + e.name + ' from ' + e.target.name + ":" + e.target.type);
             switch (e && e.target ? e.target.type : null) {
                 case fmvc.TYPE_MEDIATOR:
                     this.mediatorEventHandler(e);
@@ -2069,6 +2088,73 @@ var fmvc;
 ///<reference path='./mediator.ts'/>
 ///<reference path='../../../DefinitelyTyped/lodash/lodash.d.ts'/>
 ///<reference path='../../../DefinitelyTyped/jquery/jquery.d.ts'/>
+///<reference path='./d.ts'/>
+var fmvc;
+(function (fmvc) {
+    fmvc.DefaultModel = {
+        locale: 'locale',
+        i18n: 'i18n',
+        theme: 'theme',
+        log: 'log'
+    };
+    var AppFacade = (function (_super) {
+        __extends(AppFacade, _super);
+        function AppFacade(name, root, theme, locale, i18nDict) {
+            if (theme === void 0) { theme = ''; }
+            if (locale === void 0) { locale = 'ru'; }
+            if (i18nDict === void 0) { i18nDict = {}; }
+            _super.call(this, name, root);
+            // Модель локали, содержит строку указывающую на локализацию
+            var localeModel = new fmvc.Model(fmvc.DefaultModel.locale, { value: locale });
+            // Модель темы, содержит строку указывающую на тему
+            var themeModel = new fmvc.Model(fmvc.DefaultModel.theme, { value: theme });
+            // Объект содержащий глобальные данные i18n
+            var i18nModel = new fmvc.Model(fmvc.DefaultModel.i18n, i18nDict);
+            // Добавляем модели по умолчанию в фасад
+            this.register([localeModel, i18nModel, themeModel]);
+        }
+        AppFacade.prototype.init = function () {
+        };
+        Object.defineProperty(AppFacade.prototype, "locale", {
+            // Текущее значение локали
+            get: function () {
+                return this.model[fmvc.DefaultModel.locale].data.value;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(AppFacade.prototype, "theme", {
+            // Текущее значение темы
+            get: function () {
+                return this.model[fmvc.DefaultModel.locale].data.value;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(AppFacade.prototype, "i18n", {
+            // i18n
+            get: function () {
+                return this.model[fmvc.DefaultModel.i18n].data;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        return AppFacade;
+    })(fmvc.Facade);
+    fmvc.AppFacade = AppFacade;
+})(fmvc || (fmvc = {}));
+var fmvc;
+(function (fmvc) {
+    var BrowserUtils = (function () {
+        function BrowserUtils() {
+        }
+        BrowserUtils.getClient = function () {
+            return bowser;
+        };
+        return BrowserUtils;
+    })();
+    fmvc.BrowserUtils = BrowserUtils;
+})(fmvc || (fmvc = {}));
 ///<reference path='../fmvc/d.ts'/>
 /* start compiled view */
 var ui;
@@ -2206,10 +2292,10 @@ var test;
         }
         TestButtons.prototype.createDom = function () {
             this.element = this.templateElement;
-            this.b1 = this.componentPaths["0,11"] || this.elementPaths["0,11"];
-            this.b2 = this.componentPaths["0,13"] || this.elementPaths["0,13"];
-            this.b3 = this.componentPaths["0,15"] || this.elementPaths["0,15"];
-            this.b4 = this.componentPaths["0,17"] || this.elementPaths["0,17"];
+            this.b1 = this.componentPaths["0,13"] || this.elementPaths["0,13"];
+            this.b2 = this.componentPaths["0,15"] || this.elementPaths["0,15"];
+            this.b3 = this.componentPaths["0,17"] || this.elementPaths["0,17"];
+            this.b4 = this.componentPaths["0,19"] || this.elementPaths["0,19"];
             this.childrenContainer = this.childrenContainer || this.element;
             return this;
         };
@@ -2247,6 +2333,31 @@ var test;
                                     "attribs": {}
                                 }],
                             "tagName": "b"
+                        }, {
+                            "path": "0,1,2",
+                            "type": "text",
+                            "data": "model data:",
+                            "attribs": {}
+                        }, {
+                            "path": "0,1,3",
+                            "type": "tag",
+                            "attribs": {},
+                            "children": [{
+                                    "path": "0,1,3,0",
+                                    "type": "text",
+                                    "data": {
+                                        "content": "{app.test.data.title}",
+                                        "result": "{$0}",
+                                        "vars": ["$0"],
+                                        "expressions": [{
+                                                "content": "app.test.data.title",
+                                                "vars": ["app.test.data.title"],
+                                                "values": ["app.test.data.title"]
+                                            }]
+                                    },
+                                    "attribs": {}
+                                }],
+                            "tagName": "i"
                         }],
                     "tagName": "div"
                 }, {
@@ -2255,6 +2366,32 @@ var test;
                     "attribs": {},
                     "children": [{
                             "path": "0,3,0",
+                            "type": "text",
+                            "data": {
+                                "content": "{app.test.data.title} - has model data, sure ?",
+                                "result": "{$0} - has model data, sure ?",
+                                "vars": ["$0"],
+                                "expressions": [{
+                                        "content": "app.test.data.title",
+                                        "vars": ["app.test.data.title"],
+                                        "values": ["app.test.data.title"]
+                                    }]
+                            },
+                            "attribs": {}
+                        }],
+                    "tagName": "div",
+                    "states": {
+                        "content": "(app.test.state==='one')",
+                        "vars": ["app.test.state", "$0"],
+                        "values": ["$0"],
+                        "expressions": ["(this.app.test.state==='one')"]
+                    }
+                }, {
+                    "path": "0,5",
+                    "type": "tag",
+                    "attribs": {},
+                    "children": [{
+                            "path": "0,5,0",
                             "type": "text",
                             "data": "State one",
                             "attribs": {}
@@ -2273,11 +2410,11 @@ var test;
                         "expressions": ["(this.app.test.state)"]
                     }
                 }, {
-                    "path": "0,5",
+                    "path": "0,7",
                     "type": "tag",
                     "attribs": {},
                     "children": [{
-                            "path": "0,5,0",
+                            "path": "0,7,0",
                             "type": "text",
                             "data": "State two button",
                             "attribs": {}
@@ -2296,11 +2433,11 @@ var test;
                         "expressions": ["(!!this.app.test.state)"]
                     }
                 }, {
-                    "path": "0,7",
+                    "path": "0,9",
                     "type": "tag",
                     "attribs": {},
                     "children": [{
-                            "path": "0,7,0",
+                            "path": "0,9,0",
                             "type": "text",
                             "data": "State three",
                             "attribs": {}
@@ -2313,15 +2450,15 @@ var test;
                         "expressions": ["(this.app.test.state==='three')"]
                     }
                 }, {
-                    "path": "0,9",
+                    "path": "0,11",
                     "type": "tag",
                     "attribs": {},
                     "children": [{
-                            "path": "0,9,0",
+                            "path": "0,11,0",
                             "type": "tag",
                             "attribs": {},
                             "children": [{
-                                    "path": "0,9,0,0",
+                                    "path": "0,11,0,0",
                                     "type": "text",
                                     "data": {
                                         "content": "{app.test.state}",
@@ -2337,14 +2474,14 @@ var test;
                                 }],
                             "tagName": "b"
                         }, {
-                            "path": "0,9,1",
+                            "path": "0,11,1",
                             "type": "text",
                             "data": "- has model data, sure ?",
                             "attribs": {}
                         }],
                     "tagName": "div"
                 }, {
-                    "path": "0,11",
+                    "path": "0,13",
                     "type": "tag",
                     "attribs": {
                         "content": "SimpleButtonContentFromProperty"
@@ -2358,26 +2495,6 @@ var test;
                         "expressions": ["(this.app.test.state)"]
                     }
                 }, {
-                    "path": "0,13",
-                    "type": "tag",
-                    "attribs": {
-                        "exClass": "buttonOne"
-                    },
-                    "children": [{
-                            "path": "0,13,0",
-                            "type": "text",
-                            "data": "Selected TheContentFromContainer And Text 2",
-                            "attribs": {}
-                        }],
-                    "tagName": "ui.Button",
-                    "link": "b2",
-                    "selected": {
-                        "content": "(app.test.state==='one')",
-                        "vars": ["app.test.state", "$0"],
-                        "values": ["$0"],
-                        "expressions": ["(this.app.test.state==='one')"]
-                    }
-                }, {
                     "path": "0,15",
                     "type": "tag",
                     "attribs": {
@@ -2386,11 +2503,11 @@ var test;
                     "children": [{
                             "path": "0,15,0",
                             "type": "text",
-                            "data": "Button 3 / And a lot of text",
+                            "data": "Selected TheContentFromContainer And Text 2",
                             "attribs": {}
                         }],
                     "tagName": "ui.Button",
-                    "link": "b3",
+                    "link": "b2",
                     "selected": {
                         "content": "(app.test.state==='one')",
                         "vars": ["app.test.state", "$0"],
@@ -2406,6 +2523,26 @@ var test;
                     "children": [{
                             "path": "0,17,0",
                             "type": "text",
+                            "data": "Button 3 / And a lot of text",
+                            "attribs": {}
+                        }],
+                    "tagName": "ui.Button",
+                    "link": "b3",
+                    "selected": {
+                        "content": "(app.test.state==='one')",
+                        "vars": ["app.test.state", "$0"],
+                        "values": ["$0"],
+                        "expressions": ["(this.app.test.state==='one')"]
+                    }
+                }, {
+                    "path": "0,19",
+                    "type": "tag",
+                    "attribs": {
+                        "exClass": "buttonOne"
+                    },
+                    "children": [{
+                            "path": "0,19,0",
+                            "type": "text",
                             "data": "Button 4 / And a lot of text",
                             "attribs": {}
                         }],
@@ -2420,43 +2557,87 @@ var test;
                 }],
             "links": [{
                     "name": "b1",
-                    "value": "0,11"
-                }, {
-                    "name": "b2",
                     "value": "0,13"
                 }, {
-                    "name": "b3",
+                    "name": "b2",
                     "value": "0,15"
                 }, {
-                    "name": "b4",
+                    "name": "b3",
                     "value": "0,17"
+                }, {
+                    "name": "b4",
+                    "value": "0,19"
                 }],
             "dynamicSummary": {
+                "app.test.data.title": {
+                    "data": {
+                        "0,1,3,0": {
+                            "content": "{app.test.data.title}",
+                            "result": "{$0}",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                    "content": "app.test.data.title",
+                                    "vars": ["app.test.data.title"],
+                                    "values": ["app.test.data.title"]
+                                }]
+                        },
+                        "0,3,0": {
+                            "content": "{app.test.data.title} - has model data, sure ?",
+                            "result": "{$0} - has model data, sure ?",
+                            "vars": ["$0"],
+                            "expressions": [{
+                                    "content": "app.test.data.title",
+                                    "vars": ["app.test.data.title"],
+                                    "values": ["app.test.data.title"]
+                                }]
+                        }
+                    }
+                },
                 "app.test.state": {
-                    "selected": {
+                    "states": {
                         "0,3": {
+                            "content": "(app.test.state==='one')",
+                            "vars": ["app.test.state", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(this.app.test.state==='one')"]
+                        },
+                        "0,5": {
+                            "content": "(app.test.state==='one')",
+                            "vars": ["app.test.state", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(this.app.test.state==='one')"]
+                        },
+                        "0,7": {
+                            "content": "(app.test.state==='two')",
+                            "vars": ["app.test.state", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(this.app.test.state==='two')"]
+                        },
+                        "0,9": {
+                            "content": "(app.test.state==='three')",
+                            "vars": ["app.test.state", "$0"],
+                            "values": ["$0"],
+                            "expressions": ["(this.app.test.state==='three')"]
+                        }
+                    },
+                    "selected": {
+                        "0,5": {
                             "content": "(app.test.state)",
                             "vars": ["app.test.state", "$0"],
                             "values": ["$0"],
                             "expressions": ["(this.app.test.state)"]
                         },
-                        "0,5": {
+                        "0,7": {
                             "content": "(!!app.test.state)",
                             "vars": ["app.test.state", "$0"],
                             "values": ["$0"],
                             "expressions": ["(!!this.app.test.state)"]
                         },
-                        "0,11": {
+                        "0,13": {
                             "content": "(app.test.state)",
                             "vars": ["app.test.state", "$0"],
                             "values": ["$0"],
                             "expressions": ["(this.app.test.state)"]
-                        },
-                        "0,13": {
-                            "content": "(app.test.state==='one')",
-                            "vars": ["app.test.state", "$0"],
-                            "values": ["$0"],
-                            "expressions": ["(this.app.test.state==='one')"]
                         },
                         "0,15": {
                             "content": "(app.test.state==='one')",
@@ -2469,30 +2650,16 @@ var test;
                             "vars": ["app.test.state", "$0"],
                             "values": ["$0"],
                             "expressions": ["(this.app.test.state==='one')"]
-                        }
-                    },
-                    "states": {
-                        "0,3": {
+                        },
+                        "0,19": {
                             "content": "(app.test.state==='one')",
                             "vars": ["app.test.state", "$0"],
                             "values": ["$0"],
                             "expressions": ["(this.app.test.state==='one')"]
-                        },
-                        "0,5": {
-                            "content": "(app.test.state==='two')",
-                            "vars": ["app.test.state", "$0"],
-                            "values": ["$0"],
-                            "expressions": ["(this.app.test.state==='two')"]
-                        },
-                        "0,7": {
-                            "content": "(app.test.state==='three')",
-                            "vars": ["app.test.state", "$0"],
-                            "values": ["$0"],
-                            "expressions": ["(this.app.test.state==='three')"]
                         }
                     },
                     "data": {
-                        "0,9,0,0": {
+                        "0,11,0,0": {
                             "content": "{app.test.state}",
                             "result": "{$0}",
                             "vars": ["$0"],

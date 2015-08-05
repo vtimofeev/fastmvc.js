@@ -322,7 +322,7 @@ var fmvc;
                     View.Counters.update.style++;
                     break;
                 case 'data':
-                    //console.log('Set data ', element, element.nodeType, element.textContent);
+                    console.log('Set data ', element, element.nodeType, element.textContent);
                     if (element.nodeType === 3 && element.textContent != resultValue)
                         element.textContent = resultValue;
                     View.Counters.update.data++;
@@ -389,6 +389,9 @@ var fmvc;
             var appProps = _.filter(_.keys(this.dynamicProperties), function (v) { return v.indexOf('app.' + modelName) === 0; });
             _.each(appProps, function (n) { return _this.updateAppProp(n); }, this);
             this.applyChangeStateElement(this.jsTemplate, this.elementPaths);
+            //@todo remove Для избавления от лишних действий нужно в первую очередь проверять
+            // states элементов, а затем проходится по дереву свойств и значений
+            _.each(appProps, function (n) { return _this.updateAppProp(n); }, this);
         };
         View.prototype.exitDocument = function () {
             var _this = this;

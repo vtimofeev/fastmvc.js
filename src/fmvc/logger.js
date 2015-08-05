@@ -45,9 +45,10 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        Logger.prototype.add = function (name, message, level) {
+        Logger.prototype.add = function (name, messages, level) {
+            if (messages === void 0) { messages = null; }
             if (level === void 0) { level = 0; }
-            var data = { name: name, message: message, level: level, date: new Date() };
+            var data = { name: name, data: messages, level: level, date: new Date() };
             var dataArray = this.data;
             var config = this._config;
             dataArray.push(data);
@@ -60,7 +61,7 @@ var fmvc;
             }
             // console
             if (config && config.console && ('console' in window)) {
-                console.log('[' + name + '] ' + level + ' ' + message);
+                console.log('[' + name + '] ' + level + ' ', messages);
             }
             // clean: remove part of logs
             if (dataArray.length > config.length * 2) {
@@ -68,7 +69,7 @@ var fmvc;
             }
             // send event
             if (this.enabledEvents)
-                this.sendEvent('log', data, null, null, false);
+                this.sendEvent('log', data, null, null);
             return this;
         };
         return Logger;

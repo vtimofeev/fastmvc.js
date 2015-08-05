@@ -176,6 +176,8 @@ module fmvc {
             _.each(appProps, function (name:string) {
                 this.updateAppProp(name);
             }, this);
+
+
         }
 
         public updateAppProp(name:string):void {
@@ -352,7 +354,7 @@ module fmvc {
                     break;
 
                 case 'data':
-                    //console.log('Set data ', element, element.nodeType, element.textContent);
+                    console.log('Set data ', element, element.nodeType, element.textContent);
                     if (element.nodeType === 3 && element.textContent != resultValue) element.textContent = resultValue;
                     View.Counters.update.data++;
                     break;
@@ -424,6 +426,10 @@ module fmvc {
             var appProps = _.filter(_.keys(this.dynamicProperties), (v:string)=>v.indexOf('app.' + modelName)===0);
             _.each(appProps,(n:string)=>this.updateAppProp(n), this);
              this.applyChangeStateElement(this.jsTemplate, this.elementPaths);
+
+            //@todo remove Для избавления от лишних действий нужно в первую очередь проверять
+            // states элементов, а затем проходится по дереву свойств и значений
+            _.each(appProps,(n:string)=>this.updateAppProp(n), this);
         }
 
         public exitDocument() {
@@ -567,6 +573,7 @@ module fmvc {
                 parentNode.replaceChild(newElement,e);
                 object[value.path] = newElement;
                 this.enterDocumentElement(value, object);
+
                 View.Counters.element.removed++;
             }
             else if(!isIncluded && isEnabled) {
@@ -686,10 +693,10 @@ module fmvc {
             //console.log('invalid ' , this._invalidate , this._inDocument);
             if (!this._invalidate || !this._inDocument) return;
 
+
             if (this._invalidate & 1) {
                 if(_.isObject(this.data)) this.updateData(this.data, 'data.', 2);
                 else this.updateDynamicProperty('data', this.data);
-
                 this.updateApp();
             }
 

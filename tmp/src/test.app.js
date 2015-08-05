@@ -66,8 +66,13 @@ var TestModel = (function (_super) {
     }
     return TestModel;
 })(fmvc.Model);
-var testApp = new fmvc.Facade('testApp', window);
-testApp.register((new TestStatMediator(TestMediator.NAME, document.body)).setFacade(testApp).addView([v1]));
+var btns1 = new test.TestButtons('tbtns1');
+var testApp = new fmvc.Facade('testApp', document.body);
+var testModel = new TestModel('test', { value: '1', title: 'Hello world' });
+var testMediator = new TestStatMediator(TestMediator.NAME, document.body);
+testApp.register([testModel, testMediator]);
+testMediator.addView([btns1]);
+setTimeout(function () { return testModel.setState('one'); }, 2000);
 /*
 var testModel:TestModel = new TestModel('test', {content: 'Hello world', title: 'Hello Title', custom: 0});
 testModel.queue().loadXml({url: 'config.xml'}).parse(function($xml) { return {statUrl: $xml.find('stat_url').text()}; }).complete((obj)=>testModel.set(obj), null, this);
@@ -75,7 +80,6 @@ testModel.queue().loadXml({url: 'config2.xml'}).parse(_.identity).complete((v)=>
 
 testModel.setState('customState');
 testApp.register(testModel);
-
 
 var testListModel = new fmvc.ModelList('testlist', []);
 console.log(testListModel.count);
@@ -115,7 +119,6 @@ btn1.data = { title: 'Data:Title', content: 'Data:Content'};
         testApp
     .register((new TestStatMediator(TestMediator.NAME, document.body)).setFacade(testApp).addView([v1, btn1 ,((new ui.Button('btn2', testModel, {events: { click: ViewEvent.EDIT }} )).setState('content', 'The value')) ]))
     .register((new TestMediator(TestMediator.NAME, document.body)).setFacade(testApp).addView([new ui.Button('btn3'),new ui.Button('btn4', testModel)]));
-
 
 testModel.data = { title : 'Updated Title'};
     */ 

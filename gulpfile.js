@@ -62,6 +62,16 @@ gulp.task('test', function() {
     new fmvc.Xml2Ts('./src/test', './src/test-out');
 });
 
+gulp.task('kgView', function() {
+    console.log('Start task Kg View');
+    new fmvc.Xml2Ts('../treeweb-server/public/src/view', '../treeweb-server/public/src/view-out');
+});
+
+gulp.task('kgViewWatch', function () {
+    console.log('Start task KG-WATCH');
+    gulp.watch('../treeweb-server/public/src/view/*.html', { interval: 3000 }, ['kgView']);
+});
+
 
 gulp.task('watch', function () {
     console.log('Start task WATCH');
@@ -71,3 +81,4 @@ gulp.task('watch', function () {
 });
 
 gulp.task('default', ['ui', 'test', 'ts', 'watch']);
+gulp.task('kg', ['kgView', 'kgViewWatch']);

@@ -9,10 +9,10 @@ var fmvc;
 (function (fmvc) {
     var Mediator = (function (_super) {
         __extends(Mediator, _super);
-        function Mediator(name, root, facade) {
+        function Mediator(name, root) {
             _super.call(this, name, fmvc.TYPE_MEDIATOR);
-            this._root = root;
-            this.facade = facade;
+            this.setRoot(root);
+            this.views = [];
         }
         Mediator.prototype.setRoot = function (root) {
             this._root = root;
@@ -25,37 +25,29 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        Mediator.prototype.setFacade = function (facade) {
-            this.facade = facade;
+        Mediator.prototype.addView = function () {
+            var views = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                views[_i - 0] = arguments[_i];
+            }
+            _.each(views, this._addView, this);
             return this;
         };
-        Mediator.prototype.addView = function (views) {
-            if (!this.views)
-                this.views = [];
-            if (views) {
-                if (_.isArray(views)) {
-                    for (var i in views) {
-                        this.addView(views[i]);
-                    }
-                }
-                else {
-                    var view = views;
-                    if (this.views.indexOf(view) === -1) {
-                        this.views.push(view);
-                        view.setMediator(this).render(this._root);
-                    }
-                    else {
-                        this.log('Warn: try to duplicate view');
-                    }
-                }
+        Mediator.prototype._addView = function (view) {
+            if (this.views.indexOf(view) === -1) {
+                this.views.push(view);
+                view.setMediator(this).render(this.root);
             }
             else {
-                this.log('Has no views to add');
+                this.log('Warn: try to duplicate view');
             }
-            return this;
         };
         Mediator.prototype.getView = function (name) {
             return _.find(this.views, function (view) { return view.name === name; });
+        };
+        Mediator.prototype.removeView = function (name) {
+            this.views = _.without(this.views, this.getView(name));
+            return this;
         };
         Object.defineProperty(Mediator.prototype, "events", {
             get: function () {
@@ -73,8 +65,6 @@ var fmvc;
             }
         };
         Mediator.prototype.eventHandler = function (e) {
-            //console.log('Mediator handled ... ' , e);
-            //this.log('Handled ' + e.name + ' from ' + e.target.name + ":" + e.target.type);
             switch (e && e.target ? e.target.type : null) {
                 case fmvc.TYPE_MEDIATOR:
                     this.mediatorEventHandler(e);

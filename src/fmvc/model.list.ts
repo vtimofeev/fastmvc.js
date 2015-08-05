@@ -26,7 +26,6 @@ module fmvc {
             var data = this.data;
             return (data && data.length)?data.length:0;
         }
-
         /*
             public add(value:any):boolean {
             this._data.push(this.getModel(value));

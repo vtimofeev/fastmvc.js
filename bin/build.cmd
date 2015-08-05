@@ -1,1 +1,0 @@
-r.js.cmd -o baseUrl=./ name=package.fmvc out=../builds/fmvc.min.js
