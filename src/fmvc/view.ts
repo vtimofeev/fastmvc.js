@@ -52,6 +52,7 @@ module fmvc {
         private childrenViews:View[];
         private tmp = {};
 
+        private expr:Expression = Expression.instance();
 
         // Elements
         public  element:Element; // root element
@@ -185,78 +186,6 @@ module fmvc {
             this.updateDynamicProperty(name, appValue);
         }
 
-            // @todo
-        private getStyleValue(name:string) {
-        }
-
-        public getClassStringValue(propertyName, propertyValue, templateString):string {
-            if (_.isBoolean(propertyValue)) {
-                return templateString.replace('{' + propertyName + '}', propertyName);
-            } else {
-                return templateString.replace('{' + propertyName + '}', propertyValue);
-            }
-        }
-
-        public getDataStringValue(propertyName, propertyValue, strOrExOrMEx):string {
-            if (_.isString(strOrExOrMEx)) {
-                return strOrExOrMEx.replace('{' + propertyName + '}', propertyValue);
-            }
-            else if (_.isObject(strOrExOrMEx)) {
-                return this.executeMultiExpression(strOrExOrMEx);
-            }
-        }
-
-        public executeFilters(value:any, filters:string[]):any {
-            if(!filters || !filters.length) return value;
-
-            return _.reduce(filters,
-                function(memo:any, filter:string, index:number) {
-                if (filter.indexOf('i18n.') === 0) return this.getFormattedMessage(this.i18n[filter.replace('i18n.', '')],memo);
-                else return this.executePlainFilter(filter, memo);
-            }, value, this);
-        }
-
-        public executePlainFilter(filter:string, value:string):string {
-            switch (filter) {
-                case 'hhmmss':
-                    return ViewHelper.hhmmss(value);
-                case Filter.FIRST:
-                    return 'first:' + value;
-                    break;
-                case Filter.SECOND:
-                    return 'second:' + value;
-                    break;
-            }
-            return value;
-        }
-
-        /*
-        public getDataObjectValue(propertyName, propertyValue, templateObject:any):string {
-            var getFilterValue = function (reducedValue:string, filter:string | string[]):string {
-                if(_.isArray(filter)) {
-                    if(filter[0] === 'i18n') {
-                        var secondName = filter[1];
-                        if (!this.i18n[secondName]) return 'Error:View.getDataObjectValue has no i18n property';
-                        var data:any = {};
-                        _.each(templateObject.args, function (value:string, key:string) {
-                            if (value) data[key] = this.data[value.replace('data.', '')];
-                        }, this);
-                        var result = this.getFormattedMessage(this.i18n[secondName], data);
-                        return templateObject.source.replace('{replace}', result);
-                    }
-                    else {
-                        return this.executeComplexFilter(filter, reducedValue);
-                    }
-                }
-                else {
-                    return this.executePlainFilter(filter, reducedValue);
-                }
-            };
-
-            return _.reduce(templateObject.filters, getFilterValue, propertyValue, this);
-        }
-        */
-
         public updatePaths(paths, type, name, value, GetValue:Function, each:Boolean) {
             _.each(paths, function (valueOrValues:any, path:string) {
                 var r = '';
@@ -357,6 +286,7 @@ module fmvc {
                     console.log('Set data ', element, element.nodeType, element.textContent);
                     if (element.nodeType === 3 && element.textContent != resultValue) element.textContent = resultValue;
                     View.Counters.update.data++;
+
                     break;
                 default:
                     element.setAttribute(type, resultValue);
@@ -595,12 +525,10 @@ module fmvc {
             View.__formatter[value] = View.__formatter[value] ? View.__formatter[value] : this.getCompiledFormatter(value);
             return <string> (View.__formatter[value](data));
         }
-
         public getCompiledFormatter(value:string):Function {
             View.__messageFormat[this.locale] = View.__messageFormat[this.locale] ? View.__messageFormat[this.locale] : new MessageFormat(this.locale);
             return View.__messageFormat[this.locale].compile(value);
         }
-
 
         //------------------------------------------------------------------------------------------------
         // States
@@ -638,7 +566,6 @@ module fmvc {
             if (!this.dynamicProperties) return;
             if (this._inDocument) this.updateDynamicProperty(name, value);
         }
-
 
         public applyChildrenState(name, value):void {
         }
@@ -907,51 +834,16 @@ module fmvc {
             else if(v.indexOf('app.') === 0) {
                 return eval('this.'+ v);
             }
+
             else if(v.indexOf('$') === 0) {
                 var varEx:IExpression|string = ex.expressions[parseInt(v.replace('$', ''),10)];
-                return (typeof varEx === 'string')?this.executeEval(varEx):this.executeExpression(<IExpression> varEx);
+                return (typeof varEx === 'string')?this.executeEval(varEx):this.expr.executeExpression(this, <IExpression> varEx);
             }
             else if(v.indexOf('.') === -1 || v.indexOf('state.') === 0) {
                 var varName:string = v.replace('state.','');
                 return this.getState(varName);
             }
             else throw new Error('Not supported variable in ' + this.name + ', ' + v);
-        }
-
-        public executeMultiExpression(mex:IMultiExpression):string {
-            //console.log('------------------------------ ?* --------------------------' , mex);
-            //console.log(mex);
-            return _.reduce(mex.vars,
-                function (memo:string, value:string) {
-                    return memo.replace('{'+value+'}',this.getVarValue(value, mex));
-                }, mex.result || '{$0}', this);
-        }
-
-
-        public executeExpression(ex:IExpression):any {
-            //console.log(ex);
-            var r:any = null;
-
-            // we create object to send to first filter (like i18n method) that returns a string value
-            if(ex.args && ex.filters) {
-                r = {};
-                _.each(ex.args,(v:string,k:string)=>r[k]=this.getVarValue(v,ex),this);
-            }
-            // other way we search first positive result of values
-            else if(ex.values)
-            {
-                var i = 0, length = ex.values.length;
-                while(!r && i < length) {
-                    r = this.getVarValue(ex.values[i], ex);
-                    //this.log(['Search positive ' + i + ' value in [', ex.values[i], ']=',  r].join(''));
-                    i++;
-                }
-            }
-            else throw Error('Expression must has args and filter or values');
-
-            console.log([this.name , ' ... ExecuteExpression ' , ex, '  result=', JSON.stringify(r), ', of content: ', ex.content].join(''), ex);
-            r = this.executeFilters(r, ex.filters);
-            return r;
         }
 
         public getElement(value:IDomObject, object:any):Element {

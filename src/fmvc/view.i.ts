@@ -23,19 +23,6 @@ module fmvc {
         eventHandler(name:string, e:any):void;
     }
 
-    export interface IRootDomObject extends IDomObject {
-        className:string;
-        moduleName:string;
-        css?:IStyleDefinition;
-        links?:{[name:string]:string/* path */}[];
-        dynamicSummary?:IDynamicSummary;
-        i18n?:any;
-    }
-
-    export interface INameValue {
-        name:string;
-        value:any;
-    }
 
     export interface ITypeNameValue {
         name:string;
@@ -94,8 +81,23 @@ module fmvc {
 
         handlers?:{[event:string]:string};
         children?:IDomObject[];
-
     }
+
+    export interface IRootDomObject extends IDomObject {
+        className:string;
+        moduleName:string;
+        css?:IStyleDefinition;
+        links?:{[name:string]:string/* path */}[];
+        dynamicSummary?:IDynamicSummary;
+        i18n?:any;
+    }
+
+    export interface INameValue {
+        name:string;
+        value:any;
+    }
+
+
 }
 
 

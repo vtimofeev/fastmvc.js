@@ -42,6 +42,7 @@ var fmvc;
             this._locale = 'ru';
             this._id = null;
             this.tmp = {};
+            this.expr = Expression.instance();
             _.bindAll(this, 'getDataStringValue', 'applyEventHandlers', 'invalidateHandler', 'appModelHandler' /*, 'getDataObjectValue'*/);
             this.template = this.jsTemplate;
             if (modelOrData) {
@@ -161,74 +162,6 @@ var fmvc;
             var appValue = eval('this.' + name);
             this.updateDynamicProperty(name, appValue);
         };
-        // @todo
-        View.prototype.getStyleValue = function (name) {
-        };
-        View.prototype.getClassStringValue = function (propertyName, propertyValue, templateString) {
-            if (_.isBoolean(propertyValue)) {
-                return templateString.replace('{' + propertyName + '}', propertyName);
-            }
-            else {
-                return templateString.replace('{' + propertyName + '}', propertyValue);
-            }
-        };
-        View.prototype.getDataStringValue = function (propertyName, propertyValue, strOrExOrMEx) {
-            if (_.isString(strOrExOrMEx)) {
-                return strOrExOrMEx.replace('{' + propertyName + '}', propertyValue);
-            }
-            else if (_.isObject(strOrExOrMEx)) {
-                return this.executeMultiExpression(strOrExOrMEx);
-            }
-        };
-        View.prototype.executeFilters = function (value, filters) {
-            if (!filters || !filters.length)
-                return value;
-            return _.reduce(filters, function (memo, filter, index) {
-                if (filter.indexOf('i18n.') === 0)
-                    return this.getFormattedMessage(this.i18n[filter.replace('i18n.', '')], memo);
-                else
-                    return this.executePlainFilter(filter, memo);
-            }, value, this);
-        };
-        View.prototype.executePlainFilter = function (filter, value) {
-            switch (filter) {
-                case 'hhmmss':
-                    return ViewHelper.hhmmss(value);
-                case fmvc.Filter.FIRST:
-                    return 'first:' + value;
-                    break;
-                case fmvc.Filter.SECOND:
-                    return 'second:' + value;
-                    break;
-            }
-            return value;
-        };
-        /*
-        public getDataObjectValue(propertyName, propertyValue, templateObject:any):string {
-            var getFilterValue = function (reducedValue:string, filter:string | string[]):string {
-                if(_.isArray(filter)) {
-                    if(filter[0] === 'i18n') {
-                        var secondName = filter[1];
-                        if (!this.i18n[secondName]) return 'Error:View.getDataObjectValue has no i18n property';
-                        var data:any = {};
-                        _.each(templateObject.args, function (value:string, key:string) {
-                            if (value) data[key] = this.data[value.replace('data.', '')];
-                        }, this);
-                        var result = this.getFormattedMessage(this.i18n[secondName], data);
-                        return templateObject.source.replace('{replace}', result);
-                    }
-                    else {
-                        return this.executeComplexFilter(filter, reducedValue);
-                    }
-                }
-                else {
-                    return this.executePlainFilter(filter, reducedValue);
-                }
-            };
-
-            return _.reduce(templateObject.filters, getFilterValue, propertyValue, this);
-        }
-        */
         View.prototype.updatePaths = function (paths, type, name, value, GetValue, each) {
             _.each(paths, function (valueOrValues, path) {
                 var r = '';
@@ -870,7 +803,7 @@ var fmvc;
             }
             else if (v.indexOf('$') === 0) {
                 var varEx = ex.expressions[parseInt(v.replace('$', ''), 10)];
-                return (typeof varEx === 'string') ? this.executeEval(varEx) : this.executeExpression(varEx);
+                return (typeof varEx === 'string') ? this.executeEval(varEx) : this.expr.executeExpression(this, varEx);
             }
             else if (v.indexOf('.') === -1 || v.indexOf('state.') === 0) {
                 var varName = v.replace('state.', '');
@@ -878,36 +811,6 @@ var fmvc;
             }
             else
                 throw new Error('Not supported variable in ' + this.name + ', ' + v);
-        };
-        View.prototype.executeMultiExpression = function (mex) {
-            //console.log('------------------------------ ?* --------------------------' , mex);
-            //console.log(mex);
-            return _.reduce(mex.vars, function (memo, value) {
-                return memo.replace('{' + value + '}', this.getVarValue(value, mex));
-            }, mex.result || '{$0}', this);
-        };
-        View.prototype.executeExpression = function (ex) {
-            var _this = this;
-            //console.log(ex);
-            var r = null;
-            // we create object to send to first filter (like i18n method) that returns a string value
-            if (ex.args && ex.filters) {
-                r = {};
-                _.each(ex.args, function (v, k) { return r[k] = _this.getVarValue(v, ex); }, this);
-            }
-            else if (ex.values) {
-                var i = 0, length = ex.values.length;
-                while (!r && i < length) {
-                    r = this.getVarValue(ex.values[i], ex);
-                    //this.log(['Search positive ' + i + ' value in [', ex.values[i], ']=',  r].join(''));
-                    i++;
-                }
-            }
-            else
-                throw Error('Expression must has args and filter or values');
-            console.log([this.name, ' ... ExecuteExpression ', ex, '  result=', JSON.stringify(r), ', of content: ', ex.content].join(''), ex);
-            r = this.executeFilters(r, ex.filters);
-            return r;
         };
         View.prototype.getElement = function (value, object) {
             var e = null;
