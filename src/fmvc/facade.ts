@@ -1,7 +1,7 @@
 ///<reference path='./d.ts'/>
 
 module fmvc {
-    export var VERSION:string = '0.8.1';
+    export var VERSION:string = '0.8.2';
     export var TYPE_MEDIATOR:string = 'mediator';
     export var TYPE_MODEL:string = 'model';
     export var TYPE_VIEW:string = 'view';

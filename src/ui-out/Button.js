@@ -28,18 +28,52 @@ var ui;
         Button.__jsTemplate = {
             "path": "0",
             "type": "tag",
+            "properties": {},
             "attribs": {
-                "className": "Button"
+                "className": "Button",
+                "class": {
+                    "static": ["button"],
+                    "dynamic": [{
+                            "content": "button-{selected}",
+                            "result": "button-{$0}",
+                            "vars": ["$0"],
+                            "expressions": ["selected"]
+                        }, {
+                            "content": "button-{disabled}",
+                            "result": "button-{$0}",
+                            "vars": ["$0"],
+                            "expressions": ["disabled"]
+                        }, {
+                            "content": "button-{hover}",
+                            "result": "button-{$0}",
+                            "vars": ["$0"],
+                            "expressions": ["hover"]
+                        }, {
+                            "content": "button-{error}",
+                            "result": "button-{$0}",
+                            "vars": ["$0"],
+                            "expressions": ["error"]
+                        }, {
+                            "content": "button-{open}",
+                            "result": "button-{$0}",
+                            "vars": ["$0"],
+                            "expressions": ["open"]
+                        }, {
+                            "content": "{exClass}",
+                            "result": "{$0}",
+                            "vars": ["$0"],
+                            "expressions": ["exClass"]
+                        }]
+                }
             },
-            "staticAttributes": {
-                "class": "button"
-            },
+            "static": {},
+            "dynamic": {},
             "children": [{
                     "path": "0,0",
                     "type": "text",
                     "data": {
-                        "content": "\n    {(state.content||data)}\n",
-                        "result": "\n    {$0}\n",
+                        "content": "{(state.content||data)}",
+                        "result": "{$0}",
                         "vars": ["$0"],
                         "expressions": [{
                                 "content": "(state.content||data)",
@@ -48,44 +82,17 @@ var ui;
                                 "expressions": ["(this.getState(\"content\")||this.data)"]
                             }]
                     },
-                    "attribs": {}
+                    "properties": {},
+                    "attribs": {},
+                    "static": {},
+                    "dynamic": {}
                 }],
             "dynamicSummary": {
-                "selected": {
-                    "class": {
-                        "0": "button-{selected}"
-                    }
-                },
-                "disabled": {
-                    "class": {
-                        "0": "button-{disabled}"
-                    }
-                },
-                "hover": {
-                    "class": {
-                        "0": "button-{hover}"
-                    }
-                },
-                "error": {
-                    "class": {
-                        "0": "button-{error}"
-                    }
-                },
-                "open": {
-                    "class": {
-                        "0": "button-{open}"
-                    }
-                },
-                "exClass": {
-                    "class": {
-                        "0": "{exClass}"
-                    }
-                },
                 "state.content": {
                     "data": {
                         "0,0": {
-                            "content": "\n    {(state.content||data)}\n",
-                            "result": "\n    {$0}\n",
+                            "content": "{(state.content||data)}",
+                            "result": "{$0}",
                             "vars": ["$0"],
                             "expressions": [{
                                     "content": "(state.content||data)",
@@ -99,8 +106,8 @@ var ui;
                 "data": {
                     "data": {
                         "0,0": {
-                            "content": "\n    {(state.content||data)}\n",
-                            "result": "\n    {$0}\n",
+                            "content": "{(state.content||data)}",
+                            "result": "{$0}",
                             "vars": ["$0"],
                             "expressions": [{
                                     "content": "(state.content||data)",

@@ -48,7 +48,6 @@ module fmvc {
         gecko?:boolean;
 
         opera?:boolean;
-        opera?:boolean;
         msie?:boolean;
         msedge?:boolean;
         phantomjs?:boolean;

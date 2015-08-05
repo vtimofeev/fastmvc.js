@@ -1,7 +1,7 @@
 ///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
-    fmvc.VERSION = '0.8.1';
+    fmvc.VERSION = '0.8.2';
     fmvc.TYPE_MEDIATOR = 'mediator';
     fmvc.TYPE_MODEL = 'model';
     fmvc.TYPE_VIEW = 'view';

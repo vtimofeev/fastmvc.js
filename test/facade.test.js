@@ -77,6 +77,28 @@ describe('fmvc', function () {
         });
     });
     describe('fmvc.View', function () {
+        var m = new fmvc.Mediator(mediatorName, document.body);
+        var v0 = new fmvc.View(v0);
+        it('should set/get/remove mediator', function () {
+            assert(v0.setMediator(m), 'return view');
+            assert(v0.mediator, 'return view');
+            v0.setMediator(null);
+            assert(!v0.mediator, 'has no mediator');
+        });
+        it('can be rendered to html document', function () {
+            assert(!v0.inDocument, 'inDocument must be false');
+            assert(v0.render(document.body), 'return view');
+            assert(_.isElement(v0.getElement()), 'has dom element');
+            console.log(v0);
+            assert(v0.inDocument, 'inDocument must be true');
+        });
+        it('should can be invalidated and validated', function (done) {
+            v0.validateData = function () {
+                done();
+            };
+            v0.invalidate(fmvc.InvalidateType.Data);
+            assert(v0.isWaitingForValidate, 'must be waiting for validate');
+        });
     });
     describe('fmvc.Mediator', function () {
         var m = new fmvc.Mediator(mediatorName, document.body);

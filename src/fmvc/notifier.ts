@@ -84,13 +84,13 @@ module fmvc
         {
         }
 
-        public bind(object:INotifier, handler?:any):Notifier
+        public bind(object:any, handler?:any):Notifier
         {
             this.addListener(object, handler);
             return this;
         }
 
-        public unbind(object:INotifier):Notifier
+        public unbind(object:any):Notifier
         {
             this.removeListener(object);
             return this;
@@ -101,9 +101,7 @@ module fmvc
             if(!this._listeners) this._listeners = [];
             var hasListener = _.filter(this._listeners, (v)=>v.handler===handler);
             if(_.isEmpty(hasListener)) this._listeners.push({target: object, handler: handler});
-
             else this.log('Try duplicate listener ' , object.name);
-            return this;
         }
 
         private removeListener(object:INotifier):void
@@ -112,7 +110,6 @@ module fmvc
             this._listeners.forEach(function(lo:IListener, i:number) {
                 if(lo.target === object) { this.splice(i - deletedOffset, 1); deletedOffset++; }
             }, this._listeners);
-            return this;
         }
 
         private removeAllListeners():void
@@ -156,6 +153,7 @@ module fmvc
         changes?:any;
         sub?:any;
         error?:any;
+        global?:any;
     }
 
     export interface IViewEvent extends IEvent{

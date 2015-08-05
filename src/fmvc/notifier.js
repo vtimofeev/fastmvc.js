@@ -107,7 +107,6 @@ var fmvc;
                 this._listeners.push({ target: object, handler: handler });
             else
                 this.log('Try duplicate listener ', object.name);
-            return this;
         };
         Notifier.prototype.removeListener = function (object) {
             var deletedOffset = 0;
@@ -117,7 +116,6 @@ var fmvc;
                     deletedOffset++;
                 }
             }, this._listeners);
-            return this;
         };
         Notifier.prototype.removeAllListeners = function () {
             this._listeners = null;
