@@ -6,6 +6,7 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "optimist": "^0.6.1",
     "underscore": "*"
   },
   "devDependencies": {

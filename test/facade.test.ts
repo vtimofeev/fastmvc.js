@@ -126,6 +126,11 @@ describe('fmvc', function() {
             assert(v0.isWaitingForValidate, 'must be waiting for validate');
         });
 
+        it('should set state and get state', function() {
+            assert(v0.setState('selected', true), 'return view');
+            assert(v0.getState('selected'), 'should be true');
+        })
+
 
     });
 
