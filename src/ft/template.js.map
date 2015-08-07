@@ -1,1 +1,1 @@
-{"version":3,"file":"template.js","sourceRoot":"","sources":["template.ts"],"names":[],"mappings":"AAAA;;GAEG"}
+{"version":3,"file":"template.js","sourceRoot":"","sources":["template.ts"],"names":["ft","ft.Template","ft.Template.constructor"],"mappings":"AAAA,8BAA8B;AAE9B,IAAO,EAAE,CAOR;AAPD,WAAO,EAAE,EAAC,CAAC;IACPA;QAAAC;QAKAC,CAACA;QAADD,eAACA;IAADA,CAACA,AALDD,IAKCA;IALYA,WAAQA,WAKpBA,CAAAA;AACLA,CAACA,EAPM,EAAE,KAAF,EAAE,QAOR"}
