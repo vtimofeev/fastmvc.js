@@ -1,6 +1,7 @@
 ///<reference path="../src/d.ts/mocha/mocha.d.ts" />
 ///<reference path="../../DefinitelyTyped/chai/chai.d.ts" />
 ///<reference path="../src/fmvc/d.ts" />
+///<reference path="../src/ft/d.ts" />
 
 var expect = chai.expect;
 var assert = chai.assert;
@@ -31,6 +32,12 @@ describe('ft - template package ',function() {
         });
     });
 
+    describe('template view helper', function() {
+        it('should create dom', function() {
+
+        }
+    })
+
     describe('template view', function () {
         var simpleTmplInst:ITemplate = tm.parse(simpleTemplate);
 
@@ -40,6 +47,8 @@ describe('ft - template package ',function() {
             var view = new SimpleConstructor();
             assert.instanceOf(view, ft.TemplateView, 'should be instance of TemplateView');
         })
+
+
 
     });
 });

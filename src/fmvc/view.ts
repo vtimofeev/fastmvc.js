@@ -36,6 +36,11 @@ module fmvc {
             return this._element;
         }
 
+        public setElement(value:Element) {
+            if(this._element) throw Error('Cant set element of the fmvc.View instance ' + this.name);
+            this._element = value;
+        }
+
         public setMediator(value:Mediator):IView {
             this._mediator = value;
             return this;
@@ -78,7 +83,7 @@ module fmvc {
             return '';
         }
 
-        public domHandler(e:any):void {
+        public domHandler(e:any):vocrid {
             this.sendEvent(this.getEventNameByDomEvent(e), e);
         }
 
@@ -86,7 +91,7 @@ module fmvc {
         // lifecycle
 
         public createDom():void {
-            this._element = document.createElement('div');
+            this.setElement(document.createElement('div'));
         }
 
         public enter():void {
