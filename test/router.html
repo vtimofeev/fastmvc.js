@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+
+</head>
+<body>
+
+<script src="../src/contrib/underscore.js"></script>
+<script src="../src/browser/router.js"></script>
+
+
+<a href="#/products/24/edit/54" >Products 12/22</a>
+
+<script>
+    Router.config({ mode: 'hash'/*'history'*/, root: 'fastmvc.js/test/router.html' });
+
+    // returning the user to the initial state
+    Router.navigate();
+
+    // adding routes
+    Router
+            .add(/about/, function() {
+                console.log('about');
+            })
+            .add(/products\/(.*)\/edit\/(.*)/, function() {
+                console.log('products', arguments);
+                //alert(JSON.strigify(arguments));
+            })
+            .add(function() {
+                console.log('default');
+            })
+            .check('/products/12/edit/22')
+            .check('/products/12')
+            .listen();
+
+    // forwarding
+    Router.navigate('/about');
+
+</script>
+</body>
+</html>
