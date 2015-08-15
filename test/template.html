@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Browser fmvc test</title>
+    <title>Browser ft templates test</title>
     <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
 </head>
 <body>
@@ -11,13 +11,26 @@
 <div id="messages"></div>
 <div id="fixtures"></div>
 
+
+<tmpl id="template-simple">
+    <div class="template-simple">Simple text template, only static text and class</div>
+</tmpl>
+
+<tmpl id="template-data">
+    <div class="template-data">Template has the data {data}</div>
+</tmpl>
+
+<tmpl id="template-state">
+    <div class="{state.base} {state.base}-{state.hover}">Template contains base state (string) {state.base} and hover state (boolean) {state.hover}</div>
+</tmpl>
+
 <script src="../src/contrib/underscore.js"></script>
 <script src="../node_modules/mocha/mocha.js"></script>
 <script src="../node_modules/chai/chai.js"></script>
 <script src="../build/fmvc.dev.js"></script>
 
 <script>mocha.setup('bdd')</script>
-<script src="facade.test.js"></script>
+<script src="template.test.js"></script>
 <script>mocha.run();</script>
 
 </body>

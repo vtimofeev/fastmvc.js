@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="lib/xmlToJSON.js"></script>
+    <script src="../../src/contrib/jquery-2.1.4.js"></script>
+    <script src="x2js.js"></script>
+
+
+</head>
+<body>
+
+<div>XML</div>
+<textarea style="width: 600px; height: 200px" id="text"><root id="1" test="string"><node>one content</node>TextNodeContent</root></textarea>
+
+<div>OPTIONS</div>
+<textarea style="width: 600px; height: 200px" id="options">{"attrsAsObject": false}</textarea>
+
+<p id="result">Result</p>
+
+<button id="btn">Convert</button>
+
+
+<script>
+    $('#btn').bind('click', function() {
+        var x2js = new X2JS({attributePrefix: '', enableToStringFunc: false, enableDataAttibute: true});
+        var resultJs = x2js.xml_str2json($('#text').val());
+        console.log(resultJs);
+        $('#result').text(JSON.stringify(resultJs));
+    });
+</script>
+
+</body>
+</html>

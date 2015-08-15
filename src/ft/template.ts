@@ -1,3 +1,10 @@
-/**
- * Created by Vasily on 06.08.2015.
- */
+///<reference path="./d.ts" />
+
+module ft {
+    export class Template implements ITemplate {
+        expressionMapByName:{};
+        name:string;
+        domTree:IDynamicTree;
+
+    }
+}
