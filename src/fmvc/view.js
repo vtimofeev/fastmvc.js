@@ -31,6 +31,11 @@ var fmvc;
         View.prototype.getElement = function () {
             return this._element;
         };
+        View.prototype.setElement = function (value) {
+            if (this._element)
+                throw Error('Cant set element of the fmvc.View instance ' + this.name);
+            this._element = value;
+        };
         View.prototype.setMediator = function (value) {
             this._mediator = value;
             return this;
@@ -84,7 +89,7 @@ var fmvc;
         };
         // lifecycle
         View.prototype.createDom = function () {
-            this._element = document.createElement('div');
+            this.setElement(document.createElement('div'));
         };
         View.prototype.enter = function () {
             if (this._inDocument)

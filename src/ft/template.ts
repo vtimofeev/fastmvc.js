@@ -2,9 +2,17 @@
 
 module ft {
     export class Template implements ITemplate {
-        expressionMapByName:{};
         name:string;
+        extend:string;
         domTree:IDynamicTree;
+        i18n:any;
+        dynamicTree:IDynamicTree;
+        styleMapByTheme:{[name:string]:any};
+        expressionMapByName:IExpressionMapByName;
+
+        constructor() {
+        }
+
 
     }
 }

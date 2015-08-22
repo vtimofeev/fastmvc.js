@@ -7,36 +7,49 @@ var __extends = this.__extends || function (d, b) {
 };
 var ft;
 (function (ft) {
-    ft.templateHelper;
+    ft.templateHelper = new ft.TemplateViewHelper();
     var TemplateView = (function (_super) {
         __extends(TemplateView, _super);
         function TemplateView(name, params, template) {
             _super.call(this, name);
         }
         TemplateView.prototype.createDom = function () {
-            ft.templateHelper.createDom(this);
+            var e = ft.templateHelper.createTreeObject(this._template.domTree, this);
+            this.setElement(e);
         };
         TemplateView.prototype.getTemplate = function () {
-            this._template;
+            return this._template;
         };
-        TemplateView.prototype.setProperty = function (name, value) {
+        TemplateView.prototype.getElementByPath = function (value) {
+            return this._elementMapByPath ? this._elementMapByPath[value] : null;
         };
-        TemplateView.prototype.setPath = function (path, value) {
+        TemplateView.prototype.getComponentByPath = function (value) {
+            return this._componentMapByPath ? this._componentMapByPath[value] : null;
+        };
+        TemplateView.prototype.setTemplateElementProperty = function (name, value) {
+            if (!this[name]) {
+                this[name] = value;
+                if (!value)
+                    delete this[name];
+            }
+            else {
+                throw Error('Cant set ' + name + ' property, cause it exist ' + this[name]);
+            }
+        };
+        TemplateView.prototype.setPathOfCreatedElement = function (path, value) {
+            if (_.isElement(value)) {
+                if (!this._elementMapByPath)
+                    this._elementMapByPath = {};
+                this._elementMapByPath[path] = value;
+            }
+            else {
+                if (!this._componentMapByPath)
+                    this._componentMapByPath = {};
+                this._componentMapByPath[path] = value;
+            }
         };
         return TemplateView;
     })(fmvc.View);
     ft.TemplateView = TemplateView;
-    var TemplateViewHelper = (function () {
-        function TemplateViewHelper() {
-        }
-        TemplateViewHelper.prototype.createDom = function (view) {
-        };
-        TemplateViewHelper.prototype.createComponent = function (value) {
-        };
-        TemplateViewHelper.prototype.updateDom = function (view) {
-        };
-        return TemplateViewHelper;
-    })();
-    ft.TemplateViewHelper = TemplateViewHelper;
 })(ft || (ft = {}));
 //# sourceMappingURL=template.view.js.map

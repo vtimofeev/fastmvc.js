@@ -11,7 +11,6 @@
 <div id="messages"></div>
 <div id="fixtures"></div>
 
-
 <tmpl id="template-simple">
     <div class="template-simple">Simple text template, only static text and class</div>
 </tmpl>
@@ -24,10 +23,23 @@
     <div class="{state.base} {state.base}-{state.hover}">Template contains base state (string) {state.base} and hover state (boolean) {state.hover}</div>
 </tmpl>
 
+<!-- Contrib !-->
 <script src="../src/contrib/underscore.js"></script>
+<script src="../src/contrib/htmlparser.min.js"></script>
+<script src="../src/contrib/messageformat.js"></script>
+
+<!-- Test !-->
 <script src="../node_modules/mocha/mocha.js"></script>
 <script src="../node_modules/chai/chai.js"></script>
+
+<!-- Template !-->
 <script src="../build/fmvc.dev.js"></script>
+<script src="../src/ft/expression.js"></script>
+<script src="../src/ft/template.js"></script>
+<script src="../src/ft/template.parser.js"></script>
+<script src="../src/ft/template.view.js"></script>
+<script src="../src/ft/template.view.helper.js"></script>
+<script src="../src/ft/template.manager.js"></script>
 
 <script>mocha.setup('bdd')</script>
 <script src="template.test.js"></script>

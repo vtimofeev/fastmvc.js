@@ -841,7 +841,7 @@ module fmvc {
 
             _.each(brackets, function (v) {
                 r.push(value.substring(v[0], v[1] + 1));
-            })
+            });
             return r.length ? r : null;
         }
     }

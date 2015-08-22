@@ -83,13 +83,11 @@ module fmvc {
             return '';
         }
 
-        public domHandler(e:any):vocrid {
+        public domHandler(e:any):void {
             this.sendEvent(this.getEventNameByDomEvent(e), e);
         }
 
-
         // lifecycle
-
         public createDom():void {
             this.setElement(document.createElement('div'));
         }
