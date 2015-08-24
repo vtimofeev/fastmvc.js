@@ -4,6 +4,22 @@ module ft {
     export var templateHelper:ITemplateViewHelper = new TemplateViewHelper();
 
     export class TemplateView extends fmvc.View implements ITemplateView {
+        eval(value:string):any {
+            return undefined;
+        }
+
+        getValue(value:any):any {
+            return undefined;
+        }
+
+        getFormattedMessage(name:string, arguments:any[]):string {
+            return undefined;
+        }
+
+        getExpressionValue(ex:ft.IExpression) {
+        }
+
+
         private _template:ITemplate;
         private _componentMapByPath;
         private _elementMapByPath;
@@ -48,6 +64,17 @@ module ft {
                 if(!this._componentMapByPath) this._componentMapByPath = {};
                 this._componentMapByPath[path] = value;
             }
+        }
+
+        private canValidate(type:number):boolean {
+            var result = this.inDocument;
+            if(type===1) result = result && !!this.data;
+            return result;
+        }
+
+        validateData():void {
+            if(!this.canValidate(1)) return;
+
         }
     }
 

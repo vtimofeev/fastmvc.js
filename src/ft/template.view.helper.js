@@ -118,7 +118,7 @@ var ft;
             return _.isObject(value) ? this.getExpressionValue(value, root) : value;
         };
         TemplateViewHelper.prototype.getExpressionValue = function (value, root) {
-            return ExpressionHelper.execute.call(root, data.states);
+            return ft.Expression.execute.call(value, root.getMap, root);
         };
         TemplateViewHelper.prototype.getCommentElement = function (data) {
             return document.createComment(data.path);

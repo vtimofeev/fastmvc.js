@@ -13,6 +13,17 @@ var ft;
         function TemplateView(name, params, template) {
             _super.call(this, name);
         }
+        TemplateView.prototype.eval = function (value) {
+            return undefined;
+        };
+        TemplateView.prototype.getValue = function (value) {
+            return undefined;
+        };
+        TemplateView.prototype.getFormattedMessage = function (name, arguments) {
+            return undefined;
+        };
+        TemplateView.prototype.getExpressionValue = function (ex) {
+        };
         TemplateView.prototype.createDom = function () {
             var e = ft.templateHelper.createTreeObject(this._template.domTree, this);
             this.setElement(e);
@@ -47,6 +58,16 @@ var ft;
                     this._componentMapByPath = {};
                 this._componentMapByPath[path] = value;
             }
+        };
+        TemplateView.prototype.canValidate = function (type) {
+            var result = this.inDocument;
+            if (type === 1)
+                result = result && !!this.data;
+            return result;
+        };
+        TemplateView.prototype.validateData = function () {
+            if (!this.canValidate(1))
+                return;
         };
         return TemplateView;
     })(fmvc.View);

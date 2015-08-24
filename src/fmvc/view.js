@@ -61,6 +61,13 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(View.prototype, "app", {
+            get: function () {
+                return (this._mediator && this._mediator.facade) ? this._mediator.facade.model : null;
+            },
+            enumerable: true,
+            configurable: true
+        });
         View.prototype.setModel = function (value) {
             this._model = value;
             this.setData(value ? value.data : null);
@@ -123,8 +130,9 @@ var fmvc;
                 this.validateParent();
             if (this._invalidate & fmvc.InvalidateType.Children)
                 this.validateChildren();
+            if (this._invalidate & fmvc.InvalidateType.App)
+                this.validateApp();
             /*
-            if(this._invalidate & InvalidateType.App) this.validateApp();
             if(this._invalidate & InvalidateType.Template) this.validateTemplate();
             if(this._invalidate & InvalidateType.Theme) this.validateTheme();
             if(this._invalidate & InvalidateType.I18n) this.validateI18n();
@@ -136,8 +144,9 @@ var fmvc;
         View.prototype.validateState = function () { };
         View.prototype.validateParent = function () { };
         View.prototype.validateChildren = function () { };
+        View.prototype.validateApp = function () { };
         /*
-        public validateApp():void {}
+
         public validateTemplate():void {}
         public validateTheme():void {}
         public validateI18n():void {}

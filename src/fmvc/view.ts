@@ -63,6 +63,11 @@ module fmvc {
             return this._data;
         }
 
+        public get app():any {
+            return (this._mediator && this._mediator.facade)?this._mediator.facade.model:null;
+        }
+
+
         public setModel(value:Model):IView {
             this._model = value;
             this.setData(value?value.data:null);
@@ -120,8 +125,8 @@ module fmvc {
             if(this._invalidate & InvalidateType.State) this.validateState();
             if(this._invalidate & InvalidateType.Parent) this.validateParent();
             if(this._invalidate & InvalidateType.Children) this.validateChildren();
-            /*
             if(this._invalidate & InvalidateType.App) this.validateApp();
+            /*
             if(this._invalidate & InvalidateType.Template) this.validateTemplate();
             if(this._invalidate & InvalidateType.Theme) this.validateTheme();
             if(this._invalidate & InvalidateType.I18n) this.validateI18n();
@@ -130,12 +135,13 @@ module fmvc {
             this._isWaitingForValidate = false;
         }
 
-        public validateData():void {}
-        public validateState():void {}
-        public validateParent():void {}
-        public validateChildren():void {}
+        protected validateData():void {}
+        protected validateState():void {}
+        protected validateParent():void {}
+        protected validateChildren():void {}
+        protected validateApp():void {}
         /*
-        public validateApp():void {}
+
         public validateTemplate():void {}
         public validateTheme():void {}
         public validateI18n():void {}
