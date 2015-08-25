@@ -12,6 +12,7 @@ module ft {
         }
         
         public execute(value:IExpressionName, map:IExpressionMapByName, context:ITemplateView):any {
+
             var expression = <IExpression> map[value.name];
             return this.executeMultiExpression(expression, context);
         }
@@ -48,32 +49,38 @@ module ft {
             var isSimpleExpression:Boolean = (ex.expressions.length === 1);
             return isSimpleExpression?
                 this.executeExpression(ex, context):
-                _.reduce(ex.expressions, (memo:string, value:string|IExpression)=>memo.replace('{'+value+'}',this.getContextValue(value, context)), ex.result, this);
+                _.reduce(ex.expressions,
+                    (memo:string, value:string|IExpression, index:number)=>(
+                        memo.replace('{$'+index+'}', this.getContextValue(value, context))
+                        ), ex.result, this);
         }
 
         private getContextValue(v:string|IExpression, context:ITemplateView):any {
-            if(v.indexOf('data.') === 0 || v.indexOf('app.') === 0) {
-                return context.eval('this.'+ v);
-            }
-            else if(v.indexOf('(') === 0) {
-                context.eval(v);
-            }
-            else if(v.indexOf('state.') === 0) {
-                return context.getState(v.replace('state.',''));
+            if(_.isString(v)) {
+                if(v.indexOf('data.') === 0 || v.indexOf('app.') === 0) {
+                    return context.eval('this.'+ v);
+                }
+                else if(v.indexOf('(') === 0) {
+                    return context.eval(v);
+                }
+                else if(v.indexOf('state.') === 0) {
+                    return context.getState(v.replace('state.',''));
+                }
             }
             else if(_.isObject(v)) {
                 return this.executeExpression(<IExpression> v, context);
             }
-            else throw new Error('Not supported variable in ' + this.name + ', ' + v);
+
+            throw new Error('Not supported variable in ' + this.name + ', ' + v);
         }
 
         private getContextArguments(ex:IExpression, context:ITemplateView):any {
-            _.reduce(ex.args, (r:any,v:string,k:string)=>r[k]=this.getContextValue(v,context),{},this);
+            return _.reduce(ex.args, (r:any,v:string,k:string)=>(r[k]=this.getContextValue(v,context),r),{},this);
         }
 
         private executeExpression(ex:IExpression, context:ITemplateView):any {
             var r:any = ex.args?this.getContextArguments(ex,context):this.getContextValue(ex.expressions[0],context);
-            if(ex.filters) r = this.executeFilters(r, ex.filters);
+            if(ex.filters) r = this.executeFilters(r, ex.filters, context);
             if(ex.result && ex.result != this.ExResult) r = ex.result.replace(this.ExResult, r);
             //console.log([this.name , ' ... ExecuteExpression ' , ex, '  result=', JSON.stringify(r), ', of content: ', ex.content].join(''), ex);
             return r;
@@ -89,7 +96,6 @@ module ft {
 
         private parseExpressionMultiContent(value:string):IExpression {
             var matches = value.match(this.ExpressionMatchRe);
-            console.log('Multi matches: ', value, matches);
 
             if (!(matches && matches.length)) return null;
 

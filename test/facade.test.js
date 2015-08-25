@@ -99,6 +99,14 @@ describe('fmvc', function () {
             v0.invalidate(fmvc.InvalidateType.Data);
             assert(v0.isWaitingForValidate, 'must be waiting for validate');
         });
+        it('should set model and get model', function () {
+            var data0 = { a: 1, b: 2 };
+            var model0 = new fmvc.Model('testModel', data0);
+            v0.model = model0;
+            console.log(model0, model0.data);
+            assert.strictEqual(v0.model, model0, 'Model should be equal');
+            assert.deepEqual(v0.data, data0, 'Data should be equal');
+        });
         it('should set state and get state', function () {
             assert(v0.setState('selected', true), 'return view');
             assert(v0.getState('selected'), 'should be true');

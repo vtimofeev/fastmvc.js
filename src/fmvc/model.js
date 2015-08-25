@@ -96,6 +96,7 @@ var fmvc;
             if (this._data === value)
                 return;
             var result = this.parseValueAndSetChanges(value);
+            console.log('Model set data ... ', value);
             if (this._data !== result || this._changes) {
                 this._data = result;
                 this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);

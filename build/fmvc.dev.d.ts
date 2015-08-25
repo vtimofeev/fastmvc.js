@@ -226,12 +226,15 @@ declare module fmvc {
         private _element;
         constructor(name: string);
         getElement(): Element;
+        setElement(value: Element): void;
         setMediator(value: Mediator): IView;
         mediator: Mediator;
-        setData(value: any): IView;
-        data: any;
-        setModel(value: Model): IView;
+        setState(name: string, value: any): IView;
+        getState(name: string): any;
         model: Model;
+        data: any;
+        setData(value: any): IView;
+        setModel(value: Model): IView;
         inDocument: boolean;
         getEventNameByDomEvent(e: any): string;
         domHandler(e: any): void;

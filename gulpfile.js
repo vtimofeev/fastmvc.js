@@ -76,6 +76,7 @@ gulp.task('kgViewWatch', function () {
 gulp.task('watch', function () {
     console.log('Start task WATCH');
     gulp.watch('./src/fmvc/*.ts', { interval: 3000 }, ['ts']);
+    gulp.watch('./src/ft/*.ts', { interval: 3000 }, ['ts']);
     gulp.watch('./src/ui/*.*', { interval: 3000 }, ['ui', 'ts']);
     gulp.watch('./src/test/*.*', { interval: 3000 }, ['test', 'ts']);
 });

@@ -409,6 +409,7 @@ var fmvc;
             if (this._data === value)
                 return;
             var result = this.parseValueAndSetChanges(value);
+            console.log('Model set data ... ', value);
             if (this._data !== result || this._changes) {
                 this._data = result;
                 this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
@@ -775,6 +776,7 @@ var fmvc;
         __extends(View, _super);
         function View(name) {
             _super.call(this, name, fmvc.TYPE_VIEW);
+            this._states = {};
             this._invalidate = 0;
             this._isWaitingForValidate = false;
             this._inDocument = false;
@@ -783,6 +785,11 @@ var fmvc;
         // Properties: mediator, data, model
         View.prototype.getElement = function () {
             return this._element;
+        };
+        View.prototype.setElement = function (value) {
+            if (this._element)
+                throw Error('Cant set element of the fmvc.View instance ' + this.name);
+            this._element = value;
         };
         View.prototype.setMediator = function (value) {
             this._mediator = value;
@@ -798,29 +805,45 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        View.prototype.setData = function (value) {
-            this._data = value;
+        View.prototype.setState = function (name, value) {
+            if (this._states[name] === value)
+                return this;
+            this._states[name] = value;
+            this.invalidate(fmvc.InvalidateType.State);
             return this;
         };
-        Object.defineProperty(View.prototype, "data", {
-            get: function () {
-                return this._data;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        View.prototype.setModel = function (value) {
-            this._model = value;
-            this.setData(value ? value.data : null);
-            return this;
+        View.prototype.getState = function (name) {
+            return this._states[name];
         };
         Object.defineProperty(View.prototype, "model", {
             get: function () {
                 return this._model;
             },
+            set: function (value) {
+                this.setModel(value);
+            },
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(View.prototype, "data", {
+            get: function () {
+                return this._data;
+            },
+            set: function (value) {
+                this.setData = value;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        View.prototype.setData = function (value) {
+            this._data = value;
+            return this;
+        };
+        View.prototype.setModel = function (value) {
+            this._model = value;
+            this.setData(value ? value.data : null);
+            return this;
+        };
         Object.defineProperty(View.prototype, "inDocument", {
             get: function () {
                 return this._inDocument;
@@ -837,7 +860,7 @@ var fmvc;
         };
         // lifecycle
         View.prototype.createDom = function () {
-            this._element = document.createElement('div');
+            this.setElement(document.createElement('div'));
         };
         View.prototype.enter = function () {
             if (this._inDocument)

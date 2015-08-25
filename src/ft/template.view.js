@@ -8,10 +8,22 @@ var __extends = this.__extends || function (d, b) {
 var ft;
 (function (ft) {
     ft.templateHelper = new ft.TemplateViewHelper();
+    var localeFormatterCache = {};
+    var templateFormatterChache = {};
+    //var MessageFormat = exports?exports.MessageFormat:window.MessageFormat;
+    function getFormatter(value, locale) {
+        if (locale === void 0) { locale = 'en'; }
+        return templateFormatterChache[value] || compileFormatter(value, locale);
+    }
+    function compileFormatter(value, locale) {
+        var mf = localeFormatterCache[locale] || (localeFormatterCache[locale] = new MessageFormat(this.locale));
+        return (templateFormatterChache[value] = mf.compile(value));
+    }
     var TemplateView = (function (_super) {
         __extends(TemplateView, _super);
         function TemplateView(name, params, template) {
             _super.call(this, name);
+            this._template = template;
         }
         TemplateView.prototype.createDom = function () {
             var e = ft.templateHelper.createTreeObject(this._template.domTree, this);
@@ -47,6 +59,19 @@ var ft;
                     this._componentMapByPath = {};
                 this._componentMapByPath[path] = value;
             }
+        };
+        TemplateView.prototype.getFormattedMessage = function (name, args) {
+            var formattedTemplate = (this._template && this._template.i18n && this._template.i18n[name]) ? this._template.i18n[name] : null
+                || (this._i18n && this._i18n[name]) ? this._i18n[name] : null;
+            if (!formattedTemplate)
+                return 'Error: not found';
+            var formatter = getFormatter(formattedTemplate);
+            return formatter(args);
+        };
+        TemplateView.prototype.eval = function (value) {
+            var r = eval(value);
+            console.log('eval: ', value, ' = ', r, ' instance', this);
+            return r;
         };
         return TemplateView;
     })(fmvc.View);

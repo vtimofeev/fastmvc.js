@@ -18,7 +18,7 @@ module fmvc {
         private _model:fmvc.Model;
         private _data:any;
 
-        private _states:{[name:string]:any};
+        private _states:{[name:string]:any} = {};
 
         private _invalidate:number = 0;
         private _isWaitingForValidate:boolean = false;
@@ -54,6 +54,26 @@ module fmvc {
             return this._mediator;
         }
 
+
+        public setState(name:string, value:any):IView {
+            if(this._states[name] === value) return this;
+            this._states[name] = value;
+            this.invalidate(InvalidateType.State);
+            return this;
+        }
+
+        public getState(name:string):any {
+            return this._states[name];
+        }
+
+        public set model(value:Model) {
+            this.setModel(value);
+        }
+
+        public set data(value:any) {
+            this.setData = value;
+        }
+
         public setData(value:any):IView {
             this._data = value;
             return this;
@@ -62,6 +82,7 @@ module fmvc {
         public get data():any {
             return this._data;
         }
+
 
         public setModel(value:Model):IView {
             this._model = value;

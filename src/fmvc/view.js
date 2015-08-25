@@ -22,6 +22,7 @@ var fmvc;
         __extends(View, _super);
         function View(name) {
             _super.call(this, name, fmvc.TYPE_VIEW);
+            this._states = {};
             this._invalidate = 0;
             this._isWaitingForValidate = false;
             this._inDocument = false;
@@ -50,29 +51,45 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        View.prototype.setData = function (value) {
-            this._data = value;
+        View.prototype.setState = function (name, value) {
+            if (this._states[name] === value)
+                return this;
+            this._states[name] = value;
+            this.invalidate(fmvc.InvalidateType.State);
             return this;
         };
-        Object.defineProperty(View.prototype, "data", {
-            get: function () {
-                return this._data;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        View.prototype.setModel = function (value) {
-            this._model = value;
-            this.setData(value ? value.data : null);
-            return this;
+        View.prototype.getState = function (name) {
+            return this._states[name];
         };
         Object.defineProperty(View.prototype, "model", {
             get: function () {
                 return this._model;
             },
+            set: function (value) {
+                this.setModel(value);
+            },
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(View.prototype, "data", {
+            get: function () {
+                return this._data;
+            },
+            set: function (value) {
+                this.setData = value;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        View.prototype.setData = function (value) {
+            this._data = value;
+            return this;
+        };
+        View.prototype.setModel = function (value) {
+            this._model = value;
+            this.setData(value ? value.data : null);
+            return this;
+        };
         Object.defineProperty(View.prototype, "inDocument", {
             get: function () {
                 return this._inDocument;

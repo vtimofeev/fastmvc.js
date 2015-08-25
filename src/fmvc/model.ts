@@ -96,7 +96,10 @@ module fmvc {
         public setData(value:any) {
             if (this._data === value) return;
             const result:any = this.parseValueAndSetChanges(value);
+
+            console.log('Model set data ... ', value);
             if (this._data !== result || this._changes) {
+
                 this._data = result;
                 this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
             }

@@ -24,9 +24,11 @@
 </tmpl>
 
 <!-- Contrib !-->
+<script></script>
+<script src="../src/contrib/messageformat.js"></script>
 <script src="../src/contrib/underscore.js"></script>
 <script src="../src/contrib/htmlparser.min.js"></script>
-<script src="../src/contrib/messageformat.js"></script>
+
 
 <!-- Test !-->
 <script src="../node_modules/mocha/mocha.js"></script>
@@ -37,10 +39,12 @@
 <script src="../src/ft/expression.js"></script>
 <script src="../src/ft/template.js"></script>
 <script src="../src/ft/template.parser.js"></script>
-<script src="../src/ft/template.view.js"></script>
 <script src="../src/ft/template.view.helper.js"></script>
 <script src="../src/ft/template.manager.js"></script>
+<script src="../src/ft/template.view.js"></script>
 
+
+<!-- Bdd !-->
 <script>mocha.setup('bdd')</script>
 <script src="template.test.js"></script>
 <script>mocha.run();</script>

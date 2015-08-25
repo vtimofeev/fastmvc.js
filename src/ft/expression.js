@@ -46,32 +46,33 @@ var ft;
             var isSimpleExpression = (ex.expressions.length === 1);
             return isSimpleExpression ?
                 this.executeExpression(ex, context) :
-                _.reduce(ex.expressions, function (memo, value) { return memo.replace('{' + value + '}', _this.getContextValue(value, context)); }, ex.result, this);
+                _.reduce(ex.expressions, function (memo, value, index) { return (memo.replace('{$' + index + '}', _this.getContextValue(value, context))); }, ex.result, this);
         };
         Expression.prototype.getContextValue = function (v, context) {
-            if (v.indexOf('data.') === 0 || v.indexOf('app.') === 0) {
-                return context.eval('this.' + v);
-            }
-            else if (v.indexOf('(') === 0) {
-                context.eval(v);
-            }
-            else if (v.indexOf('state.') === 0) {
-                return context.getState(v.replace('state.', ''));
+            if (_.isString(v)) {
+                if (v.indexOf('data.') === 0 || v.indexOf('app.') === 0) {
+                    return context.eval('this.' + v);
+                }
+                else if (v.indexOf('(') === 0) {
+                    return context.eval(v);
+                }
+                else if (v.indexOf('state.') === 0) {
+                    return context.getState(v.replace('state.', ''));
+                }
             }
             else if (_.isObject(v)) {
                 return this.executeExpression(v, context);
             }
-            else
-                throw new Error('Not supported variable in ' + this.name + ', ' + v);
+            throw new Error('Not supported variable in ' + this.name + ', ' + v);
         };
         Expression.prototype.getContextArguments = function (ex, context) {
             var _this = this;
-            _.reduce(ex.args, function (r, v, k) { return r[k] = _this.getContextValue(v, context); }, {}, this);
+            return _.reduce(ex.args, function (r, v, k) { return (r[k] = _this.getContextValue(v, context), r); }, {}, this);
         };
         Expression.prototype.executeExpression = function (ex, context) {
             var r = ex.args ? this.getContextArguments(ex, context) : this.getContextValue(ex.expressions[0], context);
             if (ex.filters)
-                r = this.executeFilters(r, ex.filters);
+                r = this.executeFilters(r, ex.filters, context);
             if (ex.result && ex.result != this.ExResult)
                 r = ex.result.replace(this.ExResult, r);
             //console.log([this.name , ' ... ExecuteExpression ' , ex, '  result=', JSON.stringify(r), ', of content: ', ex.content].join(''), ex);
@@ -86,7 +87,6 @@ var ft;
         Expression.prototype.parseExpressionMultiContent = function (value) {
             var _this = this;
             var matches = value.match(this.ExpressionMatchRe);
-            console.log('Multi matches: ', value, matches);
             if (!(matches && matches.length))
                 return null;
             var expressions = _.map(matches, function (v) { return _this.parseExpressionContent(v.substring(1, v.length - 1)); }, this);

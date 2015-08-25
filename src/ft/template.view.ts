@@ -3,13 +3,29 @@
 module ft {
     export var templateHelper:ITemplateViewHelper = new TemplateViewHelper();
 
+    var localeFormatterCache = {};
+    var templateFormatterChache = {};
+    //var MessageFormat = exports?exports.MessageFormat:window.MessageFormat;
+
+    function getFormatter(value:string, locale:string = 'en') {
+        return  templateFormatterChache[value] || compileFormatter(value,locale);
+    }
+
+    function compileFormatter(value:string, locale:string):Function
+    {
+        var mf = localeFormatterCache[locale] || (localeFormatterCache[locale] = new MessageFormat(this.locale));
+        return (templateFormatterChache[value] = mf.compile(value));
+    }
+
     export class TemplateView extends fmvc.View implements ITemplateView {
         private _template:ITemplate;
+        public _i18n:any;
         private _componentMapByPath;
         private _elementMapByPath;
 
         constructor(name:string, params?:ITemplateViewParams, template?:ITemplate) {
             super(name);
+            this._template = template;
         }
 
         createDom() {
@@ -48,6 +64,22 @@ module ft {
                 if(!this._componentMapByPath) this._componentMapByPath = {};
                 this._componentMapByPath[path] = value;
             }
+        }
+
+        getFormattedMessage(name:string, args:any):Function {
+            var formattedTemplate:string =
+                (this._template && this._template.i18n && this._template.i18n[name])?this._template.i18n[name]:null
+            || (this._i18n && this._i18n[name])?this._i18n[name]:null;
+
+            if(!formattedTemplate) return 'Error: not found';
+            var formatter = getFormatter(formattedTemplate);
+            return formatter(args);
+        }
+
+        eval(value:string):any {
+            var r = eval(value);
+            console.log('eval: ', value, ' = ',  r, ' instance', this);
+            return r;
         }
     }
 
