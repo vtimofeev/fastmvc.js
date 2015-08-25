@@ -146,6 +146,7 @@ module ft {
                 (value:AttributeValue, key:string)=>(this.excludedDomAttrs.indexOf(key)<0)?_.isObject(value)?typeAttrs.d[key]=this.getAttrValue(value, root):typeAttrs.s[key]=value:null,
                 this
             );
+
             _.each(typeAttrs, (attrs)=>this.setDomAttrs(attrs, domElement), this);
             if(data.class) this.setDomElementClasses(object, this.getAttrPropertyValues('class', data, root), root);
             if(data.style) this.setDomElementStyles(object, this.getAttrPropertyValues('style', data, root), root);
@@ -178,7 +179,7 @@ module ft {
         }
 
         getExpressionValue(value:IExpressionName, root:ITemplateView):any {
-            return ExpressionHelper.execute.call(root, data.states);
+            return Expression.execute.call(value, root.getMap, root);
         }
 
         getCommentElement(data:IDomDef):Comment {

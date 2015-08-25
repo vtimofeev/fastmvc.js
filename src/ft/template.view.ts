@@ -18,6 +18,22 @@ module ft {
     }
 
     export class TemplateView extends fmvc.View implements ITemplateView {
+        eval(value:string):any {
+            return undefined;
+        }
+
+        getValue(value:any):any {
+            return undefined;
+        }
+
+        getFormattedMessage(name:string, arguments:any[]):string {
+            return undefined;
+        }
+
+        getExpressionValue(ex:ft.IExpression) {
+        }
+
+
         private _template:ITemplate;
         public _i18n:any;
         private _componentMapByPath;
@@ -75,6 +91,15 @@ module ft {
             var formatter = getFormatter(formattedTemplate);
             return formatter(args);
         }
+        private canValidate(type:number):boolean {
+            var result = this.inDocument;
+            if(type===1) result = result && !!this.data;
+            return result;
+        }
+
+        validateData():void {
+            if(!this.canValidate(1)) return;
+
 
         eval(value:string):any {
             var r = eval(value);
