@@ -10,10 +10,28 @@ describe('ft - template package ',function() {
     var simpleName:string = 'template-simple';
     var dataName:string = 'template-data';
     var stateName:string = 'template-state';
-    var simpleTemplate:string = document.getElementById(simpleName).innerHTML;
+
+    var templateObjs = {
+        simpleTemplate:  '<div id="id1" data-a="a" data-b="b">text</div>' ,
+        flatDataTemplate: '<div>{data}</div>',
+        complexDataTemplate: '<div>{data.name}-{data.age} text<b>{data.name} text</b></div>',
+        staticClassTemplate: '<div class="base base-hover"></div>',
+        dynamicClassTemplate: '<div class="base base-hover {state.base} {state.base}-{state.hover}"></div>',
+        staticStyleTemplate: '<div style="top:0px;bottom:0px;position: absolute;"></div>',
+        dynamicStyleTemplate: '<div style="top:{state.top}px;bottom:{state.bottom}px;position: absolute;"></div>',
+        complexTemplate: '<div class="base base-hover {state.base} {state.base}-{state.hover}" style="top:{state.top}px;bottom:{state.bottom}px;position: absolute;"></div>'
+    };
+
+
+
+
     var dataTemplate:string = document.getElementById(dataName).innerHTML;
-    var stateTemplate:string = document.getElementById(stateName).innerHTML;
-    var tm:ITemplateManager = ft.TemplateManager();
+    var complexTemplate:string = document.getElementById(stateName).innerHTML;
+
+    var statesTmpl:string = '<div title="hello" value="{state.hover}" class="component {state.base} {state.base}-{state.hover} component-{state.hover}" style="top: {state.top}px; bottom: {state.bottom}px">{(state.hover?"hovered":"not hovered")}</div>';
+
+    var tm:ft.ITemplateManager = ft.templateManager;
+
 
     describe('template view parser', function () {
         it('should create dom', function () {
@@ -108,35 +126,65 @@ describe('ft - template package ',function() {
         })
     });
 
-    return;
 
     describe('template manager', function () {
         it('should correct parse template', function () {
-            var simpleTmplInst:ITemplate = tm.parse(simpleTemplate);
-            assert.instanceOf(simpleTmplInst, ft.Template, 'should be template');
+            var simpleTmplInst:ft.ITemplate = tm.parse(simpleTemplate);
+            //assert.instanceOf(simpleTmplInst, ft.Template, 'should be template');
             assert(simpleTmplInst.domTree, 'has dom tree');
             assert(!simpleTmplInst.dynamicTree, 'has no dynamic tree');
         });
 
         it('should correct parse data  template', function () {
             var dataTmplInst:ITemplate = tm.parse(dataTemplate);
-            assert.instanceOf(dataTmplInst, ft.Template, 'should be template');
             assert(dataTmplInst.domTree, 'has dom tree');
             assert(dataTmplInst.dynamicTree, 'has dynamic tree');
+        });
+
+        it('should correct parse complex  template', function () {
+            var tInstance:ITemplate = tm.parse(complexTemplate);
+            assert(tInstance.domTree, 'has dom tree');
+            assert(tInstance.dynamicTree, 'has dynamic tree');
+            assert(tInstance.expression, 'has dynamic tree');
         });
     });
 
 
     describe('template view', function () {
-        var simpleTmplInst:ITemplate = tm.parse(simpleTemplate);
         it('should create instance view from template', function () {
-            var SimpleConstructor = tm.getConstructor(simpleTmplInst);
-            assert(SimpleConstructor, 'exist constructor');
-            var view = new SimpleConstructor();
-            assert.instanceOf(view, ft.TemplateView, 'should be instance of TemplateView');
+            var r2 = getViewRenderedObject(statesTmpl, 'Vasily', {hover: false, base: 'button', top: 10});
+            console.log('R2, ' , r2.getResult());
+            r2.view.setState('hover', true);
+            r2.view.validate();
+            assert.strictEqual(r2.getResult(),'<div></div>', 'should be equal');
         })
     });
+
+
+
+
+    function getViewRenderedObject(value:string, data?:any, states?:any) {
+        var template:ITemplate = tm.parse(value);
+        var Constructor = tm.getConstructor(template);
+        assert(Constructor, 'exist constructor');
+
+        var view = <ft.TemplateView> (new Constructor('template-view'));
+        assert.instanceOf(view, ft.TemplateView, 'should be instance of TemplateView');
+
+        if(data) {
+            view.data = data;
+            //view.setData(123);
+        }
+        if(states) _.each(states, (v,k)=>view.setState(k,v));
+
+        var container = document.getElementById('template-container');
+        container.innerHTML = '';
+
+        view.render(container);
+        return {view: view, getResult: ()=>container.innerHTML };
+    }
 });
+
 
 
 

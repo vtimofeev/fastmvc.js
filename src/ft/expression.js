@@ -11,9 +11,12 @@ var ft;
         Expression.prototype.strToExpression = function (value) {
             return this.parseExpressionMultiContent(value);
         };
-        Expression.prototype.execute = function (value, map, context) {
+        Expression.prototype.getExpressionNameObject = function (value) {
+            return { name: value.name };
+        };
+        Expression.prototype.execute = function (value, map, context, classes) {
             var expression = map[value.name];
-            return this.executeMultiExpression(expression, context);
+            return this.executeMultiExpression(expression, context, classes);
         };
         //----------------------------------------------------------------------------------------------------------------------------------------
         // Execute
@@ -32,32 +35,50 @@ var ft;
             switch (filter) {
                 case 'hhmmss':
                     return value; //ViewHelper.hhmmss(value);
-                case Filter.FIRST:
-                    return 'first:' + value;
-                    break;
-                case Filter.SECOND:
-                    return 'second:' + value;
-                    break;
             }
             return value;
         };
-        Expression.prototype.executeMultiExpression = function (ex, context) {
+        Expression.prototype.executeMultiExpression = function (ex, context, classes) {
             var _this = this;
             var isSimpleExpression = (ex.expressions.length === 1);
+            var contextValue;
             return isSimpleExpression ?
-                this.executeExpression(ex, context) :
-                _.reduce(ex.expressions, function (memo, value, index) { return (memo.replace('{$' + index + '}', _this.getContextValue(value, context))); }, ex.result, this);
+                this.executeExpression(ex, context, classes) :
+                _.reduce(ex.expressions, function (memo, value, index) { return (memo ? memo = memo.replace('{$' + index + '}', (contextValue = _this.getParsedContextValue(value, context, classes))) : null,
+                    (contextValue ? memo : '') /* return special if classes */); }, ex.result, this);
+        };
+        Expression.prototype.getParsedContextValue = function (value, context, classes) {
+            return this.parseContextValue(this.getContextValue(value, context), value, classes);
+        };
+        Expression.prototype.parseContextValue = function (value, ex, classes) {
+            if (classes && _.isBoolean(value) && _.isString(ex) && ex[0] != '(' && ex.indexOf('.') > 0) {
+                var values = ex.split('.');
+                var varName = (values.length === 2) ? values[1] : null;
+                if (varName)
+                    return value ? varName : null;
+            }
+            return value;
         };
         Expression.prototype.getContextValue = function (v, context) {
+            var r;
             if (_.isString(v)) {
                 if (v.indexOf('data.') === 0 || v.indexOf('app.') === 0) {
-                    return context.eval('this.' + v);
+                    r = context.eval('this.' + v);
+                    context.setDynamicProperty(v, r);
+                    return r;
                 }
                 else if (v.indexOf('(') === 0) {
                     return context.eval(v);
                 }
                 else if (v.indexOf('state.') === 0) {
-                    return context.getState(v.replace('state.', ''));
+                    r = context.getState(v.replace('state.', ''));
+                    context.setDynamicProperty(v, r);
+                    return r;
+                }
+                else if (v === 'data') {
+                    r = context.data;
+                    context.setDynamicProperty(v, r);
+                    return r;
                 }
             }
             else if (_.isObject(v)) {
@@ -69,13 +90,14 @@ var ft;
             var _this = this;
             return _.reduce(ex.args, function (r, v, k) { return (r[k] = _this.getContextValue(v, context), r); }, {}, this);
         };
-        Expression.prototype.executeExpression = function (ex, context) {
-            var r = ex.args ? this.getContextArguments(ex, context) : this.getContextValue(ex.expressions[0], context);
+        Expression.prototype.executeExpression = function (ex, context, classes) {
+            var r = ex.args ? this.getContextArguments(ex, context) : this.getParsedContextValue(ex.expressions[0], context, classes);
+            if (!r && classes)
+                return ''; // empty class expression
             if (ex.filters)
                 r = this.executeFilters(r, ex.filters, context);
             if (ex.result && ex.result != this.ExResult)
                 r = ex.result.replace(this.ExResult, r);
-            //console.log([this.name , ' ... ExecuteExpression ' , ex, '  result=', JSON.stringify(r), ', of content: ', ex.content].join(''), ex);
             return r;
         };
         //----------------------------------------------------------------------------------------------------------------------------------------
@@ -93,7 +115,6 @@ var ft;
             var expressionVars = [];
             var result = _.reduce(matches, function (r, v, i) {
                 var e = '$' + i;
-                //expressionVars.push(e);
                 return r.replace(v, '{' + e + '}');
             }, value, this);
             var simplyfiedExpressions = _.map(expressions, this.simplifyExpression, this);
@@ -118,7 +139,6 @@ var ft;
         */
         Expression.prototype.parseExpressionContent = function (value) {
             var _this = this;
-            console.log('Parse content ex: ', value /*, ', ' , expressionMatches*/);
             var result = {
                 name: this.getName(),
                 content: value,
@@ -144,7 +164,6 @@ var ft;
             _.each(vars, function (v) { return _.isObject(v) ? result.vars = [].concat(result.vars, v.vars) : result.vars.push(v); });
             // remove empty keys
             _.each(_.keys(result), function (key) { return (_.isEmpty(result[key]) ? delete result[key] : null); });
-            console.log('Parse result ', result);
             return result;
         };
         Expression.prototype.tryParseRoundBracketExpression = function (value, index) {

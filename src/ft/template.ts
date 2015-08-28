@@ -8,7 +8,7 @@ module ft {
         i18n:any;
         dynamicTree:IDynamicTree;
         styleMapByTheme:{[name:string]:any};
-        expressionMapByName:IExpressionMapByName;
+        expressionMap:IExpressionMap;
 
         constructor() {
         }

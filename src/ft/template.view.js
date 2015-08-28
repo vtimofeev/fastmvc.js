@@ -10,7 +10,7 @@ var ft;
     ft.templateHelper = new ft.TemplateViewHelper();
     var localeFormatterCache = {};
     var templateFormatterChache = {};
-    //var MessageFormat = exports?exports.MessageFormat:window.MessageFormat;
+    var expression = new ft.Expression();
     function getFormatter(value, locale) {
         if (locale === void 0) { locale = 'en'; }
         return templateFormatterChache[value] || compileFormatter(value, locale);
@@ -23,20 +23,56 @@ var ft;
         __extends(TemplateView, _super);
         function TemplateView(name, params, template) {
             _super.call(this, name);
+            this._classMap = {};
+            this._prevDynamicProperiesMap = {};
+            this._dynamicPropertiesMap = {};
             this._template = template;
         }
+        TemplateView.prototype.isChangedDynamicProperty = function (name) {
+            var value = expression.getContextValue(name, this);
+            return !(this._prevDynamicProperiesMap[name] === value);
+        };
+        TemplateView.prototype.setDynamicProperty = function (name, value) {
+            this._dynamicPropertiesMap[name] = value;
+        };
         TemplateView.prototype.createDom = function () {
             var e = ft.templateHelper.createTreeObject(this._template.domTree, this);
+            ft.templateHelper.setDataTreeObject(this._template.domTree, this);
             this.setElement(e);
         };
         TemplateView.prototype.getTemplate = function () {
             return this._template;
         };
         TemplateView.prototype.getElementByPath = function (value) {
-            return this._elementMapByPath ? this._elementMapByPath[value] : null;
+            return this._elementMap ? this._elementMap[value] : null;
         };
         TemplateView.prototype.getComponentByPath = function (value) {
-            return this._componentMapByPath ? this._componentMapByPath[value] : null;
+            return this._componentMap ? this._componentMap[value] : null;
+        };
+        TemplateView.prototype.eval = function (value) {
+            return undefined;
+        };
+        TemplateView.prototype.getValue = function (value) {
+            return undefined;
+        };
+        TemplateView.prototype.getFormattedMessage = function (name, arguments) {
+            return undefined;
+        };
+        TemplateView.prototype.getExpressionValue = function (ex) {
+            var exObj = this.getTemplate().expressionMap[ex.name];
+            var result = expression.execute(exObj, this.getTemplate().expressionMap, this);
+            return result;
+        };
+        TemplateView.prototype.getClassExpressionValue = function (ex) {
+            var exObj = this.getTemplate().expressionMap[ex.name];
+            var result = expression.execute(exObj, this.getTemplate().expressionMap, this, true);
+            return result;
+        };
+        TemplateView.prototype.getPathClassValue = function (path, name) {
+            return this._classMap[path + '-' + name];
+        };
+        TemplateView.prototype.setPathClassValue = function (path, name, value) {
+            this._classMap[path + '-' + name] = value;
         };
         TemplateView.prototype.setTemplateElementProperty = function (name, value) {
             if (!this[name]) {
@@ -45,19 +81,19 @@ var ft;
                     delete this[name];
             }
             else {
-                throw Error('Cant set ' + name + ' property, cause it exist ' + this[name]);
+                throw Error('Can not set name:' + name + ' property, cause it exist ' + this[name]);
             }
         };
         TemplateView.prototype.setPathOfCreatedElement = function (path, value) {
-            if (_.isElement(value)) {
-                if (!this._elementMapByPath)
-                    this._elementMapByPath = {};
-                this._elementMapByPath[path] = value;
+            if ('getElement' in value) {
+                if (!this._componentMap)
+                    this._componentMap = {};
+                this._componentMap[path] = value;
             }
             else {
-                if (!this._componentMapByPath)
-                    this._componentMapByPath = {};
-                this._componentMapByPath[path] = value;
+                if (!this._elementMap)
+                    this._elementMap = {};
+                this._elementMap[path] = value;
             }
         };
         TemplateView.prototype.getFormattedMessage = function (name, args) {
@@ -68,9 +104,30 @@ var ft;
             var formatter = getFormatter(formattedTemplate);
             return formatter(args);
         };
+        TemplateView.prototype.canValidate = function (type) {
+            var result = this.inDocument;
+            //if(type===fmvc.InvalidateType.Data) result = result && !!this.data;
+            return result;
+        };
+        TemplateView.prototype.validate = function () {
+            if (!_.isEmpty(this._dynamicPropertiesMap)) {
+                _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
+                this._dynamicPropertiesMap = {};
+            }
+            _super.prototype.validate.call(this);
+            if (this.canValidate())
+                ft.templateHelper.updateDynamicTree(this);
+            //console.log('After validate: ', this);
+        };
+        TemplateView.prototype.validateRecreateTree = function () {
+            //templateHelper.createTreeObject(this._template.domTree, this);
+        };
+        TemplateView.prototype.validateData = function () {
+            //if (this.canValidate(fmvc.InvalidateType.Data))
+            //
+        };
         TemplateView.prototype.eval = function (value) {
             var r = eval(value);
-            console.log('eval: ', value, ' = ', r, ' instance', this);
             return r;
         };
         return TemplateView;

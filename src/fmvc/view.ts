@@ -71,7 +71,7 @@ module fmvc {
         }
 
         public set data(value:any) {
-            this.setData = value;
+            this.setData(value);
         }
 
         public setData(value:any):IView {
@@ -133,6 +133,7 @@ module fmvc {
         }
 
         public invalidate(value:number):void {
+            console.log('Invalidate, ' + value);
             this._invalidate = this._invalidate | value;
 
             if(!this._isWaitingForValidate) {
@@ -142,6 +143,10 @@ module fmvc {
         }
 
         public validate():void {
+            console.log('Try to validate ', this._invalidate);
+            if(!this._invalidate) return;
+            if(this._invalidate) this.validateRecreateTree();
+
             if(this._invalidate & InvalidateType.Data) this.validateData();
             if(this._invalidate & InvalidateType.State) this.validateState();
             if(this._invalidate & InvalidateType.Parent) this.validateParent();
@@ -156,21 +161,18 @@ module fmvc {
             this._isWaitingForValidate = false;
         }
 
+        protected validateRecreateTree():void {}
         protected validateData():void {}
         protected validateState():void {}
         protected validateParent():void {}
         protected validateChildren():void {}
         protected validateApp():void {}
-        /*
-
-        public validateTemplate():void {}
-        public validateTheme():void {}
-        public validateI18n():void {}
-        */
 
         public render(element:Element):IView {
             if(this._inDocument) throw new Error('Cant render view, it is in document');
             this.createDom();
+            console.log('Result', this.getElement().innerHTML);
+            element.appendChild(this.getElement());
             this.enter();
             return this;
         }
@@ -195,6 +197,7 @@ module fmvc {
 
     export interface IView {
         setModel(value:Model):IView;
+        data:any;
         model:Model;
         setMediator(value:Mediator):IView;
         mediator:Mediator;

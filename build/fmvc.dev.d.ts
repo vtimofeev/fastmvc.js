@@ -234,6 +234,7 @@ declare module fmvc {
         model: Model;
         data: any;
         setData(value: any): IView;
+        app: any;
         setModel(value: Model): IView;
         inDocument: boolean;
         getEventNameByDomEvent(e: any): string;
@@ -244,10 +245,12 @@ declare module fmvc {
         isWaitingForValidate: boolean;
         invalidate(value: number): void;
         validate(): void;
-        validateData(): void;
-        validateState(): void;
-        validateParent(): void;
-        validateChildren(): void;
+        protected validateRecreateTree(): void;
+        protected validateData(): void;
+        protected validateState(): void;
+        protected validateParent(): void;
+        protected validateChildren(): void;
+        protected validateApp(): void;
         render(element: Element): IView;
         dispose(): void;
         sendEvent(name: string, data?: any, sub?: string, error?: any, global?: boolean): void;
@@ -255,6 +258,7 @@ declare module fmvc {
     }
     interface IView {
         setModel(value: Model): IView;
+        data: any;
         model: Model;
         setMediator(value: Mediator): IView;
         mediator: Mediator;

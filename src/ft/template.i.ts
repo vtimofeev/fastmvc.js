@@ -12,14 +12,13 @@ module ft {
 
     export interface ITemplateManager {
         parse(value:string):ITemplate;
-        add(name:string, value:ITemplate):ITemplateManager;
-        get(name:string):ITemplate;
-        getConstructor(template:ITemplate):ITemplateConstructor;
+        addTemplate(name:string, value:ITemplate):ITemplateManager;
+        getTemplate(name:string):ITemplate;
+        getTemplateViewFunc(templateName:string):ft.ITemplateConstructor;
     }
 
     export interface ITemplateViewHelper {
         createTreeObject:IGetTreeObjectFunctor;
-        updateTreeObject:IGetTreeObjectFunctor;
         enterTreeObject:IGetTreeObjectFunctor;
         exitTreeObject:IGetTreeObjectFunctor;
         setDataTreeObject:IGetTreeObjectFunctor;
@@ -27,7 +26,7 @@ module ft {
     }
 
     export interface IHtmlObject {
-        tag:string;
+        type:string; // 'tag', 'text', 'comment'
         name:string;
         raw:string;
         data?:string;
@@ -45,13 +44,14 @@ module ft {
         name?: string;
         extend?: string;
         domTree: IDomDef;
-        i18n?: any;
         dynamicTree?:IDynamicTree;
+        expressionMap?:IExpressionMap;
+
+        i18n?: any;
         styleMapByTheme?: {[name:string]:any};
-        expressionMap?:IExpressionMapByName;
     }
 
-    export interface IExpressionMapByName {
+    export interface IExpressionMap {
         [name:string]:IExpression
     }
 
@@ -66,12 +66,14 @@ module ft {
     }
 
     export interface IDynamicMap {
-        [propertyPathName:string]:IExpressionDomPathMap
+        [propertyPathName:string]:string[] /* expression name string */
     }
 
+    /*
     export interface IExpressionDomPathMap {
         [path:string]:string|IExpressionName;
     }
+    */
 
     export interface IExpressionName {
         name:string;
@@ -82,11 +84,21 @@ module ft {
         expressions:string;
     }
 
+    export interface IExpressionHost {
+        path:string;
+        group:string;
+        key:string;
+        keyProperty?:string;
+    }
+
     export interface IExpression {
         name:string;
+
         content: string;
         result?: string;
         vars:string[];
+        hosts:IExpressionHost[];
+
 
         //values:any;
         args?:any;
@@ -101,8 +113,11 @@ module ft {
     export interface ITemplateView extends fmvc.IView {
         eval(value:string):any;
         getValue(value:any):any;
+        getTemplate():ITemplate;
         getFormattedMessage(name:string,arguments:any[]):string;
         getExpressionValue(ex:IExpression);
+        getClassExpressionValue(ex:IExpression);
+        isChangedDynamicProperty(value:string);
     }
 
     export  interface IAttrPropertyMap {
@@ -113,8 +128,13 @@ module ft {
         // system
         type:string;  // system tag type = text,comment,tag (creation step)
         path:string; // system path (creation step)
-        name?:string; // system tag name (creation step)
+        link?:string // system class link (in class property)
+        name:string; // system tag name (creation step)
+        extend?:string;
         attribs?:IDomAttribs;
+        params?:any;
+        data?:any;
+
         states?:IExpressionName; //special system attribute
         children?:IDomDef[]; // system IDomDef children
     }

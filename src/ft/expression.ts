@@ -2,6 +2,7 @@
 
 module ft {
     export class Expression {
+
         private counter:number = 0;
         private ExpressionMatchRe:RegExp = /\{([\(\)\\,\.\|\?:'"@A-Za-z<>=\[\]& \+\-\/\*0-9]+)\}/g;
         private VariableMatchRe:RegExp = /([A-Za-z0-9_\-"'\.]+)/gi;
@@ -11,10 +12,13 @@ module ft {
             return this.parseExpressionMultiContent(value);
         }
         
-        public execute(value:IExpressionName, map:IExpressionMapByName, context:ITemplateView):any {
-
+        public getExpressionNameObject(value:IExpression):IExpressionName {
+            return { name: value.name }
+        }
+        
+        public execute(value:IExpressionName, map:IExpressionMap, context:ITemplateView, classes?:boolean):any {
             var expression = <IExpression> map[value.name];
-            return this.executeMultiExpression(expression, context);
+            return this.executeMultiExpression(expression, context, classes);
         }
 
         //----------------------------------------------------------------------------------------------------------------------------------------
@@ -35,36 +39,67 @@ module ft {
             switch (filter) {
                 case 'hhmmss':
                     return value; //ViewHelper.hhmmss(value);
+                    /*
                 case Filter.FIRST:
                     return 'first:' + value;
                     break;
                 case Filter.SECOND:
                     return 'second:' + value;
                     break;
+                    */
             }
             return value;
         }
 
-        private executeMultiExpression(ex:IExpression, context:ITemplateView):any {
+        private executeMultiExpression(ex:IExpression, context:ITemplateView, classes:boolean):any {
             var isSimpleExpression:Boolean = (ex.expressions.length === 1);
+            var contextValue;
             return isSimpleExpression?
-                this.executeExpression(ex, context):
+                this.executeExpression(ex, context, classes):
                 _.reduce(ex.expressions,
                     (memo:string, value:string|IExpression, index:number)=>(
-                        memo.replace('{$'+index+'}', this.getContextValue(value, context))
+                        memo ? memo = memo.replace('{$'+index+'}', (contextValue = this.getParsedContextValue(value, context, classes))) : null,
+                        (contextValue?memo:'') /* return special if classes */
                         ), ex.result, this);
         }
 
-        private getContextValue(v:string|IExpression, context:ITemplateView):any {
+        private getParsedContextValue(value:AttributeValue, context:ITemplateView, classes:boolean) {
+            return this.parseContextValue(this.getContextValue(value, context), value, classes);
+
+        }
+
+        private parseContextValue(value:any, ex:IExpression|string, classes:boolean):any {
+            if(classes && _.isBoolean(value) && _.isString(ex) && ex[0] != '(' && ex.indexOf('.') > 0) {
+
+                    var values = ex.split('.');
+                    var varName = (values.length === 2)?values[1]:null;
+                    if(varName) return value?varName:null;
+            }
+
+            return value;
+
+        }
+
+        public getContextValue(v:string|IExpression, context:ITemplateView):any {
+            var r;
             if(_.isString(v)) {
                 if(v.indexOf('data.') === 0 || v.indexOf('app.') === 0) {
-                    return context.eval('this.'+ v);
+                    r = context.eval('this.'+ v);
+                    context.setDynamicProperty(v, r);
+                    return r;
                 }
                 else if(v.indexOf('(') === 0) {
                     return context.eval(v);
                 }
                 else if(v.indexOf('state.') === 0) {
-                    return context.getState(v.replace('state.',''));
+                    r = context.getState(v.replace('state.',''));
+                    context.setDynamicProperty(v, r);
+                    return r;
+                }
+                else if(v === 'data') {
+                    r = context.data;
+                    context.setDynamicProperty(v, r);
+                    return r;
                 }
             }
             else if(_.isObject(v)) {
@@ -78,11 +113,12 @@ module ft {
             return _.reduce(ex.args, (r:any,v:string,k:string)=>(r[k]=this.getContextValue(v,context),r),{},this);
         }
 
-        private executeExpression(ex:IExpression, context:ITemplateView):any {
-            var r:any = ex.args?this.getContextArguments(ex,context):this.getContextValue(ex.expressions[0],context);
+        private executeExpression(ex:IExpression, context:ITemplateView, classes?:boolean):any {
+            var r:any = ex.args?this.getContextArguments(ex,context):this.getParsedContextValue(ex.expressions[0],context,classes);
+            if(!r && classes) return '';// empty class expression
+
             if(ex.filters) r = this.executeFilters(r, ex.filters, context);
             if(ex.result && ex.result != this.ExResult) r = ex.result.replace(this.ExResult, r);
-            //console.log([this.name , ' ... ExecuteExpression ' , ex, '  result=', JSON.stringify(r), ', of content: ', ex.content].join(''), ex);
             return r;
         }
 
@@ -104,7 +140,6 @@ module ft {
 
             var result = _.reduce(matches, function (r, v, i) {
                 var e = '$' + i;
-                //expressionVars.push(e);
                 return r.replace(v, '{' + e + '}');
             }, value, this);
 
@@ -130,7 +165,6 @@ module ft {
          {data.name as A, (a||b) as V, c as D, (a||b||c) as E|i18n.t|s|d} - expression executed in context with filters
         */
         private parseExpressionContent(value:string):IExpression {
-            console.log('Parse content ex: ' , value /*, ', ' , expressionMatches*/);
             var result:IExpression = {
                 name: this.getName(), // Уникальное имя
                 content: value, // исходный код
@@ -160,7 +194,6 @@ module ft {
 
             // remove empty keys
             _.each(_.keys(result), (key)=>(_.isEmpty(result[key]) ? delete result[key] : null));
-            console.log('Parse result ' , result);
             return result;
         }
 

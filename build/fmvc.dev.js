@@ -830,7 +830,7 @@ var fmvc;
                 return this._data;
             },
             set: function (value) {
-                this.setData = value;
+                this.setData(value);
             },
             enumerable: true,
             configurable: true
@@ -839,6 +839,13 @@ var fmvc;
             this._data = value;
             return this;
         };
+        Object.defineProperty(View.prototype, "app", {
+            get: function () {
+                return (this._mediator && this._mediator.facade) ? this._mediator.facade.model : null;
+            },
+            enumerable: true,
+            configurable: true
+        });
         View.prototype.setModel = function (value) {
             this._model = value;
             this.setData(value ? value.data : null);
@@ -886,6 +893,8 @@ var fmvc;
             }
         };
         View.prototype.validate = function () {
+            if (this._invalidate)
+                this.validateRecreateTree();
             if (this._invalidate & fmvc.InvalidateType.Data)
                 this.validateData();
             if (this._invalidate & fmvc.InvalidateType.State)
@@ -894,8 +903,9 @@ var fmvc;
                 this.validateParent();
             if (this._invalidate & fmvc.InvalidateType.Children)
                 this.validateChildren();
+            if (this._invalidate & fmvc.InvalidateType.App)
+                this.validateApp();
             /*
-            if(this._invalidate & InvalidateType.App) this.validateApp();
             if(this._invalidate & InvalidateType.Template) this.validateTemplate();
             if(this._invalidate & InvalidateType.Theme) this.validateTheme();
             if(this._invalidate & InvalidateType.I18n) this.validateI18n();
@@ -903,20 +913,18 @@ var fmvc;
             this._invalidate = 0;
             this._isWaitingForValidate = false;
         };
+        View.prototype.validateRecreateTree = function () { };
         View.prototype.validateData = function () { };
         View.prototype.validateState = function () { };
         View.prototype.validateParent = function () { };
         View.prototype.validateChildren = function () { };
-        /*
-        public validateApp():void {}
-        public validateTemplate():void {}
-        public validateTheme():void {}
-        public validateI18n():void {}
-        */
+        View.prototype.validateApp = function () { };
         View.prototype.render = function (element) {
             if (this._inDocument)
                 throw new Error('Cant render view, it is in document');
             this.createDom();
+            console.log('Result', this.getElement().innerHTML);
+            element.appendChild(this.getElement());
             this.enter();
             return this;
         };

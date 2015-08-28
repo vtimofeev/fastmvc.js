@@ -5,12 +5,12 @@ module ft {
 
     var localeFormatterCache = {};
     var templateFormatterChache = {};
-    //var MessageFormat = exports?exports.MessageFormat:window.MessageFormat;
+
+    var expression = new ft.Expression();
 
     function getFormatter(value:string, locale:string = 'en') {
         return  templateFormatterChache[value] || compileFormatter(value,locale);
     }
-
     function compileFormatter(value:string, locale:string):Function
     {
         var mf = localeFormatterCache[locale] || (localeFormatterCache[locale] = new MessageFormat(this.locale));
@@ -18,6 +18,47 @@ module ft {
     }
 
     export class TemplateView extends fmvc.View implements ITemplateView {
+        private _template:ITemplate;
+        public _i18n:any;
+        private _componentMap;
+        private _elementMap;
+        private _classMap = {};
+        private _prevDynamicProperiesMap = {};
+        private _dynamicPropertiesMap = {};
+
+
+        constructor(name:string, params?:ITemplateViewParams, template?:ITemplate) {
+            super(name);
+            this._template = template;
+        }
+
+        isChangedDynamicProperty(name:string):boolean {
+            var value = expression.getContextValue(name,this);
+            return !(this._prevDynamicProperiesMap[name] === value);
+        }
+
+        setDynamicProperty(name:string, value:string) {
+            this._dynamicPropertiesMap[name] = value;
+        }
+
+        createDom() {
+            var e = templateHelper.createTreeObject(this._template.domTree, this);
+            templateHelper.setDataTreeObject(this._template.domTree, this);
+            this.setElement(e);
+        }
+
+        getTemplate():ITemplate {
+            return this._template;
+        }
+
+        getElementByPath(value:string):Element {
+            return this._elementMap?this._elementMap[value]:null;
+        }
+
+        getComponentByPath(value:string):ITemplateView {
+            return this._componentMap?this._componentMap[value]:null;
+        }
+
         eval(value:string):any {
             return undefined;
         }
@@ -30,35 +71,25 @@ module ft {
             return undefined;
         }
 
-        getExpressionValue(ex:ft.IExpression) {
+        getExpressionValue(ex:IExpressionName):any {
+            var exObj:IExpression = this.getTemplate().expressionMap[ex.name];
+            var result = expression.execute(exObj, this.getTemplate().expressionMap, this);
+            return result;
+        }
+
+        getClassExpressionValue(ex:IExpressionName):any {
+            var exObj:IExpression = this.getTemplate().expressionMap[ex.name];
+            var result = expression.execute(exObj, this.getTemplate().expressionMap, this, true);
+            return result;
         }
 
 
-        private _template:ITemplate;
-        public _i18n:any;
-        private _componentMapByPath;
-        private _elementMapByPath;
-
-        constructor(name:string, params?:ITemplateViewParams, template?:ITemplate) {
-            super(name);
-            this._template = template;
+        getPathClassValue(path, name):string {
+            return this._classMap[path + '-' + name];
         }
 
-        createDom() {
-            var e = templateHelper.createTreeObject(this._template.domTree, this);
-            this.setElement(e);
-        }
-
-        getTemplate():ITemplate {
-            return this._template;
-        }
-
-        getElementByPath(value:string):Element {
-            return this._elementMapByPath?this._elementMapByPath[value]:null;
-        }
-
-        getComponentByPath(value:string):ITemplateView {
-            return this._componentMapByPath?this._componentMapByPath[value]:null;
+        setPathClassValue(path, name, value):void {
+            this._classMap[path + '-' + name] = value;
         }
 
 
@@ -67,18 +98,18 @@ module ft {
                 this[name] = value;
                 if(!value) delete this[name];
             } else {
-                throw Error('Cant set ' + name + ' property, cause it exist ' + this[name]);
+                throw Error('Can not set name:' + name + ' property, cause it exist ' + this[name]);
             }
         }
 
         setPathOfCreatedElement(path:string,  value:TreeElement) {
-            if(_.isElement(value)) {
-                if(!this._elementMapByPath) this._elementMapByPath = {};
-                this._elementMapByPath[path] = value;
+            if('getElement' in value) {
+                if(!this._componentMap) this._componentMap = {};
+                this._componentMap[path] = value;
             }
             else {
-                if(!this._componentMapByPath) this._componentMapByPath = {};
-                this._componentMapByPath[path] = value;
+                if(!this._elementMap) this._elementMap = {};
+                this._elementMap[path] = value;
             }
         }
 
@@ -93,17 +124,34 @@ module ft {
         }
         private canValidate(type:number):boolean {
             var result = this.inDocument;
-            if(type===1) result = result && !!this.data;
+            //if(type===fmvc.InvalidateType.Data) result = result && !!this.data;
             return result;
         }
 
-        validateData():void {
-            if(!this.canValidate(1)) return;
+        protected validate() {
+            if(!_.isEmpty(this._dynamicPropertiesMap)) {
+                _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
+                this._dynamicPropertiesMap = {};
+            }
+            super.validate();
+            if(this.canValidate()) templateHelper.updateDynamicTree(this);
+            //console.log('After validate: ', this);
+        }
 
+
+
+        protected validateRecreateTree() {
+            //templateHelper.createTreeObject(this._template.domTree, this);
+        }
+
+        validateData():void {
+
+            //if (this.canValidate(fmvc.InvalidateType.Data))
+            //
+        }
 
         eval(value:string):any {
             var r = eval(value);
-            console.log('eval: ', value, ' = ',  r, ' instance', this);
             return r;
         }
     }
