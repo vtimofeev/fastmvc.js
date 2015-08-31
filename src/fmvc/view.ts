@@ -54,6 +54,15 @@ module fmvc {
             return this._mediator;
         }
 
+        public setStates(value:any):IView {
+            _.each(value, this.setStateReverse, this);
+            return this;
+        }
+
+        private setStateReverse(value:any, name:string):IView {
+            this.setState(name, value);
+            return this;
+        }
 
         public setState(name:string, value:any):IView {
             if(this._states[name] === value) return this;
@@ -179,6 +188,8 @@ module fmvc {
 
         // Overrides of Notifier
         public dispose() {
+
+
             super.dispose();
         }
 

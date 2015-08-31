@@ -51,6 +51,14 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        View.prototype.setStates = function (value) {
+            _.each(value, this.setStateReverse, this);
+            return this;
+        };
+        View.prototype.setStateReverse = function (value, name) {
+            this.setState(name, value);
+            return this;
+        };
         View.prototype.setState = function (name, value) {
             if (this._states[name] === value)
                 return this;

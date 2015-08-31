@@ -11,6 +11,7 @@ module ft {
     }
 
     export interface ITemplateManager {
+        createTemplate(name:string, content:string):ITemplateConstructor;
         parse(value:string):ITemplate;
         addTemplate(name:string, value:ITemplate):ITemplateManager;
         getTemplate(name:string):ITemplate;
@@ -113,6 +114,7 @@ module ft {
     export interface ITemplateView extends fmvc.IView {
         eval(value:string):any;
         getValue(value:any):any;
+        getElement():Element;
         getTemplate():ITemplate;
         getFormattedMessage(name:string,arguments:any[]):string;
         getExpressionValue(ex:IExpression);
@@ -132,6 +134,7 @@ module ft {
         name:string; // system tag name (creation step)
         extend?:string;
         attribs?:IDomAttribs;
+        handlers?:any;
         params?:any;
         data?:any;
 

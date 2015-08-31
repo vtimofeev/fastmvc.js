@@ -229,6 +229,8 @@ declare module fmvc {
         setElement(value: Element): void;
         setMediator(value: Mediator): IView;
         mediator: Mediator;
+        setStates(value: any): IView;
+        private setStateReverse(value, name);
         setState(name: string, value: any): IView;
         getState(name: string): any;
         model: Model;

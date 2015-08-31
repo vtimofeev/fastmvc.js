@@ -5,7 +5,7 @@ module ft {
 
         private counter:number = 0;
         private ExpressionMatchRe:RegExp = /\{([\(\)\\,\.\|\?:'"@A-Za-z<>=\[\]& \+\-\/\*0-9]+)\}/g;
-        private VariableMatchRe:RegExp = /([A-Za-z0-9_\-"'\.]+)/gi;
+        private VariableMatchRe:RegExp = /([A-Za-z0-9 _\-"'\.]+)/gi;
         private ExResult:string = '{$0}';
 
         public strToExpression(value:string):IExpression {
@@ -173,7 +173,6 @@ module ft {
                 filters: [], // фильтры
             };
 
-            //var simpleExpressions:ISimeplExpression[] = _.map(expressionMatches, this.parseRoundBracketExpression, this);
             var valueSpitByFilter = value.split('|'); // get before first `|`
             var expression = _.first(valueSpitByFilter);
             result.filters = _.map(_.rest(valueSpitByFilter), (v)=>String(v).trim()); // get after first `|`
@@ -182,6 +181,7 @@ module ft {
 
             var vars:(string|ISimpleExpression)[];
             var e;
+
             if (_.isObject(args)) {
                 vars = _.map(args, (v,k)=>(e=this.tryParseRoundBracketExpression(v),(_.isObject(e)?args[k]=e.expression:null),e),this);
                 result.args = args;
@@ -204,7 +204,16 @@ module ft {
             if(!expressions) return value;
 
             var expression = expressions[0];
-            var variables = _.uniq(_.filter(expression.match(this.VariableMatchRe), (v)=>v.indexOf('\'') < 0 && v.indexOf('"') < 0 && v.match(/^[A-Za-z]+/gi)));
+
+            var variables = _.compact(
+                _.filter(
+                    _.map(expression.match(this.VariableMatchRe), (v)=>v.trim()),
+                    (v)=>(v.indexOf('\'') < 0 && v.indexOf('"') < 0 && v.match(/^[A-Za-z]+/gi))
+                )
+            );
+
+            console.log(variables);
+
 
 
             //if (!_.isEmpty(variables)) variables = variables.sort((a:string, b:string)=>a.length > b.length ? -1 : 1);
@@ -213,6 +222,7 @@ module ft {
                 return memo.replace(new RegExp(v, 'g'), requestVariable);
             }, expression, this);
 
+            console.log('Expressions ... ', value, expressions, 'result', convertedExpression);
             return {content:expression, expression: convertedExpression, vars: variables};
         }
 

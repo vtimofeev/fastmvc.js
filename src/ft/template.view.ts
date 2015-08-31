@@ -25,11 +25,21 @@ module ft {
         private _classMap = {};
         private _prevDynamicProperiesMap = {};
         private _dynamicPropertiesMap = {};
-
+        private _parent:TemplateView;
+        private _extendTree:any = {};
 
         constructor(name:string, params?:ITemplateViewParams, template?:ITemplate) {
             super(name);
             this._template = template;
+            params?_.each(params, this.setParameter, this):null;
+        }
+
+        setParameter(value:any, name:string):void {
+            if(name in this) {
+                _.isFunction(this[name])?this[name](value):this[name]=value;
+            } else {
+                console.warn('Cant set parameter, not found in ', name, ' param ', name);
+            }
         }
 
         isChangedDynamicProperty(name:string):boolean {
@@ -144,7 +154,7 @@ module ft {
             //templateHelper.createTreeObject(this._template.domTree, this);
         }
 
-        validateData():void {
+        protected validateData():void {
 
             //if (this.canValidate(fmvc.InvalidateType.Data))
             //
@@ -154,6 +164,24 @@ module ft {
             var r = eval(value);
             return r;
         }
+
+        appendTo(value:ITemplateView|Element):TemplateView {
+            if(value instanceof TemplateView) {
+                value.append(this);
+            }
+            else {
+                this.render(<Element> value);
+            }
+            return this;
+        }
+
+        append(value:TemplateView, ln?:string):TemplateView {
+            value.parent = this;
+            templateHelper.extendTree(value, ln, this);
+            return this;
+        }
+
+
     }
 
 

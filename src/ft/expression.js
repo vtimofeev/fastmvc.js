@@ -5,7 +5,7 @@ var ft;
         function Expression() {
             this.counter = 0;
             this.ExpressionMatchRe = /\{([\(\)\\,\.\|\?:'"@A-Za-z<>=\[\]& \+\-\/\*0-9]+)\}/g;
-            this.VariableMatchRe = /([A-Za-z0-9_\-"'\.]+)/gi;
+            this.VariableMatchRe = /([A-Za-z0-9 _\-"'\.]+)/gi;
             this.ExResult = '{$0}';
         }
         Expression.prototype.strToExpression = function (value) {
@@ -146,7 +146,6 @@ var ft;
                 args: {},
                 filters: [],
             };
-            //var simpleExpressions:ISimeplExpression[] = _.map(expressionMatches, this.parseRoundBracketExpression, this);
             var valueSpitByFilter = value.split('|'); // get before first `|`
             var expression = _.first(valueSpitByFilter);
             result.filters = _.map(_.rest(valueSpitByFilter), function (v) { return String(v).trim(); }); // get after first `|`
@@ -173,12 +172,14 @@ var ft;
             if (!expressions)
                 return value;
             var expression = expressions[0];
-            var variables = _.uniq(_.filter(expression.match(this.VariableMatchRe), function (v) { return v.indexOf('\'') < 0 && v.indexOf('"') < 0 && v.match(/^[A-Za-z]+/gi); }));
+            var variables = _.compact(_.filter(_.map(expression.match(this.VariableMatchRe), function (v) { return v.trim(); }), function (v) { return (v.indexOf('\'') < 0 && v.indexOf('"') < 0 && v.match(/^[A-Za-z]+/gi)); }));
+            console.log(variables);
             //if (!_.isEmpty(variables)) variables = variables.sort((a:string, b:string)=>a.length > b.length ? -1 : 1);
             var convertedExpression = _.reduce(variables, function (memo, v) {
                 var requestVariable = ((v.indexOf('.') > -1 && v.indexOf('state.') === -1) || v === 'data' ? ('this.' + v) : ('this.getState("' + v.replace('state.', '') + '")'));
                 return memo.replace(new RegExp(v, 'g'), requestVariable);
             }, expression, this);
+            console.log('Expressions ... ', value, expressions, 'result', convertedExpression);
             return { content: expression, expression: convertedExpression, vars: variables };
         };
         Expression.prototype.parseArguments = function (value) {

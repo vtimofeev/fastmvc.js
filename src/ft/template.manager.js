@@ -7,6 +7,10 @@ var ft;
             this._templateMap = {};
             this._templateFunc = {};
         }
+        TemplateManager.prototype.createTemplate = function (name, content) {
+            var templateData = this.parse(content);
+            return this.addTemplate(name, templateData).getTemplateViewFunc(name);
+        };
         TemplateManager.prototype.parse = function (value) {
             var objs = tp.parseHtml(value);
             var template = tp.htmlObjectToTemplate(objs);

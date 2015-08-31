@@ -805,6 +805,14 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        View.prototype.setStates = function (value) {
+            _.each(value, this.setStateReverse, this);
+            return this;
+        };
+        View.prototype.setStateReverse = function (value, name) {
+            this.setState(name, value);
+            return this;
+        };
         View.prototype.setState = function (name, value) {
             if (this._states[name] === value)
                 return this;
@@ -886,6 +894,7 @@ var fmvc;
             configurable: true
         });
         View.prototype.invalidate = function (value) {
+            console.log('Invalidate, ' + value);
             this._invalidate = this._invalidate | value;
             if (!this._isWaitingForValidate) {
                 this._isWaitingForValidate = true;
@@ -893,6 +902,9 @@ var fmvc;
             }
         };
         View.prototype.validate = function () {
+            console.log('Try to validate ', this._invalidate);
+            if (!this._invalidate)
+                return;
             if (this._invalidate)
                 this.validateRecreateTree();
             if (this._invalidate & fmvc.InvalidateType.Data)

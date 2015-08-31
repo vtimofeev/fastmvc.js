@@ -10,6 +10,11 @@ module ft {
         constructor() {
         }
 
+        createTemplate(name:string, content:string):ITemplateManager {
+            var templateData = this.parse(content);
+            return this.addTemplate(name, templateData).getTemplateViewFunc(name);
+        }
+
         parse(value:string):ft.ITemplate {
             var objs = tp.parseHtml(value);
             var template = tp.htmlObjectToTemplate(objs);

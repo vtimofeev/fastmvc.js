@@ -2,6 +2,7 @@
 var ft;
 (function (ft) {
     var htmlparser = Tautologistics.NodeHtmlParser;
+    console.log(htmlparser);
     var expressionManager;
     var expression = new ft.Expression();
     var TemplateParser = (function () {
@@ -10,17 +11,19 @@ var ft;
             this._propAttribs = {
                 style: {
                     delimiter: ';',
+                    canGet: function (v) { return (v.split(':').length > 1); },
                     getName: function (v) { return (v.split(':')[0]).trim(); },
                     getValue: function (v) { return (v.split(':')[1]).trim(); }
                 },
                 class: {
                     delimiter: ' ',
+                    canGet: function () { return true; },
                     getName: _.identity,
                     getValue: _.identity
                 }
             };
             _.bindAll(this, 'parserHandler');
-            this._htmlparserHandler = new htmlparser.DefaultHandler(this.parserHandler);
+            this._htmlparserHandler = new htmlparser.HtmlBuilder(this.parserHandler);
             this._htmlParser = new htmlparser.Parser(this._htmlparserHandler /*, test.options.parser*/);
         }
         TemplateParser.prototype.reset = function () {
@@ -36,25 +39,28 @@ var ft;
             return this._htmlparserHandler.dom;
         };
         TemplateParser.prototype.htmlObjectToTemplate = function (objs) {
+            console.log('Result parser: ', objs);
             var result = {}; // new Template();
             _.each(objs, function (obj, index) {
                 if (obj.name.indexOf('f.') < 0) {
                     result.expressionMap = {};
-                    result.extend = obj.attribs.extend;
+                    (obj.attribs ? result.extend = obj.attribs.extend : null);
                     result.name = obj.name;
                     // side effect, creates expression map to result
                     result.domTree = this.htmlObjectToDomTree(obj, result, String(0));
                     result.dynamicTree = this.getDynamicTreeFromExpressionMap(result.expressionMap);
                 }
             }, this);
+            this.removeEmptyKeys(result);
             return result;
         };
         TemplateParser.prototype.htmlObjectToDomTree = function (o, r, path) {
             var _this = this;
-            var params = ['states', 'enableStates'];
+            // switch to parser 2.0
+            (o.attributes ? o.attribs = o.attributes : null);
             var skipped = ['extend'];
-            var def = { attribs: {}, params: {} };
-            def.type = o.type;
+            var def = { attribs: {}, params: {}, handlers: {} };
+            def.type = (o.type === 'cdata' ? 'text' : o.type); // @todo move cdata to tree creator
             def.name = o.name;
             def.path = path;
             if (o.type != 'tag')
@@ -64,19 +70,29 @@ var ft;
             _.each(o.attribs, function (value, key) {
                 if (skipped.indexOf(key) >= 0 || !(value = value ? value.trim() : value))
                     return;
-                var group = (params.indexOf(key) > -1) ? 'params' : 'attribs';
+                var group = this.getAttribGroup(key);
                 def[group][key] = this.parseExpressionAttrib(value, key, r.expressionMap, path, group);
             }, this);
             def.children = _.map(o.children, function (v, index) { return (_this.htmlObjectToDomTree(v, r, def.path + ',' + index)); }, this);
             _.each(_.keys(def), function (key) { return (_.isEmpty(def[key]) ? delete def[key] : null); });
             return def;
         };
+        TemplateParser.prototype.getAttribGroup = function (name) {
+            var params = ['states', 'enableStates'];
+            if (params.indexOf('on') === 0) {
+                return 'handlers';
+            }
+            else {
+                return (params.indexOf(name) > -1) ? 'params' : 'attribs';
+            }
+        };
         // Проверяем данное выражение конвертируется в объект класса или стиля (набор свойств: выражений)
         TemplateParser.prototype.parseExpressionAttrib = function (value, key, map, path, group) {
             var _this = this;
             if (this._propAttribs[key]) {
                 var prop = this._propAttribs[key];
-                return _.reduce(value.split(prop.delimiter), function (r, value, index) { return (r[prop.getName(value)] = _this.parseExpressionValue(prop.getValue(value), map, path, group, key, prop.getName(value)), r); }, {}, this);
+                return _.reduce(value.split(prop.delimiter), function (r, value, index) { return (prop.canGet(value) ? (r[prop.getName(value)] = _this.parseExpressionValue(prop.getValue(value), map, path, group, key, prop.getName(value))) : null,
+                    r); }, {}, this);
             }
             else {
                 return this.parseExpressionValue(value, map, path, group, key);
@@ -111,6 +127,9 @@ var ft;
                 map[ex.name] = ex;
             }
             return result;
+        };
+        TemplateParser.prototype.removeEmptyKeys = function (def) {
+            _.each(_.keys(def), function (key) { return (_.isEmpty(def[key]) ? delete def[key] : null); });
         };
         TemplateParser.prototype.parserHandler = function (error, data) {
             this.lastError = error;

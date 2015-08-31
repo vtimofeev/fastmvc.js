@@ -26,8 +26,18 @@ var ft;
             this._classMap = {};
             this._prevDynamicProperiesMap = {};
             this._dynamicPropertiesMap = {};
+            this._extendTree = {};
             this._template = template;
+            params ? _.each(params, this.setParameter, this) : null;
         }
+        TemplateView.prototype.setParameter = function (value, name) {
+            if (name in this) {
+                _.isFunction(this[name]) ? this[name](value) : this[name] = value;
+            }
+            else {
+                console.warn('Cant set parameter, not found in ', name, ' param ', name);
+            }
+        };
         TemplateView.prototype.isChangedDynamicProperty = function (name) {
             var value = expression.getContextValue(name, this);
             return !(this._prevDynamicProperiesMap[name] === value);
@@ -129,6 +139,20 @@ var ft;
         TemplateView.prototype.eval = function (value) {
             var r = eval(value);
             return r;
+        };
+        TemplateView.prototype.appendTo = function (value) {
+            if (value instanceof TemplateView) {
+                value.append(this);
+            }
+            else {
+                this.render(value);
+            }
+            return this;
+        };
+        TemplateView.prototype.append = function (value, ln) {
+            value.parent = this;
+            ft.templateHelper.extendTree(value, ln, this);
+            return this;
         };
         return TemplateView;
     })(fmvc.View);
