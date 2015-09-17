@@ -32,8 +32,8 @@ module fmvc {
 
         // Properties: mediator, data, model
 
-        public getElement():Element {
-            return this._element;
+        public getElement():HTMLElement {
+            return <HTMLElement> this._element;
         }
 
         public setElement(value:Element) {
@@ -66,6 +66,7 @@ module fmvc {
 
         public setState(name:string, value:any):IView {
             if(this._states[name] === value) return this;
+            console.log('Set state ... ', name, value);
             this._states[name] = value;
             this.invalidate(InvalidateType.State);
             return this;
@@ -176,6 +177,7 @@ module fmvc {
         protected validateParent():void {}
         protected validateChildren():void {}
         protected validateApp():void {}
+        protected validateTemplate():void {}
 
         public render(element:Element):IView {
             if(this._inDocument) throw new Error('Cant render view, it is in document');
@@ -188,8 +190,6 @@ module fmvc {
 
         // Overrides of Notifier
         public dispose() {
-
-
             super.dispose();
         }
 
@@ -205,8 +205,7 @@ module fmvc {
     }
 
 
-
-    export interface IView {
+    export interface IView extends INotifier {
         setModel(value:Model):IView;
         data:any;
         model:Model;
@@ -219,7 +218,10 @@ module fmvc {
         render(element:Element):IView;
         invalidate(value:number):void;
         domHandler(e:any):void;
-    }
 
+        getState(name:string):any;
+        setState(name:string, value:any):void;
+        setStates(value:any):IView; // Return generic type Template/View
+    }
 
 }

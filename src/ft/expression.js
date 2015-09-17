@@ -4,7 +4,7 @@ var ft;
     var Expression = (function () {
         function Expression() {
             this.counter = 0;
-            this.ExpressionMatchRe = /\{([\(\)\\,\.\|\?:'"@A-Za-z<>=\[\]& \+\-\/\*0-9]+)\}/g;
+            this.ExpressionMatchRe = /\{([\(\)\\,\.\|\?:;'"@A-Za-z<>=\[\]& \+\-\/\*0-9]+)\}/g;
             this.VariableMatchRe = /([A-Za-z0-9 _\-"'\.]+)/gi;
             this.ExResult = '{$0}';
         }
@@ -61,7 +61,7 @@ var ft;
         };
         Expression.prototype.getContextValue = function (v, context) {
             var r;
-            if (_.isString(v)) {
+            if (typeof v === 'string') {
                 if (v.indexOf('data.') === 0 || v.indexOf('app.') === 0) {
                     r = context.eval('this.' + v);
                     context.setDynamicProperty(v, r);
@@ -84,7 +84,7 @@ var ft;
             else if (_.isObject(v)) {
                 return this.executeExpression(v, context);
             }
-            throw new Error('Not supported variable in ' + this.name + ', ' + v);
+            throw new Error('Not supported variable in ' + context.name + ', ' + v);
         };
         Expression.prototype.getContextArguments = function (ex, context) {
             var _this = this;
@@ -105,6 +105,10 @@ var ft;
         //----------------------------------------------------------------------------------------------------------------------------------------
         Expression.prototype.getName = function () {
             return 'e-' + this.counter++;
+        };
+        Expression.prototype.strToJsMatch = function (value) {
+            var m = value.match(this.ExpressionMatchRe);
+            return m && m[0] ? (m[0]).substring(1, m[0].length - 1) : 'this.internalHandler("' + value + '", e)';
         };
         Expression.prototype.parseExpressionMultiContent = function (value) {
             var _this = this;
@@ -172,11 +176,15 @@ var ft;
             if (!expressions)
                 return value;
             var expression = expressions[0];
+            // skip direct execution (at handlers);
+            if (expression.indexOf('this') > -1)
+                return expression;
             var variables = _.compact(_.filter(_.map(expression.match(this.VariableMatchRe), function (v) { return v.trim(); }), function (v) { return (v.indexOf('\'') < 0 && v.indexOf('"') < 0 && v.match(/^[A-Za-z]+/gi)); }));
             console.log(variables);
             //if (!_.isEmpty(variables)) variables = variables.sort((a:string, b:string)=>a.length > b.length ? -1 : 1);
             var convertedExpression = _.reduce(variables, function (memo, v) {
-                var requestVariable = ((v.indexOf('.') > -1 && v.indexOf('state.') === -1) || v === 'data' ? ('this.' + v) : ('this.getState("' + v.replace('state.', '') + '")'));
+                var requestVariable = ((v.indexOf('.') > -1 && v.indexOf('state.') === -1) || v === 'data' ? ('this.' + v) :
+                    (v.indexOf('state.') > -1 ? ('this.getState("' + v.replace('state.', '') + '")') : ''));
                 return memo.replace(new RegExp(v, 'g'), requestVariable);
             }, expression, this);
             console.log('Expressions ... ', value, expressions, 'result', convertedExpression);

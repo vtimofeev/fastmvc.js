@@ -3,6 +3,9 @@
 module ft {
 
     export class TemplateViewHelper implements ITemplateViewHelper {
+        private idCounter:number = 0;
+        private idMap:{[id:string]:ITemplateView} = {};
+
         public createTreeObject:IGetTreeObjectFunctor;
         public enterTreeObject:IGetTreeObjectFunctor;
         public exitTreeObject:IGetTreeObjectFunctor;
@@ -115,6 +118,9 @@ module ft {
             return e.nodeType === 8;
         }
 
+        getIdMap():{[id:string]:ITemplateView} {
+            return this.idMap;
+        }
 
         // Simple commands
         setElementPathToRoot(value:TreeElement, data:IDomDef, root:TemplateView) {
@@ -147,8 +153,9 @@ module ft {
                 default:
                     return document.createElement(data.name);
             }
-
         }
+
+
 
         updateTreeOfTreeObjectFunc(data:IDomDef, root:TemplateView):TreeElement {
             var updateType:number = this.getUpdateTreeTypeFunc(data, root);
@@ -156,28 +163,34 @@ module ft {
             else if (updateType === -1) return (this.exitTreeObject(data, root));
         }
 
-        getUpdateTreeTypeFunc(data:IDomDef, root:TemplateView):TreeElement {
+        getUpdateTreeTypeFunc(data:IDomDef, root:TemplateView):Number {
             var isIncluded:boolean = this.isTreeObjectIncluded(data, root);
-            var treeObject:TreeElement = this.getTreeObject(data, root);
-            // 0 - skip, 1 - create, -1 - remove
-            return (isIncluded && treeObject) ? 0 : isIncluded ? 1 : -1;
+            //var treeObject:TreeElement = this.getTreeObject(data, root);
+
+            // 0 - skip, N1 - create, -1 - remove
+            return ((isIncluded && treeObject) ? 0 : isIncluded ? 1 : -1);
         }
 
         enterTreeObjectFunc(object:TreeElement, data:IDomDef, root:ITemplateView) {
-            if (object && object instanceof TemplateView) object.enter();
+            if (object && object instanceof TemplateView) {
+                object.enter();
+            }
         }
 
         exitTreeObjectFunc(object:TreeElement, data:IDomDef, root:ITemplateView) {
             if (object && object instanceof TemplateView) object.exit();
         }
 
-        updateDynamicTree(root:ITemplateView) {
-            var dynamicTree = root.getTemplate().dynamicTree;
+
+        updateDynamicTree(root:ITemplateView):void {
+            var dynamicTree:IDynamicTree = root.getTemplate().dynamicTree;
             var exArrays:any[] = _.map(dynamicTree, (v:any, group:string)=>this.getChangedExpressionNames(group, v, root), this);
             var exNames:string[] = _.compose(_.compact, _.flatten)(exArrays);
             var tmpl = root.getTemplate();
+
             var exObjArrays:IExpression[] = _.map(exNames, (v:string)=>(tmpl.expressionMap[v]));
-            _.each(exObjArrays, _.partial(this.applyExpressionToHosts, _, root), this);
+            var expressionFunctor:{(value:IExpression):void} =  _.partial(this.applyExpressionToHosts, _, root);
+            _.each(exObjArrays, expressionFunctor, this);
         }
 
         getChangedExpressionNames(group:string, map:IDynamicMap, root:ITemplateView) {
@@ -185,9 +198,39 @@ module ft {
         }
 
 
-        applyExpressionToHosts(exObj:IExpression, root:ITemplateView) {
+        getEventPath(e:ITreeEvent):string {
+            var el = <HTMLElement> (e.previousTarget?e.previousTarget.getElement().parent:e.e.target);
+            return el.getAttribute('data-path');
+        }
+
+        dispatchTreeEvent(e:ITreeEvent) {
+            // side effect tree event
+            this.execEventDefsFromPathToRoot(e, this.getEventPath(e));
+        }
+
+        private execEventDefsFromPathToRoot(e:ITreeEvent, path:string):void {
+            var view = <ITemplateView> e.currentTarget;
+            var template = view.getTemplate();
+            var def:IDomDef = template.pathMap[path];
+            this.executeEventDef(e, def, view);
+
+            console.log('execute ', e.name, !!e.cancelled, 'path', def.path);
+            while((def = template.pathMap[def.parentPath]) && !e.cancelled) {
+                console.log('execute ', e.name, !!e.cancelled, 'path', def.path);
+                this.executeEventDef(e, def, view);
+            }
+        }
+
+        private executeEventDef(e:ITreeEvent, def:IDomDef, view:ITemplateView):void {
+            if(!(def.handlers && def.handlers[e.name])) return null;
+            view.evalHandler(def.handlers[e.name], e);
+
+        }
+
+
+        applyExpressionToHosts(exObj:IExpression, root:ITemplateView):void {
             var result;
-            var el:Element;
+            var el:HTMLElement;
             _.each(exObj.hosts, (host:IExpressionHost)=>(
                 result = result || (host.key === 'class' ? root.getClassExpressionValue(exObj) : root.getExpressionValue(exObj)),
                     el = root.getElementByPath(host.path),
@@ -195,7 +238,7 @@ module ft {
             ), this);
         }
 
-        applyValueToHost(value:any, el:Element, host:IExpressionHost, root:ITemplateView):any {
+        applyValueToHost(value:any, el:HTMLElement, host:IExpressionHost, root:ITemplateView):any {
             switch (host.group) {
                 case 'attribs':
                     switch (host.key) {
@@ -229,10 +272,22 @@ module ft {
 
             // set all dom attributes
             var attribs;
-            if ((attribs = data.attribs)) {
+            var hasHandlers = !!data.handlers;
+
+            if ((attribs = (data.attribs || (hasHandlers?{}:null)))) {
                 // simple attributes (id, title, name...)
-                var attrsResult = _.reduce(attribs, (r:any, value:AttributeValue, key:string)=>(this.specialDomAttrs.indexOf(key) < 0 ? (r[key] = this.getSimpleOrExpressionValue(value, root)) : null, r), {}, this);
+                var attrsResult = _.reduce(attribs, (r:any, value:ExpressionValue, key:string)=>(this.specialDomAttrs.indexOf(key) < 0 ? (r[key] = this.getSimpleOrExpressionValue(value, root)) : null, r), {}, this);
+
+                console.log('ATTRIBS: was , is ' , data.attribs, attribs);
+                if(hasHandlers) {
+                    console.log('HANDLERS!!!', data);
+                    attrsResult.id = this.getElementId(domElement, attribs);
+                    attrsResult['data-path'] = data.path;
+                }
+
+                 console.log('Set attrs to ', domElement.nodeType);
                 this.setDomAttrs(attrsResult, domElement);
+                this.addIdToMap(attrsResult.id, root);
 
                 // class
                 if (attribs.class) {
@@ -253,6 +308,9 @@ module ft {
             }
         }
 
+        getElementId(element, attribs?) {
+            return (attribs && attribs.id)?attribs.id:('el-'+(this.idCounter++).toString(36));
+        }
 
         addTreeObjectFunc(object:TreeElement, parent:TreeElement, data:IDomDef, root:ITemplateView) {
             var parentElement = this.getDomElement(parent);
@@ -274,15 +332,16 @@ module ft {
         getPropertyValues(group:string, attrName:string, data:IDomDef, root:ITemplateView):IObj {
             var functor = (attrName === 'class') ? this.getClassSimpleOrExpressionValue : this.getSimpleOrExpressionValue;
 
-            return _.reduce(data[group][attrName], (result:any, value:AttributeValue, key:string)=>(                result[key] = functor.call(this, value, root), result), {}, this);
+            return _.reduce(data[group][attrName], (result:any, value:ExpressionValue, key:string)=>(
+                result[key] = functor.call(this, value, root), result), {}, this);
         }
 
-        getSimpleOrExpressionValue(value:AttributeValue, root:ITemplateView) {
-            return _.isObject(value) ? this.getExpressionValue(value, root) : value;
+        getSimpleOrExpressionValue(value:ExpressionNameValue, root:ITemplateView) {
+            return _.isObject(value) ? this.getExpressionValue(<IExpressionName> value, root) : value;
         }
 
-        getClassSimpleOrExpressionValue(value:AttributeValue, root:ITemplateView) {
-            return _.isObject(value) ? root.getClassExpressionValue(value, root) : value;
+        getClassSimpleOrExpressionValue(value:ExpressionNameValue, root:ITemplateView) {
+            return _.isObject(value) ? root.getClassExpressionValue(<IExpressionName> value) : value;
         }
 
 
@@ -296,6 +355,9 @@ module ft {
          }
          */
 
+        addIdToMap(id:string, view:ITemplateView):void {
+            this.idMap[id] = view;
+        }
 
         getCommentElement(data:IDomDef):Comment {
             return document.createComment(data.path);
@@ -311,7 +373,7 @@ module ft {
         }
 
         get systemDataAttrs():string[] {
-            return ['tag', 'path', 'link', 'states', 'children'];
+            return ['tag', 'path', 'link', 'ln', 'states', 'children'];
         }
 
         get specialDomAttrs():string[] {
@@ -342,8 +404,8 @@ module ft {
             });
         }
 
-        getDomElement(value:TreeElement):Element {
-            return value ? 'getElement' in value ? value.getElement() : value : null;
+        getDomElement(value:TreeElement):HTMLElement {
+            return <HTMLElement> (value ? 'getElement' in value ? value.getElement() : value : null);
         }
 
         isComponentDef(data:IDomDef):boolean {

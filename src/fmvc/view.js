@@ -1,4 +1,4 @@
-var __extends = this.__extends || function (d, b) {
+var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
@@ -62,6 +62,7 @@ var fmvc;
         View.prototype.setState = function (name, value) {
             if (this._states[name] === value)
                 return this;
+            console.log('Set state ... ', name, value);
             this._states[name] = value;
             this.invalidate(fmvc.InvalidateType.State);
             return this;
@@ -177,6 +178,7 @@ var fmvc;
         View.prototype.validateParent = function () { };
         View.prototype.validateChildren = function () { };
         View.prototype.validateApp = function () { };
+        View.prototype.validateTemplate = function () { };
         View.prototype.render = function (element) {
             if (this._inDocument)
                 throw new Error('Cant render view, it is in document');

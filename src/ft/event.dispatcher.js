@@ -1,16 +1,10 @@
 /**
  * Created by Vasily on 19.06.2015.
  */
-var __extends = this.__extends || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
-};
 ///<reference path='./d.ts'/>
-var fmvc;
-(function (fmvc) {
-    fmvc.BrowserEvent = {
+var ft;
+(function (ft) {
+    ft.BrowserEvent = {
         CLICK: 'click',
         KEYUP: 'keyup',
         KEYDOWN: 'keydown',
@@ -18,7 +12,7 @@ var fmvc;
         MOUSEOUT: 'mouseout',
         CHANGE: 'change'
     };
-    fmvc.SpecialEvent = {
+    ft.SpecialEvent = {
         ACTION: 'action',
         SWIPE: 'swipe',
         PAN: 'pan',
@@ -26,113 +20,48 @@ var fmvc;
         TAP: 'tap',
         DRAG: 'drag' // start,end,move
     };
-    fmvc.browserElementEvents = [fmvc.BrowserEvent.MOUSEOUT, fmvc.BrowserEvent.MOUSEOVER, fmvc.BrowserEvent.CLICK];
-    fmvc.browserWindowEvents = [fmvc.BrowserEvent.KEYDOWN, fmvc.BrowserEvent.KEYUP];
-    fmvc.specialEvents = [fmvc.SpecialEvent.ACTION];
-    var EventDispatcher = (function (_super) {
-        __extends(EventDispatcher, _super);
-        function EventDispatcher() {
-            _super.call(this, EventDispatcher.NAME, 'controller');
-            //private elementIdMap = {};
-            this.executionMap = {};
-            this.windowHandlerMap = {};
+    ft.browserElementEvents = [ft.BrowserEvent.MOUSEOUT, ft.BrowserEvent.MOUSEOVER, ft.BrowserEvent.CLICK];
+    ft.browserWindowEvents = [ft.BrowserEvent.KEYDOWN, ft.BrowserEvent.KEYUP];
+    ft.specialEvents = [ft.SpecialEvent.ACTION];
+    var EventDispatcher = (function () {
+        function EventDispatcher(idMap) {
+            this.eventMap = {};
+            this.idMap = idMap;
             _.bindAll(this, 'browserHandler');
+            _.each(_.values(ft.BrowserEvent), this.on, this);
         }
-        EventDispatcher.prototype.listen = function (el, type, handler, context) {
-            var id = el.getAttribute('id');
-            if (!id || !type || !handler) {
-                console.warn('Incorrect listener on ', el, id, type);
-                return;
-            }
-            this.executionMap[id] = this.executionMap[id] || {};
-            var listenerData = { handler: handler, context: context };
-            if (!this.executionMap[id][type]) {
-                this.executionMap[id][type] = [listenerData];
-            }
-            else {
-                this.executionMap[id][type].push(listenerData);
-            }
-            console.log('Create listener ', id, type, this.executionMap[id]);
-            this.__createListener(el, id, type, handler, context);
-            return this;
-        };
-        EventDispatcher.prototype.__createListener = function (el, id, type, handler, context) {
-            if (_.contains(fmvc.browserWindowEvents, type))
-                this.__createWindowListener(el, type);
-            else if (_.contains(fmvc.browserElementEvents, type))
-                this.__createElementListener(el, type);
-            else if (_.contains(fmvc.specialEvents, type))
-                this.__createSpecialListener(el, type);
-            else
-                console.warn('create listener for %s not found', type);
-        };
-        EventDispatcher.prototype.__removeListener = function (el, id, type) {
-            var id = id || el.getAttribute('id');
-            if (_.contains(fmvc.browserElementEvents, type)) {
-                el.removeEventListener(type, this.browserHandler);
-            }
-        };
-        EventDispatcher.prototype.__createElementListener = function (el, type) {
-            //console.log('Element listener of %s , %s' , el, type);
-            el.addEventListener(type, this.browserHandler);
-        };
-        EventDispatcher.prototype.__createWindowListener = function (el, type) {
-            //console.log('Browser listener of %s , %s' , el, type);
-            if (!this.windowHandlerMap[type])
-                this.createWindowListener(type);
-        };
-        EventDispatcher.prototype.__createSpecialListener = function (el, type) {
-            console.warn('create special listener for %s not implemented', type);
-        };
-        EventDispatcher.prototype.unlistenAll = function (el) {
-            var id = el.getAttribute('id');
-            if (!id)
-                return;
-            _.each(this.executionMap[id], function (handlerObjectsArray, type) {
-                el.removeEventListener(type, this.browserHandler);
-                _.each(handlerObjectsArray, function (handlerObject) {
-                    delete handlerObject.handler;
-                    delete handlerObject.context;
-                });
-            }, this);
-            delete this.executionMap[id];
-            //delete this.elementIdMap[id];
-        };
-        EventDispatcher.prototype.unlisten = function (el, type) {
-            var id = el.getAttribute('id');
-            if (!id || !this.executionMap[id]) {
-                console.warn('Cant unlisten ', el, id, type);
-                return;
-            }
-            var handlerObjectsArray = this.executionMap[id][type];
-            el.removeEventListener(type, this.browserHandler);
-            _.each(handlerObjectsArray, function (handlerObject) {
-                delete handlerObject.handler;
-                delete handlerObject.context;
-            });
-            delete this.executionMap[id][type];
-        };
         EventDispatcher.prototype.browserHandler = function (e) {
-            var el = e.currentTarget || e.target;
+            //console.log('Browser ', e.type,  e.target);
+            var el = e.target || e.currentTarget;
             var id = el.getAttribute('id');
-            var type = e.type;
-            if (!id)
+            var view = this.idMap[id];
+            if (view)
+                view.handleTreeEvent(this.getTreeEventByBrowserEvent(e, view));
+            else if (id)
+                console.warn('View not found for id: ', id);
+        };
+        EventDispatcher.prototype.getTreeEventByBrowserEvent = function (e, view) {
+            return { name: e.type, target: view, previousTarget: null, currentTarget: view, e: e, cancelled: false, prevented: false, depth: 1e2 };
+        };
+        EventDispatcher.prototype.getCustomTreeEvent = function (name, data, view, depth) {
+            if (depth === void 0) { depth = 1; }
+            return { name: e.type, target: view, previousTarget: null, currentTarget: view, data: data, cancelled: false, prevented: false, depth: depth };
+        };
+        EventDispatcher.prototype.disposeEvent = function (e) {
+            e.target = e.previousTarget = e.currentTarget = e.e = null;
+        };
+        EventDispatcher.prototype.on = function (type) {
+            if (this.eventMap[type])
                 return;
-            console.log(id, type, this.executionMap[id]);
-            if (this.executionMap[id] && this.executionMap[id][type]) {
-                var handlerObjectsArray = this.executionMap[id][type];
-                _.each(handlerObjectsArray, function (handlerObject) {
-                    handlerObject.handler.call(handlerObject.context, e);
-                });
-            }
-        };
-        EventDispatcher.prototype.createWindowListener = function (type) {
-            this.windowHandlerMap[type] = true;
             window.addEventListener(type, this.browserHandler, true);
+            this.eventMap[type] = true;
         };
-        EventDispatcher.NAME = 'EventDispatcher';
+        EventDispatcher.prototype.off = function (type) {
+            this.eventMap[type] = false;
+            window.removeEventListener(type, this.browserHandler);
+        };
         return EventDispatcher;
-    })(fmvc.Notifier);
-    fmvc.EventDispatcher = EventDispatcher;
-})(fmvc || (fmvc = {}));
+    })();
+    ft.EventDispatcher = EventDispatcher;
+})(ft || (ft = {}));
 //# sourceMappingURL=event.dispatcher.js.map

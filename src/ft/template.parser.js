@@ -46,8 +46,9 @@ var ft;
                     result.expressionMap = {};
                     (obj.attribs ? result.extend = obj.attribs.extend : null);
                     result.name = obj.name;
-                    // side effect, creates expression map to result
-                    result.domTree = this.htmlObjectToDomTree(obj, result, String(0));
+                    result.pathMap = {};
+                    // side effect, creates expression map to result, create pathMap
+                    result.domTree = this.htmlObjectToDomTree(obj, result, '0');
                     result.dynamicTree = this.getDynamicTreeFromExpressionMap(result.expressionMap);
                 }
             }, this);
@@ -63,6 +64,7 @@ var ft;
             def.type = (o.type === 'cdata' ? 'text' : o.type); // @todo move cdata to tree creator
             def.name = o.name;
             def.path = path;
+            def.parentPath = path.indexOf(',') > 0 ? path.substring(0, path.lastIndexOf(',')) : null;
             if (o.type != 'tag')
                 def.data = this.parseExpressionAttrib(o.data, 'data', r.expressionMap, path, 'data'); // set data or data expression
             if (o.attribs && o.attribs.extend)
@@ -71,15 +73,20 @@ var ft;
                 if (skipped.indexOf(key) >= 0 || !(value = value ? value.trim() : value))
                     return;
                 var group = this.getAttribGroup(key);
-                def[group][key] = this.parseExpressionAttrib(value, key, r.expressionMap, path, group);
+                var groupKey = this.getGroupKey(key, group);
+                def[group][groupKey] = this.parseExpressionAttrib(value, key, r.expressionMap, path, group);
             }, this);
             def.children = _.map(o.children, function (v, index) { return (_this.htmlObjectToDomTree(v, r, def.path + ',' + index)); }, this);
             _.each(_.keys(def), function (key) { return (_.isEmpty(def[key]) ? delete def[key] : null); });
+            r.pathMap[path] = def;
             return def;
+        };
+        TemplateParser.prototype.getGroupKey = function (key, group) {
+            return group === 'handlers' ? (key.replace(/^on/, '')).toLowerCase() : key;
         };
         TemplateParser.prototype.getAttribGroup = function (name) {
             var params = ['states', 'enableStates'];
-            if (params.indexOf('on') === 0) {
+            if (name.indexOf('on') === 0) {
                 return 'handlers';
             }
             else {
@@ -93,6 +100,9 @@ var ft;
                 var prop = this._propAttribs[key];
                 return _.reduce(value.split(prop.delimiter), function (r, value, index) { return (prop.canGet(value) ? (r[prop.getName(value)] = _this.parseExpressionValue(prop.getValue(value), map, path, group, key, prop.getName(value))) : null,
                     r); }, {}, this);
+            }
+            else if (group === 'handlers') {
+                return this.parseJsValue(value);
             }
             else {
                 return this.parseExpressionValue(value, map, path, group, key);
@@ -112,6 +122,10 @@ var ft;
         TemplateParser.prototype.getExpressionHost = function (path, group /* attribs, params, data */, key /* class, href */, keyProperty) {
             if (keyProperty === void 0) { keyProperty = null; }
             return { path: path, group: group, key: key, keyProperty: keyProperty };
+        };
+        // Выделяем из шаблонной строки JS код (handlers)
+        TemplateParser.prototype.parseJsValue = function (value) {
+            return expression.strToJsMatch(value);
         };
         // Парсим строку с выражением
         TemplateParser.prototype.parseExpressionValue = function (value, map, path, group, key, keyProperty) {

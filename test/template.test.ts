@@ -70,7 +70,10 @@ describe('ft - template package ',function() {
 
     var templateHandlerObjs = {
         simpleHandlerTemplate: {
-            content: '<div onClick="{(alert(\'click\'))}">Click!</div>',
+            content:
+            '<div onclick="{var a=1; alert(a + \'click\');}">' +
+                '<div onclick="{alert(\'first\');}"><div onclick="logByClick">The click div!</div></div>' +
+            '</div>',
             result: '<div>Click!</div>'
         },
     };

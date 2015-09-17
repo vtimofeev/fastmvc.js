@@ -51,22 +51,22 @@ module ft {
 
         htmlObjectToTemplate(objs:IHtmlObject[]):ITemplate {
             console.log('Result parser: ' , objs);
-            var result:ITemplate = {};// new Template();
+            var result = <ITemplate> {};// new Template();
 
             _.each(objs, function(obj:IHtmlObject, index:number) {
                 if(obj.name.indexOf('f.') < 0) {
                     result.expressionMap = <IExpressionMap> {};
                     (obj.attribs?result.extend=obj.attribs.extend:null);
                     result.name = obj.name;
-                    // side effect, creates expression map to result
-                    result.domTree = this.htmlObjectToDomTree(obj, result, String(0));
+                    result.pathMap = {};
+                    // side effect, creates expression map to result, create pathMap
+                    result.domTree = this.htmlObjectToDomTree(obj, result, '0');
                     result.dynamicTree = this.getDynamicTreeFromExpressionMap(result.expressionMap);
-
                 }
             }, this);
 
             this.removeEmptyKeys(result);
-            return result;
+            return <ITemplate> result;
         }
 
         htmlObjectToDomTree(o:IHtmlObject, r:ITemplate, path:string):IDomDef {
@@ -79,6 +79,7 @@ module ft {
             def.type = (o.type === 'cdata'?'text':o.type); // @todo move cdata to tree creator
             def.name = o.name;
             def.path = path;
+            def.parentPath = path.indexOf(',') > 0 ? path.substring(0,path.lastIndexOf(',')):null;
             if(o.type != 'tag') def.data = this.parseExpressionAttrib(o.data, 'data', r.expressionMap, path, 'data'); // set data or data expression
 
 
@@ -87,18 +88,26 @@ module ft {
             _.each(o.attribs, function(value:any, key:string) {
                if(skipped.indexOf(key) >= 0 || !(value = value?value.trim():value)) return;
                var group = this.getAttribGroup(key);
-               def[group][key] = this.parseExpressionAttrib(value, key, r.expressionMap, path, group);
+               var groupKey = this.getGroupKey(key, group);
+
+               def[group][groupKey] = this.parseExpressionAttrib(value, key, r.expressionMap, path, group);
             }, this);
 
             def.children = _.map(o.children, (v:IHtmlObject, index:number)=>(this.htmlObjectToDomTree(v,r, def.path +','+index)), this);
             _.each(_.keys(def), (key)=>(_.isEmpty(def[key]) ? delete def[key] : null));
+
+            r.pathMap[path] = def;
             return def;
+        }
+
+        getGroupKey(key:string, group:string):string {
+            return group==='handlers'?(key.replace(/^on/, '')).toLowerCase():key;
         }
 
         getAttribGroup(name:string):string {
             var params:string[] = ['states', 'enableStates'];
 
-            if(params.indexOf('on') === 0) {
+            if(name.indexOf('on') === 0) {
                 return 'handlers';
             } else {
                 return (params.indexOf(name)>-1)?'params':'attribs';
@@ -107,7 +116,7 @@ module ft {
         }
 
         // Проверяем данное выражение конвертируется в объект класса или стиля (набор свойств: выражений)
-        parseExpressionAttrib(value:any, key:string, map:IExpressionMap, path:string, group:string):IExpression|{[propName:string]:IExpression} {
+        parseExpressionAttrib(value:any, key:string, map:IExpressionMap, path:string, group:string):string|IExpression|{[propName:string]:IExpression} {
             if(this._propAttribs[key]) {
                 var prop:any = this._propAttribs[key];
                 return _.reduce(
@@ -117,7 +126,10 @@ module ft {
                         r),
                     {},
                     this);
-            } else {
+            }   else if(group === 'handlers') {
+                return this.parseJsValue(value);
+            }
+                else {
                 return this.parseExpressionValue(value, map, path, group, key);
             }
         }
@@ -138,6 +150,11 @@ module ft {
 
         getExpressionHost(path:string, group:string /* attribs, params, data */, key:string /* class, href */, keyProperty:string /* class name */ = null ) {
             return {path: path, group: group, key: key, keyProperty: keyProperty};
+        }
+
+        // Выделяем из шаблонной строки JS код (handlers)
+        parseJsValue(value:any):string {
+           return expression.strToJsMatch(value);
         }
 
         // Парсим строку с выражением

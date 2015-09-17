@@ -4,7 +4,7 @@ module ft {
     export class Expression {
 
         private counter:number = 0;
-        private ExpressionMatchRe:RegExp = /\{([\(\)\\,\.\|\?:'"@A-Za-z<>=\[\]& \+\-\/\*0-9]+)\}/g;
+        private ExpressionMatchRe:RegExp = /\{([\(\)\\,\.\|\?:;'"@A-Za-z<>=\[\]& \+\-\/\*0-9]+)\}/g;
         private VariableMatchRe:RegExp = /([A-Za-z0-9 _\-"'\.]+)/gi;
         private ExResult:string = '{$0}';
 
@@ -63,7 +63,7 @@ module ft {
                         ), ex.result, this);
         }
 
-        private getParsedContextValue(value:AttributeValue, context:ITemplateView, classes:boolean) {
+        private getParsedContextValue(value:ExpressionValue, context:ITemplateView, classes:boolean) {
             return this.parseContextValue(this.getContextValue(value, context), value, classes);
 
         }
@@ -82,7 +82,7 @@ module ft {
 
         public getContextValue(v:string|IExpression, context:ITemplateView):any {
             var r;
-            if(_.isString(v)) {
+            if(typeof v === 'string') {
                 if(v.indexOf('data.') === 0 || v.indexOf('app.') === 0) {
                     r = context.eval('this.'+ v);
                     context.setDynamicProperty(v, r);
@@ -106,7 +106,7 @@ module ft {
                 return this.executeExpression(<IExpression> v, context);
             }
 
-            throw new Error('Not supported variable in ' + this.name + ', ' + v);
+            throw new Error('Not supported variable in ' + context.name + ', ' + v);
         }
 
         private getContextArguments(ex:IExpression, context:ITemplateView):any {
@@ -128,6 +128,11 @@ module ft {
 
         private getName() {
             return 'e-' + this.counter++;
+        }
+
+        public strToJsMatch(value:string):string {
+            var m = value.match(this.ExpressionMatchRe)
+            return m&&m[0]?(m[0]).substring(1,m[0].length-1):'this.internalHandler("' + value + '", e)';
         }
 
         private parseExpressionMultiContent(value:string):IExpression {
@@ -203,7 +208,11 @@ module ft {
             var expressions = this.getExpressionFromString(value);
             if(!expressions) return value;
 
+
             var expression = expressions[0];
+            // skip direct execution (at handlers);
+            if(expression.indexOf('this') > -1) return expression;
+
 
             var variables = _.compact(
                 _.filter(
@@ -218,7 +227,8 @@ module ft {
 
             //if (!_.isEmpty(variables)) variables = variables.sort((a:string, b:string)=>a.length > b.length ? -1 : 1);
             var convertedExpression = _.reduce(variables, function (memo, v) {
-                var requestVariable = ((v.indexOf('.') > -1 && v.indexOf('state.') === -1) || v === 'data' ? ('this.' + v) : ('this.getState("' + v.replace('state.', '') + '")'));
+                var requestVariable = ((v.indexOf('.') > -1 && v.indexOf('state.') === -1) || v === 'data' ? ('this.' + v) :
+                    (v.indexOf('state.')>-1?('this.getState("' + v.replace('state.', '') + '")'):''));
                 return memo.replace(new RegExp(v, 'g'), requestVariable);
             }, expression, this);
 

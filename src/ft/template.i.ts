@@ -1,8 +1,10 @@
 ///<reference path="./d.ts" />
 
 module ft {
-    export type TreeElement = TreeElement;
-    export type AttributeValue = string|IExpressionName;
+    export type TreeElement = TemplateView|Comment|HTMLElement;
+    export type ExpressionValue = string|IExpression;
+    export type ExpressionNameValue = string|IExpressionName;
+
 
     export interface ITemplateParser {
         lastData:any;
@@ -19,11 +21,13 @@ module ft {
     }
 
     export interface ITemplateViewHelper {
+        getIdMap():{[id:string]:ITemplateView}
         createTreeObject:IGetTreeObjectFunctor;
         enterTreeObject:IGetTreeObjectFunctor;
         exitTreeObject:IGetTreeObjectFunctor;
         setDataTreeObject:IGetTreeObjectFunctor;
-        //updateDom(view:TemplateView);
+        updateDynamicTree(view:ITemplateView):void;
+        dispatchTreeEvent(e:ITreeEvent):void;
     }
 
     export interface IHtmlObject {
@@ -44,9 +48,12 @@ module ft {
     export interface ITemplate {
         name?: string;
         extend?: string;
+
         domTree: IDomDef;
         dynamicTree?:IDynamicTree;
         expressionMap?:IExpressionMap;
+        pathMap: {[path:string]:IDomDef};
+
 
         i18n?: any;
         styleMapByTheme?: {[name:string]:any};
@@ -82,7 +89,8 @@ module ft {
 
     export interface ISimpleExpression {
         vars:string[];
-        expressions:string;
+        content:string;
+        expression:string;
     }
 
     export interface IExpressionHost {
@@ -98,7 +106,7 @@ module ft {
         content: string;
         result?: string;
         vars:string[];
-        hosts:IExpressionHost[];
+        hosts?:IExpressionHost[];
 
 
         //values:any;
@@ -112,24 +120,40 @@ module ft {
     }
 
     export interface ITemplateView extends fmvc.IView {
+        parent:ITemplateView;
+
         eval(value:string):any;
+        evalHandler(value:string, e:any):any;
         getValue(value:any):any;
         getElement():Element;
         getTemplate():ITemplate;
         getFormattedMessage(name:string,arguments:any[]):string;
-        getExpressionValue(ex:IExpression);
-        getClassExpressionValue(ex:IExpression);
+        getExpressionValue(ex:IExpressionName);
+        getClassExpressionValue(ex:IExpressionName);
         isChangedDynamicProperty(value:string);
+
+        getElementByPath(value:string):HTMLElement;
+
+        setDynamicProperty(name:string, value:any);
+
+        getPathClassValue(path:string, name:string):string;
+        setPathClassValue(path:string, name:string, value:string);
+
+        on(event, handler, path?:string);
+        off(event, handler?, path?:string);
+        handleTreeEvent(e:ITreeEvent);
+        dispatchTreeEvent(e:ITreeEvent);
     }
 
     export  interface IAttrPropertyMap {
-        [propName:string]:AttributeValue;
+        [propName:string]:ExpressionValue;
     }
 
     export interface IDomDef {
         // system
         type:string;  // system tag type = text,comment,tag (creation step)
         path:string; // system path (creation step)
+        parentPath?:string; //
         link?:string // system class link (in class property)
         name:string; // system tag name (creation step)
         extend?:string;
@@ -144,7 +168,7 @@ module ft {
 
     export interface IDomAttribs {
         // dom attributes
-        [attrName:string]:any|AttributeValue;
+        [attrName:string]:any|ExpressionValue;
         class?:IAttrPropertyMap;
         style?:IAttrPropertyMap;
     }
@@ -167,6 +191,15 @@ module ft {
 
     export  interface IGetElementFunctor {
         (value:TreeElement):Element
+    }
+
+    export interface ITreeEvent extends fmvc.IEvent {
+        e?:any; /* browser event */
+        previousTarget?:fmvc.INotifier;
+        currentTarget?:fmvc.INotifier; // target component
+        cancelled:boolean; // browser event type or custom event type
+        prevented:boolean;
+        depth:number;
     }
 
 }

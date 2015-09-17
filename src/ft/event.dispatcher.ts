@@ -5,7 +5,7 @@
 
 ///<reference path='./d.ts'/>
 
-module fmvc {
+module ft {
 
     export var BrowserEvent = {
         CLICK: 'click',
@@ -30,130 +30,49 @@ module fmvc {
     export var specialEvents:string[] = [SpecialEvent.ACTION];
 
 
-    export class EventDispatcher extends Notifier {
-        public static NAME:string = 'EventDispatcher';
-        //private elementIdMap = {};
-        private executionMap = {};
-        private windowHandlerMap = {};
+    export class EventDispatcher  {
+        private eventMap:{[event:string]:boolean} = {};
+        private idMap;
 
-        constructor() {
-            super(EventDispatcher.NAME, 'controller');
+        constructor (idMap:any) {
+            this.idMap = idMap;
             _.bindAll(this, 'browserHandler');
-        }
-
-        listen(el:Element, type:string, handler:Function, context?:any):EventDispatcher {
-            var id = el.getAttribute('id');
-            if(!id || !type || !handler) {
-                console.warn('Incorrect listener on ' , el, id, type);
-                return;
-            }
-
-            this.executionMap[id] = this.executionMap[id] || {};
-
-            var listenerData = {handler: handler, context: context};
-            if(!this.executionMap[id][type]){
-                this.executionMap[id][type] = [listenerData];
-            } else
-            {
-                this.executionMap[id][type].push(listenerData);
-            }
-
-            console.log('Create listener ' , id, type, this.executionMap[id]);
-            this.__createListener(el, id, type, handler, context);
-
-
-            return this;
-        }
-
-        private __createListener(el:Element, id:string, type:string, handler:Function, context?:any):void {
-            if(_.contains(browserWindowEvents, type))
-                this.__createWindowListener(el, type);
-            else if(_.contains(browserElementEvents, type))
-                this.__createElementListener(el, type);
-            else if(_.contains(specialEvents, type))
-                this.__createSpecialListener(el, type);
-            else
-                console.warn('create listener for %s not found', type);
-        }
-
-        private __removeListener(el:Element, id:string, type:string) {
-            var id = id || el.getAttribute('id');
-            if(_.contains(browserElementEvents, type))  {
-                el.removeEventListener(type, this.browserHandler)
-            }
-        }
-
-        private __createElementListener(el:Element, type:string) {
-            //console.log('Element listener of %s , %s' , el, type);
-            el.addEventListener(type, this.browserHandler);
-        }
-
-        private __createWindowListener(el:Element, type:string) {
-            //console.log('Browser listener of %s , %s' , el, type);
-            if(!this.windowHandlerMap[type]) this.createWindowListener(type);
-        }
-
-        private __createSpecialListener(el, type) {
-            console.warn('create special listener for %s not implemented', type);
-        }
-
-        unlistenAll(el) {
-            var id = el.getAttribute('id');
-            if(!id) return;
-
-            _.each(this.executionMap[id], function(handlerObjectsArray, type:string) {
-                el.removeEventListener(type, this.browserHandler);
-
-                _.each(handlerObjectsArray, function(handlerObject:any) {
-                    delete handlerObject.handler;
-                    delete handlerObject.context;
-                });
-
-
-            }, this);
-
-            delete this.executionMap[id];
-            //delete this.elementIdMap[id];
-        }
-
-        unlisten(el:Element, type:string) {
-            var id = el.getAttribute('id');
-            if(!id || !this.executionMap[id]) {
-                console.warn('Cant unlisten ', el, id, type);
-                return;
-            }
-
-            var handlerObjectsArray = this.executionMap[id][type];
-            el.removeEventListener(type, this.browserHandler);
-
-            _.each(handlerObjectsArray, function(handlerObject:any) {
-                delete handlerObject.handler;
-                delete handlerObject.context;
-            });
-
-            delete this.executionMap[id][type];
+            _.each(_.values(BrowserEvent), this.on, this);
         }
 
         public browserHandler(e):void {
-            var el:Element = e.currentTarget || e.target;
+            //console.log('Browser ', e.type,  e.target);
+            var el:HTMLElement = e.target || e.currentTarget;
             var id:string = el.getAttribute('id');
-            var type:string = e.type;
 
-            if(!id) return;
-
-            console.log(id, type, this.executionMap[id]);
-            if(this.executionMap[id] && this.executionMap[id][type]) {
-                var handlerObjectsArray:any = this.executionMap[id][type];
-                _.each(handlerObjectsArray, function(handlerObject:any) {
-                    handlerObject.handler.call(handlerObject.context,e);
-                });
-            }
+            var view:ITemplateView = this.idMap[id];
+            if(view) view.dispatchTreeEvent(this.getTreeEventByBrowserEvent(e, view));
+            else if(id) console.warn('View not found for id: ' , id);
         }
 
-        private createWindowListener(type:string) {
-           this.windowHandlerMap[type] = true;
-           window.addEventListener(type, this.browserHandler, true);
+        private getTreeEventByBrowserEvent(e, view:ITemplateView):ITreeEvent {
+            return {name: e.type, target:view, previousTarget: null, currentTarget:view, e: e, cancelled:false, prevented:false, depth: 1e2};
         }
 
+        public getCustomTreeEvent(name:string, data?:any, view:ITemplateView, depth:number = 1):ITreeEvent {
+            return {name: e.type, target:view, previousTarget: null, currentTarget:view, data:data, cancelled:false, prevented:false, depth: depth};
+        }
+
+        public disposeEvent(e:ITreeEvent) {
+            e.target = e.previousTarget = e.currentTarget = e.e = null;
+        }
+
+
+        public on(type:string):void {
+            if(this.eventMap[type]) return;
+            window.addEventListener(type, this.browserHandler, true);
+            this.eventMap[type] = true;
+
+        }
+
+        public off(type:string):void {
+            this.eventMap[type] = false;
+            window.removeEventListener(type, this.browserHandler);
+        }
     }
 }
