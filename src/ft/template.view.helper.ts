@@ -416,6 +416,8 @@ module ft {
             if (!data.states) return true;
             else !!this.getExpressionValue(data.states, root);
         }
+
+
     }
 
 }

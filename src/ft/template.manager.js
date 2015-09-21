@@ -9,7 +9,11 @@ var ft;
         }
         TemplateManager.prototype.createTemplate = function (name, content) {
             var templateData = this.parse(content);
-            return this.addTemplate(name, templateData).getTemplateViewFunc(name);
+            var result = this.addTemplate(name, templateData).getTemplateViewFunc(name);
+            if (typeof window !== 'undefined') {
+                window[name] = result;
+            }
+            return result;
         };
         TemplateManager.prototype.parse = function (value) {
             var objs = tp.parseHtml(value);

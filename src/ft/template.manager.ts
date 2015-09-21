@@ -10,18 +10,22 @@ module ft {
         constructor() {
         }
 
-        createTemplate(name:string, content:string):ITemplateManager {
+        createTemplate(name:string, content:string):ITemplateConstructor {
             var templateData = this.parse(content);
-            return this.addTemplate(name, templateData).getTemplateViewFunc(name);
+            var result:ITemplateConstructor = this.addTemplate(name, templateData).getTemplateViewFunc(name);
+            if(typeof window !== 'undefined') {
+                window[name] = result;
+            }
+            return result;
         }
 
-        parse(value:string):ft.ITemplate {
+        parse(value:string):ITemplate {
             var objs = tp.parseHtml(value);
             var template = tp.htmlObjectToTemplate(objs);
             return template;
         }
 
-        addTemplate(name:string, value:ft.ITemplate):ft.ITemplateManager {
+        addTemplate(name:string, value:ft.ITemplate):ITemplateManager {
             if(this._templateMap[name]) throw 'TemplateManager: cant add constructor ' + name + ' cause it exists';
             this._templateMap[name] = value;
             return this;
@@ -31,7 +35,7 @@ module ft {
             return this._templateMap[name];
         }
 
-        getTemplateViewFunc(templateName:string):ft.ITemplateConstructor {
+        getTemplateViewFunc(templateName:string):ITemplateConstructor {
             var t = this;
             return this._templateFunc[templateName] || (this._templateFunc[templateName] = function(name:string, params?:ft.ITemplateViewParams):ft.TemplateView {
                 return new ft.TemplateView(name, params, t.getTemplate(templateName));

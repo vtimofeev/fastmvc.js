@@ -18,6 +18,8 @@ module ft {
         return (templateFormatterChache[value] = mf.compile(value));
     }
 
+
+
     export class TemplateView extends fmvc.View implements ITemplateView {
         private _template:ITemplate;
         public _i18n:any;
