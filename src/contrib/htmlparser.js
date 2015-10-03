@@ -62,6 +62,7 @@ function Parser (builder, options) {
     var self = this;
     this._builder = builder;
     this.reset();
+    //console.log('Parser options ', options);
 }
 
 if (typeof(module) !== 'undefined' && typeof(module.exports) !== 'undefined') {
@@ -630,7 +631,9 @@ function HtmlBuilder (callback, options) {
         if (this._options.verbose && element['raw'] !== undefined) {
             newElement.raw = element.raw;
         }
-        if (element['name'] !== undefined) {
+        if (element['name'] !== undefined)
+        {
+            //console.log('Parser: ' , this._options.caseSensitiveTags, this._options.caseSensitiveAttr, element.name);
             switch (element.type) {
 
                 case Mode.Tag:

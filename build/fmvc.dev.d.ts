@@ -225,8 +225,8 @@ declare module fmvc {
         private _inDocument;
         private _element;
         constructor(name: string);
-        getElement(): Element;
-        setElement(value: Element): void;
+        getElement(): HTMLElement;
+        setElement(value: HTMLElement): void;
         setMediator(value: Mediator): IView;
         mediator: Mediator;
         setStates(value: any): IView;
@@ -253,12 +253,14 @@ declare module fmvc {
         protected validateParent(): void;
         protected validateChildren(): void;
         protected validateApp(): void;
+        protected validateTemplate(): void;
         render(element: Element): IView;
+        unrender(): void;
         dispose(): void;
         sendEvent(name: string, data?: any, sub?: string, error?: any, global?: boolean): void;
         log(...messages: any[]): View;
     }
-    interface IView {
+    interface IView extends INotifier {
         setModel(value: Model): IView;
         data: any;
         model: Model;
@@ -269,7 +271,13 @@ declare module fmvc {
         exit(): void;
         render(element: Element): IView;
         invalidate(value: number): void;
+        validate(): void;
         domHandler(e: any): void;
+        getElement(): HTMLElement;
+        setElement(value: HTMLElement): void;
+        getState(name: string): any;
+        setState(name: string, value: any): void;
+        setStates(value: any): IView;
     }
 }
 declare module fmvc {

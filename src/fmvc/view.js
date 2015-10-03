@@ -1,4 +1,4 @@
-var __extends = (this && this.__extends) || function (d, b) {
+var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
@@ -62,13 +62,13 @@ var fmvc;
         View.prototype.setState = function (name, value) {
             if (this._states[name] === value)
                 return this;
-            console.log('Set state ... ', name, value);
+            console.log('Set state ... ', this, name, value);
             this._states[name] = value;
             this.invalidate(fmvc.InvalidateType.State);
             return this;
         };
         View.prototype.getState = function (name) {
-            return this._states[name];
+            return this._states[name] || null;
         };
         Object.defineProperty(View.prototype, "model", {
             get: function () {
@@ -128,6 +128,7 @@ var fmvc;
             if (this._inDocument)
                 throw new Error('Cant enter, it is in document');
             this._inDocument = true;
+            console.log('Enter: ', this.name, this.inDocument);
             this.invalidate(fmvc.InvalidateType.Data | fmvc.InvalidateType.Children);
         };
         View.prototype.exit = function () {
@@ -183,13 +184,19 @@ var fmvc;
             if (this._inDocument)
                 throw new Error('Cant render view, it is in document');
             this.createDom();
-            console.log('Result', this.getElement().innerHTML);
+            //console.log('Result', this.getElement().innerHTML);
             element.appendChild(this.getElement());
             this.enter();
             return this;
         };
+        View.prototype.unrender = function () {
+            if (this.getElement().parentNode)
+                this.getElement().parentNode.removeChild(this.getElement());
+        };
         // Overrides of Notifier
         View.prototype.dispose = function () {
+            this.exit();
+            this.unrender();
             _super.prototype.dispose.call(this);
         };
         View.prototype.sendEvent = function (name, data, sub, error, global) {

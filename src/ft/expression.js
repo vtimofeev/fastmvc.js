@@ -4,7 +4,7 @@ var ft;
     var Expression = (function () {
         function Expression() {
             this.counter = 0;
-            this.ExpressionMatchRe = /\{([\(\)\\,\.\|\?:;'"@A-Za-z<>=\[\]& \+\-\/\*0-9]+)\}/g;
+            this.ExpressionMatchRe = /\{([\(\)\\,\.\|\?:;'"!@A-Za-z<>=\[\]& \+\-\/\*0-9]+)\}/g;
             this.VariableMatchRe = /([A-Za-z0-9 _\-"'\.]+)/gi;
             this.ExResult = '{$0}';
         }
@@ -51,40 +51,49 @@ var ft;
             return this.parseContextValue(this.getContextValue(value, context), value, classes);
         };
         Expression.prototype.parseContextValue = function (value, ex, classes) {
-            if (classes && _.isBoolean(value) && _.isString(ex) && ex[0] != '(' && ex.indexOf('.') > 0) {
-                var values = ex.split('.');
+            var exStr = this.ifString(ex);
+            if (classes && _.isBoolean(value) && exStr && exStr[0] != '(' && exStr.indexOf('.') > 0) {
+                var values = exStr.split('.');
                 var varName = (values.length === 2) ? values[1] : null;
                 if (varName)
                     return value ? varName : null;
             }
             return value;
         };
+        Expression.prototype.ifString = function (value) {
+            return (_.isString(value) ? value : null);
+        };
         Expression.prototype.getContextValue = function (v, context) {
             var r;
             if (typeof v === 'string') {
+                /*
+                var boolTrue = v.indexOf('!!') === 0;
+                if(boolTrue) v = v.substring(2);
+                var boolFalse = v.indexOf('!') === 0;
+                if(boolFalse) v = v.substring(1);
+                */
                 if (v.indexOf('data.') === 0 || v.indexOf('app.') === 0) {
                     r = context.eval('this.' + v);
                     context.setDynamicProperty(v, r);
-                    return r;
-                }
-                else if (v.indexOf('(') === 0) {
-                    return context.eval(v);
                 }
                 else if (v.indexOf('state.') === 0) {
                     r = context.getState(v.replace('state.', ''));
                     context.setDynamicProperty(v, r);
-                    return r;
                 }
                 else if (v === 'data') {
                     r = context.data;
                     context.setDynamicProperty(v, r);
-                    return r;
                 }
+                else if (v.indexOf('(') === 0) {
+                    r = context.eval(v);
+                }
+                if (r !== undefined)
+                    return r;
             }
             else if (_.isObject(v)) {
                 return this.executeExpression(v, context);
             }
-            throw new Error('Not supported variable in ' + context.name + ', ' + v);
+            throw new Error('Not supported variable ' + v + ' in ' + context.name);
         };
         Expression.prototype.getContextArguments = function (ex, context) {
             var _this = this;
@@ -126,10 +135,17 @@ var ft;
             return { name: this.getName(), content: value, result: result, vars: expressionVars, expressions: simplyfiedExpressions };
         };
         Expression.prototype.simplifyExpression = function (expression) {
-            if (_.isObject(expression) && !expression.filters)
-                return expression.args;
+            var ex = this.ifExpression(expression);
+            if (ex && !ex.filters)
+                return ex.args;
             else
                 return expression;
+        };
+        Expression.prototype.ifSimpleExpression = function (value) {
+            return (_.isObject(value) ? value : null);
+        };
+        Expression.prototype.ifExpression = function (value) {
+            return (_.isObject(value) ? value : null);
         };
         /*
          Supported types
@@ -162,11 +178,13 @@ var ft;
             }
             else {
                 vars = [this.tryParseRoundBracketExpression(args)];
-                result.args = _.isObject(vars[0]) ? vars[0].expression : vars[0];
+                var firstExpression = this.ifSimpleExpression(vars[0]);
+                result.args = firstExpression ? firstExpression.expression : vars[0];
             }
             _.each(vars, function (v) { return _.isObject(v) ? result.vars = [].concat(result.vars, v.vars) : result.vars.push(v); });
             // remove empty keys
             _.each(_.keys(result), function (key) { return (_.isEmpty(result[key]) ? delete result[key] : null); });
+            console.log('Expression content: ', result);
             return result;
         };
         Expression.prototype.tryParseRoundBracketExpression = function (value, index) {
@@ -174,20 +192,20 @@ var ft;
             if (index === void 0) { index = 0; }
             var expressions = this.getExpressionFromString(value);
             if (!expressions)
-                return value;
+                return value.replace(/!/g, ''); // @todo review this fix (replace ! sign)
             var expression = expressions[0];
             // skip direct execution (at handlers);
             if (expression.indexOf('this') > -1)
                 return expression;
             var variables = _.compact(_.filter(_.map(expression.match(this.VariableMatchRe), function (v) { return v.trim(); }), function (v) { return (v.indexOf('\'') < 0 && v.indexOf('"') < 0 && v.match(/^[A-Za-z]+/gi)); }));
-            console.log(variables);
+            //console.log(variables);
             //if (!_.isEmpty(variables)) variables = variables.sort((a:string, b:string)=>a.length > b.length ? -1 : 1);
             var convertedExpression = _.reduce(variables, function (memo, v) {
                 var requestVariable = ((v.indexOf('.') > -1 && v.indexOf('state.') === -1) || v === 'data' ? ('this.' + v) :
                     (v.indexOf('state.') > -1 ? ('this.getState("' + v.replace('state.', '') + '")') : ''));
                 return memo.replace(new RegExp(v, 'g'), requestVariable);
             }, expression, this);
-            console.log('Expressions ... ', value, expressions, 'result', convertedExpression);
+            //console.log('Expressions ... ', value, expressions, 'result', convertedExpression);
             return { content: expression, expression: convertedExpression, vars: variables };
         };
         Expression.prototype.parseArguments = function (value) {

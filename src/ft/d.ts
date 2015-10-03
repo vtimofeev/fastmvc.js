@@ -1,6 +1,7 @@
 ///<reference path="../fmvc/d.ts" />
 ///<reference path="./template.i.ts" />
 ///<reference path="./expression.ts" />
+//<reference path="./event.dispatcher.ts" />
 //<reference path="./template.ts" />
 ///<reference path="./template.parser.ts" />
 ///<reference path="./template.view.ts" />

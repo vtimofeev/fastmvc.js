@@ -2,12 +2,12 @@
 var ft;
 (function (ft) {
     var htmlparser = Tautologistics.NodeHtmlParser;
-    console.log(htmlparser);
     var expressionManager;
     var expression = new ft.Expression();
     var TemplateParser = (function () {
         function TemplateParser() {
             this._skipProperties = ['raw'];
+            this._componentParams = _.values(ft.TemplateParams);
             this._propAttribs = {
                 style: {
                     delimiter: ';',
@@ -23,7 +23,7 @@ var ft;
                 }
             };
             _.bindAll(this, 'parserHandler');
-            this._htmlparserHandler = new htmlparser.HtmlBuilder(this.parserHandler);
+            this._htmlparserHandler = new htmlparser.HtmlBuilder(this.parserHandler, { caseSensitiveTags: true, caseSensitiveAttr: true });
             this._htmlParser = new htmlparser.Parser(this._htmlparserHandler /*, test.options.parser*/);
         }
         TemplateParser.prototype.reset = function () {
@@ -36,15 +36,16 @@ var ft;
             html = html.trim().replace(/\n/gi, '');
             this._htmlparserHandler.dom = null;
             this._htmlParser.parseComplete(html);
+            console.log('Parser result ', this._htmlparserHandler.dom);
             return this._htmlparserHandler.dom;
         };
         TemplateParser.prototype.htmlObjectToTemplate = function (objs) {
-            console.log('Result parser: ', objs);
+            //console.log('Result parser: ' , objs);
             var result = {}; // new Template();
             _.each(objs, function (obj, index) {
                 if (obj.name.indexOf('f.') < 0) {
                     result.expressionMap = {};
-                    (obj.attribs ? result.extend = obj.attribs.extend : null);
+                    //(obj.attribs?result.extend=obj.attribs.extend:null);
                     result.name = obj.name;
                     result.pathMap = {};
                     // side effect, creates expression map to result, create pathMap
@@ -60,15 +61,14 @@ var ft;
             // switch to parser 2.0
             (o.attributes ? o.attribs = o.attributes : null);
             var skipped = ['extend'];
-            var def = { attribs: {}, params: {}, handlers: {} };
+            var def = { type: null, path: null, name: null, attribs: {}, params: {}, handlers: {} };
             def.type = (o.type === 'cdata' ? 'text' : o.type); // @todo move cdata to tree creator
             def.name = o.name;
             def.path = path;
             def.parentPath = path.indexOf(',') > 0 ? path.substring(0, path.lastIndexOf(',')) : null;
             if (o.type != 'tag')
                 def.data = this.parseExpressionAttrib(o.data, 'data', r.expressionMap, path, 'data'); // set data or data expression
-            if (o.attribs && o.attribs.extend)
-                def.extend = o.attribs.extend;
+            //if(o.attribs && o.attribs.extend) def.extend = o.attribs.extend;
             _.each(o.attribs, function (value, key) {
                 if (skipped.indexOf(key) >= 0 || !(value = value ? value.trim() : value))
                     return;
@@ -85,12 +85,11 @@ var ft;
             return group === 'handlers' ? (key.replace(/^on/, '')).toLowerCase() : key;
         };
         TemplateParser.prototype.getAttribGroup = function (name) {
-            var params = ['states', 'enableStates'];
             if (name.indexOf('on') === 0) {
                 return 'handlers';
             }
             else {
-                return (params.indexOf(name) > -1) ? 'params' : 'attribs';
+                return (this._componentParams.indexOf(name) > -1) ? 'params' : 'attribs';
             }
         };
         // Проверяем данное выражение конвертируется в объект класса или стиля (набор свойств: выражений)

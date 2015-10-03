@@ -3,7 +3,6 @@ declare var Tautologistics:any;
 
 module ft {
     var htmlparser:any = Tautologistics.NodeHtmlParser;
-    console.log(htmlparser);
     var expressionManager:IExpressionManager;
     var expression = new Expression();
 
@@ -11,6 +10,7 @@ module ft {
         private _htmlparserHandler:any;
         private _htmlParser:any;
         private _skipProperties:string[] = ['raw'];
+        private _componentParams:string[] = _.values(TemplateParams);
         private _propAttribs:{[name:string]:any} = {
             style: {
                 delimiter: ';',
@@ -31,8 +31,8 @@ module ft {
 
         constructor() {
             _.bindAll(this, 'parserHandler');
-            this._htmlparserHandler = new htmlparser.HtmlBuilder(this.parserHandler);
-            this._htmlParser = new htmlparser.Parser(this._htmlparserHandler/*, test.options.parser*/);
+            this._htmlparserHandler = new htmlparser.HtmlBuilder(this.parserHandler, {caseSensitiveTags: true, caseSensitiveAttr: true});
+            this._htmlParser = new htmlparser.Parser(this._htmlparserHandler /*, test.options.parser*/);
         }
 
         private reset() {
@@ -46,17 +46,18 @@ module ft {
             html = html.trim().replace(/\n/gi, '');
             this._htmlparserHandler.dom = null;
             this._htmlParser.parseComplete(html);
+            console.log('Parser result ', this._htmlparserHandler.dom);
             return <IHtmlObject[]> this._htmlparserHandler.dom;
         }
 
         htmlObjectToTemplate(objs:IHtmlObject[]):ITemplate {
-            console.log('Result parser: ' , objs);
+            //console.log('Result parser: ' , objs);
             var result = <ITemplate> {};// new Template();
 
             _.each(objs, function(obj:IHtmlObject, index:number) {
                 if(obj.name.indexOf('f.') < 0) {
                     result.expressionMap = <IExpressionMap> {};
-                    (obj.attribs?result.extend=obj.attribs.extend:null);
+                    //(obj.attribs?result.extend=obj.attribs.extend:null);
                     result.name = obj.name;
                     result.pathMap = {};
                     // side effect, creates expression map to result, create pathMap
@@ -75,7 +76,7 @@ module ft {
 
             var skipped:string[] = ['extend'];
 
-            var def = <IDomDef> {attribs: {}, params: {}, handlers: {}};
+            var def = <IDomDef> {type: null, path: null, name: null, attribs: {}, params: {}, handlers: {}};
             def.type = (o.type === 'cdata'?'text':o.type); // @todo move cdata to tree creator
             def.name = o.name;
             def.path = path;
@@ -83,13 +84,12 @@ module ft {
             if(o.type != 'tag') def.data = this.parseExpressionAttrib(o.data, 'data', r.expressionMap, path, 'data'); // set data or data expression
 
 
-            if(o.attribs && o.attribs.extend) def.extend = o.attribs.extend;
+            //if(o.attribs && o.attribs.extend) def.extend = o.attribs.extend;
 
             _.each(o.attribs, function(value:any, key:string) {
                if(skipped.indexOf(key) >= 0 || !(value = value?value.trim():value)) return;
                var group = this.getAttribGroup(key);
                var groupKey = this.getGroupKey(key, group);
-
                def[group][groupKey] = this.parseExpressionAttrib(value, key, r.expressionMap, path, group);
             }, this);
 
@@ -105,18 +105,18 @@ module ft {
         }
 
         getAttribGroup(name:string):string {
-            var params:string[] = ['states', 'enableStates'];
+
 
             if(name.indexOf('on') === 0) {
                 return 'handlers';
             } else {
-                return (params.indexOf(name)>-1)?'params':'attribs';
+                return (this._componentParams.indexOf(name)>-1)?'params':'attribs';
             }
 
         }
 
         // Проверяем данное выражение конвертируется в объект класса или стиля (набор свойств: выражений)
-        parseExpressionAttrib(value:any, key:string, map:IExpressionMap, path:string, group:string):string|IExpression|{[propName:string]:IExpression} {
+        parseExpressionAttrib(value:any, key:string, map:IExpressionMap, path:string, group:string):string|IExpression|IExpressionMap {
             if(this._propAttribs[key]) {
                 var prop:any = this._propAttribs[key];
                 return _.reduce(
@@ -124,7 +124,7 @@ module ft {
                     (r, value, index)=>(
                         prop.canGet(value)?(r[prop.getName(value)]=this.parseExpressionValue(prop.getValue(value), map, path, group, key, prop.getName(value))):null,
                         r),
-                    {},
+                    <IExpressionMap>{},
                     this);
             }   else if(group === 'handlers') {
                 return this.parseJsValue(value);
@@ -158,7 +158,7 @@ module ft {
         }
 
         // Парсим строку с выражением
-        parseExpressionValue(value:any, map:any, path, group, key, keyProperty) {
+        parseExpressionValue(value:any, map:any, path:string, group:string, key:string, keyProperty:string):IExpression {
             var ex = expression.strToExpression(value);
 
             var expressionNameObj:IExpressionName = ex?expression.getExpressionNameObject(ex):null;
@@ -168,7 +168,6 @@ module ft {
                 var hosts = ex.hosts || [];
                 hosts.push(this.getExpressionHost(path, group, key, keyProperty));
                 ex.hosts = hosts;
-
                 // Расширяем карту
                 map[ex.name] = ex;
             }

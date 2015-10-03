@@ -126,7 +126,7 @@ var fmvc;
         };
         Notifier.prototype.dispose = function () {
             this.removeAllListeners();
-            this.facade = null;
+            this._facade = null;
             this._disposed = true;
         };
         return Notifier;

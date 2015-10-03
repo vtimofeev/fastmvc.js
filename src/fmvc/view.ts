@@ -23,7 +23,7 @@ module fmvc {
         private _invalidate:number = 0;
         private _isWaitingForValidate:boolean = false;
         private _inDocument:boolean = false;
-        private _element:Element;
+        private _element:HTMLElement;
 
         constructor(name:string) {
             super(name, TYPE_VIEW);
@@ -36,7 +36,7 @@ module fmvc {
             return <HTMLElement> this._element;
         }
 
-        public setElement(value:Element) {
+        public setElement(value:HTMLElement) {
             if(this._element) throw Error('Cant set element of the fmvc.View instance ' + this.name);
             this._element = value;
         }
@@ -66,14 +66,14 @@ module fmvc {
 
         public setState(name:string, value:any):IView {
             if(this._states[name] === value) return this;
-            console.log('Set state ... ', name, value);
+            console.log('Set state ... ', this, name, value);
             this._states[name] = value;
             this.invalidate(InvalidateType.State);
             return this;
         }
 
         public getState(name:string):any {
-            return this._states[name];
+            return this._states[name] || null;
         }
 
         public set model(value:Model) {
@@ -131,6 +131,8 @@ module fmvc {
         public enter():void {
             if(this._inDocument) throw new Error('Cant enter, it is in document');
             this._inDocument = true;
+            console.log('Enter: ', this.name, this.inDocument);
+
             this.invalidate(InvalidateType.Data | InvalidateType.Children);
         }
 
@@ -182,14 +184,20 @@ module fmvc {
         public render(element:Element):IView {
             if(this._inDocument) throw new Error('Cant render view, it is in document');
             this.createDom();
-            console.log('Result', this.getElement().innerHTML);
+            //console.log('Result', this.getElement().innerHTML);
             element.appendChild(this.getElement());
             this.enter();
             return this;
         }
 
+        public unrender() {
+            if(this.getElement().parentNode) this.getElement().parentNode.removeChild(this.getElement());
+        }
+
         // Overrides of Notifier
         public dispose() {
+            this.exit();
+            this.unrender();
             super.dispose();
         }
 
@@ -217,7 +225,11 @@ module fmvc {
         exit():void;
         render(element:Element):IView;
         invalidate(value:number):void;
+        validate():void;
         domHandler(e:any):void;
+
+        getElement():HTMLElement;
+        setElement(value:HTMLElement):void;
 
         getState(name:string):any;
         setState(name:string, value:any):void;

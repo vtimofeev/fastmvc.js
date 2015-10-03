@@ -1,15 +1,34 @@
 ///<reference path="./d.ts" />
 
 module ft {
-    export type TreeElement = TemplateView|Comment|HTMLElement;
+    export type TreeElement = ITemplateView|Comment|HTMLElement|Text;
     export type ExpressionValue = string|IExpression;
     export type ExpressionNameValue = string|IExpressionName;
 
+    // Params of dom element or component
+    export var TemplateParams = {
+        ln:'ln', // create public field in TemplateView that has name as value
+        states:'states', // state when object is created, '{state.selected}'
+        setStates:'setStates', // View, 'selected,focused,disabled,hover,draggable,counter' or 'selected=true,focused=false,disabled=true,counter={data.counter},modelCounter={app.counter.data}'
+        setState:'setState', // View, 'selected=true'
+        setStateSelected:'state.selected', // View, 'true' or '{(this.getCustomComponentSelected(child.data))}' (expression)
+        setData: '.data', // View
+        setModel: '.model', // View
+
+        childrenClass: 'children.class', // children constructor
+        childrenSetStates: 'children.setStates', // '{this.data.selected===child.data}'
+        childrenData: 'children.data', // children data array (context parent or app)
+        childrenModel: 'children.model', // children model array (context parent or app)
+
+        onwildcard: 'on*',
+
+        childrenOnAction: 'children.onAction' // children eventHandler
+    };
 
     export interface ITemplateParser {
         lastData:any;
         lastError:any;
-        parse(html:string):any;
+        parseHtml(html:string):any;
     }
 
     export interface ITemplateManager {
@@ -36,6 +55,7 @@ module ft {
         raw:string;
         data?:string;
         attribs?:{[name:string]:any}[];
+        attributes?:{[name:string]:any}[];
         children?:IHtmlObject[];
     }
 
@@ -100,6 +120,7 @@ module ft {
         keyProperty?:string;
     }
 
+
     export interface IExpression {
         name:string;
 
@@ -121,23 +142,29 @@ module ft {
 
     export interface ITemplateView extends fmvc.IView {
         parent:ITemplateView;
+        parentDomDef:IDomDef;
 
         eval(value:string):any;
         evalHandler(value:string, e:any):any;
-        getValue(value:any):any;
-        getElement():Element;
+        //getValue(value:any):any;
         getTemplate():ITemplate;
         getFormattedMessage(name:string,arguments:any[]):string;
         getExpressionValue(ex:IExpressionName);
         getClassExpressionValue(ex:IExpressionName);
+
+        getDomDefinitionByPath(path:string):IDomDef;
+
         isChangedDynamicProperty(value:string);
 
         getElementByPath(value:string):HTMLElement;
+        setDataChildrenByPath(path:string, value:ITemplateView[]):void;
+        getDataChildrenByPath(path:string):ITemplateView[];
 
         setDynamicProperty(name:string, value:any);
 
         getPathClassValue(path:string, name:string):string;
         setPathClassValue(path:string, name:string, value:string);
+        setPathOfCreatedElement(path:string, value:TreeElement):void;
 
         on(event, handler, path?:string);
         off(event, handler?, path?:string);

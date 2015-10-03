@@ -1,18 +1,14 @@
-/**
- * Created by Vasily on 19.06.2015.
- */
-
-
 ///<reference path='./d.ts'/>
 
 module ft {
-
     export var BrowserEvent = {
         CLICK: 'click',
         KEYUP: 'keyup',
         KEYDOWN: 'keydown',
         MOUSEOVER: 'mouseover',
         MOUSEOUT: 'mouseout',
+        MOUSEDOWN: 'mousedown',
+        MOUSEUP: 'mouseup',
         CHANGE: 'change'
     };
 
@@ -46,7 +42,7 @@ module ft {
             var id:string = el.getAttribute('id');
 
             var view:ITemplateView = this.idMap[id];
-            if(view) view.dispatchTreeEvent(this.getTreeEventByBrowserEvent(e, view));
+            if(view) view.handleTreeEvent(this.getTreeEventByBrowserEvent(e, view));
             else if(id) console.warn('View not found for id: ' , id);
         }
 
@@ -54,12 +50,12 @@ module ft {
             return {name: e.type, target:view, previousTarget: null, currentTarget:view, e: e, cancelled:false, prevented:false, depth: 1e2};
         }
 
-        public getCustomTreeEvent(name:string, data?:any, view:ITemplateView, depth:number = 1):ITreeEvent {
+        public getCustomTreeEvent(name:string, data:any, view:ITemplateView, depth:number = 1):ITreeEvent {
             return {name: e.type, target:view, previousTarget: null, currentTarget:view, data:data, cancelled:false, prevented:false, depth: depth};
         }
 
         public disposeEvent(e:ITreeEvent) {
-            e.target = e.previousTarget = e.currentTarget = e.e = null;
+            return; e.target = e.previousTarget = e.currentTarget = e.e = null;
         }
 
 

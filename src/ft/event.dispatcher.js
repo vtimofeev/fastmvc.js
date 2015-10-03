@@ -1,6 +1,3 @@
-/**
- * Created by Vasily on 19.06.2015.
- */
 ///<reference path='./d.ts'/>
 var ft;
 (function (ft) {
@@ -10,6 +7,8 @@ var ft;
         KEYDOWN: 'keydown',
         MOUSEOVER: 'mouseover',
         MOUSEOUT: 'mouseout',
+        MOUSEDOWN: 'mousedown',
+        MOUSEUP: 'mouseup',
         CHANGE: 'change'
     };
     ft.SpecialEvent = {
@@ -48,6 +47,7 @@ var ft;
             return { name: e.type, target: view, previousTarget: null, currentTarget: view, data: data, cancelled: false, prevented: false, depth: depth };
         };
         EventDispatcher.prototype.disposeEvent = function (e) {
+            return;
             e.target = e.previousTarget = e.currentTarget = e.e = null;
         };
         EventDispatcher.prototype.on = function (type) {

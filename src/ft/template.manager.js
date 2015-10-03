@@ -1,6 +1,7 @@
 ///<reference path="./d.ts" />
 var ft;
 (function (ft) {
+    ft.global = window || {};
     var tp = new ft.TemplateParser();
     var TemplateManager = (function () {
         function TemplateManager() {
@@ -11,7 +12,9 @@ var ft;
             var templateData = this.parse(content);
             var result = this.addTemplate(name, templateData).getTemplateViewFunc(name);
             if (typeof window !== 'undefined') {
-                window[name] = result;
+                ft.global[name] = result;
+                var pathParts = name.split('.');
+                _.reduce(pathParts, function (g, v) { return (g[v] ? g[v] : (g[v] = {})); }, ft.global); // create constructor map at window
             }
             return result;
         };

@@ -1,6 +1,7 @@
 ///<reference path="./d.ts" />
 
 module ft {
+    export var global:any = window || {};
     var tp = new TemplateParser();
 
     export class TemplateManager implements ITemplateManager {
@@ -11,10 +12,12 @@ module ft {
         }
 
         createTemplate(name:string, content:string):ITemplateConstructor {
-            var templateData = this.parse(content);
+            var templateData:ITemplate = this.parse(content);
             var result:ITemplateConstructor = this.addTemplate(name, templateData).getTemplateViewFunc(name);
             if(typeof window !== 'undefined') {
-                window[name] = result;
+                global[name] = result;
+                var pathParts = name.split('.');
+                _.reduce(pathParts, (g, v)=>(g[v]?g[v]:(g[v]={})), global); // create constructor map at window
             }
             return result;
         }
