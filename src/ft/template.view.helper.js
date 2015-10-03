@@ -72,6 +72,8 @@ var ft;
         };
         TemplateViewHelper.prototype.initIfComponent = function (value, data, root) {
             if (value instanceof ft.TemplateView) {
+                if (value.inDocument)
+                    return;
                 //console.log('Init component on create, ', value, value.getElement());
                 var view = value;
                 view.parent = root;

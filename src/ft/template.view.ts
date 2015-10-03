@@ -202,13 +202,17 @@ module ft {
                 this._dynamicPropertiesMap = {};
             }
             super.validate();
+
+
             //console.log('Update tree ', this.inDocument);
+            this.validateRecreateTree();
             if (this.canValidate()) templateHelper.updateDynamicTree(this);
+
         }
 
 
         protected validateRecreateTree() {
-            //templateHelper.createTreeObject(this._template.domTree, this);
+            templateHelper.createTreeObject(this._template.domTree, this);
         }
 
         protected validateData():void {

@@ -176,11 +176,12 @@ var ft;
             }
             _super.prototype.validate.call(this);
             //console.log('Update tree ', this.inDocument);
+            this.validateRecreateTree();
             if (this.canValidate())
                 ft.templateHelper.updateDynamicTree(this);
         };
         TemplateView.prototype.validateRecreateTree = function () {
-            //templateHelper.createTreeObject(this._template.domTree, this);
+            ft.templateHelper.createTreeObject(this._template.domTree, this);
         };
         TemplateView.prototype.validateData = function () {
             //if (this.canValidate(fmvc.InvalidateType.Data))

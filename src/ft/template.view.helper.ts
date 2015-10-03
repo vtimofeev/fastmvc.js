@@ -77,6 +77,8 @@ module ft {
             )
         }
 
+
+
         private enterTreeObjectFunctor():IGetTreeObjectFunctor {
             return this.functorTreeObject(
                 this.getTreeObject,
@@ -130,6 +132,7 @@ module ft {
 
         // Simple commands
         setElementPathToRoot(value:TreeElement, data:IDomDef, root:ITemplateView) {
+
             this.initIfComponent(value, data, root);
             root.setPathOfCreatedElement(data.path, value);
             //if (data.link) root.setTemplateElementProperty(data.link, value);
@@ -137,6 +140,7 @@ module ft {
 
         initIfComponent(value:TreeElement, data:IDomDef, root:ITemplateView) {
             if (value instanceof TemplateView) {
+                if(value.inDocument) return;
                 //console.log('Init component on create, ', value, value.getElement());
                 var view = (<TemplateView>value);
                 view.parent = root;
