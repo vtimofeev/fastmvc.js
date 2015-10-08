@@ -5,6 +5,7 @@
 //<reference path="./template.ts" />
 ///<reference path="./template.parser.ts" />
 ///<reference path="./template.view.ts" />
+///<reference path="./template.view.children.ts" />
 ///<reference path="./template.view.helper.ts" />
 ///<reference path="./template.manager.ts" /> 
 //# sourceMappingURL=d.js.map

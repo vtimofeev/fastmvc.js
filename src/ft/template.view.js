@@ -11,7 +11,10 @@ var ft;
     var localeFormatterCache = {};
     var templateFormatterChache = {};
     var expression = new ft.Expression();
-    var dispatcher = new ft.EventDispatcher(ft.templateHelper.getIdMap());
+    var dispatcher = new ft.EventDispatcher(ft.templateHelper);
+    var timers = { createDom: 0, enter: 0, setData: 0, validate: 0 };
+    var counters = { createDom: 0, enter: 0, setData: 0, validate: 0, validateState: 0, validateData: 0, validateApp: 0 };
+    setInterval(function () { return console.log('Statistic timers', timers, ' counters ', counters); }, 5000);
     //console.log(dispatcher);
     function getFormatter(value, locale) {
         if (locale === void 0) { locale = 'en'; }
@@ -21,16 +24,20 @@ var ft;
         var mf = localeFormatterCache[locale] || (localeFormatterCache[locale] = new MessageFormat(this.locale));
         return (templateFormatterChache[value] = mf.compile(value));
     }
+    function getTime() {
+        return (new Date()).getTime();
+    }
     var TemplateView = (function (_super) {
         __extends(TemplateView, _super);
         function TemplateView(name, params, template) {
             _super.call(this, name);
-            this._classMap = {}; // map of component classes
+            // Maps of current class values, by path and css name
+            this._cssClassMap = {}; // map of component classes
+            // Properties map
             this._prevDynamicProperiesMap = {};
             this._dynamicPropertiesMap = {};
-            //console.log('Construct component: name,params,template ', name, params, template);
             this._template = template;
-            params ? _.each(params, this.setParameter, this) : null;
+            this.setParameters(params);
         }
         Object.defineProperty(TemplateView.prototype, "parent", {
             get: function () {
@@ -42,42 +49,121 @@ var ft;
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(TemplateView.prototype, "parentDomDef", {
+        Object.defineProperty(TemplateView.prototype, "domDef", {
             get: function () {
-                return this._parentDomDef;
+                return this._domDef;
             },
             set: function (value) {
-                this._parentDomDef = value;
+                this._domDef = value;
             },
             enumerable: true,
             configurable: true
         });
-        TemplateView.prototype.setParameter = function (value, name) {
-            if (name in this) {
-                _.isFunction(this[name]) ? this[name](value) : this[name] = value;
+        Object.defineProperty(TemplateView.prototype, "localDomDef", {
+            get: function () {
+                return this.getTemplate().domTree;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(TemplateView.prototype, "i18n", {
+            get: function () {
+                return this._i18n;
+            },
+            set: function (value) {
+                this._i18n = value;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        TemplateView.prototype.cleanParameters = function () {
+            this._params = null;
+        };
+        TemplateView.prototype.setParameters = function (value) {
+            this._params = _.defaults(this._params || {}, value);
+        };
+        TemplateView.prototype.applyParameters = function () {
+            _.each(this._params, this.applyParameter, this);
+        };
+        TemplateView.prototype.applyParameter = function (value, key) {
+            var ctx = this.parent || this;
+            switch (key) {
+                case ft.TemplateParams.setData:
+                    this.data = this.getParameterValue(value, ctx);
+                    break;
+                case ft.TemplateParams.setModel:
+                    this.model = this.getParameterValue(value, ctx);
+                    break;
+                case ft.TemplateParams.setStateSelected:
+                    this.setState('selected', !!this.getParameterValue(value, ctx, this));
+                    break;
+                case ft.TemplateParams.enableStateHandlers:
+                    this.enableStateHandlers(value.split(','));
+                    break;
+                default:
+                    // direct set parameters for root
+                    if (key in this) {
+                        if (_.isFunction(this[key]))
+                            this[key](value);
+                        else
+                            this[key] = value;
+                    }
+                    else {
+                        console.warn('Cant set template view parameter ', key);
+                    }
+                    break;
             }
-            else {
-                console.warn('Cant set parameter, not found in ', name, ' param ', name);
-            }
+        };
+        TemplateView.prototype.getParameterValue = function (value, ctx, child) {
+            if (child)
+                ctx.ctx = child;
+            return _.isObject(value) ? ctx.getExpressionValue(value) : value;
+        };
+        TemplateView.prototype.setTreeElementPath = function (path, value) {
+            if (!this._treeElementMapByPath)
+                this._treeElementMapByPath = {};
+            this._treeElementMapByPath[path] = value;
         };
         TemplateView.prototype.isChangedDynamicProperty = function (name) {
             var value = expression.getContextValue(name, this);
-            return !(this._prevDynamicProperiesMap[name] === value);
+            var r = !(this._prevDynamicProperiesMap[name] === value);
+            return r;
         };
         TemplateView.prototype.setDynamicProperty = function (name, value) {
             this._dynamicPropertiesMap[name] = value;
         };
         TemplateView.prototype.createDom = function () {
+            if (this._element)
+                return;
+            var start = getTime();
+            var parentParams = this.domDef ? this.domDef.params : null;
+            var localParams = this.localDomDef ? this.localDomDef.params : null;
+            this.setParameters(_.extend({}, localParams, parentParams));
             var e = ft.templateHelper.createTreeObject(this._template.domTree, this);
             var element = e instanceof TemplateView ? e.getElement() : e;
-            //templateHelper.setDataTreeObject(this._template.domTree, this);
             this.setElement(element);
+            this.setTreeElementPath('0', this);
+            counters.createDom++;
+            timers.createDom += getTime() - start;
         };
         TemplateView.prototype.enter = function () {
-            var _this = this;
-            if (this.inDocument)
-                return console.warn('Error, try to reenter ', this.name);
+            if (this.inDocument) {
+                return console.warn('Error, try to re-enter ', this.name);
+            }
+            var start = getTime();
             _super.prototype.enter.call(this);
+            this.applyParameters();
+            ft.templateHelper.setDataTreeObject(this._template.domTree, this);
+            counters.setData++;
+            timers.setData += getTime() - start;
+            ft.templateHelper.enterTreeObject(this._template.domTree, this);
+            this.invalidate(fmvc.InvalidateType.Data);
+            this.invalidate(fmvc.InvalidateType.State);
+            counters.enter++;
+            timers.enter += getTime() - start;
+        };
+        TemplateView.prototype.enableStateHandlers = function (value) {
+            var _this = this;
             var stateHandlers = {
                 hover: {
                     mouseover: function () { return _this.setState('hover', true); },
@@ -87,44 +173,40 @@ var ft;
                     click: function () { return _this.setState('selected', !_this.getState('selected')); }
                 }
             };
-            _.each(stateHandlers, function (v, state) { return _.each(v, function (handler, event) { return _this.on(event, handler); }, _this); }, this);
-            ft.templateHelper.enterTreeObject(this._template.domTree, this);
-            ft.templateHelper.setDataTreeObject(this._template.domTree, this);
+            _.each(value, function (state) { return _.each(stateHandlers[state], function (handler, event) { return _this.on(event, handler); }, _this); }, this);
         };
         TemplateView.prototype.exit = function () {
-            _super.prototype.exit.call(this);
+            if (!this.inDocument) {
+                return console.warn('Error, try re-exit');
+            }
+            ft.templateHelper.exitTreeObject(this._template.domTree, this);
             this.parent = null;
-            this.parentDomDef = null;
+            this.domDef = null;
         };
         TemplateView.prototype.getTemplate = function () {
             return this._template;
         };
         TemplateView.prototype.getDomDefinitionByPath = function (path) {
-            var parts = path.split(',').splice(1);
-            return _.reduce(parts, function (m, v) { return (m.children[Number(v)]); }, this.getTemplate().domTree);
+            return this._template.pathMap[path];
         };
-        TemplateView.prototype.getElementByPath = function (value) {
-            return this._elementMapByPath ? this._elementMapByPath[value] : null;
-        };
-        TemplateView.prototype.getComponentByPath = function (value) {
-            return this._componentMapByPath ? this._componentMapByPath[value] : null;
+        TemplateView.prototype.getTreeElementByPath = function (value) {
+            return this._treeElementMapByPath ? this._treeElementMapByPath[value] : null;
         };
         TemplateView.prototype.getExpressionValue = function (ex) {
-            console.log('getExpressionValue, object, ex', ex);
             var exObj = this.getTemplate().expressionMap[ex.name];
             var result = expression.execute(exObj, this.getTemplate().expressionMap, this);
             return result;
         };
-        TemplateView.prototype.getClassExpressionValue = function (ex) {
+        TemplateView.prototype.getCssClassExpressionValue = function (ex) {
             var exObj = this.getTemplate().expressionMap[ex.name];
             var result = expression.execute(exObj, this.getTemplate().expressionMap, this, true);
             return result;
         };
         TemplateView.prototype.getPathClassValue = function (path, name) {
-            return this._classMap[path + '-' + name] || null;
+            return this._cssClassMap[path + '-' + name] || null;
         };
         TemplateView.prototype.setPathClassValue = function (path, name, value) {
-            this._classMap[path + '-' + name] = value;
+            this._cssClassMap[path + '-' + name] = value;
         };
         TemplateView.prototype.setTemplateElementProperty = function (name, value) {
             if (!this[name]) {
@@ -136,55 +218,54 @@ var ft;
                 throw Error('Can not set name:' + name + ' property, cause it exist ' + this[name]);
             }
         };
-        TemplateView.prototype.setPathOfCreatedElement = function (path, value) {
-            if ('getElement' in value) {
-                if (!this._componentMapByPath)
-                    this._componentMapByPath = {};
-                this._componentMapByPath[path] = value;
-            }
-            else {
-                if (!this._elementMapByPath)
-                    this._elementMapByPath = {};
-                this._elementMapByPath[path] = value;
-            }
+        TemplateView.prototype.getChildrenViewByPath = function (path) {
+            return this._dataChildren ? this._dataChildren[path] : null;
         };
-        TemplateView.prototype.getDataChildrenByPath = function (path) {
-            return this._dataChildrenMap ? this._dataChildrenMap[path] : null;
-        };
-        TemplateView.prototype.setDataChildrenByPath = function (path, children) {
-            if (!this._dataChildrenMap)
-                this._dataChildrenMap = {};
-            this._dataChildrenMap[path] = children;
+        TemplateView.prototype.setChildrenViewPath = function (path, children) {
+            if (!this._dataChildren)
+                this._dataChildren = {};
+            this._dataChildren[path] = children;
         };
         TemplateView.prototype.getFormattedMessage = function (name, args) {
             var formattedTemplate = (this._template && this._template.i18n && this._template.i18n[name]) ? this._template.i18n[name] : null
                 || (this._i18n && this._i18n[name]) ? this._i18n[name] : null;
             if (!formattedTemplate)
-                return 'Error: not found';
+                return 'Error: TemplateView.getFormattedMessage, formattedTemplate not found';
             var formatter = getFormatter(formattedTemplate);
             return formatter(args);
         };
         TemplateView.prototype.canValidate = function (type) {
             var result = this.inDocument;
-            // if(type===fmvc.InvalidateType.Data) result = result && !!this.data;
             return result;
         };
         TemplateView.prototype.validate = function () {
+            var start = getTime();
             if (!_.isEmpty(this._dynamicPropertiesMap)) {
                 _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
                 this._dynamicPropertiesMap = {};
             }
-            _super.prototype.validate.call(this);
-            //console.log('Update tree ', this.inDocument);
-            this.validateRecreateTree();
-            if (this.canValidate())
-                ft.templateHelper.updateDynamicTree(this);
-        };
-        TemplateView.prototype.validateRecreateTree = function () {
             ft.templateHelper.createTreeObject(this._template.domTree, this);
+            _super.prototype.validate.call(this);
+            var result = getTime() - start;
+            counters.validate++;
+            timers.validate += result;
+            //if (this.canValidate()) templateHelper.updateDynamicTree(this);
         };
         TemplateView.prototype.validateData = function () {
-            //if (this.canValidate(fmvc.InvalidateType.Data))
+            if (this.canValidate(fmvc.InvalidateType.Data)) {
+                counters.validateData++;
+                ft.templateHelper.updateDynamicTree(this, 'data');
+            }
+        };
+        TemplateView.prototype.validateState = function () {
+            if (this.canValidate(fmvc.InvalidateType.Data)) {
+                counters.validateState++;
+                ft.templateHelper.updateDynamicTree(this, 'state');
+            }
+        };
+        TemplateView.prototype.validateParent = function () {
+        };
+        TemplateView.prototype.validateChildren = function () {
         };
         TemplateView.prototype.eval = function (value) {
             var r = null;
@@ -197,7 +278,6 @@ var ft;
             return r;
         };
         TemplateView.prototype.evalHandler = function (value, e) {
-            //console.log('event handler: ', value, e);
             var r = eval(value);
             return r;
         };
@@ -217,63 +297,50 @@ var ft;
         };
         TemplateView.prototype.on = function (event, handler, path) {
             if (path === void 0) { path = '0'; }
-            if (!this._dynamicHandlers)
-                this._dynamicHandlers = {};
-            if (path && !this._dynamicHandlers[path])
-                this._dynamicHandlers[path] = {};
-            var handlers = this._dynamicHandlers[path][event] ? this._dynamicHandlers[path][event] : [];
+            if (!this._localHandlers)
+                this._localHandlers = {};
+            if (path && !this._localHandlers[path])
+                this._localHandlers[path] = {};
+            var handlers = this._localHandlers[path][event] ? this._localHandlers[path][event] : [];
             handlers.push(handler);
-            this._dynamicHandlers[path][event] = handlers;
+            this._localHandlers[path][event] = handlers;
         };
         TemplateView.prototype.off = function (event, path) {
             if (path === void 0) { path = '0'; }
             if (!path)
                 path = '0';
-            delete this._dynamicHandlers[path][event];
+            delete this._localHandlers[path][event];
         };
         TemplateView.prototype.trigger = function (e, path) {
             var _this = this;
             if (path === void 0) { path = '0'; }
-            var h = this._dynamicHandlers ? this._dynamicHandlers[path] : null;
-            console.log('Trigger ', e.currentTarget ? e.currentTarget.name : name, e, h);
+            var h = this._localHandlers ? this._localHandlers[path] : null;
             if (h && h[e.name]) {
-                console.log('Has trigger ... ', h[e.name]);
                 var handlers = h[e.name];
                 _.each(handlers, function (v) { return v.call(_this, e); }, this);
             }
         };
-        TemplateView.prototype.handleTreeEvent = function (e, path) {
-            //console.log('Handle tree event ... ', e);
+        TemplateView.prototype.handleTreeEvent = function (e) {
             e.currentTarget = this; // previous dispatch
             e.depth--;
-            ft.templateHelper.dispatchTreeEvent(e, path); // dispatch to tree
             if (!e.cancelled)
                 this.trigger(e); // dispatch to this component(dynamic handlers);
             if (e.prevented && e.e)
                 e.e.preventDefault();
             e.previousTarget = this;
-            if (e.depth > 0 && !e.cancelled)
-                this.dispatchTreeEvent(e); // dispatch to parent
-            else
-                dispatcher.disposeEvent(e);
         };
         // custom event this.send(name, data), send stateChange event
         TemplateView.prototype.dispatchTreeEvent = function (e) {
-            console.log('Try dispatch to parent tree event ...', this, this.parent);
-            if (this.parent)
-                this.parent.handleTreeEvent(e, this.parentDomDef ? this.parentDomDef.path : null); // dispatch to parent
+            e.target = this;
+            e.def = e.def || this.localDomDef;
+            ft.templateHelper.dispatchTreeEventDown(e);
         };
         TemplateView.prototype.getCustomTreeEvent = function (name, data, depth) {
             if (data === void 0) { data = null; }
             if (depth === void 0) { depth = 1; }
             return dispatcher.getCustomTreeEvent(name, data, this, depth);
         };
-        TemplateView.prototype.sendTreeEvent = function (name, data, depth) {
-            this.dispatchTreeEvent(this.getCustomTreeEvent(name, data, depth));
-            this.sendEvent(name, data);
-        };
         TemplateView.prototype.internalHandler = function (type, e) {
-            console.log('Internal handler ', this, type, e);
             if (this.parent)
                 this.parent.internalHandler(type, e);
         };

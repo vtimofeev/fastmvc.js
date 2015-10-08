@@ -28,26 +28,42 @@ module ft {
 
     export class EventDispatcher  {
         private eventMap:{[event:string]:boolean} = {};
-        private idMap;
+        private viewHelper:TemplateViewHelper;
 
-        constructor (idMap:any) {
-            this.idMap = idMap;
+        constructor(viewHelper:TemplateViewHelper) {
+            this.viewHelper = viewHelper;
             _.bindAll(this, 'browserHandler');
             _.each(_.values(BrowserEvent), this.on, this);
         }
 
-        public browserHandler(e):void {
-            //console.log('Browser ', e.type,  e.target);
+        public browserHandler(e:any):void {
             var el:HTMLElement = e.target || e.currentTarget;
-            var id:string = el.getAttribute('id');
 
-            var view:ITemplateView = this.idMap[id];
+            var pathId:string = el.getAttribute(AttributePathId);
+            var pathDefinition = this.viewHelper.getPathDefinitionByPathId(pathId);
+            //console.log('Trigger ', e.type, pathId, pathDefinition);
+
+
+            if (pathDefinition){
+                var event:ITreeEvent = this.getTreeEventByEvent(e.type, pathDefinition.data, pathDefinition.root, e);
+                this.viewHelper.dispatchTreeEventDown(event);
+            }
+            /*
             if(view) view.handleTreeEvent(this.getTreeEventByBrowserEvent(e, view));
-            else if(id) console.warn('View not found for id: ' , id);
+            else if(pathId) console.warn('View not found for id: ' , pathId);
+            */
         }
 
-        private getTreeEventByBrowserEvent(e, view:ITemplateView):ITreeEvent {
-            return {name: e.type, target:view, previousTarget: null, currentTarget:view, e: e, cancelled:false, prevented:false, depth: 1e2};
+
+        /**
+         * @param name
+         * @param def
+         * @param view
+         * @param e
+         * @returns {{name: string, target: ITemplateView, def: IDomDef, previousTarget: null, currentTarget: ITemplateView, e: any, cancelled: boolean, prevented: boolean, depth: number}}
+         */
+        private getTreeEventByEvent(name:string, def:IDomDef, view:ITemplateView, e:any):ITreeEvent {
+            return {name: name, target:view, def: def, e: e, cancelled:false, prevented:false, depth: 1e2};
         }
 
         public getCustomTreeEvent(name:string, data:any, view:ITemplateView, depth:number = 1):ITreeEvent {

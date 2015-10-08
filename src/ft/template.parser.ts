@@ -33,6 +33,7 @@ module ft {
             _.bindAll(this, 'parserHandler');
             this._htmlparserHandler = new htmlparser.HtmlBuilder(this.parserHandler, {caseSensitiveTags: true, caseSensitiveAttr: true});
             this._htmlParser = new htmlparser.Parser(this._htmlparserHandler /*, test.options.parser*/);
+            console.log('Component params ', this._componentParams);
         }
 
         private reset() {
@@ -89,6 +90,7 @@ module ft {
             _.each(o.attribs, function(value:any, key:string) {
                if(skipped.indexOf(key) >= 0 || !(value = value?value.trim():value)) return;
                var group = this.getAttribGroup(key);
+                console.log('Attrib group ' , key, group);
                var groupKey = this.getGroupKey(key, group);
                def[group][groupKey] = this.parseExpressionAttrib(value, key, r.expressionMap, path, group);
             }, this);
@@ -105,7 +107,6 @@ module ft {
         }
 
         getAttribGroup(name:string):string {
-
 
             if(name.indexOf('on') === 0) {
                 return 'handlers';

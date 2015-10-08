@@ -66,22 +66,22 @@ var ft;
         Expression.prototype.getContextValue = function (v, context) {
             var r;
             if (typeof v === 'string') {
-                /*
-                var boolTrue = v.indexOf('!!') === 0;
-                if(boolTrue) v = v.substring(2);
-                var boolFalse = v.indexOf('!') === 0;
-                if(boolFalse) v = v.substring(1);
-                */
                 if (v.indexOf('data.') === 0 || v.indexOf('app.') === 0) {
                     r = context.eval('this.' + v);
+                    if (r === undefined)
+                        r = null;
                     context.setDynamicProperty(v, r);
                 }
                 else if (v.indexOf('state.') === 0) {
                     r = context.getState(v.replace('state.', ''));
+                    if (r === undefined)
+                        r = null;
                     context.setDynamicProperty(v, r);
                 }
                 else if (v === 'data') {
                     r = context.data;
+                    if (r === undefined)
+                        r = null;
                     context.setDynamicProperty(v, r);
                 }
                 else if (v.indexOf('(') === 0) {
@@ -184,7 +184,6 @@ var ft;
             _.each(vars, function (v) { return _.isObject(v) ? result.vars = [].concat(result.vars, v.vars) : result.vars.push(v); });
             // remove empty keys
             _.each(_.keys(result), function (key) { return (_.isEmpty(result[key]) ? delete result[key] : null); });
-            console.log('Expression content: ', result);
             return result;
         };
         Expression.prototype.tryParseRoundBracketExpression = function (value, index) {
@@ -198,14 +197,11 @@ var ft;
             if (expression.indexOf('this') > -1)
                 return expression;
             var variables = _.compact(_.filter(_.map(expression.match(this.VariableMatchRe), function (v) { return v.trim(); }), function (v) { return (v.indexOf('\'') < 0 && v.indexOf('"') < 0 && v.match(/^[A-Za-z]+/gi)); }));
-            //console.log(variables);
-            //if (!_.isEmpty(variables)) variables = variables.sort((a:string, b:string)=>a.length > b.length ? -1 : 1);
             var convertedExpression = _.reduce(variables, function (memo, v) {
                 var requestVariable = ((v.indexOf('.') > -1 && v.indexOf('state.') === -1) || v === 'data' ? ('this.' + v) :
                     (v.indexOf('state.') > -1 ? ('this.getState("' + v.replace('state.', '') + '")') : ''));
                 return memo.replace(new RegExp(v, 'g'), requestVariable);
             }, expression, this);
-            //console.log('Expressions ... ', value, expressions, 'result', convertedExpression);
             return { content: expression, expression: convertedExpression, vars: variables };
         };
         Expression.prototype.parseArguments = function (value) {

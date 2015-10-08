@@ -12,37 +12,41 @@ interface ITemplateTestObject {
 
 describe('ft - component package ',function() {
     var dataSimple = 'text';
-    var dataUser = {name: 'Vasily', age: 33};
+    var dataUser = {name: 'Vasily', age: 34};
     var statesDefault = {base: 'button', hover: false};
     var statesActive = {base: 'button', hover: true};
     var statesStyle = {top: 100, bottom: 200};
 
     var buttonsDs = [
-        { title: 'One', action: 'clickOne'},
-        { title: 'Two', action: 'clickTwo'}
+        { title: 'Один (локальный)', action: 'clickOne'},
+        { title: 'Два (локальный)', action: 'clickTwo'}
     ];
 
     var buttonsDs2 = [
-        { title: 'Three', action: 'clickThree'},
-        { title: 'Four', action: 'clickFour'}
+        { title: 'Три (локальный)', action: 'clickThree'},
+        { title: 'Четыре (локальный)', action: 'clickFour'}
     ];
 
-    var buttonReset = {title: 'dataReset', action: 'actionReset'};
+    var buttonReset = {title: 'Очистить (локальный)', action: 'actionReset'};
 
 
     var templateObjs = {
         "ft.DataButton": {
-            content: '<div onclick="selected" onmousedown="{(alert(1000);)}" class="button button-{state.selected} button-{state.hover}">{data.title}</div>',
+            content: '<div .enableStateHandlers="hover,selected" onclick="selected" class="button button-{state.selected} button-{state.hover}">{data.title}</div>',
         },
         "ft.ButtonGroup": {
-            content: '<div>' +
-                '<div class="button-{state.hover}" onmouseover="{console.log(\'group header over\');}">Group header</div>' +
-                '<div states="{data.selected}">Selected is {data.selected.title}</div>' +
-                '<div ln="childrenContainer" children.class="ft.DataButton" children.data="{data.children}"></div>' +
-                '<ft.DataButton .data="{data.reset}" state.selected="{data.selected}" onclick="reset">Reset</ft.DataButton>' +
-                '<ft.DataButton states="{(!this.data.selected)}">Delete visible when data.selected not null</ft.DataButton>' +
-                '<div onclick="next">Select next</div>' +
-                '<div onclick="prev">Select prev</div>' +
+            content: '<div .enableStateHandlers="hover" >' +
+                '<div class="button-{state.hover}">Заголовок с подсветкой</div>' +
+
+                '<div states="{data.selected}">Выбран элемент {data.selected.title}</div>' +
+                '<div states="{(!data.selected)}">Нет выбранного элемнта (глобальный-кнопка)</div>' +
+
+                '<ft.DataButton states="{data.selected}"> Выбран узел (глобальный) </ft.DataButton>' +
+                '<ft.DataButton states="{(!data.selected)}"> Нет узла (глобальный) </ft.DataButton>' +
+
+                '<div ln="childrenContainer" children.enableStateHandlers="hover" children.state.selected="{(ctx.data===data.selected)}" children.class="ft.DataButton" children.data="{data.children}"></div>' +
+                '<ft.DataButton .enableStateHandlers="hover" .data="{data.reset}" state.selected="{data.selected}" onclick="reset"> Очистить (глобальный) </ft.DataButton>' +
+
                 '</div>',
             data: {children: buttonsDs, selected: buttonsDs[0], reset: buttonReset},
             action: 'create'
@@ -75,6 +79,7 @@ describe('ft - component package ',function() {
                 instance.data.children = buttonsDs2;
                 instance.invalidate(fmvc.InvalidateType.Data);
                 instance.internalHandler = function(type, e) {
+                    console.log('Dispatch internal handler execute for ', type, e);
                     if(type === 'selected') {
                         instance.data.selected = e.target.data;
                         instance.invalidate(fmvc.InvalidateType.Data);

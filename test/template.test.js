@@ -26,7 +26,8 @@ describe('ft - template package ', function () {
             result: '<div>text</div>'
         },
         complexDataTemplate: {
-            content: '<div>Hello [{data.name}-{data.age}] {(data.age>30?"old man":"young man")}! Now <b>{data.name} became SUPERMAN!</b></div>', data: dataUser,
+            content: '<div>Hello [{data.name}-{data.age}] {(data.age>30?"old man":"young man")}! Now <b>{data.name} became SUPERMAN!</b></div>',
+            data: dataUser,
             result: '<div>Hello [Vasily-33] old man! Now <b>Vasily became SUPERMAN!</b></div>'
         },
         staticClassTemplate: {
@@ -34,11 +35,13 @@ describe('ft - template package ', function () {
             result: '<div class="base base-hover"></div>'
         },
         dynamicClassTemplate: {
-            content: '<div class="base base-hover {state.base} {state.base}-{state.hover}"></div>', states: statesDefault,
+            content: '<div class="base base-hover {state.base} {state.base}-{state.hover}"></div>',
+            states: statesDefault,
             result: '<div class="base base-hover button"></div>'
         },
         dynamicActiveClassTemplate: {
-            content: '<div class="base base-hover {state.base} {state.base}-{state.hover}"></div>', states: statesActive,
+            content: '<div class="base base-hover {state.base} {state.base}-{state.hover}"></div>',
+            states: statesActive,
             result: '<div class="base base-hover button button-hover"></div>'
         },
         staticStyleTemplate: {
@@ -46,7 +49,8 @@ describe('ft - template package ', function () {
             result: '<div style="top: 0px; bottom: 0px; position: absolute;"></div>'
         },
         dynamicStyleTemplate: {
-            content: '<div style="top:{state.top}px;bottom:{state.bottom}px;position: absolute;"></div>', states: statesStyle,
+            content: '<div style="top:{state.top}px;bottom:{state.bottom}px;position: absolute;"></div>',
+            states: statesStyle,
             result: '<div style="top: 100px; bottom: 200px; position: absolute;"></div>'
         },
         complexTemplate: {
@@ -58,16 +62,42 @@ describe('ft - template package ', function () {
     };
     var templateHandlerObjs = {
         simpleHandlerTemplate: {
-            content: '<div onclick="{var a=1; alert(a + \'click\');}">' +
-                '<div onclick="{alert(\'first\');}"><div onclick="logByClick">The click div!</div></div>' +
+            content: '<div onclick="{this.increment()}">' +
+                '<div onclick="{this.increment()}">' +
+                '<div  onclick="{this.increment()}"><b class="bolded" onclick="{this.increment()}">Triggers count {state.counter}!</b></div><div>Simple text tag has 2 handlers</div>' +
+                '</div>' +
                 '</div>',
+            extends: {
+                increment: function () {
+                    var counter = this.getState('counter');
+                    this.setState('counter', ++counter);
+                },
+                reset: function () {
+                    this.setState('counter', 0);
+                }
+            },
             result: '<div>Click!</div>'
+        },
+    };
+    var performanceObjs = {
+        simpleHello: {
+            content: '<div>{data}</div>',
+            data: 'hello',
+            result: '<div>hello</div>'
+        },
+    };
+    var statesObjs = {
+        simpleState: {
+            content: '<div class="button button-{state.hover}">{data} ' +
+                '<div states="{state.hover}">Close</div>' +
+                '</div>',
+            data: 'hello button'
         },
     };
     var tm = ft.templateManager;
     /*
-    var statesTmpl:string = '<div title="hello" value="{state.hover}" class="component {state.base} {state.base}-{state.hover} component-{state.hover}" style="top: {state.top}px; bottom: {state.bottom}px">{(state.hover?"hovered":"not hovered")}</div>';
-    */
+     var statesTmpl:string = '<div title="hello" value="{state.hover}" class="component {state.base} {state.base}-{state.hover} component-{state.hover}" style="top: {state.top}px; bottom: {state.bottom}px">{(state.hover?"hovered":"not hovered")}</div>';
+     */
     describe('template view parser', function () {
         it('should create dom', function () {
             var parser = new ft.TemplateParser();
@@ -130,8 +160,10 @@ describe('ft - template package ', function () {
             assert.equal(r3, true, 'should be equal ');
             assert.strictEqual(r4, 100, 'should be equal ');
             template.setState('hover', false);
+            console.log(template.getState('hover'), ' get state hover !!!');
             var r3 = expression.execute({ name: ex3.name }, map, template);
             var r4 = expression.execute({ name: ex4.name }, map, template);
+            console.log('Ex3', ex3, r3, template);
             assert.equal(r3, false, 'should be equal ');
             assert.strictEqual(r4, 0, 'should be equal ');
             template.model.setData({ name: 1000, age: 999 });
@@ -178,12 +210,59 @@ describe('ft - template package ', function () {
             it('should create handler instances ' + key, function () {
                 var CreateTemplate = tm.createTemplate(key, obj.content);
                 var params = { setStates: obj.states, data: obj.data };
-                var inst = CreateTemplate('view', params);
                 var container = document.getElementById('template-container');
                 container.innerHTML = '';
-                console.log('inst ', inst);
+                var inst = CreateTemplate('view', params);
+                _.each(obj.extends, function (v, k) { return inst[k] = v; });
+                inst.reset();
+                inst.on('click', inst.increment);
+                inst.dispatchTreeEvent({ name: 'click', def: inst.getDomDefinitionByPath('0,0,0,0') });
                 inst.render(container);
-                assert.strictEqual(container.innerHTML, obj.result, 'should be equal');
+                assert.strictEqual(inst.getState('counter'), 5, 'should be equal');
+            });
+        });
+    });
+    describe('template performance', function () {
+        _.each(performanceObjs, function (obj, key) {
+            it('check performance ' + key, function () {
+                var CreateTemplate = tm.createTemplate(key, obj.content);
+                var params = { data: obj.data };
+                var container = document.getElementById('template-container');
+                container.innerHTML = '';
+                var startTime = new Date();
+                for (var i = 0; i < 1000; i++) {
+                    var inst = CreateTemplate('view', params);
+                    inst.render(container);
+                }
+                var resultTime = new Date() - startTime;
+                console.log('Perfomance of ', key, ' is ', resultTime);
+                container.innerHTML = '';
+                assert(resultTime < 1000, 'should be less 1 s');
+            });
+        });
+    });
+    describe('states test', function () {
+        _.each(statesObjs, function (obj, key) {
+            it('check states ' + key, function () {
+                var CreateTemplate = tm.createTemplate(key, obj.content);
+                var params = { data: obj.data };
+                var container = document.getElementById('template-container');
+                container.innerHTML = '';
+                var inst = CreateTemplate('view', params);
+                inst.render(container);
+                console.log('states instance ', inst);
+                assert(inst.getElement().innerHTML.indexOf('Close') === -1, 'state must be disabled');
+                var startTime = new Date();
+                for (var i = 0; i < 1000; i++) {
+                    inst.setState('hover', true);
+                    inst.validate();
+                    inst.setState('hover', false);
+                    inst.validate();
+                }
+                var resultTime = new Date() - startTime;
+                console.log('Performance of ', key, ' is ', resultTime);
+                assert(inst.getElement().innerHTML.indexOf('Close') > 0, 'state must be ebabled');
+                //container.innerHTML = '';
             });
         });
     });

@@ -18,6 +18,22 @@ var fmvc;
         I18n: 128,
         All: (1 | 2 | 4 | 8 | 16 | 32 | 64 | 128)
     };
+    var nextFrameHandlers = [];
+    function nextFrameHandler(handler, context) {
+        var params = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            params[_i - 2] = arguments[_i];
+        }
+        var result = function () { return handler.apply(context, params); };
+        nextFrameHandlers.push(result);
+        if (nextFrameHandlers.length === 1)
+            window.requestAnimationFrame ? window.requestAnimationFrame(executeNextFrameHandlers) : setTimeout(executeNextFrameHandlers, 0);
+    }
+    fmvc.nextFrameHandler = nextFrameHandler;
+    function executeNextFrameHandlers(time) {
+        _.each(nextFrameHandlers, function (v, k) { return v(); });
+        nextFrameHandlers = [];
+    }
     var View = (function (_super) {
         __extends(View, _super);
         function View(name) {
@@ -68,7 +84,8 @@ var fmvc;
             return this;
         };
         View.prototype.getState = function (name) {
-            return this._states[name] || null;
+            //console.log('Get state ', name, ' states ' , this._states, ' r ', (this._states[name] || null));
+            return this._states[name];
         };
         Object.defineProperty(View.prototype, "model", {
             get: function () {
@@ -91,7 +108,10 @@ var fmvc;
             configurable: true
         });
         View.prototype.setData = function (value) {
+            if (this._data === value)
+                return this;
             this._data = value;
+            this.invalidate(fmvc.InvalidateType.Data);
             return this;
         };
         Object.defineProperty(View.prototype, "app", {
@@ -128,8 +148,7 @@ var fmvc;
             if (this._inDocument)
                 throw new Error('Cant enter, it is in document');
             this._inDocument = true;
-            console.log('Enter: ', this.name, this.inDocument);
-            this.invalidate(fmvc.InvalidateType.Data | fmvc.InvalidateType.Children);
+            //this.invalidate(InvalidateType.Data | InvalidateType.Children);
         };
         View.prototype.exit = function () {
             this._inDocument = false;
@@ -142,19 +161,18 @@ var fmvc;
             configurable: true
         });
         View.prototype.invalidate = function (value) {
-            console.log('Invalidate, ' + value);
+            console.log('Try invalidate ', this.name, value, this._isWaitingForValidate);
             this._invalidate = this._invalidate | value;
             if (!this._isWaitingForValidate) {
                 this._isWaitingForValidate = true;
-                setTimeout(this.validate, 0);
+                nextFrameHandler(this.validate, this);
             }
         };
         View.prototype.validate = function () {
-            console.log('Try to validate ', this._invalidate);
+            if (!this.inDocument)
+                return;
             if (!this._invalidate)
                 return;
-            if (this._invalidate)
-                this.validateRecreateTree();
             if (this._invalidate & fmvc.InvalidateType.Data)
                 this.validateData();
             if (this._invalidate & fmvc.InvalidateType.State)
@@ -173,7 +191,7 @@ var fmvc;
             this._invalidate = 0;
             this._isWaitingForValidate = false;
         };
-        View.prototype.validateRecreateTree = function () { };
+        //protected validateRecreateTree():void {}
         View.prototype.validateData = function () { };
         View.prototype.validateState = function () { };
         View.prototype.validateParent = function () { };
@@ -182,9 +200,8 @@ var fmvc;
         View.prototype.validateTemplate = function () { };
         View.prototype.render = function (element) {
             if (this._inDocument)
-                throw new Error('Cant render view, it is in document');
+                throw 'Cant render view, it is in document';
             this.createDom();
-            //console.log('Result', this.getElement().innerHTML);
             element.appendChild(this.getElement());
             this.enter();
             return this;

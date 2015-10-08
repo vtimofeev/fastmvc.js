@@ -23,24 +23,35 @@ var ft;
     ft.browserWindowEvents = [ft.BrowserEvent.KEYDOWN, ft.BrowserEvent.KEYUP];
     ft.specialEvents = [ft.SpecialEvent.ACTION];
     var EventDispatcher = (function () {
-        function EventDispatcher(idMap) {
+        function EventDispatcher(viewHelper) {
             this.eventMap = {};
-            this.idMap = idMap;
+            this.viewHelper = viewHelper;
             _.bindAll(this, 'browserHandler');
             _.each(_.values(ft.BrowserEvent), this.on, this);
         }
         EventDispatcher.prototype.browserHandler = function (e) {
-            //console.log('Browser ', e.type,  e.target);
             var el = e.target || e.currentTarget;
-            var id = el.getAttribute('id');
-            var view = this.idMap[id];
-            if (view)
-                view.handleTreeEvent(this.getTreeEventByBrowserEvent(e, view));
-            else if (id)
-                console.warn('View not found for id: ', id);
+            var pathId = el.getAttribute(ft.AttributePathId);
+            var pathDefinition = this.viewHelper.getPathDefinitionByPathId(pathId);
+            //console.log('Trigger ', e.type, pathId, pathDefinition);
+            if (pathDefinition) {
+                var event = this.getTreeEventByEvent(e.type, pathDefinition.data, pathDefinition.root, e);
+                this.viewHelper.dispatchTreeEventDown(event);
+            }
+            /*
+            if(view) view.handleTreeEvent(this.getTreeEventByBrowserEvent(e, view));
+            else if(pathId) console.warn('View not found for id: ' , pathId);
+            */
         };
-        EventDispatcher.prototype.getTreeEventByBrowserEvent = function (e, view) {
-            return { name: e.type, target: view, previousTarget: null, currentTarget: view, e: e, cancelled: false, prevented: false, depth: 1e2 };
+        /**
+         * @param name
+         * @param def
+         * @param view
+         * @param e
+         * @returns {{name: string, target: ITemplateView, def: IDomDef, previousTarget: null, currentTarget: ITemplateView, e: any, cancelled: boolean, prevented: boolean, depth: number}}
+         */
+        EventDispatcher.prototype.getTreeEventByEvent = function (name, def, view, e) {
+            return { name: name, target: view, def: def, e: e, cancelled: false, prevented: false, depth: 1e2 };
         };
         EventDispatcher.prototype.getCustomTreeEvent = function (name, data, view, depth) {
             if (depth === void 0) { depth = 1; }

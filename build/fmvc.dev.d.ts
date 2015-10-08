@@ -215,6 +215,7 @@ declare module fmvc {
         I18n: number;
         All: number;
     };
+    function nextFrameHandler(handler: Function, context: IView, ...params: any[]): void;
     class View extends Notifier implements IView {
         private _mediator;
         private _model;
@@ -247,7 +248,6 @@ declare module fmvc {
         isWaitingForValidate: boolean;
         invalidate(value: number): void;
         validate(): void;
-        protected validateRecreateTree(): void;
         protected validateData(): void;
         protected validateState(): void;
         protected validateParent(): void;

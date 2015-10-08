@@ -5,18 +5,27 @@ module ft {
     export type ExpressionValue = string|IExpression;
     export type ExpressionNameValue = string|IExpressionName;
 
+
+
+
     // Params of dom element or component
+
+
+
     export var TemplateParams = {
         ln:'ln', // create public field in TemplateView that has name as value
         states:'states', // state when object is created, '{state.selected}'
         setStates:'setStates', // View, 'selected,focused,disabled,hover,draggable,counter' or 'selected=true,focused=false,disabled=true,counter={data.counter},modelCounter={app.counter.data}'
         setState:'setState', // View, 'selected=true'
         setStateSelected:'state.selected', // View, 'true' or '{(this.getCustomComponentSelected(child.data))}' (expression)
+        enableStateHandlers:'.enableStateHandlers', // View 'hover,disabled,selected,focused',
         setData: '.data', // View
         setModel: '.model', // View
 
         childrenClass: 'children.class', // children constructor
         childrenSetStates: 'children.setStates', // '{this.data.selected===child.data}'
+        childrenEnableStateHandlers: 'children.enableStateHandlers',
+        childrenSetStateSelected: 'children.state.selected',
         childrenData: 'children.data', // children data array (context parent or app)
         childrenModel: 'children.model', // children model array (context parent or app)
 
@@ -40,13 +49,13 @@ module ft {
     }
 
     export interface ITemplateViewHelper {
-        getIdMap():{[id:string]:ITemplateView}
+        //getIdMap():{[id:string]:ITemplateView}
         createTreeObject:IGetTreeObjectFunctor;
         enterTreeObject:IGetTreeObjectFunctor;
         exitTreeObject:IGetTreeObjectFunctor;
         setDataTreeObject:IGetTreeObjectFunctor;
-        updateDynamicTree(view:ITemplateView):void;
-        dispatchTreeEvent(e:ITreeEvent):void;
+        updateDynamicTree(view:ITemplateView, group?:string):void;
+        dispatchTreeEventDown(e:ITreeEvent):void;
     }
 
     export interface IHtmlObject {
@@ -142,29 +151,33 @@ module ft {
 
     export interface ITemplateView extends fmvc.IView {
         parent:ITemplateView;
-        parentDomDef:IDomDef;
+        domDef:IDomDef;
+        localDomDef:IDomDef;
 
         eval(value:string):any;
-        evalHandler(value:string, e:any):any;
+
         //getValue(value:any):any;
         getTemplate():ITemplate;
+        getTreeElementByPath(value:string):TreeElement;
+        setTreeElementPath(path:string, value:TreeElement):void;
+
         getFormattedMessage(name:string,arguments:any[]):string;
         getExpressionValue(ex:IExpressionName);
-        getClassExpressionValue(ex:IExpressionName);
+        getCssClassExpressionValue(ex:IExpressionName);
 
         getDomDefinitionByPath(path:string):IDomDef;
-
         isChangedDynamicProperty(value:string);
 
-        getElementByPath(value:string):HTMLElement;
-        setDataChildrenByPath(path:string, value:ITemplateView[]):void;
-        getDataChildrenByPath(path:string):ITemplateView[];
+        setChildrenViewPath(path:string, value:TemplateViewChildren):void;
+        getChildrenViewByPath(path:string):TemplateViewChildren;
 
         setDynamicProperty(name:string, value:any);
 
         getPathClassValue(path:string, name:string):string;
         setPathClassValue(path:string, name:string, value:string);
-        setPathOfCreatedElement(path:string, value:TreeElement):void;
+
+        applyParameter(value:any, key:string):void;
+
 
         on(event, handler, path?:string);
         off(event, handler?, path?:string);
@@ -222,6 +235,11 @@ module ft {
 
     export interface ITreeEvent extends fmvc.IEvent {
         e?:any; /* browser event */
+        //target:fmvc.Notifier; fmvc.IEvent
+
+        def:IDomDef; // from which node we start dispatch event
+        currentDef?:IDomDef; // On tree
+
         previousTarget?:fmvc.INotifier;
         currentTarget?:fmvc.INotifier; // target component
         cancelled:boolean; // browser event type or custom event type

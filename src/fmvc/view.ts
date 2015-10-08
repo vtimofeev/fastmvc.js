@@ -9,9 +9,20 @@ module fmvc {
         Template: 32,
         Theme: 64,
         I18n: 128,
-
         All: (1 | 2 | 4 | 8 | 16| 32 | 64 | 128)
     };
+
+    var nextFrameHandlers:Function[] = [];
+    export function nextFrameHandler(handler:Function, context:IView, ...params:any[]) {
+        var result = ()=>handler.apply(context, params);
+        nextFrameHandlers.push(result);
+        if(nextFrameHandlers.length === 1) window.requestAnimationFrame?window.requestAnimationFrame(executeNextFrameHandlers):setTimeout(executeNextFrameHandlers,0);
+    }
+    function executeNextFrameHandlers(time:number):void {
+        _.each(nextFrameHandlers,(v:Function, k:number)=>v());
+        nextFrameHandlers = [];
+    }
+
 
     export class View extends Notifier implements IView {
         private _mediator:Mediator;
@@ -73,7 +84,8 @@ module fmvc {
         }
 
         public getState(name:string):any {
-            return this._states[name] || null;
+            //console.log('Get state ', name, ' states ' , this._states, ' r ', (this._states[name] || null));
+            return this._states[name];
         }
 
         public set model(value:Model) {
@@ -85,7 +97,9 @@ module fmvc {
         }
 
         public setData(value:any):IView {
+            if(this._data === value) return this;
             this._data = value;
+            this.invalidate(InvalidateType.Data);
             return this;
         }
 
@@ -131,9 +145,7 @@ module fmvc {
         public enter():void {
             if(this._inDocument) throw new Error('Cant enter, it is in document');
             this._inDocument = true;
-            console.log('Enter: ', this.name, this.inDocument);
-
-            this.invalidate(InvalidateType.Data | InvalidateType.Children);
+            //this.invalidate(InvalidateType.Data | InvalidateType.Children);
         }
 
         public exit():void {
@@ -145,25 +157,23 @@ module fmvc {
         }
 
         public invalidate(value:number):void {
-            console.log('Invalidate, ' + value);
+            console.log('Try invalidate ', this.name, value, this._isWaitingForValidate);
             this._invalidate = this._invalidate | value;
-
             if(!this._isWaitingForValidate) {
                 this._isWaitingForValidate = true;
-                setTimeout(this.validate, 0);
+                nextFrameHandler(this.validate, this);
             }
         }
 
         public validate():void {
-            console.log('Try to validate ', this._invalidate);
+            if(!this.inDocument) return;
             if(!this._invalidate) return;
-            if(this._invalidate) this.validateRecreateTree();
 
-            if(this._invalidate & InvalidateType.Data) this.validateData();
-            if(this._invalidate & InvalidateType.State) this.validateState();
-            if(this._invalidate & InvalidateType.Parent) this.validateParent();
-            if(this._invalidate & InvalidateType.Children) this.validateChildren();
-            if(this._invalidate & InvalidateType.App) this.validateApp();
+                if (this._invalidate & InvalidateType.Data) this.validateData();
+                if (this._invalidate & InvalidateType.State) this.validateState();
+                if (this._invalidate & InvalidateType.Parent) this.validateParent();
+                if (this._invalidate & InvalidateType.Children) this.validateChildren();
+                if (this._invalidate & InvalidateType.App) this.validateApp();
             /*
             if(this._invalidate & InvalidateType.Template) this.validateTemplate();
             if(this._invalidate & InvalidateType.Theme) this.validateTheme();
@@ -173,7 +183,7 @@ module fmvc {
             this._isWaitingForValidate = false;
         }
 
-        protected validateRecreateTree():void {}
+        //protected validateRecreateTree():void {}
         protected validateData():void {}
         protected validateState():void {}
         protected validateParent():void {}
@@ -182,9 +192,8 @@ module fmvc {
         protected validateTemplate():void {}
 
         public render(element:Element):IView {
-            if(this._inDocument) throw new Error('Cant render view, it is in document');
+            if(this._inDocument) throw 'Cant render view, it is in document';
             this.createDom();
-            //console.log('Result', this.getElement().innerHTML);
             element.appendChild(this.getElement());
             this.enter();
             return this;
