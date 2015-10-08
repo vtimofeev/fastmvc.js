@@ -174,7 +174,6 @@ module ft {
             return ((isIncluded && treeElement && !this.isCommentElement(treeElement)) ? 0 : isIncluded ? 1 : -1);
         }
 
-
         enterTreeObjectFunc(object:TreeElement, data:IDomDef, root:ITemplateView) {
             if (object && object instanceof TemplateView && !object.inDocument) {
                 object.enter();
@@ -183,10 +182,6 @@ module ft {
             if (this.hasChildrenView(data, root)) {
                 var childrenView:TemplateViewChildren = root.getChildrenViewByPath(data.path);
                 childrenView.enter();
-                /*
-                this.removeDataChildrenOfTreeObject(object, data, root);
-                this.createDataChildrenOfTreeObject(object, data, root);
-                */
             }
         }
 
@@ -332,7 +327,7 @@ module ft {
                 var domElementPathId:string = this.getNextId();
                 attrsResult[AttributePathId] = domElementPathId;
 
-                this.setDomAttrs(attrsResult, domElement);
+                this.setDomElementAttributes(attrsResult, domElement);
                 this.registerDomElementId(domElementPathId, data, root);
 
                 // class
@@ -368,7 +363,6 @@ module ft {
                 if(object instanceof TemplateView) {
                     object.enter();
                 }
-
             } else {
                 parentElement.appendChild(objectElement);
             }
@@ -460,7 +454,7 @@ module ft {
             _.each(vals, (value:any, name:string)=>object.style[name] = (value ? value : ''));
         }
 
-        setDomAttrs(attrs:IObj, object:HTMLElement) {
+        setDomElementAttributes(attrs:IObj, object:HTMLElement) {
             _.each(attrs, function (value:any, name:string) {
                 var method = value ? object.setAttribute : object.removeAttribute;
                 method.call(object, name, value);
@@ -481,7 +475,7 @@ module ft {
             return !!this.getExpressionValue(states, root);
         }
 
-        // -------------------------------- Children code @move --------------------------------------- //
+
         hasChildrenDef(data:IDomDef):boolean {
             return !!(data.params
                 && data.params[TemplateParams.childrenClass] // has constructor

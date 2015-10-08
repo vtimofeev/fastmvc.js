@@ -254,7 +254,7 @@ var ft;
                 //attrsResult.id = this.getElementId(domElement, attribs);
                 var domElementPathId = this.getNextId();
                 attrsResult[ft.AttributePathId] = domElementPathId;
-                this.setDomAttrs(attrsResult, domElement);
+                this.setDomElementAttributes(attrsResult, domElement);
                 this.registerDomElementId(domElementPathId, data, root);
                 // class
                 if (attribs && attribs.class) {
@@ -358,7 +358,7 @@ var ft;
         TemplateViewHelper.prototype.setDomElementStyles = function (vals, object, root) {
             _.each(vals, function (value, name) { return object.style[name] = (value ? value : ''); });
         };
-        TemplateViewHelper.prototype.setDomAttrs = function (attrs, object) {
+        TemplateViewHelper.prototype.setDomElementAttributes = function (attrs, object) {
             _.each(attrs, function (value, name) {
                 var method = value ? object.setAttribute : object.removeAttribute;
                 method.call(object, name, value);
@@ -376,7 +376,6 @@ var ft;
                 return true;
             return !!this.getExpressionValue(states, root);
         };
-        // -------------------------------- Children code @move --------------------------------------- //
         TemplateViewHelper.prototype.hasChildrenDef = function (data) {
             return !!(data.params
                 && data.params[ft.TemplateParams.childrenClass] // has constructor
