@@ -185,7 +185,7 @@ var ft;
         TemplateViewHelper.prototype.triggerDefEvent = function (e) {
             var def = (e.currentDef || e.def);
             var view = (e.currentTarget || e.target);
-            if (def.handlers && def.handlers[e.name])
+            if (def.handlers && def.handlers[e.name] && !view.disabled)
                 view.evalHandler(def.handlers[e.name], e);
         };
         TemplateViewHelper.prototype.applyExpressionToHosts = function (exObj, root) {
@@ -223,6 +223,11 @@ var ft;
                             if (view)
                                 setTimeout(function () { return view.setState('selected', !!value); }, 0);
                             return;
+                        case ft.TemplateParams.setStateDisabled:
+                            var view = root.getTreeElementByPath(host.path);
+                            if (view)
+                                setTimeout(function () { return view.setState('disabled', !!value); }, 0);
+                            return;
                         case ft.TemplateParams.childrenData:
                             var childrenView = root.getChildrenViewByPath(host.path);
                             if (childrenView) {
@@ -234,6 +239,12 @@ var ft;
                             var childrenView = root.getChildrenViewByPath(host.path);
                             if (childrenView) {
                                 setTimeout(function () { return childrenView.checkSelected(); });
+                            }
+                            return;
+                        case ft.TemplateParams.childrenSetStateDisabled:
+                            var childrenView = root.getChildrenViewByPath(host.path);
+                            if (childrenView) {
+                                setTimeout(function () { return childrenView.checkDisabled(); });
                             }
                             return;
                     }
@@ -283,9 +294,12 @@ var ft;
             var previousElement = previousObject ? this.getDomElement(previousObject) : null;
             if (previousObject && previousObject !== object) {
                 parentElement.replaceChild(objectElement, previousElement);
-                this.setDataTreeObjectFunc(object, data, root);
                 if (object instanceof ft.TemplateView) {
                     object.enter();
+                    object.validate();
+                }
+                else {
+                    this.setDataTreeObjectFunc(object, data, root);
                 }
             }
             else {

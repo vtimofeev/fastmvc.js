@@ -76,6 +76,26 @@ var ft;
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(TemplateView.prototype, "selected", {
+            get: function () {
+                return this.getState('selected');
+            },
+            set: function (value) {
+                this.setState('selected', value);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(TemplateView.prototype, "disabled", {
+            get: function () {
+                return this.getState('disabled');
+            },
+            set: function (value) {
+                this.setState('disabled', value);
+            },
+            enumerable: true,
+            configurable: true
+        });
         TemplateView.prototype.cleanParameters = function () {
             this._params = null;
         };
@@ -97,8 +117,11 @@ var ft;
                 case ft.TemplateParams.setStateSelected:
                     this.setState('selected', !!this.getParameterValue(value, ctx, this));
                     break;
-                case ft.TemplateParams.enableStateHandlers:
-                    this.enableStateHandlers(value.split(','));
+                case ft.TemplateParams.setStateDisabled:
+                    this.setState('disabled', !!this.getParameterValue(value, ctx, this));
+                    break;
+                case ft.TemplateParams.stateHandlers:
+                    this.stateHandlers(value.split(','));
                     break;
                 default:
                     // direct set parameters for root
@@ -155,25 +178,39 @@ var ft;
             this.applyParameters();
             ft.templateHelper.setDataTreeObject(this._template.domTree, this);
             counters.setData++;
-            timers.setData += getTime() - start;
             ft.templateHelper.enterTreeObject(this._template.domTree, this);
             this.invalidate(fmvc.InvalidateType.Data);
             this.invalidate(fmvc.InvalidateType.State);
-            counters.enter++;
             timers.enter += getTime() - start;
+            counters.enter++;
         };
-        TemplateView.prototype.enableStateHandlers = function (value) {
+        TemplateView.prototype.stateHandlers = function (value) {
             var _this = this;
             var stateHandlers = {
                 hover: {
-                    mouseover: function () { return _this.setState('hover', true); },
-                    mouseout: function () { return _this.setState('hover', false); }
+                    mouseover: this.mouseoverHandler,
+                    mouseout: this.mouseoutHandler
                 },
                 selected: {
-                    click: function () { return _this.setState('selected', !_this.getState('selected')); }
+                    click: this.clickHandler
                 }
             };
             _.each(value, function (state) { return _.each(stateHandlers[state], function (handler, event) { return _this.on(event, handler); }, _this); }, this);
+        };
+        TemplateView.prototype.mouseoverHandler = function (e) {
+            if (!!this.getState('disabled'))
+                return;
+            this.setState('hover', true);
+        };
+        TemplateView.prototype.mouseoutHandler = function (e) {
+            if (!!this.getState('disabled'))
+                return;
+            this.setState('hover', false);
+        };
+        TemplateView.prototype.clickHandler = function (e) {
+            if (!!this.getState('disabled'))
+                return;
+            this.setState('selected', !this.getState('selected'));
         };
         TemplateView.prototype.exit = function () {
             if (!this.inDocument) {
@@ -208,14 +245,15 @@ var ft;
         TemplateView.prototype.setPathClassValue = function (path, name, value) {
             this._cssClassMap[path + '-' + name] = value;
         };
-        TemplateView.prototype.setTemplateElementProperty = function (name, value) {
+        TemplateView.prototype.setTreeElementLink = function (name, value) {
             if (!this[name]) {
                 this[name] = value;
-                if (!value)
+                if (!value) {
                     delete this[name];
+                }
             }
             else {
-                throw Error('Can not set name:' + name + ' property, cause it exist ' + this[name]);
+                throw Error('Can not set name:' + name + ' property, cause it exists ' + this[name]);
             }
         };
         TemplateView.prototype.getChildrenViewByPath = function (path) {

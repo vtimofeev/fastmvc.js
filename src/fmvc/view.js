@@ -78,7 +78,6 @@ var fmvc;
         View.prototype.setState = function (name, value) {
             if (this._states[name] === value)
                 return this;
-            console.log('Set state ... ', this, name, value);
             this._states[name] = value;
             this.invalidate(fmvc.InvalidateType.State);
             return this;
@@ -161,7 +160,6 @@ var fmvc;
             configurable: true
         });
         View.prototype.invalidate = function (value) {
-            console.log('Try invalidate ', this.name, value, this._isWaitingForValidate);
             this._invalidate = this._invalidate | value;
             if (!this._isWaitingForValidate) {
                 this._isWaitingForValidate = true;

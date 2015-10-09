@@ -21,19 +21,22 @@ describe('ft - component package ', function () {
     var buttonReset = { title: 'Очистить (локальный)', action: 'actionReset' };
     var templateObjs = {
         "ft.DataButton": {
-            content: '<div .enableStateHandlers="hover,selected" onclick="selected" class="button button-{state.selected} button-{state.hover}">{data.title}</div>',
+            content: '<div .stateHandlers="hover,selected" onclick="selected" class="button button-{state.selected} button-{state.hover} button-{state.disabled}">{data.title}</div>',
         },
         "ft.ButtonGroup": {
-            content: '<div .enableStateHandlers="hover" >' +
+            content: '<div .stateHandlers="hover" >' +
                 '<div class="button-{state.hover}">Заголовок с подсветкой</div>' +
+                '<ft.DataButton onclick="disable" state.disabled="{data.disabled}">Disable children</ft.DataButton>' +
+                '<ft.DataButton onclick="enable" state.disabled="{(!data.disabled)}">Enable children</ft.DataButton>' +
                 '<div states="{data.selected}">Выбран элемент {data.selected.title}</div>' +
                 '<div states="{(!data.selected)}">Нет выбранного элемнта (глобальный-кнопка)</div>' +
-                '<ft.DataButton states="{data.selected}"> Выбран узел (глобальный) </ft.DataButton>' +
-                '<ft.DataButton states="{(!data.selected)}"> Нет узла (глобальный) </ft.DataButton>' +
-                '<div ln="childrenContainer" children.enableStateHandlers="hover" children.state.selected="{(ctx.data===data.selected)}" children.class="ft.DataButton" children.data="{data.children}"></div>' +
-                '<ft.DataButton .enableStateHandlers="hover" .data="{data.reset}" state.selected="{data.selected}" onclick="reset"> Очистить (глобальный) </ft.DataButton>' +
+                '<ft.DataButton states="{data.selected}" .data="{data.selected}"> Выбран узел (глобальный) </ft.DataButton>' +
+                '<ft.DataButton states="{(!data.selected)}" .data="{data.reset}"> Нет узла (глобальный) </ft.DataButton>' +
+                '<div ln="childrenContainer" children.stateHandlers="hover" children.state.selected="{(ctx.data===data.selected)}" children.state.disabled="{data.disabled}" children.class="ft.DataButton" children.data="{data.children}">' +
+                '</div>' +
+                '<ft.DataButton .stateHandlers="hover" .data="{data.reset}" state.disabled="{data.disabled}" state.selected="{data.selected}" onclick="reset"> Очистить (глобальный) </ft.DataButton>' +
                 '</div>',
-            data: { children: buttonsDs, selected: buttonsDs[0], reset: buttonReset },
+            data: { disabled: false, children: buttonsDs, selected: buttonsDs[0], reset: buttonReset },
             action: 'create'
         },
     };
@@ -64,6 +67,14 @@ describe('ft - component package ', function () {
                     }
                     if (type === 'reset') {
                         instance.data.selected = null;
+                        instance.invalidate(fmvc.InvalidateType.Data);
+                    }
+                    if (type === 'disable') {
+                        instance.data.disabled = true;
+                        instance.invalidate(fmvc.InvalidateType.Data);
+                    }
+                    if (type === 'enable') {
+                        instance.data.disabled = false;
                         instance.invalidate(fmvc.InvalidateType.Data);
                     }
                 };

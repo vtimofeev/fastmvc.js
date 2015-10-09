@@ -35,27 +35,16 @@ var ft;
             var pathDefinition = this.viewHelper.getPathDefinitionByPathId(pathId);
             //console.log('Trigger ', e.type, pathId, pathDefinition);
             if (pathDefinition) {
-                var event = this.getTreeEventByEvent(e.type, pathDefinition.data, pathDefinition.root, e);
+                var event = this.getTreeEventByBrowserEvent(e.type, pathDefinition.data, pathDefinition.root, e);
                 this.viewHelper.dispatchTreeEventDown(event);
             }
-            /*
-            if(view) view.handleTreeEvent(this.getTreeEventByBrowserEvent(e, view));
-            else if(pathId) console.warn('View not found for id: ' , pathId);
-            */
         };
-        /**
-         * @param name
-         * @param def
-         * @param view
-         * @param e
-         * @returns {{name: string, target: ITemplateView, def: IDomDef, previousTarget: null, currentTarget: ITemplateView, e: any, cancelled: boolean, prevented: boolean, depth: number}}
-         */
-        EventDispatcher.prototype.getTreeEventByEvent = function (name, def, view, e) {
+        EventDispatcher.prototype.getTreeEventByBrowserEvent = function (name, def, view, e) {
             return { name: name, target: view, def: def, e: e, cancelled: false, prevented: false, depth: 1e2 };
         };
         EventDispatcher.prototype.getCustomTreeEvent = function (name, data, view, depth) {
             if (depth === void 0) { depth = 1; }
-            return { name: e.type, target: view, previousTarget: null, currentTarget: view, data: data, cancelled: false, prevented: false, depth: depth };
+            return { name: name, target: view, previousTarget: null, currentTarget: view, data: data, cancelled: false, prevented: false, depth: depth };
         };
         EventDispatcher.prototype.disposeEvent = function (e) {
             return;

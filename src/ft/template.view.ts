@@ -84,6 +84,23 @@ module ft {
         get i18n():any {
             return this._i18n;
         }
+        
+        get selected():boolean {
+            return this.getState('selected');
+        }
+        
+        set selected(value:boolean) {
+            this.setState('selected', value);
+        }
+
+        get disabled():boolean {
+            return this.getState('disabled');
+        }
+
+        set disabled(value:boolean) {
+            this.setState('disabled', value);
+        }
+
 
         cleanParameters() {
             this._params = null;
@@ -109,8 +126,11 @@ module ft {
                 case TemplateParams.setStateSelected:
                     this.setState('selected', !!this.getParameterValue(value, ctx, this));
                     break;
-                case TemplateParams.enableStateHandlers:
-                    this.enableStateHandlers(value.split(','));
+                case TemplateParams.setStateDisabled:
+                    this.setState('disabled', !!this.getParameterValue(value, ctx, this));
+                    break;
+                case TemplateParams.stateHandlers:
+                    this.stateHandlers(value.split(','));
                     break;
                 default:
                     // direct set parameters for root
@@ -166,32 +186,50 @@ module ft {
                 return console.warn('Error, try to re-enter ', this.name);
             }
             var start = getTime();
+
             super.enter();
             this.applyParameters();
             templateHelper.setDataTreeObject(this._template.domTree, this);
+
             counters.setData++;
-            timers.setData += getTime() - start;
 
             templateHelper.enterTreeObject(this._template.domTree, this);
             this.invalidate(fmvc.InvalidateType.Data);
             this.invalidate(fmvc.InvalidateType.State);
-            counters.enter++;
+
             timers.enter += getTime() - start;
+            counters.enter++;
         }
 
-        enableStateHandlers(value:string[]) {
+        stateHandlers(value:string[]) {
             var stateHandlers = {
                 hover: {
-                    mouseover: ()=>this.setState('hover', true),
-                    mouseout: ()=>this.setState('hover', false)
+                    mouseover: this.mouseoverHandler,
+                    mouseout: this.mouseoutHandler
                 },
                 selected: {
-                    click: ()=>this.setState('selected', !this.getState('selected'))
+                    click: this.clickHandler
                 }
 
             };
             _.each(value, (state:string)=>_.each(stateHandlers[state], (handler, event:string)=>this.on(event, handler), this), this);
         }
+
+        private mouseoverHandler(e:ITreeEvent):void {
+            if(!!this.getState('disabled')) return;
+            this.setState('hover', true);
+        }
+
+        private mouseoutHandler(e:ITreeEvent):void {
+            if(!!this.getState('disabled')) return;
+            this.setState('hover', false);
+        }
+
+        private clickHandler(e:ITreeEvent):void {
+            if(!!this.getState('disabled')) return;
+            this.setState('selected', !this.getState('selected'));
+        }
+
 
         exit() {
             if (!this.inDocument) {
@@ -235,15 +273,16 @@ module ft {
             this._cssClassMap[path + '-' + name] = value;
         }
 
-        setTemplateElementProperty(name:string, value:TreeElement) {
+        setTreeElementLink(name:string, value:TreeElement):void {
             if (!this[name]) {
                 this[name] = value;
-                if (!value) delete this[name];
+                if (!value) {
+                    delete this[name];
+                }
             } else {
-                throw Error('Can not set name:' + name + ' property, cause it exist ' + this[name]);
+                throw Error('Can not set name:' + name + ' property, cause it exists ' + this[name]);
             }
         }
-
 
         getChildrenViewByPath(path:string):TemplateViewChildren {
             return this._dataChildren ? this._dataChildren[path] : null;

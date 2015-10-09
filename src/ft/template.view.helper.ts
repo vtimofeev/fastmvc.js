@@ -248,7 +248,7 @@ module ft {
         private triggerDefEvent(e:ITreeEvent):void {
             var def:IDomDef = <IDomDef> (e.currentDef || e.def);
             var view = <ITemplateView> (e.currentTarget || e.target);
-            if (def.handlers && def.handlers[e.name]) view.evalHandler(def.handlers[e.name], e);
+            if (def.handlers && def.handlers[e.name] && !view.disabled) view.evalHandler(def.handlers[e.name], e);
         }
 
         applyExpressionToHosts(exObj:IExpression, root:ITemplateView):void {
@@ -289,6 +289,12 @@ module ft {
                             var view = root.getTreeElementByPath(host.path);
                             if(view) setTimeout(()=>view.setState('selected', !!value), 0);
                             return;
+
+                        case TemplateParams.setStateDisabled:
+                            var view = root.getTreeElementByPath(host.path);
+                            if(view) setTimeout(()=>view.setState('disabled', !!value), 0);
+                            return;
+
                         case TemplateParams.childrenData:
                             var childrenView = root.getChildrenViewByPath(host.path);
                             if(childrenView) {
@@ -304,6 +310,12 @@ module ft {
                             }
                             return;
 
+                        case TemplateParams.childrenSetStateDisabled:
+                            var childrenView = root.getChildrenViewByPath(host.path);
+                            if(childrenView) {
+                                setTimeout(()=>childrenView.checkDisabled());
+                            }
+                            return;
                     }
                     return;
 
@@ -318,7 +330,7 @@ module ft {
 
             //set all dom attributes
             if (this.isTagElement(domElement)) {
-                // simple attributes (id, title, name...)
+               // simple attributes (id, title, name...)
                var attribs = data.attribs;
                var attrsResult = attribs?_.reduce(attribs,
                    (r:any, value:ExpressionValue, key:string)=>(this.specialDomAttrs.indexOf(key) < 0 ? (r[key] = this.getSimpleOrExpressionValue(value, root)) : null, r), {}, this):{};
@@ -359,9 +371,12 @@ module ft {
 
             if(previousObject && previousObject !== object) {
                 parentElement.replaceChild(objectElement, previousElement);
-                this.setDataTreeObjectFunc(object, data, root);
                 if(object instanceof TemplateView) {
                     object.enter();
+                    object.validate();
+                }
+                else {
+                    this.setDataTreeObjectFunc(object, data, root);
                 }
             } else {
                 parentElement.appendChild(objectElement);

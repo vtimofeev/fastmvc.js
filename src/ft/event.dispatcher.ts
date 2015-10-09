@@ -43,34 +43,21 @@ module ft {
             var pathDefinition = this.viewHelper.getPathDefinitionByPathId(pathId);
             //console.log('Trigger ', e.type, pathId, pathDefinition);
 
-
             if (pathDefinition){
-                var event:ITreeEvent = this.getTreeEventByEvent(e.type, pathDefinition.data, pathDefinition.root, e);
+                var event:ITreeEvent = this.getTreeEventByBrowserEvent(e.type, pathDefinition.data, pathDefinition.root, e);
                 this.viewHelper.dispatchTreeEventDown(event);
             }
-            /*
-            if(view) view.handleTreeEvent(this.getTreeEventByBrowserEvent(e, view));
-            else if(pathId) console.warn('View not found for id: ' , pathId);
-            */
         }
 
-
-        /**
-         * @param name
-         * @param def
-         * @param view
-         * @param e
-         * @returns {{name: string, target: ITemplateView, def: IDomDef, previousTarget: null, currentTarget: ITemplateView, e: any, cancelled: boolean, prevented: boolean, depth: number}}
-         */
-        private getTreeEventByEvent(name:string, def:IDomDef, view:ITemplateView, e:any):ITreeEvent {
+        private getTreeEventByBrowserEvent(name:string, def:IDomDef, view:ITemplateView, e:any):ITreeEvent {
             return {name: name, target:view, def: def, e: e, cancelled:false, prevented:false, depth: 1e2};
         }
 
         public getCustomTreeEvent(name:string, data:any, view:ITemplateView, depth:number = 1):ITreeEvent {
-            return {name: e.type, target:view, previousTarget: null, currentTarget:view, data:data, cancelled:false, prevented:false, depth: depth};
+            return {name: name, target:view, previousTarget: null, currentTarget:view, data:data, cancelled:false, prevented:false, depth: depth};
         }
 
-        public disposeEvent(e:ITreeEvent) {
+        public disposeEvent(e:ITreeEvent):void {
             return; e.target = e.previousTarget = e.currentTarget = e.e = null;
         }
 

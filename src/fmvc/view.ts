@@ -77,7 +77,6 @@ module fmvc {
 
         public setState(name:string, value:any):IView {
             if(this._states[name] === value) return this;
-            console.log('Set state ... ', this, name, value);
             this._states[name] = value;
             this.invalidate(InvalidateType.State);
             return this;
@@ -157,7 +156,7 @@ module fmvc {
         }
 
         public invalidate(value:number):void {
-            console.log('Try invalidate ', this.name, value, this._isWaitingForValidate);
+
             this._invalidate = this._invalidate | value;
             if(!this._isWaitingForValidate) {
                 this._isWaitingForValidate = true;

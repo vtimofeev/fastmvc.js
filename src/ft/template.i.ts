@@ -18,14 +18,17 @@ module ft {
         setStates:'setStates', // View, 'selected,focused,disabled,hover,draggable,counter' or 'selected=true,focused=false,disabled=true,counter={data.counter},modelCounter={app.counter.data}'
         setState:'setState', // View, 'selected=true'
         setStateSelected:'state.selected', // View, 'true' or '{(this.getCustomComponentSelected(child.data))}' (expression)
-        enableStateHandlers:'.enableStateHandlers', // View 'hover,disabled,selected,focused',
+        setStateDisabled:'state.disabled', // View,
+
+        stateHandlers:'.stateHandlers', // View 'hover,disabled,selected,focused',
         setData: '.data', // View
         setModel: '.model', // View
 
         childrenClass: 'children.class', // children constructor
         childrenSetStates: 'children.setStates', // '{this.data.selected===child.data}'
-        childrenEnableStateHandlers: 'children.enableStateHandlers',
+        childrenEnableStateHandlers: 'children.stateHandlers',
         childrenSetStateSelected: 'children.state.selected',
+        childrenSetStateDisabled: 'children.state.disabled',
         childrenData: 'children.data', // children data array (context parent or app)
         childrenModel: 'children.model', // children model array (context parent or app)
 

@@ -48,7 +48,7 @@ var ft;
                     params['data'] = v;
                 }
                 if (def.params[ft.TemplateParams.childrenEnableStateHandlers])
-                    params[ft.TemplateParams.enableStateHandlers] = def.params[ft.TemplateParams.childrenEnableStateHandlers];
+                    params[ft.TemplateParams.stateHandlers] = def.params[ft.TemplateParams.childrenEnableStateHandlers];
                 var child = prevChildren && prevChildren.length ? prevChildren.pop() : new ViewClass(className + '-' + k, null);
                 child.cleanParameters();
                 child.setParameters(params);
@@ -69,6 +69,11 @@ var ft;
         TemplateViewChildren.prototype.checkSelected = function () {
             _.each(this._children, function (child) {
                 child.applyParameter(this.domDef.params[ft.TemplateParams.childrenSetStateSelected], ft.TemplateParams.setStateSelected);
+            }, this);
+        };
+        TemplateViewChildren.prototype.checkDisabled = function () {
+            _.each(this._children, function (child) {
+                child.applyParameter(this.domDef.params[ft.TemplateParams.childrenSetStateDisabled], ft.TemplateParams.setStateDisabled);
             }, this);
         };
         // virtual

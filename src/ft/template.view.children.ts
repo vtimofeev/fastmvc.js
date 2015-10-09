@@ -38,7 +38,7 @@ module ft {
                     params['data'] = v;
                 }
 
-                if(def.params[TemplateParams.childrenEnableStateHandlers]) params[TemplateParams.enableStateHandlers] = def.params[TemplateParams.childrenEnableStateHandlers];
+                if(def.params[TemplateParams.childrenEnableStateHandlers]) params[TemplateParams.stateHandlers] = def.params[TemplateParams.childrenEnableStateHandlers];
 
                 var child = prevChildren && prevChildren.length?prevChildren.pop():new ViewClass(className + '-' + k, null);
                 child.cleanParameters();
@@ -62,9 +62,16 @@ module ft {
 
         checkSelected() {
             _.each(this._children, function (child:ITemplateView) {
-                child.applyParameter(this.domDef.params[TemplateParams.childrenSetStateSelected], TemplateParams.setStateSelected)
+                child.applyParameter(this.domDef.params[TemplateParams.childrenSetStateSelected], TemplateParams.setStateSelected);
             }, this);
         }
+
+        checkDisabled() {
+            _.each(this._children, function (child:ITemplateView) {
+                child.applyParameter(this.domDef.params[TemplateParams.childrenSetStateDisabled], TemplateParams.setStateDisabled);
+            }, this);
+        }
+
 
         // virtual
         createDom() {

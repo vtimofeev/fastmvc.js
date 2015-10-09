@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
     <style>
         .button {
+            cursor: pointer;
             display: inline-block;
             min-width: 120px;
             width: 100px;
@@ -21,6 +22,12 @@
         .button-selected {
             font-weight:bold;
             border: 1px solid black;
+        }
+
+        .button-disabled {
+            cursor: default !important;
+            background-color: #efefef;
+            border: 1px solid red !important;
         }
 
 
