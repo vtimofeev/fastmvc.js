@@ -4,6 +4,7 @@ module fmvc {
         enabledState?:boolean;
         enabledEvents?:boolean;
         watchChanges?:boolean;
+        history?:boolean;
     }
 
     export var ModelState = {
@@ -99,7 +100,6 @@ module fmvc {
 
             console.log('Model set data ... ', value);
             if (this._data !== result || this._changes) {
-
                 this._data = result;
                 this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
             }
@@ -131,13 +131,10 @@ module fmvc {
         }
 
         public dispose() {
+            this._queue?this._queue.dispose():null;
+            this._queue = null;
             super.dispose();
-            // remove queue
         }
-
-        //-----------------------------------------------------------------------------
-        // Source model
-        //-----------------------------------------------------------------------------
 
         //-----------------------------------------------------------------------------
         // Queue
@@ -148,198 +145,8 @@ module fmvc {
         }
     }
 
+
     /*
-     export class TypeModel <T> extends Model {
-     constructor(name:string, data:T, opts?:IModelOptions) {
-     super(name, data, opts);
-     }
-
-     public get data():T {
-     return <T>this.getData();
-     }
-     }
-     */
-
-    export class SourceModel extends Model {
-        private _sources:Model[];
-        private _sourceMethod:any;
-        private _resultMethods:any[];
-        private throttleApplyChanges:Function;
-
-        constructor(name:string, source:Model|Model[], opts?:IModelOptions) {
-            super(name, null, opts);
-            this.throttleApplyChanges = _.throttle(_.bind(this.applyChanges, this), 100);
-            this.addSources(source);
-        }
-
-        addSources(v:Model|Model[]):SourceModel {
-            if (!v) return this;
-            if (!this._sources) this._sources = [];
-            if (_.isArray(v)) {
-                _.each(v, this.addSources, this);
-            }
-            else if (v instanceof Model) {
-                var m = <Model> v;
-                m.bind(this, this.sourceChangeHandler);
-                this._sources.push(m);
-            } else {
-                console.warn('Cant add source ', v);
-            }
-            return this;
-        }
-
-        removeSource(v:Model):SourceModel {
-            var index:number = -1;
-            if (this._sources && (index = this._sources.indexOf(v)) > -1) {
-                this._sources.splice(index, 1);
-                v.unbind(v);
-            }
-            return this;
-        }
-
-        sourceChangeHandler(e:IEvent):void {
-            this.throttleApplyChanges();
-        }
-
-        setSourceMethod(value:any):SourceModel {
-            this._sourceMethod = value;
-            this.throttleApplyChanges();
-            return this;
-        }
-
-        setResultMethods(...values:any[]):SourceModel {
-            this._resultMethods = _.flatten([].concat(this._resultMethods ? this._resultMethods : [], values));
-            this.throttleApplyChanges();
-            return this;
-        }
-
-        applyChanges() {
-            console.log('Apply changes ...', this._sources, this._sourceMethod, this._resultMethods);
-            if (!this._sources || !this._sources.length) this.setData(null);
-            if (this._sourceMethod && this._sources.length === 1) throw new Error('SourceModel: source method not defined');
-
-            var result = null;
-            var sourcesResult = this._sourceMethod && this._sources.length > 1 ? (this._sourceMethod.apply(this, _.map(this._sources, (v:Model)=>v.data))) : this._sources[0].data;
-            console.log('SourceModel: Source Result is ', sourcesResult);
-            if (sourcesResult) result = _.reduce(this._resultMethods, function (memo, method) {
-                return method.call(this, memo);
-            }, sourcesResult, this);
-            console.log('SourceModel: Result is ', JSON.stringify(result));
-            this.reset().setData(result);
-        }
-    }
-
-
-    // Uses jQuery Deferred model
-    export class ModelQueue {
-        private model:fmvc.Model;
-        private currentPromise:any;
-        private error:any;
-
-
-        constructor(model:fmvc.Model) {
-            this.model = model;
-        }
-
-        load(object:any) {
-            this.model.setState(ModelState.Syncing);
-            this.async($.ajax, [object], $, {done: ModelState.Synced, fault: ModelState.Error});
-            return this;
-        }
-
-        loadXml(object:any):ModelQueue {
-            var defaultAjaxRequestObject:any = _.defaults(object, {
-                method: 'GET',
-                dataType: 'xml',
-                data: {rnd: (Math.round(Math.random() * 1000000))}
-            });
-            return this.load(defaultAjaxRequestObject);
-        }
-
-        parse(method:any):ModelQueue {
-            this.model.setState(ModelState.Parsing);
-            this.sync(method, [this.model], this, {done: ModelState.Completed, fault: ModelState.Error});
-            return this;
-        }
-
-        async(getPromiseMethod:any, args:any[], context:any, states:any):ModelQueue {
-            var deferred = $.Deferred();
-            var queuePromise = this.setup();
-            var t:ModelQueue = this;
-            queuePromise.then(
-                function done(value) {
-                    (getPromiseMethod.apply(context, args)).then(
-                        function successPromise(result) {
-                            console.log('Async success ', result);
-                            deferred.resolve(result);
-                        },
-                        function faultPromise(result) {
-                            console.log('Async fault ', arguments);
-                            deferred.reject(result);
-                            t.executeError(result);
-                        });
-                },
-                function fault() {
-                    deferred.reject();
-                    t.executeError()
-                }
-            );
-            this.currentPromise = deferred.promise();
-            return this;
-        }
-
-        sync(method:Function, args?:any[], context?:any, states?:any):ModelQueue {
-            var deferred = $.Deferred();
-            var queuePromise = this.setup();
-            var t = this;
-            queuePromise.done(
-                function doneQueue(value) {
-                    var methodArgs = [value].concat(args);
-                    var result = method.apply(context, methodArgs);
-                    console.log('Call sync method ', result, ' args ', methodArgs)
-                    if (result) deferred.resolve(result);
-                    else {
-                        deferred.reject();
-                        t.executeError();
-                    }
-                });
-            this.currentPromise = deferred.promise();
-            return this;
-        }
-
-        complete(method:Function, args?:any[], context?:any, states?:any):void {
-            this.sync(method, context, args, states);
-        }
-
-        executeError(err?:any):any {
-            console.log('Product error ', arguments);
-            if (this.error) {
-                this.error.method.apply(this.error.context, this.error.args);
-            }
-        }
-
-        fault(method:Function, args?:any[], context?:any, states?:any):ModelQueue {
-            this.error = {method: method, args: args, context: context, states: states};
-            return this;
-        }
-
-        setup() {
-            var queueDeferred = $.Deferred();
-            $.when(this.currentPromise).then(function doneQueue(value) {
-                queueDeferred.resolve(value);
-            }, function faultQueue() {
-                queueDeferred.reject()
-            });
-            return queueDeferred.promise();
-        }
-
-        dispose() {
-            this.model = null;
-            this.currentPromise = null;
-            this.error = null;
-        }
-    }
-
     export class Validator {
         name:string = null;
         fnc:Function = null;
@@ -353,4 +160,5 @@ module fmvc {
             this.fnc.call(data, data);
         }
     }
+    */
 }

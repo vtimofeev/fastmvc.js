@@ -481,7 +481,7 @@ var fmvc;
         __extends(SourceModel, _super);
         function SourceModel(name, source, opts) {
             _super.call(this, name, null, opts);
-            this.throttleApplyChanges = _.throttle(_.bind(this.applyChanges, this), 100);
+            this.throttleApplyChanges = _.throttle(_.bind(this.apply, this), 100);
             this.addSources(source);
         }
         SourceModel.prototype.addSources = function (v) {
@@ -489,16 +489,20 @@ var fmvc;
                 return this;
             if (!this._sources)
                 this._sources = [];
-            if (_.isArray(v)) {
-                _.each(v, this.addSources, this);
-            }
-            else if (v instanceof Model) {
+            _.each(v, this.addSource, this);
+            return this;
+        };
+        SourceModel.prototype.addSource = function (v, mapBeforeCompareFunc) {
+            if (v instanceof Model) {
                 var m = v;
                 m.bind(this, this.sourceChangeHandler);
                 this._sources.push(m);
             }
+            else if (v.length) {
+                this._sources.push(v);
+            }
             else {
-                console.warn('Cant add source ', v);
+                throw 'Cant add source ', v;
             }
             return this;
         };
@@ -506,47 +510,62 @@ var fmvc;
             var index = -1;
             if (this._sources && (index = this._sources.indexOf(v)) > -1) {
                 this._sources.splice(index, 1);
-                v.unbind(v);
+                if (v instanceof Model)
+                    v.unbind(v);
             }
             return this;
         };
         SourceModel.prototype.sourceChangeHandler = function (e) {
             this.throttleApplyChanges();
         };
-        SourceModel.prototype.setSourceMethod = function (value) {
-            this._sourceMethod = value;
+        SourceModel.prototype.setSourceCompareFunc = function (value) {
+            this._sourceCompareFunc = value;
             this.throttleApplyChanges();
             return this;
         };
-        SourceModel.prototype.setResultMethods = function () {
+        SourceModel.prototype.setEqualFunc = function (name, value) {
+            if (!this._sourceEqualFunc)
+                this._sourceEqualFunc = {};
+            this._sourceEqualFunc[name] = value;
+            this.throttleApplyChanges();
+            return this;
+        };
+        SourceModel.prototype.setResultFunc = function () {
             var values = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 values[_i - 0] = arguments[_i];
             }
-            this._resultMethods = _.flatten([].concat(this._resultMethods ? this._resultMethods : [], values));
+            this._resultFuncs = _.flatten([].concat(this._resultFuncs ? this._resultFuncs : [], values));
             this.throttleApplyChanges();
             return this;
         };
-        SourceModel.prototype.applyChanges = function () {
-            console.log('Apply changes ...', this._sources, this._sourceMethod, this._resultMethods);
+        SourceModel.prototype.apply = function () {
+            console.log('Apply changes ...', this._sources, this._sourceCompareFunc, this._resultFuncs);
             if (!this._sources || !this._sources.length)
                 this.setData(null);
-            if (this._sourceMethod && this._sources.length === 1)
-                throw new Error('SourceModel: source method not defined');
+            if (!this._sourceCompareFunc && this._sources.length > 1)
+                throw 'SourceModel: source method not defined';
             var result = null;
-            var sourcesResult = this._sourceMethod && this._sources.length > 1 ? (this._sourceMethod.apply(this, _.map(this._sources, function (v) { return v.data; }))) : this._sources[0].data;
+            var sourcesResult = this._sourceCompareFunc && this._sources.length > 1 ? (this._sourceCompareFunc.apply(this, _.map(this._sources, function (v) { return v.data; }))) : this._sources[0].data;
             console.log('SourceModel: Source Result is ', sourcesResult);
             if (sourcesResult)
-                result = _.reduce(this._resultMethods, function (memo, method) {
+                result = _.reduce(this._resultFuncs, function (memo, method) {
                     return method.call(this, memo);
                 }, sourcesResult, this);
             console.log('SourceModel: Result is ', JSON.stringify(result));
             this.reset().setData(result);
         };
+        SourceModel.prototype.dispose = function () {
+            var _this = this;
+            _.each(this._sources, function (v) { return _this.removeSource(v); }, this);
+            this._sources = null;
+            this._sourceCompareFunc = null;
+            this._resultFuncs = null;
+        };
         return SourceModel;
     })(Model);
     fmvc.SourceModel = SourceModel;
-    // Uses jQuery Deferred model
+    // Uses jQuery/Zepto Deferred model
     var ModelQueue = (function () {
         function ModelQueue(model) {
             this.model = model;
@@ -560,7 +579,7 @@ var fmvc;
             var defaultAjaxRequestObject = _.defaults(object, {
                 method: 'GET',
                 dataType: 'xml',
-                data: { rnd: (Math.round(Math.random() * 1000000)) }
+                data: { rnd: (Math.round(Math.random() * 1e9)) }
             });
             return this.load(defaultAjaxRequestObject);
         };

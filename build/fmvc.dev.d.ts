@@ -144,16 +144,20 @@ declare module fmvc {
     }
     class SourceModel extends Model {
         private _sources;
-        private _sourceMethod;
-        private _resultMethods;
+        private _sourceCompareFunc;
+        private _sourceEqualFunc;
+        private _resultFuncs;
         private throttleApplyChanges;
         constructor(name: string, source: Model | Model[], opts?: IModelOptions);
-        addSources(v: Model | Model[]): SourceModel;
+        addSources(v: any[]): SourceModel;
+        addSource(v: Model | any, mapBeforeCompareFunc?: Function): SourceModel;
         removeSource(v: Model): SourceModel;
         sourceChangeHandler(e: IEvent): void;
-        setSourceMethod(value: any): SourceModel;
-        setResultMethods(...values: any[]): SourceModel;
-        applyChanges(): void;
+        setSourceCompareFunc(value: any): SourceModel;
+        setEqualFunc(name: string, value: any): SourceModel;
+        setResultFunc(...values: any[]): SourceModel;
+        apply(): void;
+        dispose(): void;
     }
     class ModelQueue {
         private model;

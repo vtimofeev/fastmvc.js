@@ -3,7 +3,7 @@
  */
 ///<reference path='../../build/fmvc.dev.d.ts'/>
 
-class TestApp extends  fmvc.Facade {
+class TestApp extends fmvc.Facade {
 }
 
 var ViewEvent = {
@@ -12,15 +12,26 @@ var ViewEvent = {
     CANCEL: 'cancel'
 };
 
-
-var m1 = new fmvc.Model('a1', [1,2,3,4,5,6,7]);
-var m2 = new fmvc.Model('a2', [5,6,7,8,9,10]);
+var m1 = new fmvc.Model('a1', ["a", "b",1,2,3,4,5,6,7]);
+var m2 = new fmvc.Model('a2', [5,6,7,8,9,10,11]);
 
 var s1 = new fmvc.SourceModel('s1', [m1,m2]);
-s1.setSourceMethod(_.intersection).setResultMethods(_.partial(_.filter, _, (v)=>v%2===0), _.partial(_.sortBy, _, (v)=>-v));
+
+function getValue(v,k) {
+    return _.isNumber(v)?v.toString(2):typeof v;
+}
+
+s1.setSourceCompareFunc(_.intersection).setResultFunc(_.partial(_.filter, _, (v)=>v%2===0), _.partial(_.sortBy, _, (v)=>(-v) ), _.partial(_.map, _ ,getValue), (v)=>v?v.length:0);
+
 
 setTimeout(function() {m2.data = [2, 4, 6, 8, 9, 10, 12]}, 1000);
+setTimeout(function() {m1.data = [2, 4, "a", "b", 9, 10, 12]}, 2000);
 setTimeout(function() {m1.data = [2, 4, 6, 8, 9, 10, 12]}, 3000);
+
+
+/*
+
+
 
 var v1 = new fmvc.ViewList('ViewList');
 v1.childrenConstructor = ui.Button;

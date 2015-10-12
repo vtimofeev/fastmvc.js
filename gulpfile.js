@@ -22,8 +22,8 @@ var project = {
     env: argv.e,
     version: '0.9.0',
     paths: {
-        ts: ['./src/fmvc/*.ts','./src/ui-out/*.ts'],
-        tsDev: ['./src/test-out/*.ts']
+        ts: ['./src/fmvc/*.ts'/*,'./src/ui-out/*.ts'*/],
+        tsDev: [/*'./src/test-out/*.ts'*/]
     }
 };
 
