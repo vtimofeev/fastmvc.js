@@ -40,7 +40,10 @@ module ft {
 
                 if(def.params[TemplateParams.childrenEnableStateHandlers]) params[TemplateParams.stateHandlers] = def.params[TemplateParams.childrenEnableStateHandlers];
 
-                var child = prevChildren && prevChildren.length?prevChildren.pop():new ViewClass(className + '-' + k, null);
+                var child = prevChildren && prevChildren.length?prevChildren.splice(prevChildren.length-1,1)[0]:new ViewClass(className + '-' + k, null);
+                if(child.inDocument) {
+                    child.exit();
+                }
                 child.cleanParameters();
                 child.setParameters(params);
                 return child;
@@ -53,8 +56,13 @@ module ft {
                 child.parent = this.parent;
                 child.domDef = def;
                 child.createDom();
-                this.getElement().appendChild(child.getElement());
                 child.enter();
+                child.invalidateData();
+                child.invalidateApp();
+                child.validate();
+
+                this.getElement().appendChild(child.getElement());
+                console.log(' Create children ', child.getElement());
             }, this);
 
             if(def.params[TemplateParams.childrenSetStateSelected]) this.checkSelected();

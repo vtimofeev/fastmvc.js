@@ -17,7 +17,8 @@ module ft {
         constructor() {
             _.bindAll(this,
                 'createTreeObjectFunc', 'initTreeElement', 'addTreeObjectFunc',
-                'getTreeObject', 'setDataTreeObjectFunc', 'enterTreeObjectFunc', 'exitTreeObjectFunc'
+                'getTreeObject', 'setDataTreeObjectFunc', 'enterTreeObjectFunc', 'exitTreeObjectFunc',
+                'removeTreeObject'
             );
 
             this.createTreeObject = this.createTreeObjectFunctor();
@@ -175,9 +176,15 @@ module ft {
         }
 
         enterTreeObjectFunc(object:TreeElement, data:IDomDef, root:ITemplateView) {
+            this.setDataTreeObjectFunc(object, data, root);
+
+
             if (object && object instanceof TemplateView && !object.inDocument) {
                 object.enter();
             }
+
+
+
 
             if (this.hasChildrenView(data, root)) {
                 var childrenView:TemplateViewChildren = root.getChildrenViewByPath(data.path);
@@ -189,14 +196,13 @@ module ft {
             var domElement = this.getDomElement(object);
             var pathId = this.isTagElement(domElement)?domElement.getAttribute(AttributePathId):null;
             this.unregisterDomElementId(pathId);
-            root.setTreeElementPath(data.path, null);
 
             if (this.hasChildrenView(data, root)) {
                 var childrenView:TemplateViewChildren = root.getChildrenViewByPath(data.path);
                 childrenView.dispose();
             }
 
-            if (object && object instanceof TemplateView) object.exit();
+            if (object && object instanceof TemplateView && !object === root) object.exit();
             return object;
         }
 
@@ -391,6 +397,10 @@ module ft {
 
         removeTreeObject(object:TreeElement, data:IDomDef, parent:TreeElement, parentData:IDomDef, root:ITemplateView) {
             //this.getDomElement(parent).replaceChild(this.getDomElement(object), this.getCommentElement(data));
+            this.getDomElement(parent).removeChild(this.getDomElement(object));
+            if(object instanceof TemplateView) object.setTreeElementPath(data.path, null);
+
+
         }
 
         // -----------------------------------------------------------------------------------------------------------

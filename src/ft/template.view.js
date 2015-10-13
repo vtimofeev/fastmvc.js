@@ -115,6 +115,7 @@ var ft;
                     this.model = this.getParameterValue(value, ctx);
                     break;
                 case ft.TemplateParams.setStateSelected:
+                    console.log('Get parameter ', key, !!this.getParameterValue(value, ctx, this), this);
                     this.setState('selected', !!this.getParameterValue(value, ctx, this));
                     break;
                 case ft.TemplateParams.setStateDisabled:
@@ -150,6 +151,7 @@ var ft;
         TemplateView.prototype.isChangedDynamicProperty = function (name) {
             var value = expression.getContextValue(name, this);
             var r = !(this._prevDynamicProperiesMap[name] === value);
+            console.log('Is changed r? ', name, r);
             return r;
         };
         TemplateView.prototype.setDynamicProperty = function (name, value) {
@@ -164,6 +166,7 @@ var ft;
             this.setParameters(_.extend({}, localParams, parentParams));
             var e = ft.templateHelper.createTreeObject(this._template.domTree, this);
             var element = e instanceof TemplateView ? e.getElement() : e;
+            console.log('CreateDomTreeObject ', element, this.inDocument);
             this.setElement(element);
             this.setTreeElementPath('0', this);
             counters.createDom++;
@@ -174,10 +177,12 @@ var ft;
                 return console.warn('Error, try to re-enter ', this.name);
             }
             var start = getTime();
+            console.log('EnteredTreeObject ', this.getElement());
             _super.prototype.enter.call(this);
             this.applyParameters();
-            ft.templateHelper.setDataTreeObject(this._template.domTree, this);
-            counters.setData++;
+            //templateHelper.setDataTreeObject(this._template.domTree, this);
+            //console.log('Setup data ', this.getElement());
+            //counters.setData++;
             ft.templateHelper.enterTreeObject(this._template.domTree, this);
             this.invalidate(fmvc.InvalidateType.Data);
             this.invalidate(fmvc.InvalidateType.State);
@@ -219,6 +224,7 @@ var ft;
             ft.templateHelper.exitTreeObject(this._template.domTree, this);
             this.parent = null;
             this.domDef = null;
+            _super.prototype.exit.call(this);
         };
         TemplateView.prototype.getTemplate = function () {
             return this._template;
@@ -277,6 +283,7 @@ var ft;
             return result;
         };
         TemplateView.prototype.validate = function () {
+            console.log('Validate::: ', this.name, this._states);
             var start = getTime();
             if (!_.isEmpty(this._dynamicPropertiesMap)) {
                 _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
@@ -288,6 +295,12 @@ var ft;
             counters.validate++;
             timers.validate += result;
             //if (this.canValidate()) templateHelper.updateDynamicTree(this);
+        };
+        TemplateView.prototype.validateApp = function () {
+            if (this.canValidate(fmvc.InvalidateType.App)) {
+                counters.validateApp++;
+                ft.templateHelper.updateDynamicTree(this, 'app');
+            }
         };
         TemplateView.prototype.validateData = function () {
             if (this.canValidate(fmvc.InvalidateType.Data)) {

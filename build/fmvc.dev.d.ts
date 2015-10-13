@@ -246,6 +246,8 @@ declare module fmvc {
         exit(): void;
         isWaitingForValidate: boolean;
         invalidate(value: number): void;
+        invalidateData(): void;
+        invalidateApp(): void;
         validate(): void;
         protected validateData(): void;
         protected validateState(): void;
@@ -283,7 +285,7 @@ declare module fmvc {
     class Mediator extends fmvc.Notifier implements IMediator {
         private views;
         private _root;
-        constructor(name: string, root?: Element);
+        constructor(name: string, root: Element);
         setRoot(root: Element): Mediator;
         root: Element;
         addView(...views: fmvc.View[]): Mediator;

@@ -7,7 +7,7 @@ var ft;
         function TemplateViewHelper() {
             this.idCounter = 0;
             this.domElementPathIds = {};
-            _.bindAll(this, 'createTreeObjectFunc', 'initTreeElement', 'addTreeObjectFunc', 'getTreeObject', 'setDataTreeObjectFunc', 'enterTreeObjectFunc', 'exitTreeObjectFunc');
+            _.bindAll(this, 'createTreeObjectFunc', 'initTreeElement', 'addTreeObjectFunc', 'getTreeObject', 'setDataTreeObjectFunc', 'enterTreeObjectFunc', 'exitTreeObjectFunc', 'removeTreeObject');
             this.createTreeObject = this.createTreeObjectFunctor();
             this.enterTreeObject = this.enterTreeObjectFunctor();
             this.exitTreeObject = this.exitTreeObjectFunctor();
@@ -123,6 +123,7 @@ var ft;
             return ((isIncluded && treeElement && !this.isCommentElement(treeElement)) ? 0 : isIncluded ? 1 : -1);
         };
         TemplateViewHelper.prototype.enterTreeObjectFunc = function (object, data, root) {
+            this.setDataTreeObjectFunc(object, data, root);
             if (object && object instanceof ft.TemplateView && !object.inDocument) {
                 object.enter();
             }
@@ -135,12 +136,11 @@ var ft;
             var domElement = this.getDomElement(object);
             var pathId = this.isTagElement(domElement) ? domElement.getAttribute(ft.AttributePathId) : null;
             this.unregisterDomElementId(pathId);
-            root.setTreeElementPath(data.path, null);
             if (this.hasChildrenView(data, root)) {
                 var childrenView = root.getChildrenViewByPath(data.path);
                 childrenView.dispose();
             }
-            if (object && object instanceof ft.TemplateView)
+            if (object && object instanceof ft.TemplateView && !object === root)
                 object.exit();
             return object;
         };
@@ -312,6 +312,9 @@ var ft;
         };
         TemplateViewHelper.prototype.removeTreeObject = function (object, data, parent, parentData, root) {
             //this.getDomElement(parent).replaceChild(this.getDomElement(object), this.getCommentElement(data));
+            this.getDomElement(parent).removeChild(this.getDomElement(object));
+            if (object instanceof ft.TemplateView)
+                object.setTreeElementPath(data.path, null);
         };
         // -----------------------------------------------------------------------------------------------------------
         // Attrs & values

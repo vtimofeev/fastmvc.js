@@ -809,8 +809,9 @@ var fmvc;
     }
     fmvc.nextFrameHandler = nextFrameHandler;
     function executeNextFrameHandlers(time) {
-        _.each(nextFrameHandlers, function (v, k) { return v(); });
+        var executedHandlers = nextFrameHandlers;
         nextFrameHandlers = [];
+        _.each(executedHandlers, function (v, k) { return v(); });
     }
     var View = (function (_super) {
         __extends(View, _super);
@@ -899,8 +900,11 @@ var fmvc;
             configurable: true
         });
         View.prototype.setModel = function (value) {
-            this._model = value;
-            this.setData(value ? value.data : null);
+            if (value != this._model) {
+                this._model = value;
+                this._model.bind(this, this.invalidateData);
+                this.setData(value ? value.data : null);
+            }
             return this;
         };
         Object.defineProperty(View.prototype, "inDocument", {
@@ -928,6 +932,7 @@ var fmvc;
             //this.invalidate(InvalidateType.Data | InvalidateType.Children);
         };
         View.prototype.exit = function () {
+            this._states = {};
             this._inDocument = false;
         };
         Object.defineProperty(View.prototype, "isWaitingForValidate", {
@@ -943,6 +948,12 @@ var fmvc;
                 this._isWaitingForValidate = true;
                 nextFrameHandler(this.validate, this);
             }
+        };
+        View.prototype.invalidateData = function () {
+            this.invalidate(fmvc.InvalidateType.Data);
+        };
+        View.prototype.invalidateApp = function () {
+            this.invalidate(fmvc.InvalidateType.App);
         };
         View.prototype.validate = function () {
             if (!this.inDocument)

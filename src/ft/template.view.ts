@@ -124,6 +124,7 @@ module ft {
                     this.model = this.getParameterValue(value, ctx);
                     break;
                 case TemplateParams.setStateSelected:
+                    console.log('Get parameter ', key , !!this.getParameterValue(value, ctx, this), this);
                     this.setState('selected', !!this.getParameterValue(value, ctx, this));
                     break;
                 case TemplateParams.setStateDisabled:
@@ -147,6 +148,7 @@ module ft {
 
         getParameterValue(value:IExpressionName|any, ctx:ITemplateView, child:ITemplateView):any {
             if(child) ctx.ctx = child;
+
             return _.isObject(value)?ctx.getExpressionValue(value):value;
         }
 
@@ -159,6 +161,8 @@ module ft {
         isChangedDynamicProperty(name:string):boolean {
             var value = expression.getContextValue(name, this);
             var r = !(this._prevDynamicProperiesMap[name] === value);
+            console.log('Is changed r? ', name, r);
+
             return r;
         }
 
@@ -174,7 +178,10 @@ module ft {
             this.setParameters(_.extend({}, localParams, parentParams));
 
             var e = <TreeElement> templateHelper.createTreeObject(this._template.domTree, this);
+
             var element:HTMLElement = e instanceof TemplateView ? (<ITemplateView>e).getElement() : <HTMLElement>e;
+            console.log('CreateDomTreeObject ', element, this.inDocument);
+
             this.setElement(element);
             this.setTreeElementPath('0', this);
             counters.createDom++;
@@ -187,11 +194,12 @@ module ft {
             }
             var start = getTime();
 
+            console.log('EnteredTreeObject ', this.getElement());
             super.enter();
             this.applyParameters();
-            templateHelper.setDataTreeObject(this._template.domTree, this);
-
-            counters.setData++;
+            //templateHelper.setDataTreeObject(this._template.domTree, this);
+            //console.log('Setup data ', this.getElement());
+            //counters.setData++;
 
             templateHelper.enterTreeObject(this._template.domTree, this);
             this.invalidate(fmvc.InvalidateType.Data);
@@ -239,6 +247,7 @@ module ft {
             templateHelper.exitTreeObject(this._template.domTree, this);
             this.parent = null;
             this.domDef = null;
+            super.exit();
         }
 
         getTemplate():ITemplate {
@@ -309,6 +318,7 @@ module ft {
         }
 
         validate():void {
+            console.log('Validate::: ' , this.name, this._states);
             var start = getTime();
             if (!_.isEmpty(this._dynamicPropertiesMap)) {
                 _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
@@ -323,6 +333,14 @@ module ft {
             timers.validate+=result;
             //if (this.canValidate()) templateHelper.updateDynamicTree(this);
         }
+
+        protected validateApp():void {
+            if(this.canValidate(fmvc.InvalidateType.App)) {
+                counters.validateApp++;
+                templateHelper.updateDynamicTree(this, 'app');
+            }
+        }
+
 
         protected validateData():void {
             if(this.canValidate(fmvc.InvalidateType.Data)) {

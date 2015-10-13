@@ -32,24 +32,25 @@ describe('ft - component package ', function () {
 
     var templateObjs = {
         "ft.DataButton": {
-            content: '<div .stateHandlers="hover,selected" onclick="selected" class="button button-{state.selected} button-{state.hover} button-{state.disabled}">{data.title}</div>',
+            content: '<div .stateHandlers="hover,selected" onclick="selectedChildrenItem" class="button button-{state.selected} button-{state.hover} button-{state.disabled}">{data.title}</div>',
         },
+
         "ft.ButtonGroup": {
             content: '<div .stateHandlers="hover" >' +
             '<div class="button-{state.hover}">Заголовок с подсветкой</div>' +
 
-            '<ft.DataButton onclick="disable" state.disabled="{data.disabled}">Disable children</ft.DataButton>' +
-            '<ft.DataButton onclick="enable" state.disabled="{(!data.disabled)}">Enable children</ft.DataButton>' +
+            '<ft.DataButton onclick="disable" state.disabled="{app.scope.d.disabled}">Disable children</ft.DataButton>' +
+            '<ft.DataButton onclick="enable" state.disabled="{(!app.scope.d.disabled)}">Enable children</ft.DataButton>' +
 
-            '<div states="{data.selected}">Выбран элемент {data.selected.title}</div>' +
-            '<div states="{(!data.selected)}">Нет выбранного элемнта (глобальный-кнопка)</div>' +
+            '<div states="{app.scope.d.selected}">Выбран элемент {app.scope.d.selected.title}</div>' +
+            '<div states="{(!app.scope.d.selected)}">Нет выбранного элемнта (глобальный-кнопка)</div>' +
 
-            '<ft.DataButton states="{data.selected}" .data="{data.selected}"> Выбран узел (глобальный) </ft.DataButton>' +
-            '<ft.DataButton states="{(!data.selected)}" .data="{data.reset}"> Нет узла (глобальный) </ft.DataButton>' +
+            '<ft.DataButton states="{app.scope.d.selected}" .data="{app.scope.d.selected}"> Выбран узел (глобальный) </ft.DataButton>' +
+            '<ft.DataButton states="{(!app.scope.d.selected)}" .data="{app.scope.d.reset}"> Нет узла (глобальный) </ft.DataButton>' +
 
-            '<div ln="childrenContainer" children.stateHandlers="hover" children.state.selected="{(ctx.data===data.selected)}" children.state.disabled="{data.disabled}" children.class="ft.DataButton" children.data="{data.children}">' +
+            '<div ln="childrenContainer" children.stateHandlers="hover" children.state.selected="{(ctx.data===app.scope.d.selected)}" children.state.disabled="{app.scope.d.disabled}" children.class="ft.DataButton" children.data="{app.scope.d.children}">' +
             '</div>' +
-            '<ft.DataButton .stateHandlers="hover" .data="{data.reset}" state.disabled="{data.disabled}" state.selected="{data.selected}" onclick="reset"> Очистить (глобальный) </ft.DataButton>' +
+            '<ft.DataButton .stateHandlers="hover" .data="{app.scope.d.reset}" state.disabled="{app.scope.d.disabled}" state.selected="{app.scope.d.selected}" onclick="reset"> Очистить (глобальный) </ft.DataButton>' +
 
             '</div>',
 
@@ -59,55 +60,73 @@ describe('ft - component package ', function () {
     };
 
     var tm:ft.ITemplateManager = ft.templateManager;
+    var app = new fmvc.Facade('testapp', null, document.body);
+    var model = new fmvc.Model('scope');
+    model.data = { selected: null, disabled: false, children: buttonsDs2, reset: buttonReset };
+    var mediator = new fmvc.Mediator('appmed', document.body);
+    
+    app.register(model, mediator);
 
     describe('ft - ButtonGroup/DataButton', function () {
         _.each(templateObjs, function (obj:ITemplateTestObject, key:string) {
+
+            
+
             it('should create instances ' + key, function () {
                 var CreateTemplate = tm.createTemplate(key, obj.content);
-                var params:any = {setStates: obj.states, data: obj.data};
+                var params:any = {setStates: obj.states};
                 var instance:ft.ITemplateView = null;
                 var container:HTMLElement = document.getElementById('template-container');
-
                 if (obj.action === 'create') {
                     container.innerHTML = '';
                     instance = window[key]('view-' + key, params);
-                    instance.render(container);
-                    //assert.strictEqual(container.innerHTML, obj.result, 'should be equal');
                 }
 
-                instance.data.children = buttonsDs2;
-                instance.invalidate(fmvc.InvalidateType.Data);
-                console.log('Prevalidate on data changed: ---------------------------------------------', instance);
-                instance.validate();
-
-                instance.data.children = buttonsDs2;
-                instance.invalidate(fmvc.InvalidateType.Data);
+                mediator.addView(instance);
+                model.data = { children: buttonsDs };
+                model.bind(instance, instance.invalidateApp);
                 instance.internalHandler = function (type, e) {
                     console.log('Dispatch internal handler execute for ', type, e);
-                    if (type === 'selected') {
-                        instance.data.selected = e.target.data;
+                    if (type === 'selectedChildrenItem') {
+                        model.data = {selected: e.target.data};
                         instance.invalidate(fmvc.InvalidateType.Data);
                     }
 
                     if (type === 'reset') {
-                        instance.data.selected = null;
+                        model.data = {selected: null};
                         instance.invalidate(fmvc.InvalidateType.Data);
                     }
 
                     if (type === 'disable') {
-                        instance.data.disabled = true;
+                        model.data = {disabled: true};
                         instance.invalidate(fmvc.InvalidateType.Data);
                     }
 
                     if (type === 'enable') {
-                        instance.data.disabled = false;
+                        model.data = {disabled: false};
                         instance.invalidate(fmvc.InvalidateType.Data);
                     }
 
                 };
+
+                ///instance.render(container);
+
+                //instance.data.children = buttonsDs2;
+                //instance.invalidate(fmvc.InvalidateType.Data);
+
+                //instance.validate();
+                /*
+                console.log('Prevalidate on data changed: ---------------------------------------------', instance);
+
+
+                instance.data.children = buttonsDs2;
+                instance.invalidate(fmvc.InvalidateType.Data);
+
                 console.log('Prevalidate on data changed 2: ---------------------------------------------', instance);
                 instance.validate();
+                */
             });
+
         });
 
         it('should exist component constructors', function () {

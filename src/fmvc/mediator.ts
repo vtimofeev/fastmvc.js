@@ -5,7 +5,7 @@ module fmvc {
         private views:View[];
         private _root:Element;
 
-        constructor(name:string, root?:Element) {
+        constructor(name:string, root:Element) {
             super(name, fmvc.TYPE_MEDIATOR);
             this.setRoot(root);
             this.views = [];

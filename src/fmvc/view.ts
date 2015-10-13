@@ -19,8 +19,9 @@ module fmvc {
         if(nextFrameHandlers.length === 1) window.requestAnimationFrame?window.requestAnimationFrame(executeNextFrameHandlers):setTimeout(executeNextFrameHandlers,0);
     }
     function executeNextFrameHandlers(time:number):void {
-        _.each(nextFrameHandlers,(v:Function, k:number)=>v());
+        var executedHandlers = nextFrameHandlers;
         nextFrameHandlers = [];
+        _.each(executedHandlers,(v:Function, k:number)=>v());
     }
 
 
@@ -113,8 +114,11 @@ module fmvc {
 
 
         public setModel(value:Model):IView {
-            this._model = value;
-            this.setData(value?value.data:null);
+            if(value != this._model) {
+                this._model = value;
+                this._model.bind(this, this.invalidateData);
+                this.setData(value?value.data:null);
+            }
             return this;
         }
 
@@ -148,6 +152,7 @@ module fmvc {
         }
 
         public exit():void {
+            this._states = {};
             this._inDocument = false;
         }
 
@@ -156,13 +161,21 @@ module fmvc {
         }
 
         public invalidate(value:number):void {
-
             this._invalidate = this._invalidate | value;
             if(!this._isWaitingForValidate) {
                 this._isWaitingForValidate = true;
                 nextFrameHandler(this.validate, this);
             }
         }
+
+        public invalidateData():void {
+            this.invalidate(InvalidateType.Data);
+        }
+
+        public invalidateApp():void {
+            this.invalidate(InvalidateType.App);
+        }
+
 
         public validate():void {
             if(!this.inDocument) return;
