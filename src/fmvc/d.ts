@@ -3,8 +3,10 @@
 ///<reference path='./notifier.ts'/>
 /////<reference path='./event.dispatcher.ts'/>
 ///<reference path='./model.ts'/>
-///<reference path='./model.list.ts'/>
+///<reference path='./model.queue.ts'/>
+///<reference path='./source.model.ts'/>
 ///<reference path='./logger.ts'/>
+
 /////<reference path='./view.i.ts'/>
 ///<reference path='./view.ts'/>
 /////<reference path='./view.list.ts'/>

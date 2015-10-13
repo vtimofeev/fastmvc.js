@@ -394,7 +394,7 @@ var fmvc;
         };
         Object.defineProperty(Model.prototype, "data", {
             get: function () {
-                return (this.getData());
+                return this.getData();
             },
             set: function (value) {
                 this.setData(value);
@@ -409,7 +409,6 @@ var fmvc;
             if (this._data === value)
                 return;
             var result = this.parseValueAndSetChanges(value);
-            console.log('Model set data ... ', value);
             if (this._data !== result || this._changes) {
                 this._data = result;
                 this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
@@ -418,6 +417,13 @@ var fmvc;
         Object.defineProperty(Model.prototype, "changes", {
             get: function () {
                 return this._changes;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Model.prototype, "d", {
+            get: function () {
+                return this.getData();
             },
             enumerable: true,
             configurable: true
@@ -439,6 +445,13 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(Model.prototype, "count", {
+            get: function () {
+                return _.isArray(this.data) ? this.data.length : 0;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Model.prototype.sendEvent = function (name, data, changes, sub, error) {
             if (data === void 0) { data = null; }
             if (changes === void 0) { changes = null; }
@@ -448,12 +461,10 @@ var fmvc;
                 _super.prototype.sendEvent.call(this, name, data, changes, sub, error);
         };
         Model.prototype.dispose = function () {
+            this._queue ? this._queue.dispose() : null;
+            this._queue = null;
             _super.prototype.dispose.call(this);
-            // remove queue
         };
-        //-----------------------------------------------------------------------------
-        // Source model
-        //-----------------------------------------------------------------------------
         //-----------------------------------------------------------------------------
         // Queue
         //-----------------------------------------------------------------------------
@@ -461,111 +472,16 @@ var fmvc;
             if (create === void 0) { create = false; }
             if (create && this._queue)
                 this._queue.dispose();
-            return this._queue && !create ? this._queue : (this._queue = new ModelQueue(this));
+            return this._queue && !create ? this._queue : (this._queue = new fmvc.ModelQueue(this));
         };
         return Model;
     })(fmvc.Notifier);
     fmvc.Model = Model;
-    /*
-     export class TypeModel <T> extends Model {
-     constructor(name:string, data:T, opts?:IModelOptions) {
-     super(name, data, opts);
-     }
-
-     public get data():T {
-     return <T>this.getData();
-     }
-     }
-     */
-    var SourceModel = (function (_super) {
-        __extends(SourceModel, _super);
-        function SourceModel(name, source, opts) {
-            _super.call(this, name, null, opts);
-            this.throttleApplyChanges = _.throttle(_.bind(this.apply, this), 100);
-            this.addSources(source);
-        }
-        SourceModel.prototype.addSources = function (v) {
-            if (!v)
-                return this;
-            if (!this._sources)
-                this._sources = [];
-            _.each(v, this.addSource, this);
-            return this;
-        };
-        SourceModel.prototype.addSource = function (v, mapBeforeCompareFunc) {
-            if (v instanceof Model) {
-                var m = v;
-                m.bind(this, this.sourceChangeHandler);
-                this._sources.push(m);
-            }
-            else if (v.length) {
-                this._sources.push(v);
-            }
-            else {
-                throw 'Cant add source ', v;
-            }
-            return this;
-        };
-        SourceModel.prototype.removeSource = function (v) {
-            var index = -1;
-            if (this._sources && (index = this._sources.indexOf(v)) > -1) {
-                this._sources.splice(index, 1);
-                if (v instanceof Model)
-                    v.unbind(v);
-            }
-            return this;
-        };
-        SourceModel.prototype.sourceChangeHandler = function (e) {
-            this.throttleApplyChanges();
-        };
-        SourceModel.prototype.setSourceCompareFunc = function (value) {
-            this._sourceCompareFunc = value;
-            this.throttleApplyChanges();
-            return this;
-        };
-        SourceModel.prototype.setEqualFunc = function (name, value) {
-            if (!this._sourceEqualFunc)
-                this._sourceEqualFunc = {};
-            this._sourceEqualFunc[name] = value;
-            this.throttleApplyChanges();
-            return this;
-        };
-        SourceModel.prototype.setResultFunc = function () {
-            var values = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                values[_i - 0] = arguments[_i];
-            }
-            this._resultFuncs = _.flatten([].concat(this._resultFuncs ? this._resultFuncs : [], values));
-            this.throttleApplyChanges();
-            return this;
-        };
-        SourceModel.prototype.apply = function () {
-            console.log('Apply changes ...', this._sources, this._sourceCompareFunc, this._resultFuncs);
-            if (!this._sources || !this._sources.length)
-                this.setData(null);
-            if (!this._sourceCompareFunc && this._sources.length > 1)
-                throw 'SourceModel: source method not defined';
-            var result = null;
-            var sourcesResult = this._sourceCompareFunc && this._sources.length > 1 ? (this._sourceCompareFunc.apply(this, _.map(this._sources, function (v) { return v.data; }))) : this._sources[0].data;
-            console.log('SourceModel: Source Result is ', sourcesResult);
-            if (sourcesResult)
-                result = _.reduce(this._resultFuncs, function (memo, method) {
-                    return method.call(this, memo);
-                }, sourcesResult, this);
-            console.log('SourceModel: Result is ', JSON.stringify(result));
-            this.reset().setData(result);
-        };
-        SourceModel.prototype.dispose = function () {
-            var _this = this;
-            _.each(this._sources, function (v) { return _this.removeSource(v); }, this);
-            this._sources = null;
-            this._sourceCompareFunc = null;
-            this._resultFuncs = null;
-        };
-        return SourceModel;
-    })(Model);
-    fmvc.SourceModel = SourceModel;
-    // Uses jQuery/Zepto Deferred model
+})(fmvc || (fmvc = {}));
+///<reference path='./d.ts'/>
+var fmvc;
+(function (fmvc) {
+    // It uses Zepto or JQuery deferred
     var ModelQueue = (function () {
         function ModelQueue(model) {
             this.model = model;
@@ -656,54 +572,133 @@ var fmvc;
         return ModelQueue;
     })();
     fmvc.ModelQueue = ModelQueue;
-    var Validator = (function () {
-        function Validator(name, fnc) {
-            this.name = null;
-            this.fnc = null;
-            this.name = name;
-            this.fnc = fnc;
-        }
-        Validator.prototype.execute = function (data) {
-            this.fnc.call(data, data);
-        };
-        return Validator;
-    })();
-    fmvc.Validator = Validator;
 })(fmvc || (fmvc = {}));
 ///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
-    var ModelList = (function (_super) {
-        __extends(ModelList, _super);
-        function ModelList(name, data, opts) {
-            if (data === void 0) { data = []; }
-            _super.call(this, name, data, opts);
+    var CompositeModel = (function (_super) {
+        __extends(CompositeModel, _super);
+        function CompositeModel(name, source, opts) {
+            _super.call(this, name, null, opts);
+            this.throttleApplyChanges = _.throttle(_.bind(this.apply, this), 100, { leading: false });
+            if (_.isArray(source))
+                this.addSources(source);
+            else
+                this.addSource(source);
         }
-        ModelList.prototype.parseValue = function (value) {
-            if (!_.isArray(value))
-                throw Error('Cant set modelList from not array data');
-            var data = [];
-            _.each(value, function (item) {
-                var modelValue = (item instanceof fmvc.Model) ? item : this.getModel(item);
-                data.push(modelValue);
-            }, this);
-            return data;
+        CompositeModel.prototype.addSources = function (v) {
+            var _this = this;
+            if (!v)
+                return this;
+            if (!this._sources)
+                this._sources = [];
+            _.each(v, function (source) { return _this.addSource(source); }, this);
+            return this;
         };
-        // @overrided
-        ModelList.prototype.getModel = function (value) {
-            return new fmvc.Model(this.name + '-item', value);
+        CompositeModel.prototype.addSource = function (v, mapBeforeCompareFunc) {
+            if (v instanceof fmvc.Model) {
+                var m = v;
+                m.bind(this, this.sourceChangeHandler);
+                this._sources.push(m);
+                if (mapBeforeCompareFunc) {
+                    if (_.isFunction(mapBeforeCompareFunc)) {
+                        this.setMapBeforeCompare(m.name, mapBeforeCompareFunc);
+                    }
+                    else {
+                        throw 'SourceModel: Cant set ' + mapBeforeCompareFunc + ' mapBeforeCompareFunc for model ' + m.name;
+                    }
+                }
+            }
+            else if (v.length) {
+                this._sources.push(v);
+            }
+            else {
+                throw 'SourceModel: Cant add source ' + v;
+            }
+            return this;
         };
-        Object.defineProperty(ModelList.prototype, "count", {
-            get: function () {
-                var data = this.data;
-                return (data && data.length) ? data.length : 0;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        return ModelList;
+        CompositeModel.prototype.removeSource = function (v) {
+            var index = -1;
+            if (this._sources && (index = this._sources.indexOf(v)) > -1) {
+                this._sources.splice(index, 1);
+                if (v instanceof fmvc.Model)
+                    v.unbind(v);
+                if (this._mapBeforeCompareFunc[v.name])
+                    delete this._mapBeforeCompareFunc[v.name];
+            }
+            else {
+                throw 'SourceModel: Can remove source ' + v;
+            }
+            return this;
+        };
+        CompositeModel.prototype.sourceChangeHandler = function (e) {
+            this.throttleApplyChanges();
+        };
+        CompositeModel.prototype.setSourceCompareFunc = function (value) {
+            this._sourceCompareFunc = value;
+            this.throttleApplyChanges();
+            return this;
+        };
+        CompositeModel.prototype.setMapBeforeCompare = function (name, value) {
+            if (!this._mapBeforeCompareFunc)
+                this._mapBeforeCompareFunc = {};
+            this._mapBeforeCompareFunc[name] = value;
+            this.throttleApplyChanges();
+            return this;
+        };
+        CompositeModel.prototype.setResultFunc = function () {
+            var values = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                values[_i - 0] = arguments[_i];
+            }
+            this._resultFuncs = values ? _.flatten([].concat(this._resultFuncs ? this._resultFuncs : [], values)) : null;
+            this.throttleApplyChanges();
+            return this;
+        };
+        CompositeModel.prototype.apply = function () {
+            if (!this._sources || !this._sources.length)
+                this.setData(null);
+            if (!this._sourceCompareFunc && this._sources.length > 1) {
+                throw 'SourceModel: has source datas, but method not defined';
+            }
+            var result = null;
+            var sourcesResult = this.getSourceResult();
+            if (sourcesResult)
+                result = _.reduce(this._resultFuncs, function (memo, method) {
+                    return method.call(this, memo);
+                }, sourcesResult, this);
+            this.reset().setData(result);
+        };
+        CompositeModel.prototype.getSourceResult = function () {
+            if (this._sourceCompareFunc && this._sources.length > 1) {
+                return this._sourceCompareFunc.apply(this, _.map(this._sources, this.getPreparedSourceData, this), this);
+            }
+            else {
+                return this._sources[0] instanceof fmvc.Model ? this._sources[0].data : this._sources[0];
+            }
+        };
+        CompositeModel.prototype.getPreparedSourceData = function (v) {
+            if (v instanceof fmvc.Model) {
+                var mapper = this._mapBeforeCompareFunc && this._mapBeforeCompareFunc[v.name] ? this._mapBeforeCompareFunc[v.name] : null;
+                var mappedResult = mapper ? _.map(v.data, mapper) : v.data;
+                return mappedResult;
+            }
+            else {
+                return v;
+            }
+        };
+        CompositeModel.prototype.dispose = function () {
+            var _this = this;
+            _.each(this._sources, function (v) { return _this.removeSource(v); }, this);
+            this._sources = null;
+            this._sourceCompareFunc = null;
+            this._resultFuncs = null;
+            this._sourceCompareFunc = null;
+            _super.prototype.dispose.call(this);
+        };
+        return CompositeModel;
     })(fmvc.Model);
-    fmvc.ModelList = ModelList;
+    fmvc.CompositeModel = CompositeModel;
 })(fmvc || (fmvc = {}));
 ///<reference path='./d.ts'/>
 var fmvc;
@@ -1097,703 +1092,11 @@ var fmvc;
 ///<reference path='./notifier.ts'/>
 /////<reference path='./event.dispatcher.ts'/>
 ///<reference path='./model.ts'/>
-///<reference path='./model.list.ts'/>
+///<reference path='./model.queue.ts'/>
+///<reference path='./source.model.ts'/>
 ///<reference path='./logger.ts'/>
-/////<reference path='./view.i.ts'/>
 ///<reference path='./view.ts'/>
-/////<reference path='./view.list.ts'/>
 ///<reference path='./mediator.ts'/>
 ///<reference path='../../../DefinitelyTyped/lodash/lodash.d.ts'/>
 ///<reference path='../../../DefinitelyTyped/jquery/jquery.d.ts'/>
-///<reference path='../fmvc/d.ts'/>
-/* start compiled view */
-var ui;
-(function (ui) {
-    var Button = (function (_super) {
-        __extends(Button, _super);
-        function Button(name, modelOrData, jsTemplate) {
-            _super.call(this, name, modelOrData, jsTemplate);
-        }
-        Button.prototype.createDom = function () {
-            this.element = this.templateElement;
-            this.childrenContainer = this.childrenContainer || this.element;
-            return this;
-        };
-        Object.defineProperty(Button.prototype, "jsTemplate", {
-            get: function () {
-                return Button.__jsTemplate;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Button.__jsTemplate = {
-            "path": "0",
-            "type": "tag",
-            "properties": {},
-            "attribs": {
-                "className": "Button",
-                "class": {
-                    "static": ["button"],
-                    "dynamic": [{
-                            "content": "button-{selected}",
-                            "result": "button-{$0}",
-                            "vars": ["$0"],
-                            "expressions": ["selected"]
-                        }, {
-                            "content": "button-{disabled}",
-                            "result": "button-{$0}",
-                            "vars": ["$0"],
-                            "expressions": ["disabled"]
-                        }, {
-                            "content": "button-{hover}",
-                            "result": "button-{$0}",
-                            "vars": ["$0"],
-                            "expressions": ["hover"]
-                        }, {
-                            "content": "button-{error}",
-                            "result": "button-{$0}",
-                            "vars": ["$0"],
-                            "expressions": ["error"]
-                        }, {
-                            "content": "button-{open}",
-                            "result": "button-{$0}",
-                            "vars": ["$0"],
-                            "expressions": ["open"]
-                        }, {
-                            "content": "{exClass}",
-                            "result": "{$0}",
-                            "vars": ["$0"],
-                            "expressions": ["exClass"]
-                        }]
-                }
-            },
-            "static": {},
-            "dynamic": {},
-            "children": [{
-                    "path": "0,0",
-                    "type": "text",
-                    "data": {
-                        "content": "{(state.content||data)}",
-                        "result": "{$0}",
-                        "vars": ["$0"],
-                        "expressions": [{
-                                "content": "(state.content||data)",
-                                "vars": ["state.content", "data", "$0"],
-                                "values": ["$0"],
-                                "expressions": ["(this.getState(\"content\")||this.data)"]
-                            }]
-                    },
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }],
-            "dynamicSummary": {
-                "state.content": {
-                    "data": {
-                        "0,0": {
-                            "content": "{(state.content||data)}",
-                            "result": "{$0}",
-                            "vars": ["$0"],
-                            "expressions": [{
-                                    "content": "(state.content||data)",
-                                    "vars": ["state.content", "data", "$0"],
-                                    "values": ["$0"],
-                                    "expressions": ["(this.getState(\"content\")||this.data)"]
-                                }]
-                        }
-                    }
-                },
-                "data": {
-                    "data": {
-                        "0,0": {
-                            "content": "{(state.content||data)}",
-                            "result": "{$0}",
-                            "vars": ["$0"],
-                            "expressions": [{
-                                    "content": "(state.content||data)",
-                                    "vars": ["state.content", "data", "$0"],
-                                    "values": ["$0"],
-                                    "expressions": ["(this.getState(\"content\")||this.data)"]
-                                }]
-                        }
-                    }
-                }
-            },
-            "tagName": "div",
-            "enableStates": ["hover", "selected", "disabled", "error", "open", {
-                    "name": "content",
-                    "type": "string",
-                    "default": ""
-                }, {
-                    "name": "exClass",
-                    "type": "string",
-                    "default": ""
-                }],
-            "extend": "fmvc.View",
-            "className": "Button",
-            "moduleName": "ui"
-        };
-        return Button;
-    })(fmvc.View);
-    ui.Button = Button;
-})(ui || (ui = {}));
-///<reference path='../fmvc/d.ts'/>
-/* start compiled view */
-var test;
-(function (test) {
-    var TestButtons = (function (_super) {
-        __extends(TestButtons, _super);
-        function TestButtons(name, modelOrData, jsTemplate) {
-            _super.call(this, name, modelOrData, jsTemplate);
-        }
-        TestButtons.prototype.createDom = function () {
-            this.element = this.templateElement;
-            this.b1 = this.componentPaths["0,13"] || this.elementPaths["0,13"];
-            this.b2 = this.componentPaths["0,15"] || this.elementPaths["0,15"];
-            this.b3 = this.componentPaths["0,17"] || this.elementPaths["0,17"];
-            this.b4 = this.componentPaths["0,19"] || this.elementPaths["0,19"];
-            this.childrenContainer = this.childrenContainer || this.element;
-            return this;
-        };
-        Object.defineProperty(TestButtons.prototype, "jsTemplate", {
-            get: function () {
-                return TestButtons.__jsTemplate;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        TestButtons.__jsTemplate = {
-            "path": "0",
-            "type": "tag",
-            "properties": {},
-            "attribs": {
-                "class": {
-                    "static": ["containerButtons"],
-                    "dynamic": []
-                }
-            },
-            "static": {},
-            "dynamic": {},
-            "children": [{
-                    "path": "0,0",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }, {
-                    "path": "0,1",
-                    "type": "tag",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {},
-                    "children": [{
-                            "path": "0,1,0",
-                            "type": "text",
-                            "data": "Simple div without anything",
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {}
-                        }, {
-                            "path": "0,1,1",
-                            "type": "tag",
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {},
-                            "children": [{
-                                    "path": "0,1,1,0",
-                                    "type": "text",
-                                    "data": "ola!",
-                                    "properties": {},
-                                    "attribs": {},
-                                    "static": {},
-                                    "dynamic": {}
-                                }],
-                            "tagName": "b"
-                        }, {
-                            "path": "0,1,2",
-                            "type": "text",
-                            "data": "model data:",
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {}
-                        }, {
-                            "path": "0,1,3",
-                            "type": "tag",
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {},
-                            "children": [{
-                                    "path": "0,1,3,0",
-                                    "type": "text",
-                                    "data": {
-                                        "content": "{app.test.data.title}",
-                                        "result": "{$0}",
-                                        "vars": ["$0"],
-                                        "expressions": ["app.test.data.title"]
-                                    },
-                                    "properties": {},
-                                    "attribs": {},
-                                    "static": {},
-                                    "dynamic": {}
-                                }],
-                            "tagName": "i"
-                        }],
-                    "tagName": "div"
-                }, {
-                    "path": "0,2",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }, {
-                    "path": "0,3",
-                    "type": "tag",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {},
-                    "children": [{
-                            "path": "0,3,0",
-                            "type": "text",
-                            "data": {
-                                "content": "{app.test.data.title} - has model data, sure ?",
-                                "result": "{$0} - has model data, sure ?",
-                                "vars": ["$0"],
-                                "expressions": ["app.test.data.title"]
-                            },
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {}
-                        }],
-                    "tagName": "div",
-                    "states": {
-                        "content": "(app.test.state==='one')",
-                        "vars": ["app.test.state", "$0"],
-                        "values": ["$0"],
-                        "expressions": ["(this.app.test.state==='one')"]
-                    }
-                }, {
-                    "path": "0,4",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }, {
-                    "path": "0,5",
-                    "type": "tag",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {},
-                    "children": [{
-                            "path": "0,5,0",
-                            "type": "text",
-                            "data": "State one",
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {}
-                        }],
-                    "tagName": "div",
-                    "states": {
-                        "content": "(app.test.state==='one')",
-                        "vars": ["app.test.state", "$0"],
-                        "values": ["$0"],
-                        "expressions": ["(this.app.test.state==='one')"]
-                    },
-                    "selected": "(app.test.state)"
-                }, {
-                    "path": "0,6",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }, {
-                    "path": "0,7",
-                    "type": "tag",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {},
-                    "children": [{
-                            "path": "0,7,0",
-                            "type": "text",
-                            "data": "State two button",
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {}
-                        }],
-                    "tagName": "ui.Button",
-                    "states": {
-                        "content": "(app.test.state==='two')",
-                        "vars": ["app.test.state", "$0"],
-                        "values": ["$0"],
-                        "expressions": ["(this.app.test.state==='two')"]
-                    },
-                    "selected": "(!!app.test.state)"
-                }, {
-                    "path": "0,8",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }, {
-                    "path": "0,9",
-                    "type": "tag",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {},
-                    "children": [{
-                            "path": "0,9,0",
-                            "type": "text",
-                            "data": "State three",
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {}
-                        }],
-                    "tagName": "div",
-                    "states": {
-                        "content": "(app.test.state==='three')",
-                        "vars": ["app.test.state", "$0"],
-                        "values": ["$0"],
-                        "expressions": ["(this.app.test.state==='three')"]
-                    }
-                }, {
-                    "path": "0,10",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }, {
-                    "path": "0,11",
-                    "type": "tag",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {},
-                    "children": [{
-                            "path": "0,11,0",
-                            "type": "tag",
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {},
-                            "children": [{
-                                    "path": "0,11,0,0",
-                                    "type": "text",
-                                    "data": {
-                                        "content": "{app.test.state}",
-                                        "result": "{$0}",
-                                        "vars": ["$0"],
-                                        "expressions": ["app.test.state"]
-                                    },
-                                    "properties": {},
-                                    "attribs": {},
-                                    "static": {},
-                                    "dynamic": {}
-                                }],
-                            "tagName": "b"
-                        }, {
-                            "path": "0,11,1",
-                            "type": "text",
-                            "data": "- has model data, sure ?",
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {}
-                        }],
-                    "tagName": "div"
-                }, {
-                    "path": "0,12",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }, {
-                    "path": "0,13",
-                    "type": "tag",
-                    "properties": {},
-                    "attribs": {
-                        "content": "SimpleButtonContentFromProperty"
-                    },
-                    "static": {},
-                    "dynamic": {},
-                    "tagName": "ui.Button",
-                    "link": "b1",
-                    "selected": "(app.test.state)"
-                }, {
-                    "path": "0,14",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }, {
-                    "path": "0,15",
-                    "type": "tag",
-                    "properties": {},
-                    "attribs": {
-                        "hover": "(data.hover)",
-                        "exClass": "buttonOne"
-                    },
-                    "static": {},
-                    "dynamic": {},
-                    "children": [{
-                            "path": "0,15,0",
-                            "type": "text",
-                            "data": "Selected TheContentFromContainer And Text 2",
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {}
-                        }],
-                    "tagName": "ui.Button",
-                    "link": "b2",
-                    "selected": "(app.test.state==='one')"
-                }, {
-                    "path": "0,16",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }, {
-                    "path": "0,17",
-                    "type": "tag",
-                    "properties": {},
-                    "attribs": {
-                        "exClass": "buttonOne"
-                    },
-                    "static": {},
-                    "dynamic": {},
-                    "children": [{
-                            "path": "0,17,0",
-                            "type": "text",
-                            "data": "Button 3 / And a lot of text",
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {}
-                        }],
-                    "tagName": "ui.Button",
-                    "link": "b3",
-                    "selected": "(app.test.state==='one')"
-                }, {
-                    "path": "0,18",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }, {
-                    "path": "0,19",
-                    "type": "tag",
-                    "properties": {},
-                    "attribs": {
-                        "exClass": "buttonOne"
-                    },
-                    "static": {},
-                    "dynamic": {},
-                    "children": [{
-                            "path": "0,19,0",
-                            "type": "text",
-                            "data": "Button 4 / And a lot of text",
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {}
-                        }],
-                    "tagName": "ui.Button",
-                    "link": "b4",
-                    "selected": "(app.test.state==='one')"
-                }, {
-                    "path": "0,20",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }],
-            "links": [{
-                    "name": "b1",
-                    "value": "0,13"
-                }, {
-                    "name": "b2",
-                    "value": "0,15"
-                }, {
-                    "name": "b3",
-                    "value": "0,17"
-                }, {
-                    "name": "b4",
-                    "value": "0,19"
-                }],
-            "dynamicSummary": {},
-            "tagName": "div",
-            "className": "TestButtons",
-            "moduleName": "test",
-            "enableStates": [null, null]
-        };
-        return TestButtons;
-    })(fmvc.View);
-    test.TestButtons = TestButtons;
-})(test || (test = {}));
-///<reference path='../fmvc/d.ts'/>
-/* start compiled view */
-var test;
-(function (test) {
-    var TestInput = (function (_super) {
-        __extends(TestInput, _super);
-        function TestInput(name, modelOrData, jsTemplate) {
-            _super.call(this, name, modelOrData, jsTemplate);
-        }
-        TestInput.prototype.createDom = function () {
-            this.element = this.templateElement;
-            this.childrenContainer = this.childrenContainer || this.element;
-            return this;
-        };
-        Object.defineProperty(TestInput.prototype, "jsTemplate", {
-            get: function () {
-                return TestInput.__jsTemplate;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        TestInput.__jsTemplate = {
-            "path": "0",
-            "type": "tag",
-            "properties": {},
-            "attribs": {},
-            "static": {},
-            "dynamic": {},
-            "children": [{
-                    "path": "0,0",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }, {
-                    "path": "0,1",
-                    "type": "tag",
-                    "properties": {},
-                    "attribs": {
-                        "type": "text",
-                        "value": {
-                            "content": "@{data.firstname}",
-                            "result": "@{$0}",
-                            "vars": ["$0"],
-                            "expressions": ["data.firstname"]
-                        },
-                        "state.custom": {
-                            "content": "Wasa happens {data.firstname}?",
-                            "result": "Wasa happens {$0}?",
-                            "vars": ["$0"],
-                            "expressions": ["data.firstname"]
-                        },
-                        "placeholder": {
-                            "content": "{data.name|i18n.setFirstname}",
-                            "result": "{$0}",
-                            "vars": ["$0"],
-                            "expressions": ["data.name|i18n.setFirstname"]
-                        },
-                        "customSetting": "{app.test.state}",
-                        "maxlength": "{state.maxlength}"
-                    },
-                    "static": {},
-                    "dynamic": {},
-                    "tagName": "input"
-                }, {
-                    "path": "0,2",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }, {
-                    "path": "0,3",
-                    "type": "tag",
-                    "properties": {},
-                    "attribs": {
-                        "class": {
-                            "static": ["div-static"],
-                            "dynamic": [{
-                                    "content": "div-{state.hover}",
-                                    "result": "div-{$0}",
-                                    "vars": ["$0"],
-                                    "expressions": ["state.hover"]
-                                }, {
-                                    "content": "div-{data.firstname}",
-                                    "result": "div-{$0}",
-                                    "vars": ["$0"],
-                                    "expressions": ["data.firstname"]
-                                }, {
-                                    "content": "div-{data.secondname}",
-                                    "result": "div-{$0}",
-                                    "vars": ["$0"],
-                                    "expressions": ["data.secondname"]
-                                }]
-                        },
-                        "style": {
-                            "static": [{
-                                    "position": "absolute"
-                                }, {
-                                    "top": "0px"
-                                }, {}],
-                            "dynamic": [{
-                                    "background-color": {
-                                        "content": "{data.color}",
-                                        "result": "{$0}",
-                                        "vars": ["$0"],
-                                        "expressions": ["data.color"]
-                                    }
-                                }]
-                        }
-                    },
-                    "static": {},
-                    "dynamic": {},
-                    "children": [{
-                            "path": "0,3,0",
-                            "type": "text",
-                            "data": "Data",
-                            "properties": {},
-                            "attribs": {},
-                            "static": {},
-                            "dynamic": {}
-                        }],
-                    "tagName": "div"
-                }, {
-                    "path": "0,4",
-                    "type": "text",
-                    "properties": {},
-                    "attribs": {},
-                    "static": {},
-                    "dynamic": {}
-                }],
-            "dynamicSummary": {},
-            "tagName": "div",
-            "className": "TestInput",
-            "moduleName": "test",
-            "enableStates": [null, null]
-        };
-        return TestInput;
-    })(fmvc.View);
-    test.TestInput = TestInput;
-})(test || (test = {}));
 //# sourceMappingURL=fmvc.dev.js.map

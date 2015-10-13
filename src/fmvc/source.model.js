@@ -7,28 +7,38 @@ var __extends = this.__extends || function (d, b) {
 ///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
-    var SourceModel = (function (_super) {
-        __extends(SourceModel, _super);
-        function SourceModel(name, source, opts) {
+    var CompositeModel = (function (_super) {
+        __extends(CompositeModel, _super);
+        function CompositeModel(name, source, opts) {
             _super.call(this, name, null, opts);
-            this.throttleApplyChanges = _.throttle(_.bind(this.apply, this), 100);
-            this.addSources(source);
+            this.throttleApplyChanges = _.throttle(_.bind(this.apply, this), 100, { leading: false });
+            if (_.isArray(source))
+                this.addSources(source);
+            else
+                this.addSource(source);
         }
-        SourceModel.prototype.addSources = function (v) {
+        CompositeModel.prototype.addSources = function (v) {
+            var _this = this;
             if (!v)
                 return this;
             if (!this._sources)
                 this._sources = [];
-            _.each(v, this.addSource, this);
+            _.each(v, function (source) { return _this.addSource(source); }, this);
             return this;
         };
-        SourceModel.prototype.addSource = function (v, mapBeforeCompareFunc) {
+        CompositeModel.prototype.addSource = function (v, mapBeforeCompareFunc) {
             if (v instanceof fmvc.Model) {
                 var m = v;
                 m.bind(this, this.sourceChangeHandler);
                 this._sources.push(m);
-                if (mapBeforeCompareFunc)
-                    this.setMapBeforeCompare(m.name, mapBeforeCompareFunc);
+                if (mapBeforeCompareFunc) {
+                    if (_.isFunction(mapBeforeCompareFunc)) {
+                        this.setMapBeforeCompare(m.name, mapBeforeCompareFunc);
+                    }
+                    else {
+                        throw 'SourceModel: Cant set ' + mapBeforeCompareFunc + ' mapBeforeCompareFunc for model ' + m.name;
+                    }
+                }
             }
             else if (v.length) {
                 this._sources.push(v);
@@ -38,7 +48,7 @@ var fmvc;
             }
             return this;
         };
-        SourceModel.prototype.removeSource = function (v) {
+        CompositeModel.prototype.removeSource = function (v) {
             var index = -1;
             if (this._sources && (index = this._sources.indexOf(v)) > -1) {
                 this._sources.splice(index, 1);
@@ -52,73 +62,73 @@ var fmvc;
             }
             return this;
         };
-        SourceModel.prototype.sourceChangeHandler = function (e) {
+        CompositeModel.prototype.sourceChangeHandler = function (e) {
             this.throttleApplyChanges();
         };
-        SourceModel.prototype.setSourceCompareFunc = function (value) {
+        CompositeModel.prototype.setSourceCompareFunc = function (value) {
             this._sourceCompareFunc = value;
             this.throttleApplyChanges();
             return this;
         };
-        SourceModel.prototype.setMapBeforeCompare = function (name, value) {
+        CompositeModel.prototype.setMapBeforeCompare = function (name, value) {
             if (!this._mapBeforeCompareFunc)
                 this._mapBeforeCompareFunc = {};
             this._mapBeforeCompareFunc[name] = value;
             this.throttleApplyChanges();
             return this;
         };
-        SourceModel.prototype.setResultFunc = function () {
+        CompositeModel.prototype.setResultFunc = function () {
             var values = [];
             for (var _i = 0; _i < arguments.length; _i++) {
                 values[_i - 0] = arguments[_i];
             }
-            this._resultFuncs = _.flatten([].concat(this._resultFuncs ? this._resultFuncs : [], values));
+            this._resultFuncs = values ? _.flatten([].concat(this._resultFuncs ? this._resultFuncs : [], values)) : null;
             this.throttleApplyChanges();
             return this;
         };
-        SourceModel.prototype.apply = function () {
-            console.log('Apply changes ...', this._sources, this._sourceCompareFunc, this._resultFuncs);
+        CompositeModel.prototype.apply = function () {
             if (!this._sources || !this._sources.length)
                 this.setData(null);
-            if (!this._sourceCompareFunc && this._sources.length > 1)
+            if (!this._sourceCompareFunc && this._sources.length > 1) {
                 throw 'SourceModel: has source datas, but method not defined';
+            }
             var result = null;
             var sourcesResult = this.getSourceResult();
-            console.log('SourceModel: Source Result is ', sourcesResult);
             if (sourcesResult)
                 result = _.reduce(this._resultFuncs, function (memo, method) {
                     return method.call(this, memo);
                 }, sourcesResult, this);
-            console.log('SourceModel: Result is ', JSON.stringify(result));
             this.reset().setData(result);
         };
-        SourceModel.prototype.getSourceResult = function () {
-            var _this = this;
+        CompositeModel.prototype.getSourceResult = function () {
             if (this._sourceCompareFunc && this._sources.length > 1) {
-                return this._sourceCompareFunc.apply(this, _.map(this._sources, function (v) { return _this.getPreparedSourceData; }, this), this);
+                return this._sourceCompareFunc.apply(this, _.map(this._sources, this.getPreparedSourceData, this), this);
             }
             else {
                 return this._sources[0] instanceof fmvc.Model ? this._sources[0].data : this._sources[0];
             }
         };
-        SourceModel.prototype.getPreparedSourceData = function (v) {
+        CompositeModel.prototype.getPreparedSourceData = function (v) {
             if (v instanceof fmvc.Model) {
                 var mapper = this._mapBeforeCompareFunc && this._mapBeforeCompareFunc[v.name] ? this._mapBeforeCompareFunc[v.name] : null;
-                return mapper ? _.map(v.data, mapper) : v.data;
+                var mappedResult = mapper ? _.map(v.data, mapper) : v.data;
+                return mappedResult;
             }
             else {
                 return v;
             }
         };
-        SourceModel.prototype.dispose = function () {
+        CompositeModel.prototype.dispose = function () {
             var _this = this;
             _.each(this._sources, function (v) { return _this.removeSource(v); }, this);
             this._sources = null;
             this._sourceCompareFunc = null;
             this._resultFuncs = null;
+            this._sourceCompareFunc = null;
+            _super.prototype.dispose.call(this);
         };
-        return SourceModel;
+        return CompositeModel;
     })(fmvc.Model);
-    fmvc.SourceModel = SourceModel;
+    fmvc.CompositeModel = CompositeModel;
 })(fmvc || (fmvc = {}));
 //# sourceMappingURL=source.model.js.map

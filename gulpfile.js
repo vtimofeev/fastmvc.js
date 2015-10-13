@@ -23,7 +23,7 @@ var project = {
     version: '0.9.0',
     paths: {
         ts: ['./src/fmvc/*.ts'/*,'./src/ui-out/*.ts'*/],
-        tsDev: [/*'./src/test-out/*.ts'*/]
+        tsDev: ['./src/fmvc/*.ts'/*'./src/test-out/*.ts'*/]
     }
 };
 
@@ -41,7 +41,6 @@ gulp.task('ts', function() {
             declaration: true,
             sourceMap: true
         }));
-
     return result.pipe(gulp.dest('build'));
 });
 
@@ -54,10 +53,12 @@ gulp.task('test', function() {
 });
 
 gulp.task('watch', function () {
-    gulp.watch('./src/fmvc/*.ts', { interval: 3000 }, ['ts']);
+    return gulp.watch('./src/fmvc/*.ts', { interval: 2000 }, ['ts']);
+    /*
     gulp.watch('./src/ft/*.ts', { interval: 3000 }, ['ts']);
     gulp.watch('./src/ui/*.*', { interval: 3000 }, ['ui', 'ts']);
     gulp.watch('./src/test/*.*', { interval: 3000 }, ['test', 'ts']);
+    */
 });
 
-gulp.task('default', ['ui', 'test', 'ts', 'watch']);
+gulp.task('default', ['ts', 'watch']);

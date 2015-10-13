@@ -99,6 +99,41 @@ describe('fmvc', function() {
         });
     });
 
+    describe('fmvc.CompositeModel', function() {
+        it('datasource + result function', function() {
+            var cm = new fmvc.CompositeModel('cm-1', [[1,2,3,4,5]]);
+            cm.setResultFunc((src)=>_.filter(src,(v:number)=>(v%2===0))).apply();
+            assert.deepEqual(cm.data, [2,4], 'arrays should be same');
+            assert.equal(cm.count, 2, 'should contains 2 elements')
+
+        });
+
+        it('2 datasource + intersection', function() {
+            var cm = new fmvc.CompositeModel('cm-1', [[1,2,3,4,5], [2,3,4]]);
+            cm.setSourceCompareFunc(_.intersection).apply();
+            assert.deepEqual(cm.data, [2,3,4], 'arrays should be same');
+            cm.setResultFunc((src)=>_.filter(src,(v:number)=>(v%2===0))).apply();
+            assert.deepEqual(cm.data, [2,4], 'arrays should be same');
+            assert.equal(cm.count, 2, 'should contains 2 elements')
+        });
+
+        it('2 datasource incapsulated at model + union', function() {
+            var m0 = new fmvc.Model('m0', [2,4,6]);
+            var m1 = new fmvc.Model('m1', [6,8,10]);
+            var cm = new fmvc.CompositeModel('cm-1', [m0,m1]);
+            cm.setSourceCompareFunc(_.union).apply();
+            assert.deepEqual(cm.data, [2,4,6,8,10], 'arrays should be same');
+            cm.setResultFunc((src)=>_.filter(src,(v:number)=>(v%2===1))).apply();
+            assert.deepEqual(cm.data, [], 'arrays should be same');
+            assert.equal(cm.count, 0, 'should contains 2 elements');
+
+            m1.setData([1]);
+            cm.apply();
+            assert.deepEqual(cm.data, [1], 'arrays should be same');
+            assert.equal(cm.count, 1, 'should contains 2 elements');
+        });
+    });
+
     describe('fmvc.View', function() {
         var m = new fmvc.Mediator(mediatorName, document.body);
         var v0 = new fmvc.View(v0);
@@ -141,10 +176,6 @@ describe('fmvc', function() {
             assert(v0.setState('selected', true), 'return view');
             assert(v0.getState('selected'), 'should be true');
         });
-
-
-
-
     });
 
     describe('fmvc.Mediator', function() {

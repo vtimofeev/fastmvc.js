@@ -81,7 +81,7 @@ var fmvc;
         };
         Object.defineProperty(Model.prototype, "data", {
             get: function () {
-                return (this.getData());
+                return this.getData();
             },
             set: function (value) {
                 this.setData(value);
@@ -96,7 +96,6 @@ var fmvc;
             if (this._data === value)
                 return;
             var result = this.parseValueAndSetChanges(value);
-            console.log('Model set data ... ', value);
             if (this._data !== result || this._changes) {
                 this._data = result;
                 this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
@@ -105,6 +104,13 @@ var fmvc;
         Object.defineProperty(Model.prototype, "changes", {
             get: function () {
                 return this._changes;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Model.prototype, "d", {
+            get: function () {
+                return this.getData();
             },
             enumerable: true,
             configurable: true
@@ -122,6 +128,13 @@ var fmvc;
         Object.defineProperty(Model.prototype, "prevState", {
             get: function () {
                 return this._prevState;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Model.prototype, "count", {
+            get: function () {
+                return _.isArray(this.data) ? this.data.length : 0;
             },
             enumerable: true,
             configurable: true

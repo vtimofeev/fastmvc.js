@@ -97,8 +97,6 @@ module fmvc {
         public setData(value:any) {
             if (this._data === value) return;
             const result:any = this.parseValueAndSetChanges(value);
-
-            console.log('Model set data ... ', value);
             if (this._data !== result || this._changes) {
                 this._data = result;
                 this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
@@ -110,7 +108,11 @@ module fmvc {
         }
 
         public get data():any {
-            return (this.getData());
+            return this.getData();
+        }
+
+        public get d():any {
+            return this.getData();
         }
 
         public getData():any {
@@ -124,6 +126,10 @@ module fmvc {
 
         public get prevState():string {
             return this._prevState;
+        }
+
+        public get count():any {
+            return _.isArray(this.data)?this.data.length:0;
         }
 
         public sendEvent(name:string, data:any = null, changes:any = null, sub:string = null, error:any = null):void {

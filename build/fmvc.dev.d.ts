@@ -108,6 +108,7 @@ declare module fmvc {
         enabledState?: boolean;
         enabledEvents?: boolean;
         watchChanges?: boolean;
+        history?: boolean;
     }
     var ModelState: {
         None: string;
@@ -135,30 +136,17 @@ declare module fmvc {
         private setChanges(value);
         setData(value: any): void;
         changes: any;
+        d: any;
         getData(): any;
         state: string;
         prevState: string;
+        count: any;
         sendEvent(name: string, data?: any, changes?: any, sub?: string, error?: any): void;
         dispose(): void;
         queue(create?: boolean): ModelQueue;
     }
-    class SourceModel extends Model {
-        private _sources;
-        private _sourceCompareFunc;
-        private _sourceEqualFunc;
-        private _resultFuncs;
-        private throttleApplyChanges;
-        constructor(name: string, source: Model | Model[], opts?: IModelOptions);
-        addSources(v: any[]): SourceModel;
-        addSource(v: Model | any, mapBeforeCompareFunc?: Function): SourceModel;
-        removeSource(v: Model): SourceModel;
-        sourceChangeHandler(e: IEvent): void;
-        setSourceCompareFunc(value: any): SourceModel;
-        setEqualFunc(name: string, value: any): SourceModel;
-        setResultFunc(...values: any[]): SourceModel;
-        apply(): void;
-        dispose(): void;
-    }
+}
+declare module fmvc {
     class ModelQueue {
         private model;
         private currentPromise;
@@ -175,19 +163,26 @@ declare module fmvc {
         setup(): JQueryPromise<{}>;
         dispose(): void;
     }
-    class Validator {
-        name: string;
-        fnc: Function;
-        constructor(name: string, fnc: Function);
-        execute(data: any): any;
-    }
 }
 declare module fmvc {
-    class ModelList extends Model {
-        constructor(name: string, data?: any, opts?: IModelOptions);
-        parseValue(value: any): any;
-        getModel(value: any): Model;
-        count: number;
+    class CompositeModel extends Model {
+        private _sources;
+        private _sourceCompareFunc;
+        private _mapBeforeCompareFunc;
+        private _resultFuncs;
+        private throttleApplyChanges;
+        constructor(name: string, source: any[], opts?: IModelOptions);
+        addSources(v: (any | Model)[]): CompositeModel;
+        addSource(v: any | Model, mapBeforeCompareFunc?: Function): CompositeModel;
+        removeSource(v: Model): CompositeModel;
+        private sourceChangeHandler(e);
+        setSourceCompareFunc(value: any): CompositeModel;
+        setMapBeforeCompare(name: string, value: any): CompositeModel;
+        setResultFunc(...values: any[]): CompositeModel;
+        apply(): void;
+        private getSourceResult();
+        private getPreparedSourceData(v);
+        dispose(): void;
     }
 }
 declare module fmvc {
@@ -310,31 +305,3 @@ declare module fmvc {
     }
 }
 declare var MessageFormat: any;
-declare module ui {
-    class Button extends fmvc.View {
-        constructor(name: string, modelOrData?: fmvc.Model | any, jsTemplate?: fmvc.IDomObject);
-        createDom(): Button;
-        jsTemplate: fmvc.IRootDomObject;
-        private static __jsTemplate;
-    }
-}
-declare module test {
-    class TestButtons extends fmvc.View {
-        b1: any;
-        b2: any;
-        b3: any;
-        b4: any;
-        constructor(name: string, modelOrData?: fmvc.Model | any, jsTemplate?: fmvc.IDomObject);
-        createDom(): TestButtons;
-        jsTemplate: fmvc.IRootDomObject;
-        private static __jsTemplate;
-    }
-}
-declare module test {
-    class TestInput extends fmvc.View {
-        constructor(name: string, modelOrData?: fmvc.Model | any, jsTemplate?: fmvc.IDomObject);
-        createDom(): TestInput;
-        jsTemplate: fmvc.IRootDomObject;
-        private static __jsTemplate;
-    }
-}

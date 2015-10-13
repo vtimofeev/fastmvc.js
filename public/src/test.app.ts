@@ -3,8 +3,6 @@
  */
 ///<reference path='../../build/fmvc.dev.d.ts'/>
 
-class TestApp extends fmvc.Facade {
-}
 
 var ViewEvent = {
     EDIT: 'edit',
@@ -12,24 +10,30 @@ var ViewEvent = {
     CANCEL: 'cancel'
 };
 
-var m1 = new fmvc.Model('a1', ["a", "b",1,2,3,4,5,6,7]);
-var m2 = new fmvc.Model('a2', [5,6,7,8,9,10,11]);
+var m1 = ["a", "b",1,2,3,4,5,6,7];
+var m2 = new fmvc.Model('a2', [4,5,6,7,8,9,10,11]);
+var s1 = new fmvc.CompositeModel('s1', [m1,m2]);
+var app = new fmvc.Facade('src', 'test', document.body);
+app.register(m2,s1);
 
-var s1 = new fmvc.SourceModel('s1', [m1,m2]);
-
+/*
 function getValue(v,k) {
     return _.isNumber(v)?v.toString(2):typeof v;
 }
+*/
 
-s1.setSourceCompareFunc(_.intersection).setResultFunc(_.partial(_.filter, _, (v)=>v%2===0), _.partial(_.sortBy, _, (v)=>(-v) ), _.partial(_.map, _ ,getValue), (v)=>v?v.length:0);
+s1.setMapBeforeCompare(m2.name, (v)=>v).setSourceCompareFunc(_.intersection).setResultFunc((v)=>(_.chain(v).filter((r:any)=>(r%2===0)).map((d:any)=>(d*100)).value()));
+
+
+/*, _.partial(_.sortBy, _, (v)=>(-v) ), _.partial(_.map, _ ,getValue), (v)=>v?v.length:0*/
 
 
 setTimeout(function() {m2.data = [2, 4, 6, 8, 9, 10, 12]}, 1000);
-setTimeout(function() {m1.data = [2, 4, "a", "b", 9, 10, 12]}, 2000);
-setTimeout(function() {m1.data = [2, 4, 6, 8, 9, 10, 12]}, 3000);
-
-
+setTimeout(function() {m2.data = [2, 4, "a", "b", 9, 10, 12]}, 2000);
+setTimeout(function() {m2.data = [2, 4, 6, 8, 9, 10, 12]}, 3000);
 /*
+
+
 
 
 

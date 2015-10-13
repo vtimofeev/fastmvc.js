@@ -2,35 +2,29 @@
  * Created by Vasily on 26.06.2015.
  */
 ///<reference path='../../build/fmvc.dev.d.ts'/>
-var __extends = this.__extends || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
-};
-var TestApp = (function (_super) {
-    __extends(TestApp, _super);
-    function TestApp() {
-        _super.apply(this, arguments);
-    }
-    return TestApp;
-})(fmvc.Facade);
 var ViewEvent = {
     EDIT: 'edit',
     SAVE: 'save',
     CANCEL: 'cancel'
 };
-var m1 = new fmvc.Model('a1', ["a", "b", 1, 2, 3, 4, 5, 6, 7]);
-var m2 = new fmvc.Model('a2', [5, 6, 7, 8, 9, 10, 11]);
-var s1 = new fmvc.SourceModel('s1', [m1, m2]);
-function getValue(v, k) {
-    return _.isNumber(v) ? v.toString(2) : typeof v;
-}
-s1.setSourceCompareFunc(_.intersection).setResultFunc(_.partial(_.filter, _, function (v) { return v % 2 === 0; }), _.partial(_.sortBy, _, function (v) { return (-v); }), _.partial(_.map, _, getValue), function (v) { return v ? v.length : 0; });
-setTimeout(function () { m2.data = [2, 4, 6, 8, 9, 10, 12]; }, 1000);
-setTimeout(function () { m1.data = [2, 4, "a", "b", 9, 10, 12]; }, 2000);
-setTimeout(function () { m1.data = [2, 4, 6, 8, 9, 10, 12]; }, 3000);
+var m1 = ["a", "b", 1, 2, 3, 4, 5, 6, 7];
+var m2 = new fmvc.Model('a2', [4, 5, 6, 7, 8, 9, 10, 11]);
+var s1 = new fmvc.CompositeModel('s1', [m1, m2]);
+var app = new fmvc.Facade('src', 'test', document.body);
+app.register(m2, s1);
 /*
+function getValue(v,k) {
+    return _.isNumber(v)?v.toString(2):typeof v;
+}
+*/
+s1.setMapBeforeCompare(m2.name, function (v) { return v; }).setSourceCompareFunc(_.intersection).setResultFunc(function (v) { return (_.chain(v).filter(function (r) { return (r % 2 === 0); }).map(function (d) { return (d * 100); }).value()); });
+/*, _.partial(_.sortBy, _, (v)=>(-v) ), _.partial(_.map, _ ,getValue), (v)=>v?v.length:0*/
+setTimeout(function () { m2.data = [2, 4, 6, 8, 9, 10, 12]; }, 1000);
+setTimeout(function () { m2.data = [2, 4, "a", "b", 9, 10, 12]; }, 2000);
+setTimeout(function () { m2.data = [2, 4, 6, 8, 9, 10, 12]; }, 3000);
+/*
+
+
 
 
 

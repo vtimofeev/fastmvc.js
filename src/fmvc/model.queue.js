@@ -1,7 +1,7 @@
 ///<reference path='./d.ts'/>
 var fmvc;
 (function (fmvc) {
-    // Uses jQuery/Zepto Deferred model
+    // It uses Zepto or JQuery deferred
     var ModelQueue = (function () {
         function ModelQueue(model) {
             this.model = model;
