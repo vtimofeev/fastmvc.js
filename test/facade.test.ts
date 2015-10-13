@@ -117,20 +117,22 @@ describe('fmvc', function() {
             assert.equal(cm.count, 2, 'should contains 2 elements')
         });
 
-        it('2 datasource incapsulated at model + union', function() {
+        it('two datasources incapsulated at models + mapBefore + union + result filters', function() {
             var m0 = new fmvc.Model('m0', [2,4,6]);
             var m1 = new fmvc.Model('m1', [6,8,10]);
             var cm = new fmvc.CompositeModel('cm-1', [m0,m1]);
+
             cm.setSourceCompareFunc(_.union).apply();
             assert.deepEqual(cm.data, [2,4,6,8,10], 'arrays should be same');
+
             cm.setResultFunc((src)=>_.filter(src,(v:number)=>(v%2===1))).apply();
             assert.deepEqual(cm.data, [], 'arrays should be same');
             assert.equal(cm.count, 0, 'should contains 2 elements');
 
-            m1.setData([1]);
+            m1.setData([0]);
+            cm.setMapBeforeCompare('m1', (v:number)=>v+1);
             cm.apply();
             assert.deepEqual(cm.data, [1], 'arrays should be same');
-            assert.equal(cm.count, 1, 'should contains 2 elements');
         });
     });
 
@@ -226,53 +228,4 @@ describe('fmvc', function() {
             assert(f.get(mediatorName) === vm,'has mediator');
         });
     })
-
-
 });
-
-
-    /*
-describe("Cow", function() {
-    describe("constructor", function() {
-        it("should have a default name", function() {
-            var cow = new Cow();
-            expect(cow.name).to.equal("Anon cow");
-        });
-
-        it("should set cow's name if provided", function() {
-            var cow = new Cow("Kate");
-            expect(cow.name).to.equal("Kate");
-        });
-    });
-
-    describe("#greets", function() {
-        it("should throw if no target is passed in", function() {
-            expect(function() {
-                (new Cow()).greets();
-            }).to.throw(Error);
-        });
-
-        it("should greet passed target", function() {
-            var greetings = (new Cow("Kate")).greets("Baby");
-            expect(greetings).to.equal("Kate greets Baby");
-        });
-    });
-});
-import * as fmvc from '../src/fmvc/';
-import assert = require('assert');
-
-/*
-var btimers = btNs.getTimers();
-
-describe('basic-timer', function() {
-    it('once', function(done) {
-        var now = Date.now();
-        var btimer = btimers.once(function() {
-            var time = Date.now() - now;
-            assert(time >= 80, 'Check timeout ' + now + ', ' + time);
-            done();
-        }, 100);
-        assert(btimer, 'Required timer object');
-    });
-    */
-

@@ -7,16 +7,9 @@ var ViewEvent = {
     SAVE: 'save',
     CANCEL: 'cancel'
 };
-var m1 = ["a", "b", 1, 2, 3, 4, 5, 6, 7];
+var d1 = ["a", "b", 1, 2, 3, 4, 5, 6, 7];
 var m2 = new fmvc.Model('a2', [4, 5, 6, 7, 8, 9, 10, 11]);
-var s1 = new fmvc.CompositeModel('s1', [m1, m2]);
-var app = new fmvc.Facade('src', 'test', document.body);
-app.register(m2, s1);
-/*
-function getValue(v,k) {
-    return _.isNumber(v)?v.toString(2):typeof v;
-}
-*/
+var s1 = new fmvc.CompositeModel('s1', [d1, m2]);
 s1.setMapBeforeCompare(m2.name, function (v) { return v; }).setSourceCompareFunc(_.intersection).setResultFunc(function (v) { return (_.chain(v).filter(function (r) { return (r % 2 === 0); }).map(function (d) { return (d * 100); }).value()); });
 /*, _.partial(_.sortBy, _, (v)=>(-v) ), _.partial(_.map, _ ,getValue), (v)=>v?v.length:0*/
 setTimeout(function () { m2.data = [2, 4, 6, 8, 9, 10, 12]; }, 1000);

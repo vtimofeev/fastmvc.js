@@ -10,18 +10,9 @@ var ViewEvent = {
     CANCEL: 'cancel'
 };
 
-var m1 = ["a", "b",1,2,3,4,5,6,7];
+var d1 = ["a", "b",1,2,3,4,5,6,7];
 var m2 = new fmvc.Model('a2', [4,5,6,7,8,9,10,11]);
-var s1 = new fmvc.CompositeModel('s1', [m1,m2]);
-var app = new fmvc.Facade('src', 'test', document.body);
-app.register(m2,s1);
-
-/*
-function getValue(v,k) {
-    return _.isNumber(v)?v.toString(2):typeof v;
-}
-*/
-
+var s1 = new fmvc.CompositeModel('s1', [d1,m2]);
 s1.setMapBeforeCompare(m2.name, (v)=>v).setSourceCompareFunc(_.intersection).setResultFunc((v)=>(_.chain(v).filter((r:any)=>(r%2===0)).map((d:any)=>(d*100)).value()));
 
 

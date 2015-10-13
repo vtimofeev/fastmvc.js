@@ -1,9 +1,16 @@
 ///<reference path='./d.ts'/>
 module fmvc {
+
+    /*
+         var d1 = ["a", "b",1,2,3,4,5,6,7];
+         var m2 = new fmvc.Model('a2', [4,5,6,7,8,9,10,11]);
+         var s1 = new fmvc.CompositeModel('s1', [d1,m2]);
+         s1.setMapBeforeCompare(m2.name, (v)=>v).setSourceCompareFunc(_.intersection).setResultFunc((v)=>(_.chain(v).filter((r:any)=>(r%2===0)).map((d:any)=>(d*100)).value()));
+     */
     export class CompositeModel extends Model {
         private _sources:any[];
         private _sourceCompareFunc:any;
-        private _mapBeforeCompareFunc:any;
+        private _mapBeforeCompareFunc:{[id:string]:any};
         private _resultFuncs:any[];
         private throttleApplyChanges:Function;
 
@@ -81,6 +88,7 @@ module fmvc {
         }
 
         public apply() {
+            if (this.disposed) return;
             if (!this._sources || !this._sources.length) this.setData(null);
             if (!this._sourceCompareFunc && this._sources.length > 1) {
                 throw 'SourceModel: has source datas, but method not defined';
@@ -114,6 +122,8 @@ module fmvc {
 
         dispose():void {
             _.each(this._sources, v=>this.removeSource(v), this);
+            _.each(this._mapBeforeCompareFunc, (v,k:string)=>delete this._mapBeforeCompareFunc[k], this);
+            this._mapBeforeCompareFunc = null;
             this._sources = null;
             this._sourceCompareFunc = null;
             this._resultFuncs = null;
