@@ -18,11 +18,39 @@ describe('ft - component package ', function () {
         { title: 'Три (локальный)', action: 'clickThree' },
         { title: 'Четыре (локальный)', action: 'clickFour' }
     ];
+    buttonsDs = _.map(_.range(100), function (v) { return { title: v + ' - ' + Math.random(), action: Math.random() }; });
+    buttonsDs2 = _.map(_.range(100), function (v) { return { title: v + ' - ' + Math.random(), action: Math.random() }; });
     var buttonReset = { title: 'Очистить (локальный)', action: 'actionReset' };
     var templateObjs = {
         "ft.DataButton": {
-            content: '<div .stateHandlers="hover,selected" onclick="selectedChildrenItem" class="button button-{state.selected} button-{state.hover} button-{state.disabled}">{data.title}</div>',
+            content: '<div .stateHandlers="hover,selected" onclick="selectedChildrenItem" class="button button-{state.selected} button-{state.hover} button-{state.disabled}">' +
+                '{data.title} ' +
+                '</div>',
         },
+        /*
+        "ft.ButtonGroup": {
+            content: '<div .stateHandlers="hover" >' +
+            '<div class="button-{state.hover}">Заголовок с подсветкой</div>' +
+
+            '<ft.DataButton onclick="disable" state.disabled="{app.scope.d.disabled}">Disable children</ft.DataButton>' +
+            '<ft.DataButton onclick="enable" state.disabled="{(!app.scope.d.disabled)}">Enable children</ft.DataButton>' +
+
+            '<div states="{app.scope.d.selected}">Выбран элемент {app.scope.d.selected.title}</div>' +
+            '<div states="{(!app.scope.d.selected)}">Нет выбранного элемнта (глобальный-кнопка)</div>' +
+
+            '<ft.DataButton states="{app.scope.d.selected}" .data="{app.scope.d.selected}"> Выбран узел (глобальный) </ft.DataButton>' +
+            '<ft.DataButton states="{(!app.scope.d.selected)}" .data="{app.scope.d.reset}"> Нет узла (глобальный) </ft.DataButton>' +
+
+            '<div ln="childrenContainer" children.stateHandlers="hover" children.state.selected="{(ctx.data===app.scope.d.selected)}" children.state.disabled="{app.scope.d.disabled}" children.class="ft.DataButton" children.data="{app.scope.d.children}">' +
+            '</div>' +
+            '<ft.DataButton .stateHandlers="hover" .data="{app.scope.d.reset}" state.disabled="{app.scope.d.disabled}" state.selected="{app.scope.d.selected}" onclick="reset"> Очистить (глобальный) </ft.DataButton>' +
+
+            '</div>',
+
+            data: {disabled: false, children: buttonsDs, selected: buttonsDs[0], reset: buttonReset},
+            action: 'create'
+        },
+        */
         "ft.ButtonGroup": {
             content: '<div .stateHandlers="hover" >' +
                 '<div class="button-{state.hover}">Заголовок с подсветкой</div>' +
@@ -38,7 +66,7 @@ describe('ft - component package ', function () {
                 '</div>',
             data: { disabled: false, children: buttonsDs, selected: buttonsDs[0], reset: buttonReset },
             action: 'create'
-        },
+        }
     };
     var tm = ft.templateManager;
     var app = new fmvc.Facade('testapp', null, document.body);
@@ -46,6 +74,9 @@ describe('ft - component package ', function () {
     model.data = { selected: null, disabled: false, children: buttonsDs2, reset: buttonReset };
     var mediator = new fmvc.Mediator('appmed', document.body);
     app.register(model, mediator);
+    setInterval(function () {
+        model.data = { children: _.map(_.range(500), function (v) { return { title: v + '=' + Math.round(Math.random() * 100), action: Math.random() }; }) };
+    }, 100);
     describe('ft - ButtonGroup/DataButton', function () {
         _.each(templateObjs, function (obj, key) {
             it('should create instances ' + key, function () {

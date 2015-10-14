@@ -230,7 +230,7 @@ describe('ft - template package ', function () {
                 var container = document.getElementById('template-container');
                 container.innerHTML = '';
                 var startTime = new Date();
-                for (var i = 0; i < 1000; i++) {
+                for (var i = 0; i < 2000; i++) {
                     var inst = CreateTemplate('view', params);
                     inst.render(container);
                 }

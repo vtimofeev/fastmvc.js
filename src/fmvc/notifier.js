@@ -67,7 +67,7 @@ var fmvc;
             if (changes === void 0) { changes = null; }
             if (sub === void 0) { sub = null; }
             if (error === void 0) { error = null; }
-            this.log('SendEvent: ' + name);
+            //this.log('SendEvent: ' + name);
             if (this._disposed)
                 throw Error('Model ' + this.name + ' is disposed and cant send event');
             var e = { name: name, sub: sub, data: data, changes: changes, error: error, target: this };

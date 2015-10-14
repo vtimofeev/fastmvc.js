@@ -12,16 +12,32 @@ module fmvc {
         All: (1 | 2 | 4 | 8 | 16| 32 | 64 | 128)
     };
 
+    export var frameExecution:number = 0;
     var nextFrameHandlers:Function[] = [];
+    var maxFrameCount:number = 200;
+    var waiting:boolean = false;
+    var frameStep:number = 2;
+
+    function requestFrameHandler() {
+        if(waiting) return;
+        waiting = true;
+        window.requestAnimationFrame?window.requestAnimationFrame(executeNextFrameHandlers):setTimeout(executeNextFrameHandlers,0);
+    }
+
     export function nextFrameHandler(handler:Function, context:IView, ...params:any[]) {
         var result = ()=>handler.apply(context, params);
         nextFrameHandlers.push(result);
-        if(nextFrameHandlers.length === 1) window.requestAnimationFrame?window.requestAnimationFrame(executeNextFrameHandlers):setTimeout(executeNextFrameHandlers,0);
+        requestFrameHandler();
     }
+
+
     function executeNextFrameHandlers(time:number):void {
-        var executedHandlers = nextFrameHandlers;
-        nextFrameHandlers = [];
-        _.each(executedHandlers,(v:Function, k:number)=>v());
+        if(++frameExecution%frameStep) {
+            var executedHandlers = nextFrameHandlers.splice(0, maxFrameCount);
+            _.each(executedHandlers, (v:Function, k:number)=>v());
+        }
+        waiting = false;
+        if(nextFrameHandlers.length) requestFrameHandler();
     }
 
 

@@ -11,7 +11,7 @@ module ft {
     var timers = {createDom: 0 , enter: 0, setData: 0, validate: 0};
     var counters = {createDom: 0 , enter: 0, setData: 0, validate: 0, validateState: 0, validateData: 0, validateApp: 0};
 
-    setInterval(()=>console.log('Statistic timers', timers, ' counters ', counters), 5000);
+    setInterval(()=>console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(counters), ' frames ', fmvc.frameExecution), 5000);
     //console.log(dispatcher);
 
     function getFormatter(value:string, locale:string = 'en') {
@@ -124,7 +124,6 @@ module ft {
                     this.model = this.getParameterValue(value, ctx);
                     break;
                 case TemplateParams.setStateSelected:
-                    console.log('Get parameter ', key , !!this.getParameterValue(value, ctx, this), this);
                     this.setState('selected', !!this.getParameterValue(value, ctx, this));
                     break;
                 case TemplateParams.setStateDisabled:
@@ -133,6 +132,8 @@ module ft {
                 case TemplateParams.stateHandlers:
                     this.stateHandlers(value.split(','));
                     break;
+                case TemplateParams.states:
+                    break;
                 default:
                     // direct set parameters for root
                     if(key in this) {
@@ -140,7 +141,7 @@ module ft {
                         else this[key] = value;
                     }
                     else {
-                        console.warn('Cant set template view parameter ', key);
+                        //console.warn('Cant set template view parameter ', key);
                     }
                     break;
             }
@@ -161,8 +162,6 @@ module ft {
         isChangedDynamicProperty(name:string):boolean {
             var value = expression.getContextValue(name, this);
             var r = !(this._prevDynamicProperiesMap[name] === value);
-            console.log('Is changed r? ', name, r);
-
             return r;
         }
 
@@ -180,8 +179,6 @@ module ft {
             var e = <TreeElement> templateHelper.createTreeObject(this._template.domTree, this);
 
             var element:HTMLElement = e instanceof TemplateView ? (<ITemplateView>e).getElement() : <HTMLElement>e;
-            console.log('CreateDomTreeObject ', element, this.inDocument);
-
             this.setElement(element);
             this.setTreeElementPath('0', this);
             counters.createDom++;
@@ -194,7 +191,6 @@ module ft {
             }
             var start = getTime();
 
-            console.log('EnteredTreeObject ', this.getElement());
             super.enter();
             this.applyParameters();
             //templateHelper.setDataTreeObject(this._template.domTree, this);
@@ -247,7 +243,18 @@ module ft {
             templateHelper.exitTreeObject(this._template.domTree, this);
             this.parent = null;
             this.domDef = null;
+
             super.exit();
+
+            this._cssClassMap = null;
+            this._dynamicPropertiesMap = null;
+            this._prevDynamicProperiesMap = null;
+            this._dynamicPropertiesMap = null;
+            this._localHandlers  = null;
+            this._params = null;
+            this._treeElementMapByPath = null;
+            this._template = null;
+            this._i18n = null;
         }
 
         getTemplate():ITemplate {
@@ -318,11 +325,10 @@ module ft {
         }
 
         validate():void {
-            console.log('Validate::: ' , this.name, this._states);
             var start = getTime();
             if (!_.isEmpty(this._dynamicPropertiesMap)) {
-                _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
-                this._dynamicPropertiesMap = {};
+               _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
+               this._dynamicPropertiesMap = {};
             }
 
             templateHelper.createTreeObject(this._template.domTree, this);
@@ -331,7 +337,6 @@ module ft {
             var result = getTime()-start;
             counters.validate++;
             timers.validate+=result;
-            //if (this.canValidate()) templateHelper.updateDynamicTree(this);
         }
 
         protected validateApp():void {
@@ -440,6 +445,7 @@ module ft {
         internalHandler(type, e:any) {
             if(this.parent) this.parent.internalHandler(type, e);
         }
+
 
     }
 }

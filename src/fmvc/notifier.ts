@@ -62,7 +62,7 @@ module fmvc
         // Послаем сообщение сначала в фасад, потом частным слушателям (для моделей)
         public sendEvent(name:string, data:any = null, changes:any = null, sub:string = null, error:any = null):void
         {
-            this.log('SendEvent: ' + name);
+            //this.log('SendEvent: ' + name);
             if(this._disposed) throw Error('Model ' + this.name + ' is disposed and cant send event');
             var e:IEvent = {name: name, sub:sub, data: data, changes:changes, error: error, target: this};
             if(this._listeners) this._sendToListners(e);

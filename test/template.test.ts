@@ -133,6 +133,7 @@ describe('ft - template package ', function () {
         var expression = new ft.Expression();
         var t0 = '{data.name}';
         var t1 = '{(data.name>10?"exist":"not")}';
+
         var t2 = '{ ( data.name>10?"exist":"not" ) as Exist, data.age as Age | i18n.formatter } text {data.age}';
         var t3 = '{state.hover}';
         var t4 = '{(state.hover?100:0)}';
@@ -283,7 +284,7 @@ describe('ft - template package ', function () {
                 container.innerHTML = '';
 
                 var startTime = new Date();
-                for (var i = 0; i < 1000; i++) {
+                for (var i = 0; i < 2000; i++) {
                     var inst = CreateTemplate('view', params);
                     inst.render(container);
                 }

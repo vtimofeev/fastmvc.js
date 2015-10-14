@@ -33,7 +33,6 @@ module ft {
             _.bindAll(this, 'parserHandler');
             this._htmlparserHandler = new htmlparser.HtmlBuilder(this.parserHandler, {caseSensitiveTags: true, caseSensitiveAttr: true});
             this._htmlParser = new htmlparser.Parser(this._htmlparserHandler /*, test.options.parser*/);
-            console.log('Component params ', this._componentParams);
         }
 
         private reset() {
@@ -47,7 +46,6 @@ module ft {
             html = html.trim().replace(/\n/gi, '');
             this._htmlparserHandler.dom = null;
             this._htmlParser.parseComplete(html);
-            console.log('Parser result ', this._htmlparserHandler.dom);
             return <IHtmlObject[]> this._htmlparserHandler.dom;
         }
 
@@ -90,7 +88,6 @@ module ft {
             _.each(o.attribs, function(value:any, key:string) {
                if(skipped.indexOf(key) >= 0 || !(value = value?value.trim():value)) return;
                var group = this.getAttribGroup(key);
-                console.log('Attrib group ' , key, group);
                var groupKey = this.getGroupKey(key, group);
                def[group][groupKey] = this.parseExpressionAttrib(value, key, r.expressionMap, path, group);
             }, this);
@@ -141,7 +138,7 @@ module ft {
                 var varParts:string[];
                 _.each(ex.vars,
                     (v:string)=>(
-                        varParts = v.split('.')
+                            varParts = v.split('.')
                             ,result[varParts[0]] = result[varParts[0]] || {}
                             ,result[varParts[0]][v] = result[varParts[0]][v] || []
                             ,result[varParts[0]][v].push(ex.name)));

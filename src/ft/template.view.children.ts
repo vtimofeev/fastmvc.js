@@ -28,6 +28,7 @@ module ft {
             var ViewClass:any = <ITemplateConstructor> (global[className]);
             if (!ViewClass) throw 'Children class ' + className + ' not found';
 
+            //console.log('Create children ...');
             var prevChildren = this._children;
             var childrenViews:ITemplateView[] = _.map(this.data, function (v:any, k:number) {
                 var params = {};
@@ -39,33 +40,42 @@ module ft {
                 }
 
                 if(def.params[TemplateParams.childrenEnableStateHandlers]) params[TemplateParams.stateHandlers] = def.params[TemplateParams.childrenEnableStateHandlers];
+                var child = prevChildren && prevChildren.length?prevChildren.splice(0,1)[0]:new ViewClass(className + '-' + k, null);
 
-                var child = prevChildren && prevChildren.length?prevChildren.splice(prevChildren.length-1,1)[0]:new ViewClass(className + '-' + k, null);
+                /*
                 if(child.inDocument) {
                     child.exit();
                 }
                 child.cleanParameters();
+                */
+                child.cleanParameters();
                 child.setParameters(params);
+                child.applyParameters();
                 return child;
             }, this);
             this._children = childrenViews;
 
+
             _.each(prevChildren, (v:ITemplateView)=>v.dispose());
+
+
 
             _.each(this._children, function (child:ITemplateView) {
                 child.parent = this.parent;
                 child.domDef = def;
-                child.createDom();
-                child.enter();
+                if(!child.inDocument) {
+                    child.createDom();
+                    child.enter();
+                    this.getElement().appendChild(child.getElement());
+                }
+
                 child.invalidateData();
                 child.invalidateApp();
-                child.validate();
-
-                this.getElement().appendChild(child.getElement());
-                console.log(' Create children ', child.getElement());
+                //child.validate();
             }, this);
 
             if(def.params[TemplateParams.childrenSetStateSelected]) this.checkSelected();
+            if(def.params[TemplateParams.childrenSetStateDisabled]) this.checkDisabled();
         }
 
         checkSelected() {
@@ -106,6 +116,7 @@ module ft {
 
 
         validateData() {
+            //console.log('Validate children data...');
             this.createChildren();
         }
 

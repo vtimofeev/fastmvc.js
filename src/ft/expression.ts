@@ -1,12 +1,22 @@
 ///<reference path="./d.ts" />
 
 module ft {
+    var GetContext = {
+        string: 'string',
+        data: 'data',
+        dataField: 'data.',
+        appField: 'app.',
+        stateField: 'state',
+        openBracket: '('
+    };
+
     export class Expression {
 
         private counter:number = 0;
         private ExpressionMatchRe:RegExp = /\{([\(\)\\,\.\|\?:;'"!@A-Za-z<>=\[\]& \+\-\/\*0-9]+)\}/g;
         private VariableMatchRe:RegExp = /([A-Za-z0-9 _\-"'\.]+)/gi;
         private ExResult:string = '{$0}';
+        private funcMap:{[id:string]:Function} = {};
 
         public strToExpression(value:string):IExpression {
             return this.parseExpressionMultiContent(value);
@@ -85,24 +95,31 @@ module ft {
 
         public getContextValue(v:string|IExpression, context:ITemplateView):any {
             var r;
-            if(typeof v === 'string') {
-                if(v.indexOf('data.') === 0 || v.indexOf('app.') === 0) {
-                    r = context.eval('this.'+ v);
+            if(typeof v === GetContext.string) {
+                if(v.indexOf(GetContext.dataField) === 0 || v.indexOf(GetContext.appField) === 0) {
+                    if(!this.funcMap[v]) {
+                        this.funcMap[v] = new Function('var v=null; try {v=this.' + v + ';} catch(e) {v=\'{' + v + '}\';} return v;');
+                    }
+                    r = this.funcMap[v].apply(context);
+
                     if(r === undefined) r = null;
                     context.setDynamicProperty(v, r);
                 }
-                else if(v.indexOf('state.') === 0) {
-                    r = context.getState(v.replace('state.',''));
+                else if(v.indexOf(GetContext.stateField) === 0) {
+                    r = context.getState(v.substring(6));
                     if(r === undefined) r = null;
                     context.setDynamicProperty(v, r);
                 }
-                else if(v === 'data') {
+                else if(v === GetContext.data) {
                     r = context.data;
                     if(r === undefined) r = null;
                     context.setDynamicProperty(v, r);
                 }
-                else if(v.indexOf('(') === 0) {
-                    r = context.eval(v);
+                else if(v.indexOf(GetContext.openBracket) === 0) {
+                    if(!this.funcMap[v]) {
+                        this.funcMap[v] = new Function('var v=null; try {v=' + v + ';} catch(e) {v=\'{' + v + '}\';} return v;');
+                    }
+                    r =this.funcMap[v].apply(context);
                 }
 
                 if(r !== undefined) return /*boolTrue?!!r:boolFalse?!r:*/r;
@@ -192,8 +209,10 @@ module ft {
                 filters: [], // фильтры
             };
 
-            var valueSpitByFilter = value.split('|'); // get before first `|`
-            var expression = _.first(valueSpitByFilter);
+
+            var valueReplacedOr = value.replace(/\|\|/g, '###or');
+            var valueSpitByFilter = valueReplacedOr.split(/\|/); // get before first `|`
+            var expression = (_.first(valueSpitByFilter)).replace(/###or/g, '||');
             result.filters = _.map(_.rest(valueSpitByFilter), (v)=>String(v).trim()); // get after first `|`
 
             var args = this.parseArguments(expression);
@@ -217,15 +236,13 @@ module ft {
         }
 
         private tryParseRoundBracketExpression(value:string, index:number = 0):ISimpleExpression|string {
-            //value = value.replace(expression, '$' + index);
-
             var expressions = this.getExpressionFromString(value);
-            if(!expressions) return value.replace(/!/g, ''); // @todo review this fix (replace ! sign)
+            if(!expressions) return value; // @todo review this fix (replace ! sign)
 
             var expression = expressions[0];
+
             // skip direct execution (at handlers);
             if(expression.indexOf('this') > -1) return expression;
-
 
             var variables = _.compact(
                 _.filter(
@@ -234,13 +251,18 @@ module ft {
                 )
             );
 
-            var convertedExpression = _.reduce(variables, function (memo, v) {
-                var requestVariable = ((v.indexOf('.') > -1 && v.indexOf('state.') === -1) || v === 'data' ? ('this.' + v) :
-                    (v.indexOf('state.')>-1?('this.getState("' + v.replace('state.', '') + '")'):''));
-                return memo.replace(new RegExp(v, 'g'), requestVariable);
+            var convertedExpression = _.reduce(variables, function (memo, v, k) {
+                return memo.replace(new RegExp(v, 'g'), '###' + k);
+
             }, expression, this);
 
+            _.each(variables, (v,k)=>convertedExpression=convertedExpression.replace(new RegExp('###' + k, 'g'), this.getExVarToJsVar(v)), this);
             return {content:expression, expression: convertedExpression, vars: variables};
+        }
+
+        private getExVarToJsVar(v:string):string {
+            var requestVariable = ((v.indexOf('.') > -1 && v.indexOf('state.') === -1) || v === 'data' ? ('this.' + v) : (v.indexOf('state.')>-1?('this.getState("' + v.replace('state.', '') + '")'):''));
+           return requestVariable;
         }
 
         private parseArguments(value:string):string|string[]|Object {
@@ -282,8 +304,5 @@ module ft {
             });
             return r.length ? r : null;
         }
-
-
-
     }
 }

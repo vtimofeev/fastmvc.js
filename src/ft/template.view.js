@@ -14,7 +14,7 @@ var ft;
     var dispatcher = new ft.EventDispatcher(ft.templateHelper);
     var timers = { createDom: 0, enter: 0, setData: 0, validate: 0 };
     var counters = { createDom: 0, enter: 0, setData: 0, validate: 0, validateState: 0, validateData: 0, validateApp: 0 };
-    setInterval(function () { return console.log('Statistic timers', timers, ' counters ', counters); }, 5000);
+    setInterval(function () { return console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(counters), ' frames ', fmvc.frameExecution); }, 5000);
     //console.log(dispatcher);
     function getFormatter(value, locale) {
         if (locale === void 0) { locale = 'en'; }
@@ -115,7 +115,6 @@ var ft;
                     this.model = this.getParameterValue(value, ctx);
                     break;
                 case ft.TemplateParams.setStateSelected:
-                    console.log('Get parameter ', key, !!this.getParameterValue(value, ctx, this), this);
                     this.setState('selected', !!this.getParameterValue(value, ctx, this));
                     break;
                 case ft.TemplateParams.setStateDisabled:
@@ -123,6 +122,8 @@ var ft;
                     break;
                 case ft.TemplateParams.stateHandlers:
                     this.stateHandlers(value.split(','));
+                    break;
+                case ft.TemplateParams.states:
                     break;
                 default:
                     // direct set parameters for root
@@ -133,7 +134,6 @@ var ft;
                             this[key] = value;
                     }
                     else {
-                        console.warn('Cant set template view parameter ', key);
                     }
                     break;
             }
@@ -151,7 +151,6 @@ var ft;
         TemplateView.prototype.isChangedDynamicProperty = function (name) {
             var value = expression.getContextValue(name, this);
             var r = !(this._prevDynamicProperiesMap[name] === value);
-            console.log('Is changed r? ', name, r);
             return r;
         };
         TemplateView.prototype.setDynamicProperty = function (name, value) {
@@ -166,7 +165,6 @@ var ft;
             this.setParameters(_.extend({}, localParams, parentParams));
             var e = ft.templateHelper.createTreeObject(this._template.domTree, this);
             var element = e instanceof TemplateView ? e.getElement() : e;
-            console.log('CreateDomTreeObject ', element, this.inDocument);
             this.setElement(element);
             this.setTreeElementPath('0', this);
             counters.createDom++;
@@ -177,7 +175,6 @@ var ft;
                 return console.warn('Error, try to re-enter ', this.name);
             }
             var start = getTime();
-            console.log('EnteredTreeObject ', this.getElement());
             _super.prototype.enter.call(this);
             this.applyParameters();
             //templateHelper.setDataTreeObject(this._template.domTree, this);
@@ -225,6 +222,15 @@ var ft;
             this.parent = null;
             this.domDef = null;
             _super.prototype.exit.call(this);
+            this._cssClassMap = null;
+            this._dynamicPropertiesMap = null;
+            this._prevDynamicProperiesMap = null;
+            this._dynamicPropertiesMap = null;
+            this._localHandlers = null;
+            this._params = null;
+            this._treeElementMapByPath = null;
+            this._template = null;
+            this._i18n = null;
         };
         TemplateView.prototype.getTemplate = function () {
             return this._template;
@@ -283,7 +289,6 @@ var ft;
             return result;
         };
         TemplateView.prototype.validate = function () {
-            console.log('Validate::: ', this.name, this._states);
             var start = getTime();
             if (!_.isEmpty(this._dynamicPropertiesMap)) {
                 _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
@@ -294,7 +299,6 @@ var ft;
             var result = getTime() - start;
             counters.validate++;
             timers.validate += result;
-            //if (this.canValidate()) templateHelper.updateDynamicTree(this);
         };
         TemplateView.prototype.validateApp = function () {
             if (this.canValidate(fmvc.InvalidateType.App)) {

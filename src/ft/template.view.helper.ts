@@ -206,20 +206,23 @@ module ft {
             return object;
         }
 
+        private composeNames_updateDynamicTree = _.compose(_.compact, _.flatten);
+        //private applyPatitions = _.partial(this.applyExpressionToHosts, _, root)
         updateDynamicTree(root:ITemplateView, group?:string):void {
             var dynamicTree:any = root.getTemplate().dynamicTree;
             var exArrays:any[];
             if(!group) {
                 exArrays = _.map(dynamicTree, (v:IDynamicMap, group:string)=>this.getChangedExpressionNames(group, v, root), this);
             } else {
+                if(!dynamicTree[group]) return;
                 exArrays = this.getChangedExpressionNames(group, dynamicTree[group], root);
             }
 
-            var exNames:string[] = _.compose(_.compact, _.flatten)(exArrays);
+            var exNames:string[] = this.composeNames_updateDynamicTree(exArrays);
             var tmpl = root.getTemplate();
 
             var exObjArrays:IExpression[] = _.map(exNames, (v:string)=>(tmpl.expressionMap[v]));
-            _.each(exObjArrays, <any>_.partial(this.applyExpressionToHosts, _, root), this);
+            _.each(exObjArrays, (v,k)=>this.applyExpressionToHosts(v,root), this);
         }
 
         getChangedExpressionNames(group:string, map:IDynamicMap, root:ITemplateView):(string|string[])[] {
@@ -261,7 +264,6 @@ module ft {
             var result;
             var el:HTMLElement;
             _.each(exObj.hosts, (host:IExpressionHost)=>(
-
                 result = result || (host.key === 'class' ? root.getCssClassExpressionValue(exObj) : root.getExpressionValue(exObj)),
                     el = this.getDomElement(root.getTreeElementByPath(host.path)),
                     el && el.nodeType != 8 ? this.applyValueToHost(result, el, host, root) : null
@@ -271,6 +273,10 @@ module ft {
 
         applyValueToHost(value:any, el:HTMLElement, host:IExpressionHost, root:ITemplateView):any {
             switch (host.group) {
+                case 'data':
+                    el.textContent = value;
+                    return;
+
                 case 'attribs':
                     switch (host.key) {
                         case 'style':
@@ -325,9 +331,7 @@ module ft {
                     }
                     return;
 
-                case 'data':
-                    el.textContent = value;
-                    return;
+
             }
         }
 

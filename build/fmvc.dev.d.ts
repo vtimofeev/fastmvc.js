@@ -214,6 +214,7 @@ declare module fmvc {
         I18n: number;
         All: number;
     };
+    var frameExecution: number;
     function nextFrameHandler(handler: Function, context: IView, ...params: any[]): void;
     class View extends Notifier implements IView {
         private _mediator;

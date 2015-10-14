@@ -38,6 +38,7 @@ var ft;
             var ViewClass = (ft.global[className]);
             if (!ViewClass)
                 throw 'Children class ' + className + ' not found';
+            //console.log('Create children ...');
             var prevChildren = this._children;
             var childrenViews = _.map(this.data, function (v, k) {
                 var params = {};
@@ -49,12 +50,16 @@ var ft;
                 }
                 if (def.params[ft.TemplateParams.childrenEnableStateHandlers])
                     params[ft.TemplateParams.stateHandlers] = def.params[ft.TemplateParams.childrenEnableStateHandlers];
-                var child = prevChildren && prevChildren.length ? prevChildren.splice(prevChildren.length - 1, 1)[0] : new ViewClass(className + '-' + k, null);
-                if (child.inDocument) {
+                var child = prevChildren && prevChildren.length ? prevChildren.splice(0, 1)[0] : new ViewClass(className + '-' + k, null);
+                /*
+                if(child.inDocument) {
                     child.exit();
                 }
                 child.cleanParameters();
+                */
+                child.cleanParameters();
                 child.setParameters(params);
+                child.applyParameters();
                 return child;
             }, this);
             this._children = childrenViews;
@@ -62,16 +67,19 @@ var ft;
             _.each(this._children, function (child) {
                 child.parent = this.parent;
                 child.domDef = def;
-                child.createDom();
-                child.enter();
+                if (!child.inDocument) {
+                    child.createDom();
+                    child.enter();
+                    this.getElement().appendChild(child.getElement());
+                }
                 child.invalidateData();
                 child.invalidateApp();
-                child.validate();
-                this.getElement().appendChild(child.getElement());
-                console.log(' Create children ', child.getElement());
+                //child.validate();
             }, this);
             if (def.params[ft.TemplateParams.childrenSetStateSelected])
                 this.checkSelected();
+            if (def.params[ft.TemplateParams.childrenSetStateDisabled])
+                this.checkDisabled();
         };
         TemplateViewChildren.prototype.checkSelected = function () {
             _.each(this._children, function (child) {
@@ -105,6 +113,7 @@ var ft;
             }, this);
         };
         TemplateViewChildren.prototype.validateData = function () {
+            //console.log('Validate children data...');
             this.createChildren();
         };
         TemplateViewChildren.prototype.validateState = function () {

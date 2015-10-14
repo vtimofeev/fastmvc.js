@@ -7,6 +7,7 @@ var ft;
         function TemplateViewHelper() {
             this.idCounter = 0;
             this.domElementPathIds = {};
+            this.composeNames_updateDynamicTree = _.compose(_.compact, _.flatten);
             _.bindAll(this, 'createTreeObjectFunc', 'initTreeElement', 'addTreeObjectFunc', 'getTreeObject', 'setDataTreeObjectFunc', 'enterTreeObjectFunc', 'exitTreeObjectFunc', 'removeTreeObject');
             this.createTreeObject = this.createTreeObjectFunctor();
             this.enterTreeObject = this.enterTreeObjectFunctor();
@@ -144,6 +145,7 @@ var ft;
                 object.exit();
             return object;
         };
+        //private applyPatitions = _.partial(this.applyExpressionToHosts, _, root)
         TemplateViewHelper.prototype.updateDynamicTree = function (root, group) {
             var _this = this;
             var dynamicTree = root.getTemplate().dynamicTree;
@@ -152,12 +154,14 @@ var ft;
                 exArrays = _.map(dynamicTree, function (v, group) { return _this.getChangedExpressionNames(group, v, root); }, this);
             }
             else {
+                if (!dynamicTree[group])
+                    return;
                 exArrays = this.getChangedExpressionNames(group, dynamicTree[group], root);
             }
-            var exNames = _.compose(_.compact, _.flatten)(exArrays);
+            var exNames = this.composeNames_updateDynamicTree(exArrays);
             var tmpl = root.getTemplate();
             var exObjArrays = _.map(exNames, function (v) { return (tmpl.expressionMap[v]); });
-            _.each(exObjArrays, _.partial(this.applyExpressionToHosts, _, root), this);
+            _.each(exObjArrays, function (v, k) { return _this.applyExpressionToHosts(v, root); }, this);
         };
         TemplateViewHelper.prototype.getChangedExpressionNames = function (group, map, root) {
             return _.map(map, function (exNames, prorName) { return (root.isChangedDynamicProperty(prorName) ? exNames : null); }, this);
@@ -198,6 +202,9 @@ var ft;
         };
         TemplateViewHelper.prototype.applyValueToHost = function (value, el, host, root) {
             switch (host.group) {
+                case 'data':
+                    el.textContent = value;
+                    return;
                 case 'attribs':
                     switch (host.key) {
                         case 'style':
@@ -248,9 +255,6 @@ var ft;
                             }
                             return;
                     }
-                    return;
-                case 'data':
-                    el.textContent = value;
                     return;
             }
         };

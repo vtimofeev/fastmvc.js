@@ -18,7 +18,17 @@ var fmvc;
         I18n: 128,
         All: (1 | 2 | 4 | 8 | 16 | 32 | 64 | 128)
     };
+    fmvc.frameExecution = 0;
     var nextFrameHandlers = [];
+    var maxFrameCount = 200;
+    var waiting = false;
+    var frameStep = 2;
+    function requestFrameHandler() {
+        if (waiting)
+            return;
+        waiting = true;
+        window.requestAnimationFrame ? window.requestAnimationFrame(executeNextFrameHandlers) : setTimeout(executeNextFrameHandlers, 0);
+    }
     function nextFrameHandler(handler, context) {
         var params = [];
         for (var _i = 2; _i < arguments.length; _i++) {
@@ -26,14 +36,17 @@ var fmvc;
         }
         var result = function () { return handler.apply(context, params); };
         nextFrameHandlers.push(result);
-        if (nextFrameHandlers.length === 1)
-            window.requestAnimationFrame ? window.requestAnimationFrame(executeNextFrameHandlers) : setTimeout(executeNextFrameHandlers, 0);
+        requestFrameHandler();
     }
     fmvc.nextFrameHandler = nextFrameHandler;
     function executeNextFrameHandlers(time) {
-        var executedHandlers = nextFrameHandlers;
-        nextFrameHandlers = [];
-        _.each(executedHandlers, function (v, k) { return v(); });
+        if (++fmvc.frameExecution % frameStep) {
+            var executedHandlers = nextFrameHandlers.splice(0, maxFrameCount);
+            _.each(executedHandlers, function (v, k) { return v(); });
+        }
+        waiting = false;
+        if (nextFrameHandlers.length)
+            requestFrameHandler();
     }
     var View = (function (_super) {
         __extends(View, _super);

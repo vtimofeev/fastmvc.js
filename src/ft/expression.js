@@ -1,12 +1,21 @@
 ///<reference path="./d.ts" />
 var ft;
 (function (ft) {
+    var GetContext = {
+        string: 'string',
+        data: 'data',
+        dataField: 'data.',
+        appField: 'app.',
+        stateField: 'state',
+        openBracket: '('
+    };
     var Expression = (function () {
         function Expression() {
             this.counter = 0;
             this.ExpressionMatchRe = /\{([\(\)\\,\.\|\?:;'"!@A-Za-z<>=\[\]& \+\-\/\*0-9]+)\}/g;
             this.VariableMatchRe = /([A-Za-z0-9 _\-"'\.]+)/gi;
             this.ExResult = '{$0}';
+            this.funcMap = {};
         }
         Expression.prototype.strToExpression = function (value) {
             return this.parseExpressionMultiContent(value);
@@ -65,27 +74,33 @@ var ft;
         };
         Expression.prototype.getContextValue = function (v, context) {
             var r;
-            if (typeof v === 'string') {
-                if (v.indexOf('data.') === 0 || v.indexOf('app.') === 0) {
-                    r = context.eval('this.' + v);
+            if (typeof v === GetContext.string) {
+                if (v.indexOf(GetContext.dataField) === 0 || v.indexOf(GetContext.appField) === 0) {
+                    if (!this.funcMap[v]) {
+                        this.funcMap[v] = new Function('var v=null; try {v=this.' + v + ';} catch(e) {v=\'{' + v + '}\';} return v;');
+                    }
+                    r = this.funcMap[v].apply(context);
                     if (r === undefined)
                         r = null;
                     context.setDynamicProperty(v, r);
                 }
-                else if (v.indexOf('state.') === 0) {
-                    r = context.getState(v.replace('state.', ''));
+                else if (v.indexOf(GetContext.stateField) === 0) {
+                    r = context.getState(v.substring(6));
                     if (r === undefined)
                         r = null;
                     context.setDynamicProperty(v, r);
                 }
-                else if (v === 'data') {
+                else if (v === GetContext.data) {
                     r = context.data;
                     if (r === undefined)
                         r = null;
                     context.setDynamicProperty(v, r);
                 }
-                else if (v.indexOf('(') === 0) {
-                    r = context.eval(v);
+                else if (v.indexOf(GetContext.openBracket) === 0) {
+                    if (!this.funcMap[v]) {
+                        this.funcMap[v] = new Function('var v=null; try {v=' + v + ';} catch(e) {v=\'{' + v + '}\';} return v;');
+                    }
+                    r = this.funcMap[v].apply(context);
                 }
                 if (r !== undefined)
                     return r;
@@ -166,8 +181,9 @@ var ft;
                 args: {},
                 filters: [],
             };
-            var valueSpitByFilter = value.split('|'); // get before first `|`
-            var expression = _.first(valueSpitByFilter);
+            var valueReplacedOr = value.replace(/\|\|/g, '###or');
+            var valueSpitByFilter = valueReplacedOr.split(/\|/); // get before first `|`
+            var expression = (_.first(valueSpitByFilter)).replace(/###or/g, '||');
             result.filters = _.map(_.rest(valueSpitByFilter), function (v) { return String(v).trim(); }); // get after first `|`
             var args = this.parseArguments(expression);
             var vars;
@@ -187,22 +203,25 @@ var ft;
             return result;
         };
         Expression.prototype.tryParseRoundBracketExpression = function (value, index) {
-            //value = value.replace(expression, '$' + index);
+            var _this = this;
             if (index === void 0) { index = 0; }
             var expressions = this.getExpressionFromString(value);
             if (!expressions)
-                return value.replace(/!/g, ''); // @todo review this fix (replace ! sign)
+                return value; // @todo review this fix (replace ! sign)
             var expression = expressions[0];
             // skip direct execution (at handlers);
             if (expression.indexOf('this') > -1)
                 return expression;
             var variables = _.compact(_.filter(_.map(expression.match(this.VariableMatchRe), function (v) { return v.trim(); }), function (v) { return (v.indexOf('\'') < 0 && v.indexOf('"') < 0 && v.match(/^[A-Za-z]+/gi)); }));
-            var convertedExpression = _.reduce(variables, function (memo, v) {
-                var requestVariable = ((v.indexOf('.') > -1 && v.indexOf('state.') === -1) || v === 'data' ? ('this.' + v) :
-                    (v.indexOf('state.') > -1 ? ('this.getState("' + v.replace('state.', '') + '")') : ''));
-                return memo.replace(new RegExp(v, 'g'), requestVariable);
+            var convertedExpression = _.reduce(variables, function (memo, v, k) {
+                return memo.replace(new RegExp(v, 'g'), '###' + k);
             }, expression, this);
+            _.each(variables, function (v, k) { return convertedExpression = convertedExpression.replace(new RegExp('###' + k, 'g'), _this.getExVarToJsVar(v)); }, this);
             return { content: expression, expression: convertedExpression, vars: variables };
+        };
+        Expression.prototype.getExVarToJsVar = function (v) {
+            var requestVariable = ((v.indexOf('.') > -1 && v.indexOf('state.') === -1) || v === 'data' ? ('this.' + v) : (v.indexOf('state.') > -1 ? ('this.getState("' + v.replace('state.', '') + '")') : ''));
+            return requestVariable;
         };
         Expression.prototype.parseArguments = function (value) {
             if (value.indexOf(',') === -1)
