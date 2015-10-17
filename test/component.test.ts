@@ -50,6 +50,32 @@ describe('ft - component package ', function () {
             '{(data&&data.title?data.title:\"\")}' +
             '</div>',
         },
+        "ft.Checkbox": {
+            content: "<ft.DataButton .base=\'checkbox\'>"
+        },
+        "ft.Progress": {
+            content:  '<div .base="slider" .stateHandlers="hover" onclick="click">' +
+                        '<div class="{state.base}-bg {state.base}-bg-{state.hover}"></div>' +
+            '</div>'
+        },
+
+        "ft.Slider": {
+            content:
+                '<div .base="slider" .stateHandlers="hover">' +
+                    '<div class="{state.base}-bg {state.base}-bg-{state.hover}"></div>' +
+            '       <ft.Button onmousedown="down" onmouseup="up" onmousemove="move" .base={(state.base + \"-button\")}" .stateHandlers="hover" />' +
+            '</div>',
+             events: ["change"]
+         },
+        "ft.ProgressBar": {
+            content:
+            '<div .base="slider" .stateHandlers="hover">' +
+            '<div class="{state.base}-bg {state.base}-bg-{state.hover}"></div>' +
+            '       <ft.Button onmousedown="down" onmouseup="up" onmousemove="move" .base={(state.base + \"-button\")}" .stateHandlers="hover" />' +
+            '</div>',
+            events: ["change"]
+        },
+
 
         /*
         "ft.ButtonGroup": {
@@ -108,8 +134,9 @@ describe('ft - component package ', function () {
     app.register(model, mediator);
 
 
+    var childrenCount:number = 10;
     model.changes = {children: _.map(
-        _.range(5),
+        _.range(childrenCount),
         (v)=>{return new fmvc.Model('data-' + v, {title: v + '=' + Math.round(Math.random()*100), action: Math.random()});}
     )};
 
