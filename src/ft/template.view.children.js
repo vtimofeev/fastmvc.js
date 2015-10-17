@@ -38,7 +38,6 @@ var ft;
             var ViewClass = (ft.global[className]);
             if (!ViewClass)
                 throw 'Children class ' + className + ' not found';
-            //console.log('Create children ...');
             var prevChildren = this._children;
             var childrenViews = _.map(this.data, function (v, k) {
                 var params = {};
@@ -51,12 +50,6 @@ var ft;
                 if (def.params[ft.TemplateParams.childrenEnableStateHandlers])
                     params[ft.TemplateParams.stateHandlers] = def.params[ft.TemplateParams.childrenEnableStateHandlers];
                 var child = prevChildren && prevChildren.length ? prevChildren.splice(0, 1)[0] : new ViewClass(className + '-' + k, null);
-                /*
-                if(child.inDocument) {
-                    child.exit();
-                }
-                child.cleanParameters();
-                */
                 child.cleanParameters();
                 child.setParameters(params);
                 child.applyParameters();
@@ -83,12 +76,14 @@ var ft;
         };
         TemplateViewChildren.prototype.checkSelected = function () {
             _.each(this._children, function (child) {
-                child.applyParameter(this.domDef.params[ft.TemplateParams.childrenSetStateSelected], ft.TemplateParams.setStateSelected);
+                if (!child.disposed)
+                    child.applyParameter(this.domDef.params[ft.TemplateParams.childrenSetStateSelected], ft.TemplateParams.setStateSelected);
             }, this);
         };
         TemplateViewChildren.prototype.checkDisabled = function () {
             _.each(this._children, function (child) {
-                child.applyParameter(this.domDef.params[ft.TemplateParams.childrenSetStateDisabled], ft.TemplateParams.setStateDisabled);
+                if (!child.disposed)
+                    child.applyParameter(this.domDef.params[ft.TemplateParams.childrenSetStateDisabled], ft.TemplateParams.setStateDisabled);
             }, this);
         };
         // virtual

@@ -62,10 +62,12 @@ module ft {
                     // side effect, creates expression map to result, create pathMap
                     result.domTree = this.htmlObjectToDomTree(obj, result, '0');
                     result.dynamicTree = this.getDynamicTreeFromExpressionMap(result.expressionMap);
+                    result.hasStates = !!this.getStatesByMap(result.expressionMap);
                 }
             }, this);
 
             this.removeEmptyKeys(result);
+            console.log('Get states 2 by map', result, result.hasStates, this.getStatesByMap(result.expressionMap));
             return <ITemplate> result;
         }
 
@@ -146,6 +148,15 @@ module ft {
             return result;
         }
 
+        private getStatesByMap(map:IExpressionMap):number {
+            var result:number = 0;
+            _.each(map, function(ex:IExpression) {
+               _.each(ex.hosts, (v:IExpressionHost)=>{ if(v.key === 'states') result ++; })
+            }, this);
+            return result;
+        }
+
+
         getExpressionHost(path:string, group:string /* attribs, params, data */, key:string /* class, href */, keyProperty:string /* class name */ = null ) {
             return {path: path, group: group, key: key, keyProperty: keyProperty};
         }
@@ -173,7 +184,7 @@ module ft {
         }
 
         removeEmptyKeys(def):void {
-            _.each(_.keys(def), (key)=>(_.isEmpty(def[key]) ? delete def[key] : null));
+            _.each(_.keys(def), (key)=>(_.isEmpty(def[key]) && !def[key]? delete def[key] : null));
         }
 
         parserHandler(error:any, data:any) {

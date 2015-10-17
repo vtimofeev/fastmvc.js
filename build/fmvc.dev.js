@@ -6,6 +6,7 @@ var fmvc;
         Event.Model = {
             Changed: 'ModelChanged',
             StateChanged: 'ModelStateChanged',
+            Disposed: 'ModelDisposed'
         };
         return Event;
     })();
@@ -280,9 +281,10 @@ var fmvc;
         Notifier.prototype.addListener = function (object, handler) {
             if (!this._listeners)
                 this._listeners = [];
-            var hasListener = _.filter(this._listeners, function (v) { return v.handler === handler; });
-            if (_.isEmpty(hasListener))
+            var hasListener = _.filter(this._listeners, function (v) { return v.target === object; });
+            if (_.isEmpty(hasListener)) {
                 this._listeners.push({ target: object, handler: handler });
+            }
             else
                 this.log('Try duplicate listener ', object.name);
         };
@@ -347,14 +349,58 @@ var fmvc;
             if (data)
                 this.setState(fmvc.ModelState.Completed);
         }
-        Model.prototype.setState = function (value) {
-            if (!this.enabledState || this._state === value)
-                return this;
-            this._prevState = value;
-            this._state = value;
-            this.sendEvent(fmvc.Event.Model.StateChanged, this._state);
+        Model.prototype.reset = function () {
+            this._data = null;
+            this._changes = null;
+            this._state = fmvc.ModelState.None;
+            this.sendEvent(fmvc.Event.Model.Changed);
             return this;
         };
+        Object.defineProperty(Model.prototype, "d", {
+            /*
+            * Data layer
+            */
+            get: function () {
+                return this.getData();
+            },
+            set: function (value) {
+                this.setData(value);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Model.prototype, "data", {
+            get: function () {
+                return this.getData();
+            },
+            set: function (value) {
+                this.setData(value);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Model.prototype.getData = function () {
+            return this._data;
+        };
+        Model.prototype.setData = function (value) {
+            if (this._data === value || this.disposed)
+                return;
+            var result = this.parseValueAndSetChanges(value);
+            if (this._data !== result || this._changes) {
+                this._data = result;
+                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
+            }
+        };
+        Object.defineProperty(Model.prototype, "changes", {
+            get: function () {
+                return this._changes;
+            },
+            set: function (value) {
+                this.setData(value);
+            },
+            enumerable: true,
+            configurable: true
+        });
         Model.prototype.parseValueAndSetChanges = function (value) {
             if (value instanceof Model)
                 throw Error('Cant set model data, data must be object, array or primitive');
@@ -362,7 +408,7 @@ var fmvc;
             var prevData = this._data;
             var changes = null;
             var hasChanges = false;
-            this.setChanges(null);
+            this._changes = null;
             if (_.isArray(value)) {
                 result = value.concat([]); //clone of array
             }
@@ -377,7 +423,7 @@ var fmvc;
                         prevData[i] = value[i];
                     }
                 }
-                this.setChanges(changes);
+                this._changes = value;
                 result = prevData;
             }
             else {
@@ -385,55 +431,15 @@ var fmvc;
             }
             return result;
         };
-        Model.prototype.reset = function () {
-            this._data = null;
-            this._changes = null;
-            this._state = fmvc.ModelState.None;
-            this.sendEvent(fmvc.Event.Model.Changed);
-            return this;
-        };
-        Object.defineProperty(Model.prototype, "data", {
-            get: function () {
-                return this.getData();
-            },
-            set: function (value) {
-                this.setData(value);
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Model.prototype.setChanges = function (value) {
-            this._changes = value;
-        };
-        Model.prototype.setData = function (value) {
-            if (this._data === value)
-                return;
-            var result = this.parseValueAndSetChanges(value);
-            if (this._data !== result || this._changes) {
-                this._data = result;
-                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
-            }
-        };
-        Object.defineProperty(Model.prototype, "changes", {
-            get: function () {
-                return this._changes;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(Model.prototype, "d", {
-            get: function () {
-                return this.getData();
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Model.prototype.getData = function () {
-            return this._data;
-        };
         Object.defineProperty(Model.prototype, "state", {
+            /*
+             *   Internal state layer
+             */
             get: function () {
                 return this._state;
+            },
+            set: function (value) {
+                this.setState(value);
             },
             enumerable: true,
             configurable: true
@@ -445,7 +451,15 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(Model.prototype, "count", {
+        Model.prototype.setState = function (value) {
+            if (!this.enabledState || this._state === value)
+                return this;
+            this._prevState = value;
+            this._state = value;
+            this.sendEvent(fmvc.Event.Model.StateChanged, this._state);
+            return this;
+        };
+        Object.defineProperty(Model.prototype, "length", {
             get: function () {
                 return _.isArray(this.data) ? this.data.length : 0;
             },
@@ -461,8 +475,10 @@ var fmvc;
                 _super.prototype.sendEvent.call(this, name, data, changes, sub, error);
         };
         Model.prototype.dispose = function () {
+            this.sendEvent(fmvc.Event.Model.Disposed);
             this._queue ? this._queue.dispose() : null;
             this._queue = null;
+            this._data = null;
             _super.prototype.dispose.call(this);
         };
         //-----------------------------------------------------------------------------
@@ -491,6 +507,13 @@ var fmvc;
             this.async($.ajax, [object], $, { done: fmvc.ModelState.Synced, fault: fmvc.ModelState.Error });
             return this;
         };
+        Object.defineProperty(ModelQueue.prototype, "promise", {
+            get: function () {
+                return this.currentPromise;
+            },
+            enumerable: true,
+            configurable: true
+        });
         ModelQueue.prototype.loadXml = function (object) {
             var defaultAjaxRequestObject = _.defaults(object, {
                 method: 'GET',
@@ -578,7 +601,7 @@ var fmvc;
 (function (fmvc) {
     /*
          var d1 = ["a", "b",1,2,3,4,5,6,7];
-         var m2 = new fmvc.Model('a2', [4,5,6,7,8,9,10,11]);
+         var m2 = new fmvc.Model<T>('a2', [4,5,6,7,8,9,10,11]);
          var s1 = new fmvc.CompositeModel('s1', [d1,m2]);
          s1.setMapBeforeCompare(m2.name, (v)=>v).setSourceCompareFunc(_.intersection).setResultFunc((v)=>(_.chain(v).filter((r:any)=>(r%2===0)).map((d:any)=>(d*100)).value()));
      */
@@ -836,6 +859,16 @@ var fmvc;
             this._inDocument = false;
             _.bindAll(this, 'validate');
         }
+        Object.defineProperty(View.prototype, "parent", {
+            get: function () {
+                return this._parent;
+            },
+            set: function (value) {
+                this._parent = value;
+            },
+            enumerable: true,
+            configurable: true
+        });
         // Properties: mediator, data, model
         View.prototype.getElement = function () {
             return this._element;
@@ -875,7 +908,6 @@ var fmvc;
             return this;
         };
         View.prototype.getState = function (name) {
-            //console.log('Get state ', name, ' states ' , this._states, ' r ', (this._states[name] || null));
             return this._states[name];
         };
         Object.defineProperty(View.prototype, "model", {
@@ -907,15 +939,18 @@ var fmvc;
         };
         Object.defineProperty(View.prototype, "app", {
             get: function () {
-                return (this._mediator && this._mediator.facade) ? this._mediator.facade.model : null;
+                return (this._mediator && this._mediator.facade) ? this._mediator.facade.model : (this.parent ? this.parent.app : null);
             },
             enumerable: true,
             configurable: true
         });
         View.prototype.setModel = function (value) {
             if (value != this._model) {
+                if (this._model)
+                    this._model.unbind(this);
                 this._model = value;
-                this._model.bind(this, this.invalidateData);
+                if (value)
+                    this._model.bind(this, this.invalidateData);
                 this.setData(value ? value.data : null);
             }
             return this;
@@ -962,8 +997,10 @@ var fmvc;
                 nextFrameHandler(this.validate, this);
             }
         };
-        View.prototype.invalidateData = function () {
+        View.prototype.invalidateData = function (e) {
             this.invalidate(fmvc.InvalidateType.Data);
+            if (e && e.name === fmvc.Event.Model.Disposed)
+                this.dispose();
         };
         View.prototype.invalidateApp = function () {
             this.invalidate(fmvc.InvalidateType.App);

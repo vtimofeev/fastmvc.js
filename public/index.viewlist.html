@@ -39,7 +39,7 @@
 
 
     var listView = new fmvc.ViewList('userview.list');
-    listView.enableStates(['disabled']);
+    listView.hasStates(['disabled']);
     listView.childrenConstructor = ui.UserView;
     listView.dataset = data;
     //listView.setState('selected', true);

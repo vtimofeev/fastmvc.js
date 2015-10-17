@@ -42,8 +42,9 @@ module fmvc {
 
 
     export class View extends Notifier implements IView {
+        private _parent:IView;
         private _mediator:Mediator;
-        private _model:fmvc.Model;
+        private _model:Model<any>;
         private _data:any;
 
         private _states:{[name:string]:any} = {};
@@ -58,8 +59,15 @@ module fmvc {
             _.bindAll(this, 'validate');
         }
 
-        // Properties: mediator, data, model
+        get parent():IView {
+            return this._parent;
+        }
 
+        set parent(value:IView) {
+            this._parent = value;
+        }
+
+        // Properties: mediator, data, model
         public getElement():HTMLElement {
             return <HTMLElement> this._element;
         }
@@ -100,11 +108,10 @@ module fmvc {
         }
 
         public getState(name:string):any {
-            //console.log('Get state ', name, ' states ' , this._states, ' r ', (this._states[name] || null));
             return this._states[name];
         }
 
-        public set model(value:Model) {
+        public set model(value:Model<any>) {
             this.setModel(value);
         }
 
@@ -123,22 +130,21 @@ module fmvc {
             return this._data;
         }
 
-
         public get app():any {
-            return (this._mediator && this._mediator.facade)?this._mediator.facade.model:null;
+            return (this._mediator&&this._mediator.facade)?this._mediator.facade.model:(this.parent?this.parent.app:null);
         }
 
-
-        public setModel(value:Model):IView {
+        public setModel(value:Model<any>):IView {
             if(value != this._model) {
+                if(this._model) this._model.unbind(this);
                 this._model = value;
-                this._model.bind(this, this.invalidateData);
+                if(value) this._model.bind(this, this.invalidateData);
                 this.setData(value?value.data:null);
             }
             return this;
         }
 
-        public get model():Model {
+        public get model():Model<any> {
             return this._model;
         }
 
@@ -184,8 +190,9 @@ module fmvc {
             }
         }
 
-        public invalidateData():void {
+        public invalidateData(e?:IEvent):void {
             this.invalidate(InvalidateType.Data);
+            if(e && e.name === Event.Model.Disposed) this.dispose();
         }
 
         public invalidateApp():void {
@@ -251,12 +258,15 @@ module fmvc {
 
 
     export interface IView extends INotifier {
-        setModel(value:Model):IView;
+        setModel(value:Model<any>):IView;
+        app:any;
         data:any;
-        model:Model;
-        setMediator(value:Mediator):IView;
+        model:Model<any>;
+        parent:IView;
         mediator:Mediator;
+        inDocument:boolean;
 
+        setMediator(value:Mediator):IView;
         createDom():void;
         enter():void;
         exit():void;

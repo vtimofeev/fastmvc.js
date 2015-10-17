@@ -1,5 +1,6 @@
 ///<reference path='./d.ts'/>
 module fmvc {
+
     export interface IModelOptions {
         enabledState?:boolean;
         enabledEvents?:boolean;
@@ -17,15 +18,17 @@ module fmvc {
         Error: 'error',
     };
 
-    export class Model extends fmvc.Notifier implements IModelOptions {
+
+
+    export class Model<T> extends fmvc.Notifier implements IModelOptions {
         // data, state, prevState
-        private _data:any;
+        private _data:T;
         private _state:string;
         private _changes:any;
         private _prevState:string;
 
         // queue
-        private _queue:ModelQueue = null;
+        private _queue:ModelQueue<T> = null;
 
         // model options
         public enabledEvents:boolean = true;
@@ -39,25 +42,61 @@ module fmvc {
             if (data) this.setState(ModelState.Completed);
         }
 
-        public setState(value:string):Model {
-            if (!this.enabledState || this._state === value) return this;
-            this._prevState = value;
-            this._state = value;
-            this.sendEvent(fmvc.Event.Model.StateChanged, this._state);
+        public reset():Model<T> {
+            this._data = null;
+            this._changes = null;
+            this._state = ModelState.None;
+            this.sendEvent(Event.Model.Changed);
             return this;
         }
 
-        public parseValueAndSetChanges(value:any):any {
-            if (value instanceof Model) throw Error('Cant set model data, data must be object, array or primitive');
 
+        /*
+        * Data layer
+        */
+        public get d():T {
+            return this.getData();
+        }
+
+        public set d(value:T) {
+            this.setData(value);
+        }
+        public get data():T {
+            return this.getData();
+        }
+        public set data(value:T) {
+            this.setData(value);
+        }
+        public getData():T {
+            return this._data;
+        }
+        public setData(value:T) {
+            if (this._data === value || this.disposed) return;
+            const result:T = this.parseValueAndSetChanges(value);
+            if (this._data !== result || this._changes) {
+                this._data = result;
+                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
+            }
+        }
+
+        public get changes():any {
+            return this._changes;
+        }
+
+        public set changes(value:any) {
+            this.setData(<T>value);
+        }
+
+        public parseValueAndSetChanges(value:T):any {
+            if (value instanceof Model) throw Error('Cant set model data, data must be object, array or primitive');
             var result = null;
             var prevData = this._data;
             var changes:{[id:string]:any} = null;
             var hasChanges:boolean = false;
-            this.setChanges(null);
+            this._changes = null;
 
             if (_.isArray(value)) {
-                result = value.concat([]); //clone of array
+                result = (<any>value).concat([]); //clone of array
             }
             else if (_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
                 // check changes and set auto data
@@ -69,7 +108,7 @@ module fmvc {
                         prevData[i] = value[i];
                     }
                 }
-                this.setChanges(changes);
+                this._changes = value;
                 result = prevData;
             }
             else {
@@ -78,74 +117,50 @@ module fmvc {
             return result;
         }
 
-        public reset():Model {
-            this._data = null;
-            this._changes = null;
-            this._state = ModelState.None;
-            this.sendEvent(Event.Model.Changed);
-            return this;
-        }
 
-        public set data(value:any) {
-            this.setData(value);
-        }
-
-        private setChanges(value:any) {
-            this._changes = value;
-       }
-
-        public setData(value:any) {
-            if (this._data === value) return;
-            const result:any = this.parseValueAndSetChanges(value);
-            if (this._data !== result || this._changes) {
-                this._data = result;
-                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
-            }
-        }
-
-        public get changes():any {
-            return this._changes;
-        }
-
-        public get data():any {
-            return this.getData();
-        }
-
-        public get d():any {
-            return this.getData();
-        }
-
-        public getData():any {
-            return this._data;
-        }
-
-
+        /*
+         *   Internal state layer
+         */
         public get state():string {
             return this._state;
         }
-
         public get prevState():string {
             return this._prevState;
         }
-
-        public get count():any {
-            return _.isArray(this.data)?this.data.length:0;
+        public set state(value:string) {
+            this.setState(value);
         }
+
+        public setState(value:string):Model<T> {
+            if (!this.enabledState || this._state === value) return this;
+            this._prevState = value;
+            this._state = value;
+            this.sendEvent(fmvc.Event.Model.StateChanged, this._state);
+            return this;
+        }
+
+
+        public get length():any {
+            return _.isArray(this.data)?(<any>this.data).length:0;
+        }
+
 
         public sendEvent(name:string, data:any = null, changes:any = null, sub:string = null, error:any = null):void {
             if (this.enabledEvents) super.sendEvent(name, data, changes, sub, error);
         }
 
-        public dispose() {
+        public dispose():void {
+            this.sendEvent(Event.Model.Disposed);
             this._queue?this._queue.dispose():null;
             this._queue = null;
+            this._data = null;
             super.dispose();
         }
 
         //-----------------------------------------------------------------------------
         // Queue
         //-----------------------------------------------------------------------------
-        public queue(create:boolean = false):ModelQueue {
+        public queue(create:boolean = false):ModelQueue<T> {
             if (create && this._queue) this._queue.dispose();
             return this._queue && !create ? this._queue : (this._queue = new ModelQueue(this));
         }

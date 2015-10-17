@@ -31,7 +31,6 @@ module ft {
         private _template:ITemplate;
         public _i18n:any; // i18n store
 
-        private _parent:ITemplateView; // Parent View
         private _domDef:IDomDef; // Definition view related parent
         private _params:any; // Merged params from constructor and dom definition
 
@@ -57,13 +56,6 @@ module ft {
             this.setParameters(params);
         }
 
-        get parent():ITemplateView {
-            return this._parent;
-        }
-
-        set parent(value:ITemplateView) {
-            this._parent = value;
-        }
 
         get domDef():IDomDef {
             return this._domDef;
@@ -251,10 +243,16 @@ module ft {
             this._prevDynamicProperiesMap = null;
             this._dynamicPropertiesMap = null;
             this._localHandlers  = null;
-            this._params = null;
             this._treeElementMapByPath = null;
-            this._template = null;
+            _.each(this._treeElementMapByPath, (v,k)=>delete this._treeElementMapByPath[k], this);
+
             this._i18n = null;
+        }
+
+        dispose() {
+            super.dispose();
+            this._params = null;
+            this._template = null;
         }
 
         getTemplate():ITemplate {
@@ -325,13 +323,14 @@ module ft {
         }
 
         validate():void {
+            if(!this.inDocument) return;
             var start = getTime();
             if (!_.isEmpty(this._dynamicPropertiesMap)) {
                _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
                this._dynamicPropertiesMap = {};
             }
 
-            templateHelper.createTreeObject(this._template.domTree, this);
+            if(this._template.hasStates) templateHelper.createTreeObject(this._template.domTree, this);
             super.validate();
 
             var result = getTime()-start;
@@ -417,7 +416,7 @@ module ft {
             var h = this._localHandlers ? this._localHandlers[path] : null;
             if (h && h[e.name]) {
                 var handlers = h[e.name];
-                _.each(handlers, (v)=>v.call(this, e), this);
+                _.each(handlers, (v)=>{ v.call(this, e); e.executionHandlersCount++; }, this);
             }
         }
 
@@ -425,7 +424,7 @@ module ft {
             e.currentTarget = this;// previous dispatch
             e.depth--;
 
-            if (!e.cancelled) this.trigger(e);// dispatch to this component(dynamic handlers);
+            this.trigger(e);// dispatch to this component(dynamic handlers);
             if (e.prevented && e.e) e.e.preventDefault();
 
             e.previousTarget = this;

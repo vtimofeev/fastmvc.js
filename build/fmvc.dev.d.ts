@@ -5,6 +5,7 @@ declare module fmvc {
         static Model: {
             Changed: string;
             StateChanged: string;
+            Disposed: string;
         };
     }
 }
@@ -22,7 +23,7 @@ declare module fmvc {
         private _events;
         private _root;
         model: {
-            [id: string]: Model;
+            [id: string]: Model<any>;
         };
         mediator: {
             [id: string]: Mediator;
@@ -119,7 +120,7 @@ declare module fmvc {
         Completed: string;
         Error: string;
     };
-    class Model extends fmvc.Notifier implements IModelOptions {
+    class Model<T> extends fmvc.Notifier implements IModelOptions {
         private _data;
         private _state;
         private _changes;
@@ -129,56 +130,56 @@ declare module fmvc {
         enabledState: boolean;
         watchChanges: boolean;
         constructor(name: string, data?: any, opts?: IModelOptions);
-        setState(value: string): Model;
-        parseValueAndSetChanges(value: any): any;
-        reset(): Model;
-        data: any;
-        private setChanges(value);
-        setData(value: any): void;
+        reset(): Model<T>;
+        d: T;
+        data: T;
+        getData(): T;
+        setData(value: T): void;
         changes: any;
-        d: any;
-        getData(): any;
+        parseValueAndSetChanges(value: T): any;
         state: string;
         prevState: string;
-        count: any;
+        setState(value: string): Model<T>;
+        length: any;
         sendEvent(name: string, data?: any, changes?: any, sub?: string, error?: any): void;
         dispose(): void;
-        queue(create?: boolean): ModelQueue;
+        queue(create?: boolean): ModelQueue<T>;
     }
 }
 declare module fmvc {
-    class ModelQueue {
+    class ModelQueue<T> {
         private model;
         private currentPromise;
         private error;
-        constructor(model: fmvc.Model);
-        load(object: any): ModelQueue;
-        loadXml(object: any): ModelQueue;
-        parse(method: any): ModelQueue;
-        async(getPromiseMethod: any, args: any[], context: any, states: any): ModelQueue;
-        sync(method: Function, args?: any[], context?: any, states?: any): ModelQueue;
+        constructor(model: fmvc.Model<T>);
+        load(object: any): ModelQueue<T>;
+        promise: any;
+        loadXml(object: any): ModelQueue<T>;
+        parse(method: any): ModelQueue<T>;
+        async(getPromiseMethod: any, args: any[], context: any, states?: any): ModelQueue<T>;
+        sync(method: Function, args?: any[], context?: any, states?: any): ModelQueue<T>;
         complete(method: Function, args?: any[], context?: any, states?: any): void;
         executeError(err?: any): any;
-        fault(method: Function, args?: any[], context?: any, states?: any): ModelQueue;
+        fault(method: Function, args?: any[], context?: any, states?: any): ModelQueue<T>;
         setup(): JQueryPromise<{}>;
         dispose(): void;
     }
 }
 declare module fmvc {
-    class CompositeModel extends Model {
+    class CompositeModel<T> extends Model<T> {
         private _sources;
         private _sourceCompareFunc;
         private _mapBeforeCompareFunc;
         private _resultFuncs;
         private throttleApplyChanges;
         constructor(name: string, source: any[], opts?: IModelOptions);
-        addSources(v: (any | Model)[]): CompositeModel;
-        addSource(v: any | Model, mapBeforeCompareFunc?: Function): CompositeModel;
-        removeSource(v: Model): CompositeModel;
+        addSources(v: any[]): CompositeModel<T>;
+        addSource(v: any, mapBeforeCompareFunc?: Function): CompositeModel<T>;
+        removeSource(v: Model<T>): CompositeModel<T>;
         private sourceChangeHandler(e);
-        setSourceCompareFunc(value: any): CompositeModel;
-        setMapBeforeCompare(name: string, value: any): CompositeModel;
-        setResultFunc(...values: any[]): CompositeModel;
+        setSourceCompareFunc(value: any): CompositeModel<T>;
+        setMapBeforeCompare(name: string, value: any): CompositeModel<T>;
+        setResultFunc(...values: any[]): CompositeModel<T>;
         apply(): void;
         private getSourceResult();
         private getPreparedSourceData(v);
@@ -191,7 +192,7 @@ declare module fmvc {
         length?: number;
         console?: boolean;
     }
-    class Logger extends fmvc.Model {
+    class Logger extends fmvc.Model<any> {
         private _config;
         private _modules;
         constructor(name: string, config?: ILoggerConfig);
@@ -217,6 +218,7 @@ declare module fmvc {
     var frameExecution: number;
     function nextFrameHandler(handler: Function, context: IView, ...params: any[]): void;
     class View extends Notifier implements IView {
+        private _parent;
         private _mediator;
         private _model;
         private _data;
@@ -226,6 +228,7 @@ declare module fmvc {
         private _inDocument;
         private _element;
         constructor(name: string);
+        parent: IView;
         getElement(): HTMLElement;
         setElement(value: HTMLElement): void;
         setMediator(value: Mediator): IView;
@@ -234,11 +237,11 @@ declare module fmvc {
         private setStateReverse(value, name);
         setState(name: string, value: any): IView;
         getState(name: string): any;
-        model: Model;
+        model: Model<any>;
         data: any;
         setData(value: any): IView;
         app: any;
-        setModel(value: Model): IView;
+        setModel(value: Model<any>): IView;
         inDocument: boolean;
         getEventNameByDomEvent(e: any): string;
         domHandler(e: any): void;
@@ -247,7 +250,7 @@ declare module fmvc {
         exit(): void;
         isWaitingForValidate: boolean;
         invalidate(value: number): void;
-        invalidateData(): void;
+        invalidateData(e?: IEvent): void;
         invalidateApp(): void;
         validate(): void;
         protected validateData(): void;
@@ -263,11 +266,14 @@ declare module fmvc {
         log(...messages: any[]): View;
     }
     interface IView extends INotifier {
-        setModel(value: Model): IView;
+        setModel(value: Model<any>): IView;
+        app: any;
         data: any;
-        model: Model;
-        setMediator(value: Mediator): IView;
+        model: Model<any>;
+        parent: IView;
         mediator: Mediator;
+        inDocument: boolean;
+        setMediator(value: Mediator): IView;
         createDom(): void;
         enter(): void;
         exit(): void;
@@ -289,9 +295,9 @@ declare module fmvc {
         constructor(name: string, root: Element);
         setRoot(root: Element): Mediator;
         root: Element;
-        addView(...views: fmvc.View[]): Mediator;
+        addView(...views: IView[]): Mediator;
         private _addView(view);
-        getView(name: string): View;
+        getView(name: string): IView;
         removeView(name: string): Mediator;
         events: string[];
         internalHandler(e: any): void;
@@ -304,7 +310,7 @@ declare module fmvc {
         events: string[];
         internalHandler(e: any): void;
         eventHandler(e: any): void;
-        getView(name: string): View;
+        getView(name: string): IView;
     }
 }
 declare var MessageFormat: any;

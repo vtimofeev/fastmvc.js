@@ -1,14 +1,15 @@
 ///<reference path='./d.ts'/>
+
 module fmvc {
 
     // It uses Zepto or JQuery deferred
-    export class ModelQueue {
-        private model:fmvc.Model;
+    export class ModelQueue<T> {
+        private model:fmvc.Model<T>;
         private currentPromise:any;
         private error:any;
 
 
-        constructor(model:fmvc.Model) {
+        constructor(model:fmvc.Model<T>) {
             this.model = model;
         }
 
@@ -18,7 +19,11 @@ module fmvc {
             return this;
         }
 
-        loadXml(object:any):ModelQueue {
+        get promise():any {
+            return this.currentPromise;
+        }
+
+        loadXml(object:any):ModelQueue<T> {
             var defaultAjaxRequestObject:any = _.defaults(object, {
                 method: 'GET',
                 dataType: 'xml',
@@ -27,16 +32,16 @@ module fmvc {
             return this.load(defaultAjaxRequestObject);
         }
 
-        parse(method:any):ModelQueue {
+        parse(method:any):ModelQueue<T> {
             this.model.setState(ModelState.Parsing);
             this.sync(method, [this.model], this, {done: ModelState.Completed, fault: ModelState.Error});
             return this;
         }
 
-        async(getPromiseMethod:any, args:any[], context:any, states:any):ModelQueue {
+        async(getPromiseMethod:any, args:any[], context:any, states?:any):ModelQueue<T> {
             var deferred = $.Deferred();
             var queuePromise = this.setup();
-            var t:ModelQueue = this;
+            var t:ModelQueue<T> = this;
             queuePromise.then(
                 function done(value) {
                     (getPromiseMethod.apply(context, args)).then(
@@ -59,7 +64,7 @@ module fmvc {
             return this;
         }
 
-        sync(method:Function, args?:any[], context?:any, states?:any):ModelQueue {
+        sync(method:Function, args?:any[], context?:any, states?:any):ModelQueue<T> {
             var deferred = $.Deferred();
             var queuePromise = this.setup();
             var t = this;
@@ -89,7 +94,7 @@ module fmvc {
             }
         }
 
-        fault(method:Function, args?:any[], context?:any, states?:any):ModelQueue {
+        fault(method:Function, args?:any[], context?:any, states?:any):ModelQueue<T> {
             this.error = {method: method, args: args, context: context, states: states};
             return this;
         }

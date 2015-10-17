@@ -9,7 +9,7 @@ var fmvc;
 (function (fmvc) {
     /*
          var d1 = ["a", "b",1,2,3,4,5,6,7];
-         var m2 = new fmvc.Model('a2', [4,5,6,7,8,9,10,11]);
+         var m2 = new fmvc.Model<T>('a2', [4,5,6,7,8,9,10,11]);
          var s1 = new fmvc.CompositeModel('s1', [d1,m2]);
          s1.setMapBeforeCompare(m2.name, (v)=>v).setSourceCompareFunc(_.intersection).setResultFunc((v)=>(_.chain(v).filter((r:any)=>(r%2===0)).map((d:any)=>(d*100)).value()));
      */

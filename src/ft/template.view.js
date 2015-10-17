@@ -39,16 +39,6 @@ var ft;
             this._template = template;
             this.setParameters(params);
         }
-        Object.defineProperty(TemplateView.prototype, "parent", {
-            get: function () {
-                return this._parent;
-            },
-            set: function (value) {
-                this._parent = value;
-            },
-            enumerable: true,
-            configurable: true
-        });
         Object.defineProperty(TemplateView.prototype, "domDef", {
             get: function () {
                 return this._domDef;
@@ -215,6 +205,7 @@ var ft;
             this.setState('selected', !this.getState('selected'));
         };
         TemplateView.prototype.exit = function () {
+            var _this = this;
             if (!this.inDocument) {
                 return console.warn('Error, try re-exit');
             }
@@ -227,10 +218,14 @@ var ft;
             this._prevDynamicProperiesMap = null;
             this._dynamicPropertiesMap = null;
             this._localHandlers = null;
-            this._params = null;
             this._treeElementMapByPath = null;
-            this._template = null;
+            _.each(this._treeElementMapByPath, function (v, k) { return delete _this._treeElementMapByPath[k]; }, this);
             this._i18n = null;
+        };
+        TemplateView.prototype.dispose = function () {
+            _super.prototype.dispose.call(this);
+            this._params = null;
+            this._template = null;
         };
         TemplateView.prototype.getTemplate = function () {
             return this._template;
@@ -289,12 +284,15 @@ var ft;
             return result;
         };
         TemplateView.prototype.validate = function () {
+            if (!this.inDocument)
+                return;
             var start = getTime();
             if (!_.isEmpty(this._dynamicPropertiesMap)) {
                 _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
                 this._dynamicPropertiesMap = {};
             }
-            ft.templateHelper.createTreeObject(this._template.domTree, this);
+            if (this._template.hasStates)
+                ft.templateHelper.createTreeObject(this._template.domTree, this);
             _super.prototype.validate.call(this);
             var result = getTime() - start;
             counters.validate++;
@@ -372,14 +370,13 @@ var ft;
             var h = this._localHandlers ? this._localHandlers[path] : null;
             if (h && h[e.name]) {
                 var handlers = h[e.name];
-                _.each(handlers, function (v) { return v.call(_this, e); }, this);
+                _.each(handlers, function (v) { v.call(_this, e); e.executionHandlersCount++; }, this);
             }
         };
         TemplateView.prototype.handleTreeEvent = function (e) {
             e.currentTarget = this; // previous dispatch
             e.depth--;
-            if (!e.cancelled)
-                this.trigger(e); // dispatch to this component(dynamic handlers);
+            this.trigger(e); // dispatch to this component(dynamic handlers);
             if (e.prevented && e.e)
                 e.e.preventDefault();
             e.previousTarget = this;

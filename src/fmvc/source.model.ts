@@ -3,11 +3,11 @@ module fmvc {
 
     /*
          var d1 = ["a", "b",1,2,3,4,5,6,7];
-         var m2 = new fmvc.Model('a2', [4,5,6,7,8,9,10,11]);
+         var m2 = new fmvc.Model<T>('a2', [4,5,6,7,8,9,10,11]);
          var s1 = new fmvc.CompositeModel('s1', [d1,m2]);
          s1.setMapBeforeCompare(m2.name, (v)=>v).setSourceCompareFunc(_.intersection).setResultFunc((v)=>(_.chain(v).filter((r:any)=>(r%2===0)).map((d:any)=>(d*100)).value()));
      */
-    export class CompositeModel extends Model {
+    export class CompositeModel<T> extends Model<T> {
         private _sources:any[];
         private _sourceCompareFunc:any;
         private _mapBeforeCompareFunc:{[id:string]:any};
@@ -22,7 +22,7 @@ module fmvc {
             else this.addSource(source);
         }
 
-        addSources(v:(any|Model)[]):CompositeModel {
+        public addSources(v:any[]):CompositeModel<T> {
             if (!v) return this;
             if (!this._sources) this._sources = [];
             _.each(v, (source)=>this.addSource(source), this);
@@ -30,9 +30,9 @@ module fmvc {
         }
 
 
-        addSource(v:any|Model, mapBeforeCompareFunc?:Function):CompositeModel {
+        public addSource(v:any, mapBeforeCompareFunc?:Function):CompositeModel<T> {
             if (v instanceof Model) {
-                var m = <Model>v;
+                var m = <Model<T>>v;
                 m.bind(this, this.sourceChangeHandler);
                 this._sources.push(m);
                 if(mapBeforeCompareFunc) {
@@ -52,7 +52,7 @@ module fmvc {
             return this;
         }
 
-        removeSource(v:Model):CompositeModel {
+        public removeSource(v:Model<T>):CompositeModel<T> {
             var index:number = -1;
             if (this._sources && (index = this._sources.indexOf(v)) > -1) {
                 this._sources.splice(index, 1);
@@ -68,20 +68,20 @@ module fmvc {
             this.throttleApplyChanges();
         }
 
-        public setSourceCompareFunc(value:any):CompositeModel {
+        public setSourceCompareFunc(value:any):CompositeModel<T> {
             this._sourceCompareFunc = value;
             this.throttleApplyChanges();
             return this;
         }
 
-        public setMapBeforeCompare(name:string, value:any):CompositeModel {
+        public setMapBeforeCompare(name:string, value:any):CompositeModel<T> {
             if(!this._mapBeforeCompareFunc) this._mapBeforeCompareFunc = {};
             this._mapBeforeCompareFunc[name] = value;
             this.throttleApplyChanges();
             return this;
         }
 
-        public setResultFunc(...values:any[]):CompositeModel {
+        public setResultFunc(...values:any[]):CompositeModel<T> {
             this._resultFuncs = values?_.flatten([].concat(this._resultFuncs ? this._resultFuncs : [], values)):null;
             this.throttleApplyChanges();
             return this;
@@ -110,7 +110,7 @@ module fmvc {
             }
         }
 
-        private getPreparedSourceData(v:Model|any):any[] {
+        private getPreparedSourceData(v:any):any[] {
             if(v instanceof Model) {
                 var mapper:any = this._mapBeforeCompareFunc&&this._mapBeforeCompareFunc[v.name]?this._mapBeforeCompareFunc[v.name]:null;
                 var mappedResult = mapper?_.map<any,any>(v.data, mapper):v.data;

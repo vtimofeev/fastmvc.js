@@ -28,7 +28,6 @@ module ft {
             var ViewClass:any = <ITemplateConstructor> (global[className]);
             if (!ViewClass) throw 'Children class ' + className + ' not found';
 
-            //console.log('Create children ...');
             var prevChildren = this._children;
             var childrenViews:ITemplateView[] = _.map(this.data, function (v:any, k:number) {
                 var params = {};
@@ -42,12 +41,6 @@ module ft {
                 if(def.params[TemplateParams.childrenEnableStateHandlers]) params[TemplateParams.stateHandlers] = def.params[TemplateParams.childrenEnableStateHandlers];
                 var child = prevChildren && prevChildren.length?prevChildren.splice(0,1)[0]:new ViewClass(className + '-' + k, null);
 
-                /*
-                if(child.inDocument) {
-                    child.exit();
-                }
-                child.cleanParameters();
-                */
                 child.cleanParameters();
                 child.setParameters(params);
                 child.applyParameters();
@@ -55,10 +48,7 @@ module ft {
             }, this);
             this._children = childrenViews;
 
-
             _.each(prevChildren, (v:ITemplateView)=>v.dispose());
-
-
 
             _.each(this._children, function (child:ITemplateView) {
                 child.parent = this.parent;
@@ -80,13 +70,13 @@ module ft {
 
         checkSelected() {
             _.each(this._children, function (child:ITemplateView) {
-                child.applyParameter(this.domDef.params[TemplateParams.childrenSetStateSelected], TemplateParams.setStateSelected);
+                if(!child.disposed) child.applyParameter(this.domDef.params[TemplateParams.childrenSetStateSelected], TemplateParams.setStateSelected);
             }, this);
         }
 
         checkDisabled() {
             _.each(this._children, function (child:ITemplateView) {
-                child.applyParameter(this.domDef.params[TemplateParams.childrenSetStateDisabled], TemplateParams.setStateDisabled);
+                if(!child.disposed) child.applyParameter(this.domDef.params[TemplateParams.childrenSetStateDisabled], TemplateParams.setStateDisabled);
             }, this);
         }
 

@@ -102,9 +102,10 @@ var fmvc;
         Notifier.prototype.addListener = function (object, handler) {
             if (!this._listeners)
                 this._listeners = [];
-            var hasListener = _.filter(this._listeners, function (v) { return v.handler === handler; });
-            if (_.isEmpty(hasListener))
+            var hasListener = _.filter(this._listeners, function (v) { return v.target === object; });
+            if (_.isEmpty(hasListener)) {
                 this._listeners.push({ target: object, handler: handler });
+            }
             else
                 this.log('Try duplicate listener ', object.name);
         };

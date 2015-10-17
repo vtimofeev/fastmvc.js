@@ -17,7 +17,7 @@ module fmvc {
         private _events:any = {};
         private _root:any;
 
-        public model:{[id:string]:Model} = {};
+        public model:{[id:string]:Model<any>} = {};
         public mediator:{[id:string]:Mediator} = {};
 
         public get root():Element {
@@ -59,7 +59,7 @@ module fmvc {
             object.facade = this;
             switch (object.type) {
                 case TYPE_MODEL:
-                    var model = <Model> (object)
+                    var model = <Model<any>> (object);
                     this.model[object.name] = model;
                     break;
                 case TYPE_MEDIATOR:

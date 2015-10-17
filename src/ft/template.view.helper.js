@@ -90,8 +90,8 @@ var ft;
                 childrenView.domDef = data;
                 childrenView.parent = root;
                 var childrenData = data.params[ft.TemplateParams.childrenData] ? this.getExpressionValue(data.params[ft.TemplateParams.childrenData], root) : null;
-                var childrenModel = data.params[ft.TemplateParams.childrenModel] ? this.getExpressionValue(data.params[ft.TemplateParams.childrenModel]) : null;
-                if (childrenModel)
+                var childrenModel = data.params[ft.TemplateParams.childrenModel] ? this.getExpressionValue(data.params[ft.TemplateParams.childrenModel], root) : null;
+                if (childrenModel && _.isArray(childrenModel))
                     childrenView.model = childrenModel;
                 if (childrenData && _.isArray(childrenData))
                     childrenView.data = childrenData;
@@ -172,25 +172,35 @@ var ft;
             var template = view.getTemplate();
             // Execute current def handler
             this.triggerDefEvent(e);
-            while ((def = template.pathMap[def.parentPath]) && !e.cancelled) {
+            while (!e.cancelled && (def = template.pathMap[def.parentPath])) {
                 // Execute on defs tree in view template scope
                 e.currentDef = def;
                 this.triggerDefEvent(e);
             }
-            // Execute local(dynamic) view handlers
-            view.handleTreeEvent(e);
             // Send to parent template defs tree
+            view.handleTreeEvent(e);
             if (view.parent) {
+                // exec event on parent
+                def = view.domDef;
                 e.currentTarget = view.parent;
-                e.currentDef = view.domDef;
-                this.dispatchTreeEventDown(e);
+                e.currentDef = def;
+                this.triggerDefEvent(e);
+                // check canceled
+                e.cancelled = !!e.executionHandlersCount && e.name === 'click';
+                // exec parent next domDef to root
+                e.currentDef = def.parentPath ? view.parent.getTemplate().pathMap[def.parentPath] : null;
+                if (!e.cancelled && e.currentDef)
+                    this.dispatchTreeEventDown(e);
             }
         };
         TemplateViewHelper.prototype.triggerDefEvent = function (e) {
             var def = (e.currentDef || e.def);
             var view = (e.currentTarget || e.target);
-            if (def.handlers && def.handlers[e.name] && !view.disabled)
+            console.log('Trigger default on handlers ', e.def.path, e.executionHandlersCount, e.name, e.cancelled, view.name);
+            if (!view.disabled && def.handlers && def.handlers[e.name]) {
                 view.evalHandler(def.handlers[e.name], e);
+                e.executionHandlersCount++;
+            }
         };
         TemplateViewHelper.prototype.applyExpressionToHosts = function (exObj, root) {
             var _this = this;
@@ -225,15 +235,25 @@ var ft;
                     return;
                 case 'params':
                     switch (host.key) {
+                        case ft.TemplateParams.setData:
+                            var view = root.getTreeElementByPath(host.path);
+                            if (view)
+                                view.setData(value);
+                            return;
+                        case ft.TemplateParams.setModel:
+                            var view = root.getTreeElementByPath(host.path);
+                            if (view)
+                                view.setModel(value);
+                            return;
                         case ft.TemplateParams.setStateSelected:
                             var view = root.getTreeElementByPath(host.path);
                             if (view)
-                                setTimeout(function () { return view.setState('selected', !!value); }, 0);
+                                view.setState('selected', !!value);
                             return;
                         case ft.TemplateParams.setStateDisabled:
                             var view = root.getTreeElementByPath(host.path);
                             if (view)
-                                setTimeout(function () { return view.setState('disabled', !!value); }, 0);
+                                view.setState('disabled', !!value);
                             return;
                         case ft.TemplateParams.childrenData:
                             var childrenView = root.getChildrenViewByPath(host.path);

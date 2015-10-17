@@ -50,11 +50,11 @@ module ft {
         }
 
         private getTreeEventByBrowserEvent(name:string, def:IDomDef, view:ITemplateView, e:any):ITreeEvent {
-            return {name: name, target:view, def: def, e: e, cancelled:false, prevented:false, depth: 1e2};
+            return {name: name, target:view, def: def, e: e, cancelled:false, prevented:false, depth: 1e2, executionHandlersCount: 0};
         }
 
         public getCustomTreeEvent(name:string, data:any, view:ITemplateView, depth:number = 1):ITreeEvent {
-            return {name: name, target:view, previousTarget: null, currentTarget:view, data:data, cancelled:false, prevented:false, depth: depth};
+            return {name: name, target:view, previousTarget: null, currentTarget:view, data:data, cancelled:false, prevented:false, depth: depth, executionHandlersCount: 0};
         }
 
         public disposeEvent(e:ITreeEvent):void {

@@ -1,4 +1,4 @@
-///<reference path='./d.ts'/>
+///<reference path='../fmvc/d.ts'/>
 
 module fmvc {
     export var DefaultModel = {
@@ -14,11 +14,11 @@ module fmvc {
             super(name,root);
 
             // Модель локали, содержит строку указывающую на локализацию
-            var localeModel:Model = new Model(DefaultModel.locale, {value: locale});
+            var localeModel:Model<any> = new Model<any>(DefaultModel.locale, {value: locale});
             // Модель темы, содержит строку указывающую на тему
-            var themeModel:Model = new Model(DefaultModel.theme, {value: theme});
+            var themeModel:Model<any> = new Model<any>(DefaultModel.theme, {value: theme});
             // Объект содержащий глобальные данные i18n
-            var i18nModel:Model = new Model(DefaultModel.i18n, i18nDict);
+            var i18nModel:Model<any> = new Model<any>(DefaultModel.i18n, i18nDict);
             // Добавляем модели по умолчанию в фасад
             this.register([localeModel, i18nModel, themeModel]);
         }

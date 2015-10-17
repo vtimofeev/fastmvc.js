@@ -6,6 +6,7 @@ var fmvc;
         Event.Model = {
             Changed: 'ModelChanged',
             StateChanged: 'ModelStateChanged',
+            Disposed: 'ModelDisposed'
         };
         return Event;
     })();

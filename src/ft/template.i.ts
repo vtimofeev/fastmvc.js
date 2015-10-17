@@ -84,6 +84,7 @@ module ft {
         domTree: IDomDef;
         dynamicTree?:IDynamicTree;
         expressionMap?:IExpressionMap;
+        hasStates?:boolean;
         pathMap: {[path:string]:IDomDef};
 
 
@@ -153,7 +154,6 @@ module ft {
     }
 
     export interface ITemplateView extends fmvc.IView {
-        parent:ITemplateView;
         domDef:IDomDef;
         localDomDef:IDomDef;
 
@@ -246,6 +246,7 @@ module ft {
         previousTarget?:fmvc.INotifier;
         currentTarget?:fmvc.INotifier; // target component
         cancelled:boolean; // browser event type or custom event type
+        executionHandlersCount:number;
         prevented:boolean;
         depth:number;
     }

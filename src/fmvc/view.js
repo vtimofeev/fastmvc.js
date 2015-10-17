@@ -58,6 +58,16 @@ var fmvc;
             this._inDocument = false;
             _.bindAll(this, 'validate');
         }
+        Object.defineProperty(View.prototype, "parent", {
+            get: function () {
+                return this._parent;
+            },
+            set: function (value) {
+                this._parent = value;
+            },
+            enumerable: true,
+            configurable: true
+        });
         // Properties: mediator, data, model
         View.prototype.getElement = function () {
             return this._element;
@@ -97,7 +107,6 @@ var fmvc;
             return this;
         };
         View.prototype.getState = function (name) {
-            //console.log('Get state ', name, ' states ' , this._states, ' r ', (this._states[name] || null));
             return this._states[name];
         };
         Object.defineProperty(View.prototype, "model", {
@@ -129,15 +138,18 @@ var fmvc;
         };
         Object.defineProperty(View.prototype, "app", {
             get: function () {
-                return (this._mediator && this._mediator.facade) ? this._mediator.facade.model : null;
+                return (this._mediator && this._mediator.facade) ? this._mediator.facade.model : (this.parent ? this.parent.app : null);
             },
             enumerable: true,
             configurable: true
         });
         View.prototype.setModel = function (value) {
             if (value != this._model) {
+                if (this._model)
+                    this._model.unbind(this);
                 this._model = value;
-                this._model.bind(this, this.invalidateData);
+                if (value)
+                    this._model.bind(this, this.invalidateData);
                 this.setData(value ? value.data : null);
             }
             return this;
@@ -184,8 +196,10 @@ var fmvc;
                 nextFrameHandler(this.validate, this);
             }
         };
-        View.prototype.invalidateData = function () {
+        View.prototype.invalidateData = function (e) {
             this.invalidate(fmvc.InvalidateType.Data);
+            if (e && e.name === fmvc.Event.Model.Disposed)
+                this.dispose();
         };
         View.prototype.invalidateApp = function () {
             this.invalidate(fmvc.InvalidateType.App);

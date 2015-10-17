@@ -23,8 +23,8 @@ describe('ft - component package ', function () {
     var buttonReset = { title: 'Очистить (локальный)', action: 'actionReset' };
     var templateObjs = {
         "ft.DataButton": {
-            content: '<div .stateHandlers="hover,selected" onclick="selectedChildrenItem" class="button button-{state.selected} button-{state.hover} button-{state.disabled}">' +
-                '{data.title} ' +
+            content: '<div .stateHandlers="hover,selected" onclick="{this.model?this.model.dispose():null;}" class="button button-{state.selected} button-{state.hover} button-{state.disabled}">' +
+                '{(data&&data.title?data.title:\"\")}' +
                 '</div>',
         },
         /*
@@ -53,14 +53,14 @@ describe('ft - component package ', function () {
         */
         "ft.ButtonGroup": {
             content: '<div .stateHandlers="hover" >' +
-                '<div class="button-{state.hover}">Заголовок с подсветкой</div>' +
+                '<div class="button-{state.hover}" children.class="ft.DataButton" children.data="{app.scope.d.children}"  children.stateHandlers="hover">Заголовок с подсветкой</div>' +
                 '<ft.DataButton onclick="disable" state.disabled="{app.scope.d.disabled}">Disable children</ft.DataButton>' +
                 '<ft.DataButton onclick="enable" state.disabled="{(!app.scope.d.disabled)}">Enable children</ft.DataButton>' +
-                '<div states="{app.scope.d.selected}">Выбран элемент {app.scope.d.selected.title}</div>' +
+                '<div states="{app.scope.d.selected}">Выбран элемент {app.scope.d.selected.d.title}</div>' +
                 '<div states="{(!app.scope.d.selected)}">Нет выбранного элемнта (глобальный-кнопка)</div>' +
-                '<ft.DataButton states="{app.scope.d.selected}" .data="{app.scope.d.selected}"> Выбран узел (глобальный) </ft.DataButton>' +
+                '<ft.DataButton states="{app.scope.d.selected}" .model="{app.scope.d.selected}"> Выбран узел (глобальный) </ft.DataButton>' +
                 '<ft.DataButton states="{(!app.scope.d.selected)}" .data="{app.scope.d.reset}"> Нет узла (глобальный) </ft.DataButton>' +
-                '<div ln="childrenContainer" children.stateHandlers="hover" children.state.selected="{(ctx.data===app.scope.d.selected)}" children.state.disabled="{app.scope.d.disabled}" children.class="ft.DataButton" children.data="{app.scope.d.children}">' +
+                '<div ln="childrenContainer" children.redispatchHandlers="mouseover,mouseout" children.stateHandlers="hover" children.state.selected="{(ctx.model===app.scope.d.selected)}" children.state.disabled="{app.scope.d.disabled}" children.class="ft.DataButton" children.data="{app.scope.d.children}">' +
                 '</div>' +
                 '<ft.DataButton .stateHandlers="hover" .data="{app.scope.d.reset}" state.disabled="{app.scope.d.disabled}" state.selected="{app.scope.d.selected}" onclick="reset"> Очистить (глобальный) </ft.DataButton>' +
                 '</div>',
@@ -71,12 +71,20 @@ describe('ft - component package ', function () {
     var tm = ft.templateManager;
     var app = new fmvc.Facade('testapp', null, document.body);
     var model = new fmvc.Model('scope');
-    model.data = { selected: null, disabled: false, children: buttonsDs2, reset: buttonReset };
+    model.data = { selected: null, disabled: false, children: null, reset: buttonReset };
     var mediator = new fmvc.Mediator('appmed', document.body);
     app.register(model, mediator);
+    model.changes = { children: _.map(_.range(5), function (v) { return new fmvc.Model('data-' + v, { title: v + '=' + Math.round(Math.random() * 100), action: Math.random() }); }) };
     setInterval(function () {
-        model.data = { children: _.map(_.range(500), function (v) { return { title: v + '=' + Math.round(Math.random() * 100), action: Math.random() }; }) };
-    }, 100);
+        _.each(model.data.children, function (m, v) {
+            try {
+                model.data.children[v].data = { title: v + '=' + Math.round(Math.random() * 100), action: Math.random() };
+            }
+            catch (e) {
+                console.log(v);
+            }
+        });
+    }, 50);
     describe('ft - ButtonGroup/DataButton', function () {
         _.each(templateObjs, function (obj, key) {
             it('should create instances ' + key, function () {
@@ -88,26 +96,23 @@ describe('ft - component package ', function () {
                     container.innerHTML = '';
                     instance = window[key]('view-' + key, params);
                 }
+                console.log('Instance: ', instance);
                 mediator.addView(instance);
-                model.data = { children: buttonsDs };
+                //model.changes = { children: buttonsDs };
                 model.bind(instance, instance.invalidateApp);
                 instance.internalHandler = function (type, e) {
                     console.log('Dispatch internal handler execute for ', type, e);
                     if (type === 'selectedChildrenItem') {
-                        model.data = { selected: e.target.data };
-                        instance.invalidate(fmvc.InvalidateType.Data);
+                        model.changes = { selected: e.target.model };
                     }
                     if (type === 'reset') {
-                        model.data = { selected: null };
-                        instance.invalidate(fmvc.InvalidateType.Data);
+                        model.changes = { selected: null };
                     }
                     if (type === 'disable') {
-                        model.data = { disabled: true };
-                        instance.invalidate(fmvc.InvalidateType.Data);
+                        model.changes = { disabled: true };
                     }
                     if (type === 'enable') {
-                        model.data = { disabled: false };
-                        instance.invalidate(fmvc.InvalidateType.Data);
+                        model.changes = { disabled: false };
                     }
                 };
                 ///instance.render(container);

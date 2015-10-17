@@ -34,14 +34,58 @@ var fmvc;
             if (data)
                 this.setState(fmvc.ModelState.Completed);
         }
-        Model.prototype.setState = function (value) {
-            if (!this.enabledState || this._state === value)
-                return this;
-            this._prevState = value;
-            this._state = value;
-            this.sendEvent(fmvc.Event.Model.StateChanged, this._state);
+        Model.prototype.reset = function () {
+            this._data = null;
+            this._changes = null;
+            this._state = fmvc.ModelState.None;
+            this.sendEvent(fmvc.Event.Model.Changed);
             return this;
         };
+        Object.defineProperty(Model.prototype, "d", {
+            /*
+            * Data layer
+            */
+            get: function () {
+                return this.getData();
+            },
+            set: function (value) {
+                this.setData(value);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Model.prototype, "data", {
+            get: function () {
+                return this.getData();
+            },
+            set: function (value) {
+                this.setData(value);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Model.prototype.getData = function () {
+            return this._data;
+        };
+        Model.prototype.setData = function (value) {
+            if (this._data === value || this.disposed)
+                return;
+            var result = this.parseValueAndSetChanges(value);
+            if (this._data !== result || this._changes) {
+                this._data = result;
+                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
+            }
+        };
+        Object.defineProperty(Model.prototype, "changes", {
+            get: function () {
+                return this._changes;
+            },
+            set: function (value) {
+                this.setData(value);
+            },
+            enumerable: true,
+            configurable: true
+        });
         Model.prototype.parseValueAndSetChanges = function (value) {
             if (value instanceof Model)
                 throw Error('Cant set model data, data must be object, array or primitive');
@@ -49,7 +93,7 @@ var fmvc;
             var prevData = this._data;
             var changes = null;
             var hasChanges = false;
-            this.setChanges(null);
+            this._changes = null;
             if (_.isArray(value)) {
                 result = value.concat([]); //clone of array
             }
@@ -64,7 +108,7 @@ var fmvc;
                         prevData[i] = value[i];
                     }
                 }
-                this.setChanges(changes);
+                this._changes = value;
                 result = prevData;
             }
             else {
@@ -72,55 +116,15 @@ var fmvc;
             }
             return result;
         };
-        Model.prototype.reset = function () {
-            this._data = null;
-            this._changes = null;
-            this._state = fmvc.ModelState.None;
-            this.sendEvent(fmvc.Event.Model.Changed);
-            return this;
-        };
-        Object.defineProperty(Model.prototype, "data", {
-            get: function () {
-                return this.getData();
-            },
-            set: function (value) {
-                this.setData(value);
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Model.prototype.setChanges = function (value) {
-            this._changes = value;
-        };
-        Model.prototype.setData = function (value) {
-            if (this._data === value)
-                return;
-            var result = this.parseValueAndSetChanges(value);
-            if (this._data !== result || this._changes) {
-                this._data = result;
-                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
-            }
-        };
-        Object.defineProperty(Model.prototype, "changes", {
-            get: function () {
-                return this._changes;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(Model.prototype, "d", {
-            get: function () {
-                return this.getData();
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Model.prototype.getData = function () {
-            return this._data;
-        };
         Object.defineProperty(Model.prototype, "state", {
+            /*
+             *   Internal state layer
+             */
             get: function () {
                 return this._state;
+            },
+            set: function (value) {
+                this.setState(value);
             },
             enumerable: true,
             configurable: true
@@ -132,7 +136,15 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(Model.prototype, "count", {
+        Model.prototype.setState = function (value) {
+            if (!this.enabledState || this._state === value)
+                return this;
+            this._prevState = value;
+            this._state = value;
+            this.sendEvent(fmvc.Event.Model.StateChanged, this._state);
+            return this;
+        };
+        Object.defineProperty(Model.prototype, "length", {
             get: function () {
                 return _.isArray(this.data) ? this.data.length : 0;
             },
@@ -148,8 +160,10 @@ var fmvc;
                 _super.prototype.sendEvent.call(this, name, data, changes, sub, error);
         };
         Model.prototype.dispose = function () {
+            this.sendEvent(fmvc.Event.Model.Disposed);
             this._queue ? this._queue.dispose() : null;
             this._queue = null;
+            this._data = null;
             _super.prototype.dispose.call(this);
         };
         //-----------------------------------------------------------------------------

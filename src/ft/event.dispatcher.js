@@ -40,11 +40,11 @@ var ft;
             }
         };
         EventDispatcher.prototype.getTreeEventByBrowserEvent = function (name, def, view, e) {
-            return { name: name, target: view, def: def, e: e, cancelled: false, prevented: false, depth: 1e2 };
+            return { name: name, target: view, def: def, e: e, cancelled: false, prevented: false, depth: 1e2, executionHandlersCount: 0 };
         };
         EventDispatcher.prototype.getCustomTreeEvent = function (name, data, view, depth) {
             if (depth === void 0) { depth = 1; }
-            return { name: name, target: view, previousTarget: null, currentTarget: view, data: data, cancelled: false, prevented: false, depth: depth };
+            return { name: name, target: view, previousTarget: null, currentTarget: view, data: data, cancelled: false, prevented: false, depth: depth, executionHandlersCount: 0 };
         };
         EventDispatcher.prototype.disposeEvent = function (e) {
             return;

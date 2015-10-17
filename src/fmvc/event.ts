@@ -5,6 +5,7 @@ module fmvc
         public static Model = {
             Changed: 'ModelChanged',
             StateChanged: 'ModelStateChanged',
+            Disposed: 'ModelDisposed'
         };
 
         /*

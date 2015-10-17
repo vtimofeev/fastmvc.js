@@ -50,9 +50,11 @@ var ft;
                     // side effect, creates expression map to result, create pathMap
                     result.domTree = this.htmlObjectToDomTree(obj, result, '0');
                     result.dynamicTree = this.getDynamicTreeFromExpressionMap(result.expressionMap);
+                    result.hasStates = !!this.getStatesByMap(result.expressionMap);
                 }
             }, this);
             this.removeEmptyKeys(result);
+            console.log('Get states 2 by map', result, result.hasStates, this.getStatesByMap(result.expressionMap));
             return result;
         };
         TemplateParser.prototype.htmlObjectToDomTree = function (o, r, path) {
@@ -117,6 +119,14 @@ var ft;
             }, this);
             return result;
         };
+        TemplateParser.prototype.getStatesByMap = function (map) {
+            var result = 0;
+            _.each(map, function (ex) {
+                _.each(ex.hosts, function (v) { if (v.key === 'states')
+                    result++; });
+            }, this);
+            return result;
+        };
         TemplateParser.prototype.getExpressionHost = function (path, group /* attribs, params, data */, key /* class, href */, keyProperty) {
             if (keyProperty === void 0) { keyProperty = null; }
             return { path: path, group: group, key: key, keyProperty: keyProperty };
@@ -141,7 +151,7 @@ var ft;
             return result;
         };
         TemplateParser.prototype.removeEmptyKeys = function (def) {
-            _.each(_.keys(def), function (key) { return (_.isEmpty(def[key]) ? delete def[key] : null); });
+            _.each(_.keys(def), function (key) { return (_.isEmpty(def[key]) && !def[key] ? delete def[key] : null); });
         };
         TemplateParser.prototype.parserHandler = function (error, data) {
             this.lastError = error;

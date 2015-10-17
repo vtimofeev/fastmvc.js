@@ -11,6 +11,13 @@ var fmvc;
             this.async($.ajax, [object], $, { done: fmvc.ModelState.Synced, fault: fmvc.ModelState.Error });
             return this;
         };
+        Object.defineProperty(ModelQueue.prototype, "promise", {
+            get: function () {
+                return this.currentPromise;
+            },
+            enumerable: true,
+            configurable: true
+        });
         ModelQueue.prototype.loadXml = function (object) {
             var defaultAjaxRequestObject = _.defaults(object, {
                 method: 'GET',

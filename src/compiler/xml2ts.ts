@@ -716,7 +716,7 @@ module fmvc {
                     rootObject.links.push(Xml2TsUtils.getNameValue(a.link, path));
                     object.link = a.link;
                 }
-                if (a.enableStates) rootObject.enableStates = Xml2TsUtils.getValueArrayFromString(a.enableStates, ',');
+                if (a.hasStates) rootObject.enableStates = Xml2TsUtils.getValueArrayFromString(a.hasStates, ',');
                 if (a.extend) object.extend = a.extend;
                 if (a.states) object.states = a.states;
                 if (a.selected) object.selected = a.selected;

@@ -138,8 +138,8 @@ module ft {
                 childrenView.parent = root;
 
                 var childrenData:any[] = data.params[TemplateParams.childrenData]?this.getExpressionValue(data.params[TemplateParams.childrenData], root):null;
-                var childrenModel:fmvc.Model = data.params[TemplateParams.childrenModel]?this.getExpressionValue(data.params[TemplateParams.childrenModel]):null;
-                if(childrenModel) childrenView.model = childrenModel;
+                var childrenModel:fmvc.Model = data.params[TemplateParams.childrenModel]?this.getExpressionValue(data.params[TemplateParams.childrenModel], root):null;
+                if(childrenModel&& _.isArray(childrenModel)) childrenView.model = childrenModel;
                 if(childrenData && _.isArray(childrenData)) childrenView.data = childrenData;
 
                 childrenView.setElement(this.getDomElement(object));
@@ -237,28 +237,43 @@ module ft {
             // Execute current def handler
             this.triggerDefEvent(e);
 
-            while ((def = template.pathMap[def.parentPath]) && !e.cancelled) {
+            while (!e.cancelled && (def = template.pathMap[def.parentPath])) {
                 // Execute on defs tree in view template scope
                 e.currentDef = def;
                 this.triggerDefEvent(e);
             }
+            // Send to parent template defs tree
 
-            // Execute local(dynamic) view handlers
             view.handleTreeEvent(e);
 
-            // Send to parent template defs tree
-            if (view.parent) {
+            if(view.parent) {
+                // exec event on parent
+                def = view.domDef;
                 e.currentTarget = view.parent;
-                e.currentDef = view.domDef;
-                this.dispatchTreeEventDown(e);
+                e.currentDef = def;
+                this.triggerDefEvent(e);
+
+                // check canceled
+                e.cancelled = !!e.executionHandlersCount && e.name === 'click';
+
+                // exec parent next domDef to root
+                e.currentDef = def.parentPath?view.parent.getTemplate().pathMap[def.parentPath]:null;
+                if(!e.cancelled && e.currentDef) this.dispatchTreeEventDown(e);
             }
         }
 
         private triggerDefEvent(e:ITreeEvent):void {
             var def:IDomDef = <IDomDef> (e.currentDef || e.def);
             var view = <ITemplateView> (e.currentTarget || e.target);
-            if (def.handlers && def.handlers[e.name] && !view.disabled) view.evalHandler(def.handlers[e.name], e);
+            console.log('Trigger default on handlers ', e.def.path, e.executionHandlersCount, e.name, e.cancelled, view.name);
+
+            if (!view.disabled && def.handlers && def.handlers[e.name]) {
+                view.evalHandler(def.handlers[e.name], e);
+                e.executionHandlersCount++;
+            }
         }
+
+
 
         applyExpressionToHosts(exObj:IExpression, root:ITemplateView):void {
             var result;
@@ -297,14 +312,22 @@ module ft {
 
                 case 'params':
                     switch (host.key) {
+                        case TemplateParams.setData:
+                            var view = root.getTreeElementByPath(host.path);
+                            if(view) view.setData(value);
+                            return;
+                        case TemplateParams.setModel:
+                            var view = root.getTreeElementByPath(host.path);
+                            if(view) view.setModel(value);
+                            return;
                         case TemplateParams.setStateSelected:
                             var view = root.getTreeElementByPath(host.path);
-                            if(view) setTimeout(()=>view.setState('selected', !!value), 0);
+                            if(view) view.setState('selected', !!value);
                             return;
 
                         case TemplateParams.setStateDisabled:
                             var view = root.getTreeElementByPath(host.path);
-                            if(view) setTimeout(()=>view.setState('disabled', !!value), 0);
+                            if(view) view.setState('disabled', !!value);
                             return;
 
                         case TemplateParams.childrenData:

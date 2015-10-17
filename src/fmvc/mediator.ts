@@ -2,11 +2,11 @@
 
 module fmvc {
     export class Mediator extends fmvc.Notifier implements IMediator {
-        private views:View[];
+        private views:IView[];
         private _root:Element;
 
         constructor(name:string, root:Element) {
-            super(name, fmvc.TYPE_MEDIATOR);
+            super(name, TYPE_MEDIATOR);
             this.setRoot(root);
             this.views = [];
         }
@@ -20,13 +20,13 @@ module fmvc {
             return this._root;
         }
 
-        public addView(...views:fmvc.View[]):Mediator
+        public addView(...views:IView[]):Mediator
         {
             _.each(views, this._addView, this);
             return this;
         }
 
-        private _addView(view:fmvc.View):void {
+        private _addView(view:IView):void {
             if (this.views.indexOf(view) === -1) {
                 this.views.push(view);
                 view.setMediator(this).render(this.root);
@@ -35,9 +35,9 @@ module fmvc {
             }
         }
 
-        public getView(name:string):View
+        public getView(name:string):IView
         {
-            return _.find<View>(this.views,(view:View) => view.name === name);
+            return _.find<IView>(this.views,(view:IView) => view.name === name);
         }
 
         public removeView(name:string):Mediator {
@@ -60,13 +60,13 @@ module fmvc {
 
         public eventHandler(e:IEvent):void {
             switch (e && e.target?e.target.type:null) {
-                case fmvc.TYPE_MEDIATOR:
+                case TYPE_MEDIATOR:
                     this.mediatorEventHandler(e);
                     break;
-                case fmvc.TYPE_MODEL:
+                case TYPE_MODEL:
                     this.modelEventHandler(e);
                     break;
-                case fmvc.TYPE_VIEW:
+                case TYPE_VIEW:
                     this.viewEventHandler(e);
                     break;
             }
@@ -86,7 +86,7 @@ module fmvc {
         events:string[];
         internalHandler(e:any):void;
         eventHandler(e:any):void;
-        getView(name:string):View;
+        getView(name:string):IView;
     }
 }
 

@@ -7,7 +7,7 @@ module fmvc {
         console?:boolean;
     }
 
-    export class Logger extends fmvc.Model {
+    export class Logger extends fmvc.Model<any> {
         private _config:any = {filter: [], length: 100000, console: true};
         private _modules:any = [];
 

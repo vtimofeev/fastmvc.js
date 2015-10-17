@@ -99,8 +99,10 @@ module fmvc
         private addListener(object:INotifier, handler:Function):void
         {
             if(!this._listeners) this._listeners = [];
-            var hasListener = _.filter(this._listeners, (v)=>v.handler===handler);
-            if(_.isEmpty(hasListener)) this._listeners.push({target: object, handler: handler});
+            var hasListener = _.filter(this._listeners, (v)=>v.target===object);
+            if(_.isEmpty(hasListener)) {
+                this._listeners.push({target: object, handler: handler});
+            }
             else this.log('Try duplicate listener ' , object.name);
         }
 
