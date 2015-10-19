@@ -337,7 +337,7 @@ var ft;
         };
         TemplateViewHelper.prototype.addTreeObjectFunc = function (object, data, parent, parentData, root) {
             var objectElement = this.getDomElement(object);
-            if (objectElement.parentElement)
+            if (objectElement.parentNode)
                 return;
             var parentElement = this.getDomElement(parent);
             if (!parentElement)
@@ -355,6 +355,7 @@ var ft;
                 }
             }
             else {
+                console.log('Append child. ', data.path, objectElement.parentNode, objectElement);
                 parentElement.appendChild(objectElement);
             }
             if (previousObject && !this.isCommentElement(previousObject)) {
@@ -421,7 +422,6 @@ var ft;
                 if (!object.classList)
                     return;
                 previousClassValue = root.getPathClassValue(data.path, name);
-                //console.log('Toggle: ', data.path, name, 'classList', object.classList, 'previous', previousClassValue, 'value', value),
                 previousClassValue && previousClassValue !== value ? object.classList.toggle(previousClassValue, false) : null,
                     value ? object.classList.toggle(value, true) : null,
                     root.setPathClassValue(data.path, name, value);

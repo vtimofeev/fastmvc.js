@@ -32,7 +32,6 @@ var fmvc;
             this._root = root; // Контейнер приложения
             Facade.registerInstance(this); // Регистрируем в синглтоне приложений среды  - в дальнейшем используется для взаимойдействий между приложениями;
             this.register(new fmvc.Logger(fmvc.FacadeModel.Log)); // создание модели логгера, записываем модель в фасад (для глобального доступа и обработки событий из модели)
-            this.log('Старт приложения ' + name + ', fmvc версия ' + fmvc.VERSION);
             this.init();
         }
         Object.defineProperty(Facade.prototype, "root", {
@@ -56,8 +55,22 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        // В насдедниках переписываем метод, в нем добавляем доменные модели, прокси, медиаторы
         Facade.prototype.init = function () {
+            this.log('Старт приложения ' + name + ', fmvc версия ' + fmvc.VERSION);
+            this.log('Регистрация модулей');
+            this.initModels();
+            this.initMediators();
+            this.log('Старт приложения');
+            this.start();
+        };
+        // В насдедниках переписываем метод, в нем добавляем доменные модели
+        Facade.prototype.initModels = function () {
+        };
+        // В насдедниках переписываем метод, в нем добавляем медиаторы
+        Facade.prototype.initMediators = function () {
+        };
+        // В насдедниках переписываем метод, в нем отправляем событие для старта
+        Facade.prototype.start = function () {
         };
         // Регистрация объкта система - модели, медиатора
         // Модели, содержат данные, генерируют события моделей

@@ -420,7 +420,8 @@ module ft {
 
         addTreeObjectFunc(object:TreeElement,  data:IDomDef, parent:TreeElement, parentData:IDomDef, root:ITemplateView) {
             var objectElement = this.getDomElement(object);
-            if (objectElement.parentElement) return;
+
+            if (objectElement.parentNode) return;
             var parentElement = this.getDomElement(parent);
             if (!parentElement) throw 'Has no parent element';
 
@@ -437,6 +438,7 @@ module ft {
                     this.setDataTreeObjectFunc(object, data, root);
                 }
             } else {
+                console.log('Append child. ', data.path, objectElement.parentNode, objectElement);
                 parentElement.appendChild(objectElement);
             }
 
@@ -520,7 +522,6 @@ module ft {
                 (value:any, name:string)=> {
                     if(!object.classList) return;
                     previousClassValue = root.getPathClassValue(data.path, name);
-                    //console.log('Toggle: ', data.path, name, 'classList', object.classList, 'previous', previousClassValue, 'value', value),
                     previousClassValue && previousClassValue !== value ? object.classList.toggle(previousClassValue, false) : null,
                     value ? object.classList.toggle(value, true) : null,
                     root.setPathClassValue(data.path, name, value)

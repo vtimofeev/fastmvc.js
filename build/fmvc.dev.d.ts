@@ -33,6 +33,9 @@ declare module fmvc {
         type: string;
         constructor(name: string, type: string, root: Element);
         init(): void;
+        initModels(): void;
+        initMediators(): void;
+        start(): void;
         register(...objects: INotifier[]): Facade;
         private _register(object);
         unregister(...objects: INotifier[]): Facade;

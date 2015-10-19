@@ -47,7 +47,6 @@ describe('ft - component package ', function () {
     var templateObjs = {
         "ft.DataButton": {
             content: '<div .stateHandlers="hover,selected" onclick="{this.model?this.model.dispose():null;}" class="button button-{state.selected} button-{state.hover} button-{state.disabled}">' +
-            '<svg height="24" width="24" class="button-svg"><circle cx="12" cy="12" r="{(data.title/10)}" fill="red" class="button-svg"/></svg>' +
             '{(data&&data.title?data.title:\"\")}' +
             '</div>',
         },
@@ -110,7 +109,7 @@ describe('ft - component package ', function () {
 
 
     model.changes = {children: _.map(
-        _.range(200),
+        _.range(1),
         (v)=>{return new fmvc.Model('data-' + v, {title:  Math.round(Math.random()*100), action: Math.random()});}
     )};
 
@@ -123,7 +122,7 @@ describe('ft - component package ', function () {
                 console.log(v);
             }
         });
-    }, 50);
+    }, 1e10);
 
 
     describe('ft - ButtonGroup/DataButton', function () {
