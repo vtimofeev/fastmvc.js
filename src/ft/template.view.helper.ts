@@ -2,6 +2,7 @@
 
 module ft {
     export var AttributePathId:string = 'data-path-id';
+    var svgNs:string = "http://www.w3.org/2000/svg";
     var ComplexDomElementAttributes:string[] = ['style', 'class'];
 
     export class TemplateViewHelper implements ITemplateViewHelper {
@@ -158,13 +159,19 @@ module ft {
         }
 
         createDomElement(type:string, data:IDomDef, root:TemplateView):HTMLElement|Comment|Text {
+            var name:string = data.name;
             switch (type) {
                 case 'text':
                     return document.createTextNode(_.isString(data.data) ? data.data : '');
                 case 'comment':
                     return document.createComment(data.path);
                 default:
-                    return document.createElement(data.name);
+                    if(name === 'svg' || name === 'circle') {
+                        return document.createElementNS(svgNs, name);
+                    }
+                    else {
+                        return document.createElement(name);
+                    }
             }
         }
 
@@ -226,7 +233,7 @@ module ft {
         }
 
         getChangedExpressionNames(group:string, map:IDynamicMap, root:ITemplateView):(string|string[])[] {
-            return _.map(map, (exNames:string[], prorName:string)=>(root.isChangedDynamicProperty(prorName) ? exNames : null), this);
+            return _.map(map, (exNames:string[], propName:string)=>(root.isChangedDynamicProperty(propName) ? exNames : null), this);
         }
 
         dispatchTreeEventDown(e:ITreeEvent) {
@@ -265,7 +272,6 @@ module ft {
         private triggerDefEvent(e:ITreeEvent):void {
             var def:IDomDef = <IDomDef> (e.currentDef || e.def);
             var view = <ITemplateView> (e.currentTarget || e.target);
-            console.log('Trigger default on handlers ', e.def.path, e.executionHandlersCount, e.name, e.cancelled, view.name);
 
             if (!view.disabled && def.handlers && def.handlers[e.name]) {
                 view.evalHandler(def.handlers[e.name], e);
@@ -278,11 +284,16 @@ module ft {
         applyExpressionToHosts(exObj:IExpression, root:ITemplateView):void {
             var result;
             var el:HTMLElement;
-            _.each(exObj.hosts, (host:IExpressionHost)=>(
-                result = result || (host.key === 'class' ? root.getCssClassExpressionValue(exObj) : root.getExpressionValue(exObj)),
-                    el = this.getDomElement(root.getTreeElementByPath(host.path)),
-                    el && el.nodeType != 8 ? this.applyValueToHost(result, el, host, root) : null
-            ), this);
+            var i:number;
+            var l = exObj.hosts.length;
+            var host:IExpressionHost;
+
+            for (i = 0; i < l; i++) {
+                host = exObj.hosts[i];
+                result = result || (host.key === 'class' ? root.getCssClassExpressionValue(exObj) : root.getExpressionValue(exObj));
+                el = this.getDomElement(root.getTreeElementByPath(host.path));
+                if(el && el.nodeType != 8) this.applyValueToHost(result, el, host, root);
+            }
         }
 
 
@@ -299,17 +310,22 @@ module ft {
                             return;
                         case 'class':
                             var previousClassValue = root.getPathClassValue(host.path, host.keyProperty);
+                            console.log('Toggle: ', host.path, host.key, el.classList, previousClassValue);
                             previousClassValue && previousClassValue !== value ? el.classList.toggle(previousClassValue, false) : null;
                             value ? el.classList.toggle(value, true) : null;
-                            root.setPathClassValue(host.path, host.keyProperty, value)
+                            root.setPathClassValue(host.path, host.keyProperty, value);
                             return;
                         default:
-                            var method = value ? el.setAttribute : el.removeAttribute;
-                            if (host.key) method.call(el, host.key, value);
+                            if(this.isSvgNode(el.nodeName)) {
+                                var method = value ? el.setAttributeNS : el.removeAttributeNS;
+                                if (host.key) method.call(el, null, host.key, value);
+                            } else {
+                                var method = value ? el.setAttribute : el.removeAttribute;
+                                if (host.key) method.call(el, host.key, value);
+                            }
                             return;
                     }
                     return;
-
                 case 'params':
                     switch (host.key) {
                         case TemplateParams.setData:
@@ -372,7 +388,12 @@ module ft {
                 var domElementPathId:string = this.getNextId();
                 attrsResult[AttributePathId] = domElementPathId;
 
-                this.setDomElementAttributes(attrsResult, domElement);
+                if(this.isSvgNode(data.name)) {
+                    this.setDomElementAttributes(attrsResult, domElement);
+                }
+                else {
+                    this.setSvgElementAttributes(attrsResult, domElement);
+                }
                 this.registerDomElementId(domElementPathId, data, root);
 
                 // class
@@ -391,6 +412,10 @@ module ft {
             if (data.data) {
                 domElement.textContent = this.getSimpleOrExpressionValue(data.data, root);
             }
+        }
+
+        isSvgNode(name:string):boolean {
+            return name === 'svg' || name === 'circle' || false;
         }
 
         addTreeObjectFunc(object:TreeElement,  data:IDomDef, parent:TreeElement, parentData:IDomDef, root:ITemplateView) {
@@ -492,13 +517,14 @@ module ft {
         setDomElementClasses(vals:IObj, object:HTMLElement, data:IDomDef, root:ITemplateView) {
             var previousClassValue:string;
             _.each(vals,
-                (value:any, name:string)=>
-                    (
-                        previousClassValue = root.getPathClassValue(data.path, name),
-                            previousClassValue && previousClassValue !== value ? object.classList.toggle(previousClassValue, false) : null,
-                            value ? object.classList.toggle(value, true) : null,
-                            root.setPathClassValue(data.path, name, value)
-                    )
+                (value:any, name:string)=> {
+                    if(!object.classList) return;
+                    previousClassValue = root.getPathClassValue(data.path, name);
+                    //console.log('Toggle: ', data.path, name, 'classList', object.classList, 'previous', previousClassValue, 'value', value),
+                    previousClassValue && previousClassValue !== value ? object.classList.toggle(previousClassValue, false) : null,
+                    value ? object.classList.toggle(value, true) : null,
+                    root.setPathClassValue(data.path, name, value)
+                }
             );
         }
 
@@ -512,6 +538,14 @@ module ft {
                 method.call(object, name, value);
             });
         }
+
+        setSvgElementAttributes(attrs:IObj, object:HTMLElement) {
+            _.each(attrs, function (value:any, name:string) {
+                var method = value ? object.setAttributeNS : object.removeAttributeNS;
+                method.call(object, null, name, value);
+            });
+        }
+
 
         getDomElement(value:TreeElement):HTMLElement {
             return <HTMLElement> (value instanceof TemplateView ? value.getElement() : value);

@@ -9,7 +9,7 @@ module ft {
     var expression = new ft.Expression();
     var dispatcher = new ft.EventDispatcher(templateHelper);
     var timers = {createDom: 0 , enter: 0, setData: 0, validate: 0};
-    var counters = {createDom: 0 , enter: 0, setData: 0, validate: 0, validateState: 0, validateData: 0, validateApp: 0};
+    export var counters = {expression: 0, expressionEx: 0, expressionCtx: 0, multiExpression: 0, createDom: 0 , enter: 0, setData: 0, validate: 0, validateState: 0, validateData: 0, validateApp: 0};
 
     setInterval(()=>console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(counters), ' frames ', fmvc.frameExecution), 5000);
     //console.log(dispatcher);
@@ -161,6 +161,11 @@ module ft {
             this._dynamicPropertiesMap[name] = value;
         }
 
+        getDynamicProperty(name:string):void {
+            return this._dynamicPropertiesMap[name];
+        }
+
+
         createDom() {
             if(this._element) return;
             var start = getTime();
@@ -268,8 +273,11 @@ module ft {
         }
 
         getExpressionValue(ex:IExpressionName):any {
+            if(this._dynamicPropertiesMap[ex.name]) return this._dynamicPropertiesMap[ex.name];
+            //console.log('GetExValue ', ex.name);
             var exObj:IExpression = this.getTemplate().expressionMap[ex.name];
             var result = expression.execute(exObj, this.getTemplate().expressionMap, this);
+            this.setDynamicProperty(ex.name, result);
             return result;
         }
 

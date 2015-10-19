@@ -821,7 +821,7 @@ var fmvc;
     };
     fmvc.frameExecution = 0;
     var nextFrameHandlers = [];
-    var maxFrameCount = 200;
+    var maxFrameCount = 250;
     var waiting = false;
     var frameStep = 2;
     function requestFrameHandler() {

@@ -14,7 +14,7 @@ module fmvc {
 
     export var frameExecution:number = 0;
     var nextFrameHandlers:Function[] = [];
-    var maxFrameCount:number = 200;
+    var maxFrameCount:number = 250;
     var waiting:boolean = false;
     var frameStep:number = 2;
 

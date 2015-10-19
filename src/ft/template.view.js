@@ -13,8 +13,8 @@ var ft;
     var expression = new ft.Expression();
     var dispatcher = new ft.EventDispatcher(ft.templateHelper);
     var timers = { createDom: 0, enter: 0, setData: 0, validate: 0 };
-    var counters = { createDom: 0, enter: 0, setData: 0, validate: 0, validateState: 0, validateData: 0, validateApp: 0 };
-    setInterval(function () { return console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(counters), ' frames ', fmvc.frameExecution); }, 5000);
+    ft.counters = { expression: 0, expressionEx: 0, expressionCtx: 0, multiExpression: 0, createDom: 0, enter: 0, setData: 0, validate: 0, validateState: 0, validateData: 0, validateApp: 0 };
+    setInterval(function () { return console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(ft.counters), ' frames ', fmvc.frameExecution); }, 5000);
     //console.log(dispatcher);
     function getFormatter(value, locale) {
         if (locale === void 0) { locale = 'en'; }
@@ -146,6 +146,9 @@ var ft;
         TemplateView.prototype.setDynamicProperty = function (name, value) {
             this._dynamicPropertiesMap[name] = value;
         };
+        TemplateView.prototype.getDynamicProperty = function (name) {
+            return this._dynamicPropertiesMap[name];
+        };
         TemplateView.prototype.createDom = function () {
             if (this._element)
                 return;
@@ -157,7 +160,7 @@ var ft;
             var element = e instanceof TemplateView ? e.getElement() : e;
             this.setElement(element);
             this.setTreeElementPath('0', this);
-            counters.createDom++;
+            ft.counters.createDom++;
             timers.createDom += getTime() - start;
         };
         TemplateView.prototype.enter = function () {
@@ -174,7 +177,7 @@ var ft;
             this.invalidate(fmvc.InvalidateType.Data);
             this.invalidate(fmvc.InvalidateType.State);
             timers.enter += getTime() - start;
-            counters.enter++;
+            ft.counters.enter++;
         };
         TemplateView.prototype.stateHandlers = function (value) {
             var _this = this;
@@ -237,8 +240,12 @@ var ft;
             return this._treeElementMapByPath ? this._treeElementMapByPath[value] : null;
         };
         TemplateView.prototype.getExpressionValue = function (ex) {
+            if (this._dynamicPropertiesMap[ex.name])
+                return this._dynamicPropertiesMap[ex.name];
+            //console.log('GetExValue ', ex.name);
             var exObj = this.getTemplate().expressionMap[ex.name];
             var result = expression.execute(exObj, this.getTemplate().expressionMap, this);
+            this.setDynamicProperty(ex.name, result);
             return result;
         };
         TemplateView.prototype.getCssClassExpressionValue = function (ex) {
@@ -295,24 +302,24 @@ var ft;
                 ft.templateHelper.createTreeObject(this._template.domTree, this);
             _super.prototype.validate.call(this);
             var result = getTime() - start;
-            counters.validate++;
+            ft.counters.validate++;
             timers.validate += result;
         };
         TemplateView.prototype.validateApp = function () {
             if (this.canValidate(fmvc.InvalidateType.App)) {
-                counters.validateApp++;
+                ft.counters.validateApp++;
                 ft.templateHelper.updateDynamicTree(this, 'app');
             }
         };
         TemplateView.prototype.validateData = function () {
             if (this.canValidate(fmvc.InvalidateType.Data)) {
-                counters.validateData++;
+                ft.counters.validateData++;
                 ft.templateHelper.updateDynamicTree(this, 'data');
             }
         };
         TemplateView.prototype.validateState = function () {
             if (this.canValidate(fmvc.InvalidateType.Data)) {
-                counters.validateState++;
+                ft.counters.validateState++;
                 ft.templateHelper.updateDynamicTree(this, 'state');
             }
         };

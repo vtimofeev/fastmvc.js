@@ -64,6 +64,7 @@ module ft {
         private executeMultiExpression(ex:IExpression, context:ITemplateView, classes:boolean):any {
             var isSimpleExpression:Boolean = (ex.expressions.length === 1);
             var contextValue;
+            //console.log('Exec multi expression, simple', isSimpleExpression);
             return isSimpleExpression?
                 this.executeExpression(ex, context, classes):
                 _.reduce(ex.expressions,
@@ -79,13 +80,11 @@ module ft {
         }
 
         private parseContextValue(value:any, ex:IExpression|string, classes:boolean):any {
-            var exStr = this.ifString(ex);
-            if(classes && _.isBoolean(value) && exStr && exStr[0] != '(' && exStr.indexOf('.') > 0) {
+            if(classes && _.isBoolean(value) && (exStr = this.ifString(ex)) && exStr[0] != '(' && exStr.indexOf('.') > 0) {
                     var values = exStr.split('.');
                     var varName = (values.length === 2)?values[1]:null;
                     if(varName) return value?varName:null;
             }
-
             return value;
         }
 
@@ -95,23 +94,25 @@ module ft {
 
         public getContextValue(v:string|IExpression, context:ITemplateView):any {
             var r;
-            if(typeof v === GetContext.string) {
+            if(r = context.getDynamicProperty(v)) return r;
+
+            if(typeof v === 'string') {
+                counters.expressionCtx++;
                 if(v.indexOf(GetContext.dataField) === 0 || v.indexOf(GetContext.appField) === 0) {
                     if(!this.funcMap[v]) {
                         this.funcMap[v] = new Function('var v=null; try {v=this.' + v + ';} catch(e) {v=\'{' + v + '}\';} return v;');
                     }
                     r = this.funcMap[v].apply(context);
 
-                    if(r === undefined) r = null;
+                    r = r===undefined?null:r;
                     context.setDynamicProperty(v, r);
                 }
                 else if(v.indexOf(GetContext.stateField) === 0) {
-                    r = context.getState(v.substring(6));
-                    if(r === undefined) r = null;
-                    context.setDynamicProperty(v, r);
-                }
-                else if(v === GetContext.data) {
-                    r = context.data;
+                    if(!this.funcMap[v]) {
+                        var state = v.substring(6);
+                        this.funcMap[v] = new Function('return this.getState("' + state + '");');
+                    }
+                    r = this.funcMap[v].apply(context);
                     if(r === undefined) r = null;
                     context.setDynamicProperty(v, r);
                 }
@@ -119,12 +120,18 @@ module ft {
                     if(!this.funcMap[v]) {
                         this.funcMap[v] = new Function('var v=null; try {v=' + v + ';} catch(e) {v=\'{' + v + '}\';} return v;');
                     }
-                    r =this.funcMap[v].apply(context);
+                    r = this.funcMap[v].apply(context);
+                }
+                else if(v === GetContext.data) {
+                    r = context.data;
+                    if(r === undefined) r = null;
+                    context.setDynamicProperty(v, r);
                 }
 
-                if(r !== undefined) return /*boolTrue?!!r:boolFalse?!r:*/r;
+                if(r !== undefined) return r;
             }
             else if(_.isObject(v)) {
+                counters.expressionEx++;
                 return this.executeExpression(<IExpression> v, context);
             }
 
@@ -136,11 +143,11 @@ module ft {
         }
 
         private executeExpression(ex:IExpression, context:ITemplateView, classes?:boolean):any {
+            counters.expression++;
             var r:any = ex.args?this.getContextArguments(ex,context):this.getParsedContextValue(ex.expressions[0],context,classes);
             if(!r && classes) return '';// empty class expression
-
             if(ex.filters) r = this.executeFilters(r, ex.filters, context);
-            if(ex.result && ex.result != this.ExResult) r = ex.result.replace(this.ExResult, r);
+            if(ex.result && ex.result !== this.ExResult) r = ex.result.replace(this.ExResult, r);
             return r;
         }
 

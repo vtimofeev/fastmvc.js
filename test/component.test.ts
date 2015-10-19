@@ -47,6 +47,7 @@ describe('ft - component package ', function () {
     var templateObjs = {
         "ft.DataButton": {
             content: '<div .stateHandlers="hover,selected" onclick="{this.model?this.model.dispose():null;}" class="button button-{state.selected} button-{state.hover} button-{state.disabled}">' +
+            '<svg height="24" width="24" class="button-svg"><circle cx="12" cy="12" r="{(data.title/10)}" fill="red" class="button-svg"/></svg>' +
             '{(data&&data.title?data.title:\"\")}' +
             '</div>',
         },
@@ -109,14 +110,14 @@ describe('ft - component package ', function () {
 
 
     model.changes = {children: _.map(
-        _.range(5),
-        (v)=>{return new fmvc.Model('data-' + v, {title: v + '=' + Math.round(Math.random()*100), action: Math.random()});}
+        _.range(200),
+        (v)=>{return new fmvc.Model('data-' + v, {title:  Math.round(Math.random()*100), action: Math.random()});}
     )};
 
     setInterval(function() {
         _.each(model.data.children, (m,v)=>{
             try {
-                model.data.children[v].data = {title: v + '=' + Math.round(Math.random() * 100), action: Math.random()}
+                model.data.children[v].data = {title:  Math.round(Math.random() * 100), action: Math.random()}
             }
             catch(e) {
                 console.log(v);

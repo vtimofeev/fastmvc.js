@@ -2,6 +2,7 @@
 var ft;
 (function (ft) {
     ft.AttributePathId = 'data-path-id';
+    var svgNs = "http://www.w3.org/2000/svg";
     var ComplexDomElementAttributes = ['style', 'class'];
     var TemplateViewHelper = (function () {
         function TemplateViewHelper() {
@@ -108,13 +109,19 @@ var ft;
             return result;
         };
         TemplateViewHelper.prototype.createDomElement = function (type, data, root) {
+            var name = data.name;
             switch (type) {
                 case 'text':
                     return document.createTextNode(_.isString(data.data) ? data.data : '');
                 case 'comment':
                     return document.createComment(data.path);
                 default:
-                    return document.createElement(data.name);
+                    if (name === 'svg' || name === 'circle') {
+                        return document.createElementNS(svgNs, name);
+                    }
+                    else {
+                        return document.createElement(name);
+                    }
             }
         };
         TemplateViewHelper.prototype.getUpdateTreeTypeFunc = function (data, root) {
@@ -164,7 +171,7 @@ var ft;
             _.each(exObjArrays, function (v, k) { return _this.applyExpressionToHosts(v, root); }, this);
         };
         TemplateViewHelper.prototype.getChangedExpressionNames = function (group, map, root) {
-            return _.map(map, function (exNames, prorName) { return (root.isChangedDynamicProperty(prorName) ? exNames : null); }, this);
+            return _.map(map, function (exNames, propName) { return (root.isChangedDynamicProperty(propName) ? exNames : null); }, this);
         };
         TemplateViewHelper.prototype.dispatchTreeEventDown = function (e) {
             var def = (e.currentDef || e.def);
@@ -196,19 +203,24 @@ var ft;
         TemplateViewHelper.prototype.triggerDefEvent = function (e) {
             var def = (e.currentDef || e.def);
             var view = (e.currentTarget || e.target);
-            console.log('Trigger default on handlers ', e.def.path, e.executionHandlersCount, e.name, e.cancelled, view.name);
             if (!view.disabled && def.handlers && def.handlers[e.name]) {
                 view.evalHandler(def.handlers[e.name], e);
                 e.executionHandlersCount++;
             }
         };
         TemplateViewHelper.prototype.applyExpressionToHosts = function (exObj, root) {
-            var _this = this;
             var result;
             var el;
-            _.each(exObj.hosts, function (host) { return (result = result || (host.key === 'class' ? root.getCssClassExpressionValue(exObj) : root.getExpressionValue(exObj)),
-                el = _this.getDomElement(root.getTreeElementByPath(host.path)),
-                el && el.nodeType != 8 ? _this.applyValueToHost(result, el, host, root) : null); }, this);
+            var i;
+            var l = exObj.hosts.length;
+            var host;
+            for (i = 0; i < l; i++) {
+                host = exObj.hosts[i];
+                result = result || (host.key === 'class' ? root.getCssClassExpressionValue(exObj) : root.getExpressionValue(exObj));
+                el = this.getDomElement(root.getTreeElementByPath(host.path));
+                if (el && el.nodeType != 8)
+                    this.applyValueToHost(result, el, host, root);
+            }
         };
         TemplateViewHelper.prototype.applyValueToHost = function (value, el, host, root) {
             switch (host.group) {
@@ -222,14 +234,22 @@ var ft;
                             return;
                         case 'class':
                             var previousClassValue = root.getPathClassValue(host.path, host.keyProperty);
+                            console.log('Toggle: ', host.path, host.key, el.classList, previousClassValue);
                             previousClassValue && previousClassValue !== value ? el.classList.toggle(previousClassValue, false) : null;
                             value ? el.classList.toggle(value, true) : null;
                             root.setPathClassValue(host.path, host.keyProperty, value);
                             return;
                         default:
-                            var method = value ? el.setAttribute : el.removeAttribute;
-                            if (host.key)
-                                method.call(el, host.key, value);
+                            if (this.isSvgNode(el.nodeName)) {
+                                var method = value ? el.setAttributeNS : el.removeAttributeNS;
+                                if (host.key)
+                                    method.call(el, null, host.key, value);
+                            }
+                            else {
+                                var method = value ? el.setAttribute : el.removeAttribute;
+                                if (host.key)
+                                    method.call(el, host.key, value);
+                            }
                             return;
                     }
                     return;
@@ -289,7 +309,12 @@ var ft;
                 //attrsResult.id = this.getElementId(domElement, attribs);
                 var domElementPathId = this.getNextId();
                 attrsResult[ft.AttributePathId] = domElementPathId;
-                this.setDomElementAttributes(attrsResult, domElement);
+                if (this.isSvgNode(data.name)) {
+                    this.setDomElementAttributes(attrsResult, domElement);
+                }
+                else {
+                    this.setSvgElementAttributes(attrsResult, domElement);
+                }
                 this.registerDomElementId(domElementPathId, data, root);
                 // class
                 if (attribs && attribs.class) {
@@ -306,6 +331,9 @@ var ft;
             if (data.data) {
                 domElement.textContent = this.getSimpleOrExpressionValue(data.data, root);
             }
+        };
+        TemplateViewHelper.prototype.isSvgNode = function (name) {
+            return name === 'svg' || name === 'circle' || false;
         };
         TemplateViewHelper.prototype.addTreeObjectFunc = function (object, data, parent, parentData, root) {
             var objectElement = this.getDomElement(object);
@@ -390,10 +418,13 @@ var ft;
         TemplateViewHelper.prototype.setDomElementClasses = function (vals, object, data, root) {
             var previousClassValue;
             _.each(vals, function (value, name) {
-                return (previousClassValue = root.getPathClassValue(data.path, name),
-                    previousClassValue && previousClassValue !== value ? object.classList.toggle(previousClassValue, false) : null,
+                if (!object.classList)
+                    return;
+                previousClassValue = root.getPathClassValue(data.path, name);
+                //console.log('Toggle: ', data.path, name, 'classList', object.classList, 'previous', previousClassValue, 'value', value),
+                previousClassValue && previousClassValue !== value ? object.classList.toggle(previousClassValue, false) : null,
                     value ? object.classList.toggle(value, true) : null,
-                    root.setPathClassValue(data.path, name, value));
+                    root.setPathClassValue(data.path, name, value);
             });
         };
         TemplateViewHelper.prototype.setDomElementStyles = function (vals, object, root) {
@@ -403,6 +434,12 @@ var ft;
             _.each(attrs, function (value, name) {
                 var method = value ? object.setAttribute : object.removeAttribute;
                 method.call(object, name, value);
+            });
+        };
+        TemplateViewHelper.prototype.setSvgElementAttributes = function (attrs, object) {
+            _.each(attrs, function (value, name) {
+                var method = value ? object.setAttributeNS : object.removeAttributeNS;
+                method.call(object, null, name, value);
             });
         };
         TemplateViewHelper.prototype.getDomElement = function (value) {
