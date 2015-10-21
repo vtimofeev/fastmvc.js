@@ -263,12 +263,14 @@ module ft {
                 return console.warn('Error, try to re-enter ', this.name);
             }
             this.life = 'enter';
+
             var start = getTime();
 
             super.enter();
             this.applyParameters();
 
             templateHelper.enterTreeObject(this._template.domTree, this);
+            templateHelper.updateDynamicTree(this, 'state', 'state.life');
             this.invalidate(fmvc.InvalidateType.Data);
             this.invalidate(fmvc.InvalidateType.State);
 

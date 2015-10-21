@@ -214,18 +214,21 @@ module ft {
         }
 
         private composeNames_updateDynamicTree = _.compose(_.compact, _.flatten);
-        //private applyPatitions = _.partial(this.applyExpressionToHosts, _, root)
-        updateDynamicTree(root:ITemplateView, group?:string):void {
+        updateDynamicTree(root:ITemplateView, group?:string, propertyName?:string ):void {
             var dynamicTree:any = root.getTemplate().dynamicTree;
-            var exArrays:any[];
+            var expressionArrays:any[];
             if (!group) {
-                exArrays = _.map(dynamicTree, (v:IDynamicMap, group:string)=>this.getChangedExpressionNames(group, v, root), this);
+                expressionArrays = _.map(dynamicTree, (v:IDynamicMap, group:string)=>this.getChangedExpressionNames(group, v, root), this);
             } else {
                 if (!dynamicTree[group]) return;
-                exArrays = this.getChangedExpressionNames(group, dynamicTree[group], root);
+                if(propertyName) {
+                    expressionArrays = root.isChangedDynamicProperty(propertyName)?dynamicTree[group][propertyName]:null;
+                } else {
+                    expressionArrays = this.getChangedExpressionNames(group, dynamicTree[group], root);
+                }
             }
 
-            var exNames:string[] = this.composeNames_updateDynamicTree(exArrays);
+            var exNames:string[] = this.composeNames_updateDynamicTree(expressionArrays);
             var tmpl = root.getTemplate();
 
             var exObjArrays:IExpression[] = _.map(exNames, (v:string)=>(tmpl.expressionMap[v]));
