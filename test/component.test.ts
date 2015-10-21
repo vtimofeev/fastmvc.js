@@ -58,22 +58,26 @@ describe('ft - component package ', function () {
             content: '<div>' +
             '<h1>First component</h1>' +
             '<ft.Button onclick="toggleGroup" .createDelay="1000">Toggle group</ft.Button>' +
-            '<ft.Button onclick="toggleGroup" .createDelay="2000" .exitDelay="2000">Toggle group</ft.Button>' +
+            '<ft.Button onclick="toggleGroup" .createDelay="2000">Toggle group</ft.Button>' +
             '<ft.Button onclick="toggleGroup" .createDelay="3000">Toggle group</ft.Button>' +
             '<div>ahaha</div>' +
             '<div .data="{data.children}"' +
             ' children.selected="{(child.model!==app.scope.d.selectedItem)}" ' +
-            ' children.class="ft.Button" children.onclick="selectItem2" children.disabled="{app.scope.d.childrenDisabled}"></div>' +
+            ' children.class="ft.Button" children.onclick="selectItem2" children.disabled="{data.childrenDisabled}"></div>' +
 
-            '<ft.ButtonGroup .data="{app.scope.d.children}" children.base="mybutton" children.focused="anydata" children.onclick="selectItem" ' +
-                ' children.disabled="{app.scope.d.childrenDisabled}" ' +
+            '<ft.ButtonGroup .data="{app.scope.d.children}" children.createDelay="{(childIndex+1500)}" children.base="button" children.focused="anydata" children.onclick="selectItem" ' +
+                ' children.disabled="{data.childrenDisabled}" ' +
                 ' children.selected="{(child.model===app.scope.d.selectedItem)}"></ft.ButtonGroup>' +
             '</div>',
 
             extends: {
-                innerHandler: function(name, e) {
-                    console.log('Inner handler ', name);
-                    if(name === 'toggleGroup') this.model.changes = { childrenDisabled: !this.model.childrenDisabled };
+                internalHandler: function(name, e) {
+                    console.log('Internal extension handler ', name);
+                    if(name === 'toggleGroup') {
+                        this.model.changes = { childrenDisabled: !this.model.data.childrenDisabled };
+                        this.invalidateData();
+                        console.log('On toggle this children disabled: ', this.model.data.childrenDisabled);
+                    }
                     if(name === 'selectItem') this.model.changes = { selectedItem: e.target.model };
                 }
 

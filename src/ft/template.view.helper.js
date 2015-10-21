@@ -151,20 +151,26 @@ var ft;
                 object.exit();
             return object;
         };
-        //private applyPatitions = _.partial(this.applyExpressionToHosts, _, root)
-        TemplateViewHelper.prototype.updateDynamicTree = function (root, group) {
+        TemplateViewHelper.prototype.updateDynamicTree = function (root, group, propertyName) {
             var _this = this;
             var dynamicTree = root.getTemplate().dynamicTree;
-            var exArrays;
+            if (!dynamicTree)
+                return;
+            var expressionArrays;
             if (!group) {
-                exArrays = _.map(dynamicTree, function (v, group) { return _this.getChangedExpressionNames(group, v, root); }, this);
+                expressionArrays = _.map(dynamicTree, function (v, group) { return _this.getChangedExpressionNames(group, v, root); }, this);
             }
             else {
                 if (!dynamicTree[group])
                     return;
-                exArrays = this.getChangedExpressionNames(group, dynamicTree[group], root);
+                if (propertyName) {
+                    expressionArrays = root.isChangedDynamicProperty(propertyName) ? dynamicTree[group][propertyName] : null;
+                }
+                else {
+                    expressionArrays = this.getChangedExpressionNames(group, dynamicTree[group], root);
+                }
             }
-            var exNames = this.composeNames_updateDynamicTree(exArrays);
+            var exNames = this.composeNames_updateDynamicTree(expressionArrays);
             var tmpl = root.getTemplate();
             var exObjArrays = _.map(exNames, function (v) { return (tmpl.expressionMap[v]); });
             _.each(exObjArrays, function (v, k) { return _this.applyExpressionToHosts(v, root); }, this);
@@ -259,7 +265,7 @@ var ft;
                         var view = root.getTreeElementByPath(host.path);
                         view.applyParameter(value, key, root);
                     }
-                    else if (key.indexOf('children.')) {
+                    else if (key.indexOf('children.') === 0) {
                         var childrenView = root.getChildrenViewByPath(host.path);
                         if (!childrenView) {
                             console.warn('Has no ChildrenView instance and cant set hostValue ', host.path, key);
@@ -283,7 +289,7 @@ var ft;
             var _this = this;
             var domElement = this.getDomElement(object);
             //set all dom attributes
-            if (this.isTagElement(domElement)) {
+            if (this.isTagElement(domElement) && !domElement.getAttribute(ft.AttributePathId)) {
                 // simple attributes (id, title, name...)
                 var attribs = data.attribs;
                 var attrsResult = attribs ? _.reduce(attribs, function (r, value, key) { return (_this.specialDomAttrs.indexOf(key) < 0 ? (r[key] = _this.getSimpleOrExpressionValue(value, root)) : null, r); }, {}, this) : {};
@@ -328,10 +334,8 @@ var ft;
             if (previousObject && previousObject !== object) {
                 parentElement.replaceChild(objectElement, previousElement);
                 if (object instanceof ft.TemplateView) {
-                    setTimeout(function () {
-                        object.enter();
-                        object.validate();
-                    }, 0);
+                    object.enter();
+                    object.validate();
                 }
                 else {
                     this.setDataTreeObjectFunc(object, data, root);
@@ -370,6 +374,7 @@ var ft;
             return root.getExpressionValue(value);
         };
         TemplateViewHelper.prototype.registerDomElementId = function (id, data, root) {
+            console.log('Register, ', id, data.path);
             this.domElementPathIds[id] = { data: data, root: root };
         };
         TemplateViewHelper.prototype.unregisterDomElementId = function (id) {

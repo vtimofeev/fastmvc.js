@@ -15,7 +15,6 @@ var ft;
     var timers = { createDom: 0, enter: 0, setData: 0, validate: 0 };
     ft.counters = { expression: 0, expressionEx: 0, expressionCtx: 0, multiExpression: 0, createDom: 0, enter: 0, setData: 0, validate: 0, validateState: 0, validateData: 0, validateApp: 0 };
     setInterval(function () { return console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(ft.counters), ' frames ', fmvc.frameExecution); }, 5000);
-    //console.log(dispatcher);
     function getFormatter(value, locale) {
         if (locale === void 0) { locale = 'en'; }
         return templateFormatterChache[value] || compileFormatter(value, locale);
@@ -254,6 +253,7 @@ var ft;
             timers.createDom += getTime() - start;
         };
         TemplateView.prototype.enter = function () {
+            var _this = this;
             if (this.inDocument) {
                 return console.warn('Error, try to re-enter ', this.name);
             }
@@ -262,11 +262,13 @@ var ft;
             _super.prototype.enter.call(this);
             this.applyParameters();
             ft.templateHelper.enterTreeObject(this._template.domTree, this);
+            //templateHelper.updateDynamicTree(this, 'state', 'state.life');
             this.invalidate(fmvc.InvalidateType.Data);
             this.invalidate(fmvc.InvalidateType.State);
             timers.enter += getTime() - start;
             ft.counters.enter++;
-            this.life = 'active';
+            var t = this;
+            setTimeout(function () { return _this.life = 'active'; }, 50);
         };
         TemplateView.prototype.stateHandlers = function (value) {
             var _this = this;
@@ -296,7 +298,6 @@ var ft;
         TemplateView.prototype.clickHandler = function (e) {
             if (!!this.getState('disabled'))
                 return;
-            console.log('ClickHandler selected, ', this.name, this.getState('selected'));
             this.setState('selected', !this.getState('selected'));
         };
         TemplateView.prototype.exit = function () {
@@ -305,6 +306,7 @@ var ft;
                 return console.warn('Error, try re-exit');
             }
             ft.templateHelper.exitTreeObject(this._template.domTree, this);
+            this.cleanDelays();
             this.parent = null;
             this.domDef = null;
             _super.prototype.exit.call(this);
@@ -517,9 +519,7 @@ var ft;
                 return;
             var delayValue = Number(data.params[functor + 'Delay']);
             var t = this;
-            console.log('Set delay ', data.path, delayValue);
             this._delays[delayName] = setTimeout(function () {
-                console.log(' Execute delay ', functor, data.path);
                 if (!t.inDocument)
                     return;
                 switch (functor) {

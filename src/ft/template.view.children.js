@@ -98,7 +98,6 @@ var ft;
                 _.each(params, function (value, key) {
                     var childValue = _this.getChildExpressionValue(value);
                     var childParamName = _this.getChildrenParamName(key);
-                    //console.log('Child get apply param: ', key, childValue, this.parent.child.model.d, this.app.scope.d.selectedItem.d);
                     child.applyParameter(childValue, childParamName);
                 });
             }, this);
@@ -110,7 +109,7 @@ var ft;
                 if (child.disposed)
                     return;
                 this.setChildContext(child, index);
-                var childValue = _.isObject(value) ? child.getExpressionValue.call(this, value) : value;
+                var childValue = _.isObject(value) ? this.getChildExpressionValue(value) : value;
                 var childParamName = this.getChildrenParamName(key);
                 child.applyParameter(childValue, childParamName);
             }, this);

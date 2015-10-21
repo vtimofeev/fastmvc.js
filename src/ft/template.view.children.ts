@@ -111,7 +111,6 @@ module ft {
                 _.each(params, (value:IExpressionName, key:string)=> {
                     var childValue:any = this.getChildExpressionValue(value);
                     var childParamName:string = this.getChildrenParamName(key);
-                    //console.log('Child get apply param: ', key, childValue, this.parent.child.model.d, this.app.scope.d.selectedItem.d);
                     child.applyParameter(childValue, childParamName);
                 });
             }, this);
@@ -123,7 +122,7 @@ module ft {
             _.each(this._children, function (child:ITemplateView, index:number) {
                 if (child.disposed) return;
                 this.setChildContext(child, index);
-                var childValue:any = _.isObject(value) ? child.getExpressionValue.call(this, value) : value;
+                var childValue:any = _.isObject(value) ? this.getChildExpressionValue(value) : value;
                 var childParamName:string = this.getChildrenParamName(key);
                 child.applyParameter(childValue, childParamName);
             }, this);

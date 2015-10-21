@@ -11,7 +11,6 @@ module ft {
     export var counters = {expression: 0, expressionEx: 0, expressionCtx: 0, multiExpression: 0, createDom: 0 , enter: 0, setData: 0, validate: 0, validateState: 0, validateData: 0, validateApp: 0};
 
     setInterval(()=>console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(counters), ' frames ', fmvc.frameExecution), 5000);
-    //console.log(dispatcher);
 
     function getFormatter(value:string, locale:string = 'en') {
         return templateFormatterChache[value] || compileFormatter(value, locale);
@@ -187,16 +186,17 @@ module ft {
                     this.stateHandlers(_.isString(value)?(value.split(',')):value);
                     break;
                 default:
-
                     // children of, skip
                     if(key.indexOf('children.') === 0) {
                         return;
                     }
+
                     // handlers, set handler
                     else if(key.indexOf('on') === 0) {
                         var t = this;
                         this.on(key.substring(2), _.isString(value)?(e)=>{ t.internalHandler(value,e); }:value);
                     }
+
                     // direct set states, values
                     else if(key in this) {
                         if(_.isFunction(this[key])) this[key](value);
@@ -206,6 +206,7 @@ module ft {
                             this[key] = value;
                         }
                     }
+
                     else {
                         console.warn('Apply: Cant set template view parameter ', key);
                     }
@@ -244,6 +245,7 @@ module ft {
             var start = getTime();
             var parentParams = this.domDef?this.domDef.params:null;
             var localParams = this.localDomDef?this.localDomDef.params:null;
+
             // skip set params if children (it is set by ChildrenView)
             if(!this.isChildren) this.setParameters(_.extend({}, localParams, parentParams));
 
@@ -258,7 +260,7 @@ module ft {
             timers.createDom += getTime()-start;
         }
 
-        enter() {
+        enter():void {
             if (this.inDocument) {
                 return console.warn('Error, try to re-enter ', this.name);
             }
@@ -270,13 +272,15 @@ module ft {
             this.applyParameters();
 
             templateHelper.enterTreeObject(this._template.domTree, this);
-            templateHelper.updateDynamicTree(this, 'state', 'state.life');
+            //templateHelper.updateDynamicTree(this, 'state', 'state.life');
             this.invalidate(fmvc.InvalidateType.Data);
             this.invalidate(fmvc.InvalidateType.State);
 
             timers.enter += getTime() - start;
             counters.enter++;
-            this.life = 'active'
+
+            var t = this;
+            setTimeout(()=>this.life = 'active', 50);
         }
 
         stateHandlers(value:string[]) {
@@ -307,7 +311,6 @@ module ft {
 
         private clickHandler(e:ITreeEvent):void {
             if(!!this.getState('disabled')) return;
-            console.log('ClickHandler selected, ' , this.name, this.getState('selected'));
             this.setState('selected', !this.getState('selected'));
         }
 
@@ -317,8 +320,10 @@ module ft {
             }
 
             templateHelper.exitTreeObject(this._template.domTree, this);
+            this.cleanDelays();
             this.parent = null;
             this.domDef = null;
+
 
             super.exit();
 
@@ -495,7 +500,7 @@ module ft {
             return this;
         }
 
-        on(event, handler, path = '0') {
+        on(event:string, handler, path:string = '0') {
             if (!this._localHandlers) this._localHandlers = {};
             if (path && !this._localHandlers[path]) this._localHandlers[path] = {};
             var handlers = this._localHandlers[path][event]?this._localHandlers[path][event]:[];
@@ -510,7 +515,6 @@ module ft {
 
         trigger(e:ITreeEvent, path = '0') {
             var h = this._localHandlers ? this._localHandlers[path] : null;
-
             if (h && h[e.name]) {
                 var handlers = h[e.name];
                 _.each(handlers, (v)=>{ v.call(this, e); e.executionHandlersCount++; }, this);
@@ -520,7 +524,6 @@ module ft {
         handleTreeEvent(e:ITreeEvent) {
             e.currentTarget = this;// previous dispatch
             e.depth--;
-
 
             this.trigger(e);// dispatch to this component(dynamic handlers);
             if (e.prevented && e.e) e.e.preventDefault();
@@ -559,13 +562,10 @@ module ft {
             var delayValue = Number(data.params[functor + 'Delay'])
             var t = this;
 
-            console.log('Set delay ' , data.path, delayValue);
             this._delays[delayName] = setTimeout(function() {
-                console.log(' Execute delay ', functor, data.path);
                 if(!t.inDocument) return;
                 switch (functor) {
                     case 'create':
-
                         templateHelper.createTreeObject(t.getDomDefinitionByPath(data.parentPath) || t.domDef, t);
                         templateHelper.enterTreeObject(t.getDomDefinitionByPath(data.parentPath) || t.domDef, t);
                         return;

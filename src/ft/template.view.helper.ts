@@ -187,10 +187,10 @@ module ft {
         enterTreeObjectFunc(object:TreeElement, data:IDomDef, root:ITemplateView) {
             this.setDataTreeObjectFunc(object, data, root);
 
-
             if (object && object instanceof TemplateView && !object.inDocument) {
                 object.enter();
             }
+
 
 
             if (this.hasChildrenView(data, root)) {
@@ -214,9 +214,13 @@ module ft {
         }
 
         private composeNames_updateDynamicTree = _.compose(_.compact, _.flatten);
+
         updateDynamicTree(root:ITemplateView, group?:string, propertyName?:string ):void {
             var dynamicTree:any = root.getTemplate().dynamicTree;
+            if(!dynamicTree) return;
+
             var expressionArrays:any[];
+
             if (!group) {
                 expressionArrays = _.map(dynamicTree, (v:IDynamicMap, group:string)=>this.getChangedExpressionNames(group, v, root), this);
             } else {
@@ -338,7 +342,7 @@ module ft {
                         view.applyParameter(value, key, root);
                     }
                     // Children.params changed
-                    else if (key.indexOf('children.')) {
+                    else if (key.indexOf('children.') === 0) {
 
                         var childrenView = <TemplateChildrenView> root.getChildrenViewByPath(host.path);
                         if (!childrenView) {
@@ -365,7 +369,7 @@ module ft {
             var domElement = <HTMLElement> this.getDomElement(object);
 
             //set all dom attributes
-            if (this.isTagElement(domElement)) {
+            if (this.isTagElement(domElement) && !domElement.getAttribute(AttributePathId)) {
                 // simple attributes (id, title, name...)
                 var attribs = data.attribs;
                 var attrsResult = attribs ? _.reduce(attribs,
@@ -419,10 +423,8 @@ module ft {
             if (previousObject && previousObject !== object) {
                 parentElement.replaceChild(objectElement, previousElement);
                 if (object instanceof TemplateView) {
-                    setTimeout(()=>{
-                        object.enter();
-                        object.validate();
-                    },0);
+                    object.enter();
+                    object.validate();
                 }
                 else {
                     this.setDataTreeObjectFunc(object, data, root);
@@ -473,6 +475,7 @@ module ft {
         }
 
         registerDomElementId(id:string, data:IDomDef, root:ITemplateView):void {
+            console.log('Register, ', id, data.path);
             this.domElementPathIds[id] = {data: data, root: root};
         }
 
