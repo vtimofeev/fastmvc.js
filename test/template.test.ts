@@ -184,9 +184,9 @@ describe('ft - template package ', function () {
             var data0 = {name: 'Vasily', age: 33, email: 'vasily.timofeev@gmail.com'};
             template.model = new fmvc.Model('test', data0);
 
-            var r0 = expression.execute({name: ex0.name}, map, template);
-            var r1 = expression.execute({name: ex1.name}, map, template);
-            var r2 = expression.execute({name: ex2.name}, map, template);
+            var r0 = expression.execute(ex0, template);
+            var r1 = expression.execute(ex1, map, template);
+            var r2 = expression.execute(ex2, map, template);
             assert.strictEqual(r0, data0.name, 'should be equal: ', r0, data0);
             assert.strictEqual(r1, 'not', 'should be equal ');
             assert.strictEqual(r2, 'not,33 text 33');

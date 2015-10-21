@@ -171,8 +171,8 @@ module ft {
         getDomDefinitionByPath(path:string):IDomDef;
         isChangedDynamicProperty(value:string);
 
-        setChildrenViewPath(path:string, value:TemplateViewChildren):void;
-        getChildrenViewByPath(path:string):TemplateViewChildren;
+        setChildrenViewPath(path:string, value:TemplateChildrenView):void;
+        getChildrenViewByPath(path:string):TemplateChildrenView;
 
         setDynamicProperty(name:string, value:any);
 

@@ -3,10 +3,9 @@
 module ft {
     export var templateHelper:ITemplateViewHelper = new TemplateViewHelper();
 
-
     var localeFormatterCache = {};
     var templateFormatterChache = {};
-    var expression = new ft.Expression();
+    export var expression = new ft.Expression();
     var dispatcher = new ft.EventDispatcher(templateHelper);
     var timers = {createDom: 0 , enter: 0, setData: 0, validate: 0};
     export var counters = {expression: 0, expressionEx: 0, expressionCtx: 0, multiExpression: 0, createDom: 0 , enter: 0, setData: 0, validate: 0, validateState: 0, validateData: 0, validateApp: 0};
@@ -47,13 +46,20 @@ module ft {
         // Local handler
         private _localHandlers:any;
 
+        // Set special type of node, when component is created by TemplateViewChildren
+        private _isChildren:boolean = false;
+
         // Local children stored by path of the container (view or dom element)
-        private _dataChildren:{[path:string]:TemplateViewChildren};
+        private _dataChildren:{[path:string]:TemplateChildrenView};
+        private _delays:any;
+        private _delayStart:any = {};
 
         constructor(name:string, params?:ITemplateViewParams, template?:ITemplate) {
             super(name);
             this._template = template;
-            this.setParameters(params);
+            var resultParams = _.extend({}, template.domTree.params, params);
+            this.setParameters(resultParams);
+            this.life = 'init';
         }
 
 
@@ -76,30 +82,99 @@ module ft {
         get i18n():any {
             return this._i18n;
         }
-        
+
+        get isChildren():boolean {
+            return this._isChildren;
+        }
+
+        set isChildren(value:boolean) {
+            this._isChildren = value;
+        }
+
+
+        ////////////////////////////////////////////////////////////////        
+        // States
+        ////////////////////////////////////////////////////////////////
+
+        // Состояние отвечающее за базовый класс
+        get base():string {
+            return this.getState('base');
+        }
+        set base(value:string) {
+            this.setState('base', value);
+        }
+
+        // Состояние отвечающее за значение
+        get value():any {
+            return this.getState('value');
+        }
+        set value(value:any) {
+            this.setState('value', value);
+        }
+
+        // Состояние кастомное
+        get custom():any {
+            return this.getState('custom');
+        }
+        set custom(value:any) {
+            this.setState('custom', value);
+        }
+
+        // Состояние отвечающее за базовый класс
+        get hover():string {
+            return this.getState('hover');
+        }
+        set hover(value:string) {
+            this.setState('hover', value);
+        }
+
+        // Состояние отвечающее за тип выбранный (лучше использовать от данных)
         get selected():boolean {
             return this.getState('selected');
         }
-        
         set selected(value:boolean) {
             this.setState('selected', value);
         }
 
+        // Состояние отвечает за наличие пользовательского фокуса
+        get focused():boolean {
+            return this.getState('focused');
+        }
+        set focused(value:boolean) {
+            this.setState('focused', value);
+        }
+
+        // Состояние забокированный
         get disabled():boolean {
             return this.getState('disabled');
         }
-
         set disabled(value:boolean) {
             this.setState('disabled', value);
         }
 
+        // state
+        get life():any {
+            return this.getState('life');
+        }
+        set life(value:any) {
+            this.setState('life', value);
+        }
 
+
+
+        ////////////////////////////////////////////////////////////////        
+        // States
+        ////////////////////////////////////////////////////////////////
         cleanParameters() {
             this._params = null;
         }
 
-        setParameters(value:any) {
+        setParameters(value:any):any {
             this._params = _.defaults(this._params || {}, value);
+        }
+
+        getParameters():any {
+            return this._params;
         }
 
         applyParameters() {
@@ -107,42 +182,39 @@ module ft {
         }
 
         applyParameter(value:any, key:string):void {
-            var ctx = this.parent||this;
             switch (key) {
-                case TemplateParams.setData:
-                    this.data = this.getParameterValue(value, ctx);
-                    break;
-                case TemplateParams.setModel:
-                    this.model = this.getParameterValue(value, ctx);
-                    break;
-                case TemplateParams.setStateSelected:
-                    this.setState('selected', !!this.getParameterValue(value, ctx, this));
-                    break;
-                case TemplateParams.setStateDisabled:
-                    this.setState('disabled', !!this.getParameterValue(value, ctx, this));
-                    break;
                 case TemplateParams.stateHandlers:
-                    this.stateHandlers(value.split(','));
-                    break;
-                case TemplateParams.states:
+                    this.stateHandlers(_.isString(value)?(value.split(',')):value);
                     break;
                 default:
-                    // direct set parameters for root
-                    if(key in this) {
+
+                    // children of, skip
+                    if(key.indexOf('children.') === 0) {
+                        return;
+                    }
+                    // handlers, set handler
+                    else if(key.indexOf('on') === 0) {
+                        var t = this;
+                        this.on(key.substring(2), _.isString(value)?(e)=>{ t.internalHandler(value,e); }:value);
+                    }
+                    // direct set states, values
+                    else if(key in this) {
                         if(_.isFunction(this[key])) this[key](value);
-                        else this[key] = value;
+                        else {
+                            var value:any = this.getParameterValue(value, key, this);
+                            //@todo check value type of states (boolean,number,...etc)
+                            this[key] = value;
+                        }
                     }
                     else {
-                        //console.warn('Cant set template view parameter ', key);
+                        console.warn('Apply: Cant set template view parameter ', key);
                     }
                     break;
             }
         }
 
-        getParameterValue(value:IExpressionName|any, ctx:ITemplateView, child:ITemplateView):any {
-            if(child) ctx.ctx = child;
-
-            return _.isObject(value)?ctx.getExpressionValue(value):value;
+        getParameterValue(value:IExpressionName|any, key:string):any {
+            return _.isObject(value)?this.getExpressionValue(value):value;
         }
 
 
@@ -166,12 +238,16 @@ module ft {
         }
 
 
-        createDom() {
+        createDom():void {
             if(this._element) return;
+            this.life = 'create';
             var start = getTime();
             var parentParams = this.domDef?this.domDef.params:null;
             var localParams = this.localDomDef?this.localDomDef.params:null;
-            this.setParameters(_.extend({}, localParams, parentParams));
+            // skip set params if children (it is set by ChildrenView)
+            if(!this.isChildren) this.setParameters(_.extend({}, localParams, parentParams));
+
+            this._delayStart['create'] = (new Date()).getTime();
 
             var e = <TreeElement> templateHelper.createTreeObject(this._template.domTree, this);
 
@@ -186,13 +262,11 @@ module ft {
             if (this.inDocument) {
                 return console.warn('Error, try to re-enter ', this.name);
             }
+            this.life = 'enter';
             var start = getTime();
 
             super.enter();
             this.applyParameters();
-            //templateHelper.setDataTreeObject(this._template.domTree, this);
-            //console.log('Setup data ', this.getElement());
-            //counters.setData++;
 
             templateHelper.enterTreeObject(this._template.domTree, this);
             this.invalidate(fmvc.InvalidateType.Data);
@@ -200,9 +274,12 @@ module ft {
 
             timers.enter += getTime() - start;
             counters.enter++;
+            this.life = 'active'
         }
 
         stateHandlers(value:string[]) {
+            if(_.isString(value)) value = value.split(',');
+
             var stateHandlers = {
                 hover: {
                     mouseover: this.mouseoverHandler,
@@ -228,9 +305,9 @@ module ft {
 
         private clickHandler(e:ITreeEvent):void {
             if(!!this.getState('disabled')) return;
+            console.log('ClickHandler selected, ' , this.name, this.getState('selected'));
             this.setState('selected', !this.getState('selected'));
         }
-
 
         exit() {
             if (!this.inDocument) {
@@ -246,11 +323,10 @@ module ft {
             this._cssClassMap = null;
             this._dynamicPropertiesMap = null;
             this._prevDynamicProperiesMap = null;
-            this._dynamicPropertiesMap = null;
             this._localHandlers  = null;
             this._treeElementMapByPath = null;
-            _.each(this._treeElementMapByPath, (v,k)=>delete this._treeElementMapByPath[k], this);
 
+            _.each(this._treeElementMapByPath, (v,k)=>delete this._treeElementMapByPath[k], this);
             this._i18n = null;
         }
 
@@ -272,18 +348,28 @@ module ft {
             return <TreeElement> this._treeElementMapByPath?this._treeElementMapByPath[value]:null;
         }
 
+        public getExpressionByName(name:string):IExpression {
+            var value = this._template.expressionMap?this._template.expressionMap[name]:null;
+            value = value || (this.parent?this.parent.getExpressionByName(name):null);
+            return value;
+        }
+
         getExpressionValue(ex:IExpressionName):any {
-            if(this._dynamicPropertiesMap[ex.name]) return this._dynamicPropertiesMap[ex.name];
-            //console.log('GetExValue ', ex.name);
-            var exObj:IExpression = this.getTemplate().expressionMap[ex.name];
-            var result = expression.execute(exObj, this.getTemplate().expressionMap, this);
+            var exName = ex.name;
+            if(this._dynamicPropertiesMap[exName]) return this._dynamicPropertiesMap[exName];
+            var exObj:IExpression = this.getExpressionByName(exName);
+            var result = this.executeExpression(exObj);
             this.setDynamicProperty(ex.name, result);
             return result;
         }
 
+        protected executeExpression(value:IExpression):any {
+            return expression.execute(value, /*this.getTemplate().expressionMap,*/ this);
+        }
+
         getCssClassExpressionValue(ex:IExpressionName):any {
             var exObj:IExpression = this.getTemplate().expressionMap[ex.name];
-            var result = expression.execute(exObj, this.getTemplate().expressionMap, this, true);
+            var result = expression.execute(exObj, /*this.getTemplate().expressionMap,*/ this, true);
             return result;
         }
 
@@ -306,11 +392,11 @@ module ft {
             }
         }
 
-        getChildrenViewByPath(path:string):TemplateViewChildren {
+        getChildrenViewByPath(path:string):TemplateChildrenView {
             return this._dataChildren ? this._dataChildren[path] : null;
         }
 
-        setChildrenViewPath(path, children:TemplateViewChildren) {
+        setChildrenViewPath(path, children:TemplateChildrenView) {
             if (!this._dataChildren) this._dataChildren = {};
             this._dataChildren[path] = children;
         }
@@ -422,6 +508,7 @@ module ft {
 
         trigger(e:ITreeEvent, path = '0') {
             var h = this._localHandlers ? this._localHandlers[path] : null;
+
             if (h && h[e.name]) {
                 var handlers = h[e.name];
                 _.each(handlers, (v)=>{ v.call(this, e); e.executionHandlersCount++; }, this);
@@ -431,6 +518,7 @@ module ft {
         handleTreeEvent(e:ITreeEvent) {
             e.currentTarget = this;// previous dispatch
             e.depth--;
+
 
             this.trigger(e);// dispatch to this component(dynamic handlers);
             if (e.prevented && e.e) e.e.preventDefault();
@@ -450,9 +538,44 @@ module ft {
         }
 
         internalHandler(type, e:any) {
+            console.log('Internal handler ... ', type, e);
             if(this.parent) this.parent.internalHandler(type, e);
         }
 
+        isDelay(data:IDomDef, functor:string):boolean {
+            var delayValue = Number(data.params[functor + 'Delay']);
+            var result:boolean = ((new Date()).getTime() - this._delayStart[functor]) < delayValue;
+            console.log('Is delay ' , data.path, result);
+            return result;
+        }
 
+        setDelay(data:IDomDef, functor:string):void {
+            if (!this._delays) this._delays = {};
+            var delayName:string = data.path + ':' + functor;
+            if (this._delays[delayName]) return;
+
+            var delayValue = Number(data.params[functor + 'Delay'])
+            var t = this;
+
+            console.log('Set delay ' , data.path, delayValue);
+            this._delays[delayName] = setTimeout(function() {
+                console.log(' Execute delay ', functor, data.path);
+                if(!t.inDocument) return;
+                switch (functor) {
+                    case 'create':
+
+                        templateHelper.createTreeObject(t.getDomDefinitionByPath(data.parentPath) || t.domDef, t);
+                        templateHelper.enterTreeObject(t.getDomDefinitionByPath(data.parentPath) || t.domDef, t);
+                        return;
+                    case 'exit':
+                        templateHelper.exitTreeObject(data, t);
+                        return;
+                }
+            }, delayValue);
+        }
+
+        cleanDelays():void {
+            _.each(this._delays, (v,k)=>clearTimeout(v));
+        }
     }
 }

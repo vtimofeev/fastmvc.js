@@ -23,9 +23,9 @@ var ft;
         Expression.prototype.getExpressionNameObject = function (value) {
             return { name: value.name };
         };
-        Expression.prototype.execute = function (value, map, context, classes) {
-            var expression = map[value.name];
-            return this.executeMultiExpression(expression, context, classes);
+        Expression.prototype.execute = function (value, /*map:IExpressionMap,*/ context, classes) {
+            //console.log('Expression execute ... ', value, context, classes);
+            return this.executeMultiExpression(value, context, classes);
         };
         //----------------------------------------------------------------------------------------------------------------------------------------
         // Execute

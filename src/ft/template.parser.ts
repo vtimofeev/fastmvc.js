@@ -67,7 +67,6 @@ module ft {
             }, this);
 
             this.removeEmptyKeys(result);
-            console.log('Get states 2 by map', result, result.hasStates, this.getStatesByMap(result.expressionMap));
             return <ITemplate> result;
         }
 
@@ -102,7 +101,9 @@ module ft {
         }
 
         getGroupKey(key:string, group:string):string {
-            return group==='handlers'?(key.replace(/^on/, '')).toLowerCase():key;
+            if (group==='handlers') return (key.replace(/^on/, '')).toLowerCase();
+            else if (group==='params') return (key.replace(/^\./, ''));
+            else return key;
         }
 
         getAttribGroup(name:string):string {
@@ -110,7 +111,10 @@ module ft {
             if(name.indexOf('on') === 0) {
                 return 'handlers';
             } else {
-                return (this._componentParams.indexOf(name)>-1)?'params':'attribs';
+                return (name.indexOf('.') === 0
+                || name.indexOf('children.') === 0 || name.indexOf('c.') === 0
+                || this._componentParams.indexOf(name)>-1)
+                    ?'params':'attribs';
             }
 
         }

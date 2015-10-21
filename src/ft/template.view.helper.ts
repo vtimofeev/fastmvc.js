@@ -48,17 +48,22 @@ module ft {
                 // execute tree child mapper
                 if (childrenTreeObjMapper) {
                     // create children mapper, or use this
-                    var childrenMapperInstance:any = _.partial((childrenTreeObjMapper===true?instanceFunctor.bind(t):childrenTreeObjMapper),_, root);
+                    var childrenMapperInstance:any = _.partial((childrenTreeObjMapper === true ? instanceFunctor.bind(t) : childrenTreeObjMapper), _, root);
                     var childrenMap:any[] = _.map(data.children, childrenMapperInstance, this);
                     // children result executor, appendChild for example
                     if (childrenModificator) {
                         var childrenModificatorInstance:any = _.partial(childrenModificator, _, _, treeObject, data, root);
-                        _.each(childrenMap, (v,k)=>childrenModificatorInstance(v, data.children[k]), this);
+                        _.each(childrenMap, (v, k)=>childrenModificatorInstance(v, data.children[k]), this);
                     }
                 }
                 return treeObject;
             }
+
             return instanceFunctor.bind(t);
+        }
+
+        private hasDelay(data:IDomDef, root:ITemplateView, functorName:string) {
+            return data.params && data.params[functorName + 'Delay'] && root.isDelay(data, functorName);
         }
 
         private createTreeObjectFunctor():IGetTreeObjectFunctor {
@@ -103,9 +108,9 @@ module ft {
 
         initTreeElement(value:TreeElement, data:IDomDef, root:ITemplateView) {
             if (value instanceof TemplateView) {
-                if(value.inDocument) return;
+                if (value.inDocument) return;
                 var view = (<ITemplateView>value);
-                if(value !== root) view.createDom();
+                if (value !== root) view.createDom();
             }
         }
 
@@ -119,8 +124,9 @@ module ft {
             var currentTreeElement = this.getTreeObject(data, root);
             var hasVirtual = currentTreeElement && this.isCommentElement(currentTreeElement);
 
+
             if (isIncluded) {
-                if(!currentTreeElement || hasVirtual) {
+                if (!currentTreeElement || hasVirtual) {
                     result = this.isComponentDef(data) ? this.createComponentElement(data, root) : this.createDomElement(data.type, data, root);
                     this.createChildrenViewTreeObjecFunc(result, data, root);
                 } else {
@@ -133,19 +139,15 @@ module ft {
         }
 
         createChildrenViewTreeObjecFunc(object:TreeElement, data:IDomDef, root:ITemplateView):TreeElement {
-            if(this.hasChildrenDef(data)) {
-                var childrenView = new TemplateViewChildren();
+            if (this.hasChildrenDef(data)) {
+                var childrenView = new TemplateChildrenView();
                 childrenView.domDef = data;
                 childrenView.parent = root;
-
-                var childrenData:any[] = data.params[TemplateParams.childrenData]?this.getExpressionValue(data.params[TemplateParams.childrenData], root):null;
-                var childrenModel:fmvc.Model = data.params[TemplateParams.childrenModel]?this.getExpressionValue(data.params[TemplateParams.childrenModel], root):null;
-                if(childrenModel&& _.isArray(childrenModel)) childrenView.model = childrenModel;
-                if(childrenData && _.isArray(childrenData)) childrenView.data = childrenData;
-
                 childrenView.setElement(this.getDomElement(object));
-
+                childrenView.setParameters(_.extend({}, data.params, root.getParameters()));
                 childrenView.createDom();
+                childrenView.enter();
+
                 root.setChildrenViewPath(data.path, childrenView);
             }
         }
@@ -166,7 +168,7 @@ module ft {
                 case 'comment':
                     return document.createComment(data.path);
                 default:
-                    if(name === 'svg' || name === 'circle') {
+                    if (name === 'svg' || name === 'circle') {
                         return document.createElementNS(svgNs, name);
                     }
                     else {
@@ -191,21 +193,19 @@ module ft {
             }
 
 
-
-
             if (this.hasChildrenView(data, root)) {
-                var childrenView:TemplateViewChildren = root.getChildrenViewByPath(data.path);
+                var childrenView:TemplateChildrenView = root.getChildrenViewByPath(data.path);
                 childrenView.enter();
             }
         }
 
         exitTreeObjectFunc(object:TreeElement, data:IDomDef, root:ITemplateView):TreeElement {
             var domElement = this.getDomElement(object);
-            var pathId = this.isTagElement(domElement)?domElement.getAttribute(AttributePathId):null;
+            var pathId = this.isTagElement(domElement) ? domElement.getAttribute(AttributePathId) : null;
             this.unregisterDomElementId(pathId);
 
             if (this.hasChildrenView(data, root)) {
-                var childrenView:TemplateViewChildren = root.getChildrenViewByPath(data.path);
+                var childrenView:TemplateChildrenView = root.getChildrenViewByPath(data.path);
                 childrenView.dispose();
             }
 
@@ -218,10 +218,10 @@ module ft {
         updateDynamicTree(root:ITemplateView, group?:string):void {
             var dynamicTree:any = root.getTemplate().dynamicTree;
             var exArrays:any[];
-            if(!group) {
+            if (!group) {
                 exArrays = _.map(dynamicTree, (v:IDynamicMap, group:string)=>this.getChangedExpressionNames(group, v, root), this);
             } else {
-                if(!dynamicTree[group]) return;
+                if (!dynamicTree[group]) return;
                 exArrays = this.getChangedExpressionNames(group, dynamicTree[group], root);
             }
 
@@ -229,7 +229,7 @@ module ft {
             var tmpl = root.getTemplate();
 
             var exObjArrays:IExpression[] = _.map(exNames, (v:string)=>(tmpl.expressionMap[v]));
-            _.each(exObjArrays, (v,k)=>this.applyExpressionToHosts(v,root), this);
+            _.each(exObjArrays, (v, k)=>this.applyExpressionToHosts(v, root), this);
         }
 
         getChangedExpressionNames(group:string, map:IDynamicMap, root:ITemplateView):(string|string[])[] {
@@ -253,7 +253,7 @@ module ft {
 
             view.handleTreeEvent(e);
 
-            if(view.parent) {
+            if (view.parent) {
                 // exec event on parent
                 def = view.domDef;
                 e.currentTarget = view.parent;
@@ -264,21 +264,22 @@ module ft {
                 e.cancelled = !!e.executionHandlersCount && e.name === 'click';
 
                 // exec parent next domDef to root
-                e.currentDef = def.parentPath?view.parent.getTemplate().pathMap[def.parentPath]:null;
-                if(!e.cancelled && e.currentDef) this.dispatchTreeEventDown(e);
+                e.currentDef = def.parentPath ? view.parent.getTemplate().pathMap[def.parentPath] : null;
+                if (!e.cancelled && e.currentDef) this.dispatchTreeEventDown(e);
             }
         }
 
         private triggerDefEvent(e:ITreeEvent):void {
             var def:IDomDef = <IDomDef> (e.currentDef || e.def);
             var view = <ITemplateView> (e.currentTarget || e.target);
+            console.log('Trigger def event, ', e.name, ' path ', def.path);
+
 
             if (!view.disabled && def.handlers && def.handlers[e.name]) {
                 view.evalHandler(def.handlers[e.name], e);
                 e.executionHandlersCount++;
             }
         }
-
 
 
         applyExpressionToHosts(exObj:IExpression, root:ITemplateView):void {
@@ -292,12 +293,14 @@ module ft {
                 host = exObj.hosts[i];
                 result = result || (host.key === 'class' ? root.getCssClassExpressionValue(exObj) : root.getExpressionValue(exObj));
                 el = this.getDomElement(root.getTreeElementByPath(host.path));
-                if(el && el.nodeType != 8) this.applyValueToHost(result, el, host, root);
+                if (el && el.nodeType != 8) this.applyValueToHost(result, el, host, root);
             }
         }
 
 
         applyValueToHost(value:any, el:HTMLElement, host:IExpressionHost, root:ITemplateView):any {
+            var key:string = host.key;
+
             switch (host.group) {
                 case 'data':
                     el.textContent = value;
@@ -310,13 +313,12 @@ module ft {
                             return;
                         case 'class':
                             var previousClassValue = root.getPathClassValue(host.path, host.keyProperty);
-                            console.log('Toggle: ', host.path, host.key, el.classList, previousClassValue);
                             previousClassValue && previousClassValue !== value ? el.classList.toggle(previousClassValue, false) : null;
                             value ? el.classList.toggle(value, true) : null;
                             root.setPathClassValue(host.path, host.keyProperty, value);
                             return;
                         default:
-                            if(this.isSvgNode(el.nodeName)) {
+                            if (this.isSvgNode(el.nodeName)) {
                                 var method = value ? el.setAttributeNS : el.removeAttributeNS;
                                 if (host.key) method.call(el, null, host.key, value);
                             } else {
@@ -327,50 +329,32 @@ module ft {
                     }
                     return;
                 case 'params':
-                    switch (host.key) {
-                        case TemplateParams.setData:
-                            var view = root.getTreeElementByPath(host.path);
-                            if(view) view.setData(value);
-                            return;
-                        case TemplateParams.setModel:
-                            var view = root.getTreeElementByPath(host.path);
-                            if(view) view.setModel(value);
-                            return;
-                        case TemplateParams.setStateSelected:
-                            var view = root.getTreeElementByPath(host.path);
-                            if(view) view.setState('selected', !!value);
-                            return;
+                    // Default params changed: Data: model, data; states: selected, focused, children, base, custom
+                    if (key.indexOf('.') < 0) {
+                        var view = <TemplateView> root.getTreeElementByPath(host.path);
+                        view.applyParameter(value, key, root);
+                    }
+                    // Children.params changed
+                    else if (key.indexOf('children.')) {
 
-                        case TemplateParams.setStateDisabled:
-                            var view = root.getTreeElementByPath(host.path);
-                            if(view) view.setState('disabled', !!value);
+                        var childrenView = <TemplateChildrenView> root.getChildrenViewByPath(host.path);
+                        if (!childrenView) {
+                            console.warn('Has no ChildrenView instance and cant set hostValue ', host.path, key);
                             return;
+                        }
 
-                        case TemplateParams.childrenData:
-                            var childrenView = root.getChildrenViewByPath(host.path);
-                            if(childrenView) {
-                                childrenView.data = value;
-                                childrenView.validate();
-                            }
-                            return;
-
-                        case TemplateParams.childrenSetStateSelected:
-                            var childrenView = root.getChildrenViewByPath(host.path);
-                            if(childrenView) {
-                                setTimeout(()=>childrenView.checkSelected());
-                            }
-                            return;
-
-                        case TemplateParams.childrenSetStateDisabled:
-                            var childrenView = root.getChildrenViewByPath(host.path);
-                            if(childrenView) {
-                                setTimeout(()=>childrenView.checkDisabled());
-                            }
-                            return;
+                        if (key === 'children.data') {
+                            childrenView.data = childrenView;
+                            validate();
+                        }
+                        else {
+                            childrenView.applyChildrenParameter(value, key, root);
+                        }
+                    }
+                    else {
+                        console.warn('Not supported host parameter at applyToHost ', key, value);
                     }
                     return;
-
-
             }
         }
 
@@ -379,16 +363,16 @@ module ft {
 
             //set all dom attributes
             if (this.isTagElement(domElement)) {
-               // simple attributes (id, title, name...)
-               var attribs = data.attribs;
-               var attrsResult = attribs?_.reduce(attribs,
-                   (r:any, value:ExpressionValue, key:string)=>(this.specialDomAttrs.indexOf(key) < 0 ? (r[key] = this.getSimpleOrExpressionValue(value, root)) : null, r), {}, this):{};
+                // simple attributes (id, title, name...)
+                var attribs = data.attribs;
+                var attrsResult = attribs ? _.reduce(attribs,
+                    (r:any, value:ExpressionValue, key:string)=>(this.specialDomAttrs.indexOf(key) < 0 ? (r[key] = this.getSimpleOrExpressionValue(value, root)) : null, r), {}, this) : {};
 
                 //attrsResult.id = this.getElementId(domElement, attribs);
                 var domElementPathId:string = this.getNextId();
                 attrsResult[AttributePathId] = domElementPathId;
 
-                if(this.isSvgNode(data.name)) {
+                if (this.isSvgNode(data.name)) {
                     this.setDomElementAttributes(attrsResult, domElement);
                 }
                 else {
@@ -418,7 +402,8 @@ module ft {
             return name === 'svg' || name === 'circle' || false;
         }
 
-        addTreeObjectFunc(object:TreeElement,  data:IDomDef, parent:TreeElement, parentData:IDomDef, root:ITemplateView) {
+        addTreeObjectFunc(object:TreeElement, data:IDomDef, parent:TreeElement, parentData:IDomDef, root:ITemplateView) {
+
             var objectElement = this.getDomElement(object);
 
             if (objectElement.parentNode) return;
@@ -426,24 +411,26 @@ module ft {
             if (!parentElement) throw 'Has no parent element';
 
             var previousObject = this.getTreeObject(data, root);
-            var previousElement = previousObject?this.getDomElement(previousObject):null;
+            var previousElement = previousObject ? this.getDomElement(previousObject) : null;
 
-            if(previousObject && previousObject !== object) {
+            if (previousObject && previousObject !== object) {
                 parentElement.replaceChild(objectElement, previousElement);
-                if(object instanceof TemplateView) {
-                    object.enter();
-                    object.validate();
+                if (object instanceof TemplateView) {
+                    setTimeout(()=>{
+                        object.enter();
+                        object.validate();
+                    },0);
                 }
                 else {
                     this.setDataTreeObjectFunc(object, data, root);
                 }
             } else {
-                console.log('Append child. ', data.path, objectElement.parentNode, objectElement);
+                //console.log('Append child. ', data.path, objectElement.parentNode, objectElement);
                 parentElement.appendChild(objectElement);
             }
 
-            if(previousObject && !this.isCommentElement(previousObject)) {
-               this.exitTreeObject(data, root);
+            if (previousObject && !this.isCommentElement(previousObject)) {
+                this.exitTreeObject(data, root);
             }
 
             root.setTreeElementPath(data.path, object);
@@ -452,7 +439,7 @@ module ft {
         removeTreeObject(object:TreeElement, data:IDomDef, parent:TreeElement, parentData:IDomDef, root:ITemplateView) {
             //this.getDomElement(parent).replaceChild(this.getDomElement(object), this.getCommentElement(data));
             this.getDomElement(parent).removeChild(this.getDomElement(object));
-            if(object instanceof TemplateView) object.setTreeElementPath(data.path, null);
+            if (object instanceof TemplateView) object.setTreeElementPath(data.path, null);
 
 
         }
@@ -483,11 +470,11 @@ module ft {
         }
 
         registerDomElementId(id:string, data:IDomDef, root:ITemplateView):void {
-            this.domElementPathIds[id] = {data: data, root:root};
+            this.domElementPathIds[id] = {data: data, root: root};
         }
 
         unregisterDomElementId(id:string):void {
-            if(id) {
+            if (id) {
                 delete this.domElementPathIds[id];
             }
         }
@@ -520,11 +507,11 @@ module ft {
             var previousClassValue:string;
             _.each(vals,
                 (value:any, name:string)=> {
-                    if(!object.classList) return;
+                    if (!object.classList) return;
                     previousClassValue = root.getPathClassValue(data.path, name);
                     previousClassValue && previousClassValue !== value ? object.classList.toggle(previousClassValue, false) : null,
-                    value ? object.classList.toggle(value, true) : null,
-                    root.setPathClassValue(data.path, name, value)
+                        value ? object.classList.toggle(value, true) : null,
+                        root.setPathClassValue(data.path, name, value)
                 }
             );
         }
@@ -557,17 +544,19 @@ module ft {
         }
 
         isTreeObjectIncluded(data:IDomDef, root:ITemplateView):boolean {
-            var states:any = data.params?data.params[TemplateParams.states]:null;
-            if (!states) return true;
-            return !!this.getExpressionValue(states, root);
+            var states:any = data.params ? data.params[TemplateParams.states] : null;
+            var hasDelay:Boolean = this.hasDelay(data, root, 'create');
+
+            if (hasDelay) root.setDelay(data, 'create');
+
+            if (!states && !hasDelay) return true;
+
+            return !hasDelay && !!this.getExpressionValue(states, root);
         }
 
 
         hasChildrenDef(data:IDomDef):boolean {
-            return !!(data.params
-                && data.params[TemplateParams.childrenClass] // has constructor
-                && (data.params[TemplateParams.childrenData] || data.params[TemplateParams.childrenModel]) // has data
-            );
+            return !!(data.params && data.params[TemplateParams.childrenClass]);
         }
 
         hasChildrenView(data:IDomDef, root:ITemplateView) {

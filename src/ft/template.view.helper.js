@@ -42,6 +42,9 @@ var ft;
             }
             return instanceFunctor.bind(t);
         };
+        TemplateViewHelper.prototype.hasDelay = function (data, root, functorName) {
+            return data.params && data.params[functorName + 'Delay'] && root.isDelay(data, functorName);
+        };
         TemplateViewHelper.prototype.createTreeObjectFunctor = function () {
             return this.functorTreeObject(this.createTreeObjectFunc, this.initTreeElement, true, this.addTreeObjectFunc, 'create');
         };
@@ -87,17 +90,13 @@ var ft;
         };
         TemplateViewHelper.prototype.createChildrenViewTreeObjecFunc = function (object, data, root) {
             if (this.hasChildrenDef(data)) {
-                var childrenView = new ft.TemplateViewChildren();
+                var childrenView = new ft.TemplateChildrenView();
                 childrenView.domDef = data;
                 childrenView.parent = root;
-                var childrenData = data.params[ft.TemplateParams.childrenData] ? this.getExpressionValue(data.params[ft.TemplateParams.childrenData], root) : null;
-                var childrenModel = data.params[ft.TemplateParams.childrenModel] ? this.getExpressionValue(data.params[ft.TemplateParams.childrenModel], root) : null;
-                if (childrenModel && _.isArray(childrenModel))
-                    childrenView.model = childrenModel;
-                if (childrenData && _.isArray(childrenData))
-                    childrenView.data = childrenData;
                 childrenView.setElement(this.getDomElement(object));
+                childrenView.setParameters(_.extend({}, data.params, root.getParameters()));
                 childrenView.createDom();
+                childrenView.enter();
                 root.setChildrenViewPath(data.path, childrenView);
             }
         };
@@ -203,6 +202,7 @@ var ft;
         TemplateViewHelper.prototype.triggerDefEvent = function (e) {
             var def = (e.currentDef || e.def);
             var view = (e.currentTarget || e.target);
+            console.log('Trigger def event, ', e.name, ' path ', def.path);
             if (!view.disabled && def.handlers && def.handlers[e.name]) {
                 view.evalHandler(def.handlers[e.name], e);
                 e.executionHandlersCount++;
@@ -223,6 +223,7 @@ var ft;
             }
         };
         TemplateViewHelper.prototype.applyValueToHost = function (value, el, host, root) {
+            var key = host.key;
             switch (host.group) {
                 case 'data':
                     el.textContent = value;
@@ -234,7 +235,6 @@ var ft;
                             return;
                         case 'class':
                             var previousClassValue = root.getPathClassValue(host.path, host.keyProperty);
-                            console.log('Toggle: ', host.path, host.key, el.classList, previousClassValue);
                             previousClassValue && previousClassValue !== value ? el.classList.toggle(previousClassValue, false) : null;
                             value ? el.classList.toggle(value, true) : null;
                             root.setPathClassValue(host.path, host.keyProperty, value);
@@ -254,46 +254,27 @@ var ft;
                     }
                     return;
                 case 'params':
-                    switch (host.key) {
-                        case ft.TemplateParams.setData:
-                            var view = root.getTreeElementByPath(host.path);
-                            if (view)
-                                view.setData(value);
+                    // Default params changed: Data: model, data; states: selected, focused, children, base, custom
+                    if (key.indexOf('.') < 0) {
+                        var view = root.getTreeElementByPath(host.path);
+                        view.applyParameter(value, key, root);
+                    }
+                    else if (key.indexOf('children.')) {
+                        var childrenView = root.getChildrenViewByPath(host.path);
+                        if (!childrenView) {
+                            console.warn('Has no ChildrenView instance and cant set hostValue ', host.path, key);
                             return;
-                        case ft.TemplateParams.setModel:
-                            var view = root.getTreeElementByPath(host.path);
-                            if (view)
-                                view.setModel(value);
-                            return;
-                        case ft.TemplateParams.setStateSelected:
-                            var view = root.getTreeElementByPath(host.path);
-                            if (view)
-                                view.setState('selected', !!value);
-                            return;
-                        case ft.TemplateParams.setStateDisabled:
-                            var view = root.getTreeElementByPath(host.path);
-                            if (view)
-                                view.setState('disabled', !!value);
-                            return;
-                        case ft.TemplateParams.childrenData:
-                            var childrenView = root.getChildrenViewByPath(host.path);
-                            if (childrenView) {
-                                childrenView.data = value;
-                                childrenView.validate();
-                            }
-                            return;
-                        case ft.TemplateParams.childrenSetStateSelected:
-                            var childrenView = root.getChildrenViewByPath(host.path);
-                            if (childrenView) {
-                                setTimeout(function () { return childrenView.checkSelected(); });
-                            }
-                            return;
-                        case ft.TemplateParams.childrenSetStateDisabled:
-                            var childrenView = root.getChildrenViewByPath(host.path);
-                            if (childrenView) {
-                                setTimeout(function () { return childrenView.checkDisabled(); });
-                            }
-                            return;
+                        }
+                        if (key === 'children.data') {
+                            childrenView.data = childrenView;
+                            validate();
+                        }
+                        else {
+                            childrenView.applyChildrenParameter(value, key, root);
+                        }
+                    }
+                    else {
+                        console.warn('Not supported host parameter at applyToHost ', key, value);
                     }
                     return;
             }
@@ -347,15 +328,17 @@ var ft;
             if (previousObject && previousObject !== object) {
                 parentElement.replaceChild(objectElement, previousElement);
                 if (object instanceof ft.TemplateView) {
-                    object.enter();
-                    object.validate();
+                    setTimeout(function () {
+                        object.enter();
+                        object.validate();
+                    }, 0);
                 }
                 else {
                     this.setDataTreeObjectFunc(object, data, root);
                 }
             }
             else {
-                console.log('Append child. ', data.path, objectElement.parentNode, objectElement);
+                //console.log('Append child. ', data.path, objectElement.parentNode, objectElement);
                 parentElement.appendChild(objectElement);
             }
             if (previousObject && !this.isCommentElement(previousObject)) {
@@ -450,15 +433,15 @@ var ft;
         };
         TemplateViewHelper.prototype.isTreeObjectIncluded = function (data, root) {
             var states = data.params ? data.params[ft.TemplateParams.states] : null;
-            if (!states)
+            var hasDelay = this.hasDelay(data, root, 'create');
+            if (hasDelay)
+                root.setDelay(data, 'create');
+            if (!states && !hasDelay)
                 return true;
-            return !!this.getExpressionValue(states, root);
+            return !hasDelay && !!this.getExpressionValue(states, root);
         };
         TemplateViewHelper.prototype.hasChildrenDef = function (data) {
-            return !!(data.params
-                && data.params[ft.TemplateParams.childrenClass] // has constructor
-                && (data.params[ft.TemplateParams.childrenData] || data.params[ft.TemplateParams.childrenModel]) // has data
-            );
+            return !!(data.params && data.params[ft.TemplateParams.childrenClass]);
         };
         TemplateViewHelper.prototype.hasChildrenView = function (data, root) {
             return !!root.getChildrenViewByPath(data.path);

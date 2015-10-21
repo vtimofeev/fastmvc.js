@@ -26,9 +26,9 @@ module ft {
             return { name: value.name }
         }
         
-        public execute(value:IExpressionName, map:IExpressionMap, context:ITemplateView, classes?:boolean):any {
-            var expression = <IExpression> map[value.name];
-            return this.executeMultiExpression(expression, context, classes);
+        public execute(value:IExpression, /*map:IExpressionMap,*/ context:ITemplateView, classes?:boolean):any {
+            //console.log('Expression execute ... ', value, context, classes);
+            return this.executeMultiExpression(value, context, classes);
         }
 
         //----------------------------------------------------------------------------------------------------------------------------------------

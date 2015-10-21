@@ -14,6 +14,7 @@
             box-sizing: border-box;
             display: inline-block;
             min-width: 80px;
+            max-width: 100%;
             height: 24px;
             line-height: 24px;
             width: 100px;
@@ -24,6 +25,8 @@
             font-family: sans-serif;
             padding-left: 12px;
             padding-right: 12px;
+
+            transition: opacity 1s, background-color .5s;
         }
 
         .button-hover {
@@ -39,6 +42,14 @@
             cursor: default !important;
             background-color: #efefef;
             border: 1px solid red !important;
+        }
+
+        .button-create {
+        }
+        
+        .button-enter {
+            opacity: 0;
+            transition: none !important;
         }
 
         .buttonGroup {

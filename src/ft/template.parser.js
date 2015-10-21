@@ -54,7 +54,6 @@ var ft;
                 }
             }, this);
             this.removeEmptyKeys(result);
-            console.log('Get states 2 by map', result, result.hasStates, this.getStatesByMap(result.expressionMap));
             return result;
         };
         TemplateParser.prototype.htmlObjectToDomTree = function (o, r, path) {
@@ -83,14 +82,22 @@ var ft;
             return def;
         };
         TemplateParser.prototype.getGroupKey = function (key, group) {
-            return group === 'handlers' ? (key.replace(/^on/, '')).toLowerCase() : key;
+            if (group === 'handlers')
+                return (key.replace(/^on/, '')).toLowerCase();
+            else if (group === 'params')
+                return (key.replace(/^\./, ''));
+            else
+                return key;
         };
         TemplateParser.prototype.getAttribGroup = function (name) {
             if (name.indexOf('on') === 0) {
                 return 'handlers';
             }
             else {
-                return (this._componentParams.indexOf(name) > -1) ? 'params' : 'attribs';
+                return (name.indexOf('.') === 0
+                    || name.indexOf('children.') === 0 || name.indexOf('c.') === 0
+                    || this._componentParams.indexOf(name) > -1)
+                    ? 'params' : 'attribs';
             }
         };
         // Проверяем данное выражение конвертируется в объект класса или стиля (набор свойств: выражений)
