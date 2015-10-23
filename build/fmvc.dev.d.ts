@@ -250,6 +250,12 @@ declare module fmvc {
         domHandler(e: any): void;
         createDom(): void;
         enter(): void;
+        beforeEnter(): void;
+        afterEnter(): void;
+        beforeCreate(): void;
+        afterCreate(): void;
+        beforeExit(): void;
+        afterExit(): void;
         exit(): void;
         isWaitingForValidate: boolean;
         invalidate(value: number): void;
@@ -286,6 +292,12 @@ declare module fmvc {
         domHandler(e: any): void;
         getElement(): HTMLElement;
         setElement(value: HTMLElement): void;
+        beforeCreate(): void;
+        afterCreate(): void;
+        beforeEnter(): void;
+        afterEnter(): void;
+        beforeExit(): void;
+        afterExit(): void;
         getState(name: string): any;
         setState(name: string, value: any): void;
         setStates(value: any): IView;

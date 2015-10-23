@@ -9,7 +9,11 @@ module ft {
     export class TemplateParser implements ITemplateParser {
         private _htmlparserHandler:any;
         private _htmlParser:any;
+
+
+
         private _skipProperties:string[] = ['raw'];
+        private _svgTagNames:string[] = ('circle clipPath defs ellipse g line linearGradient mask path pattern polygon polyline radialGradient rect stop svg text tspan').split(' ');
         private _componentParams:string[] = _.values(TemplateParams);
         private _propAttribs:{[name:string]:any} = {
             style: {
@@ -77,7 +81,7 @@ module ft {
             var skipped:string[] = ['extend'];
 
             var def = <IDomDef> {type: null, path: null, name: null, attribs: {}, params: {}, handlers: {}};
-            def.type = (o.type === 'cdata'?'text':o.type); // @todo move cdata to tree creator
+            def.type = this.fixParserTypes(o.type, o.name); // @todo move cdata to tree creator
             def.name = o.name;
             def.path = path;
             def.parentPath = path.indexOf(',') > 0 ? path.substring(0,path.lastIndexOf(',')):null;
@@ -98,6 +102,15 @@ module ft {
 
             r.pathMap[path] = def;
             return def;
+        }
+
+        fixParserTypes (type: string, name:string):string {
+            if (type === 'cdata') {
+                return 'text';
+            } else if (type === 'tag' && this._svgTagNames.indexOf(name)) {
+                return 'svg';
+            }
+            return type;
         }
 
         getGroupKey(key:string, group:string):string {

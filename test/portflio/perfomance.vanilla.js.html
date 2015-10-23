@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        #container {
+        }
+
+        p {
+            display: inline-block;
+            width: 30px;
+            line-height: 12px;
+            height: 12px;
+            font-size: 12px;
+            -webkit-margin-after: 0 !important;
+            -webkit-margin-before: 0 !important;
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+
+<script>
+    var countElements = 10000;
+    var updateInterval = 50;
+
+    var resultHtml = '';
+    var elementMap = [];
+    var textMap = [];
+    var counter = {one: 0, two: 0};
+
+    function getRnd() {
+        return Math.round(counter.two/1000);
+    }
+
+    for(var i = 0; i < countElements; i++) {
+        resultHtml = resultHtml + '<p id="p' + i + '">' + getRnd() + '</p>';
+    }
+
+
+    function update() {
+        for (var i = 0; i < countElements; i++) {
+            var textNode = textMap[i];
+            if(textNode) {
+                counter.two++;
+                textNode.textContent = textNode.textContent === '.'?'..':'.' ;//getRnd();
+            } else {
+                counter.one++;
+                var element = (elementMap[i] = document.getElementById('p' + i));
+                textNode = (textMap[i] = element.childNodes[0]);
+                textNode.textContent = getRnd();
+            }
+        }
+        console.log('Update ', counter)
+    }
+
+    var container = document.getElementById('container');
+    container.innerHTML = resultHtml;
+
+    setInterval(update, updateInterval);
+    setInterval(function() { console.log('Second'); }, 1000);
+
+</script>
+
+
+</body>
+</html>

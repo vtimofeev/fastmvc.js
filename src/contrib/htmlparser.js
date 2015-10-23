@@ -48,6 +48,7 @@ var Mode = {
     Text: 'text',
     Tag: 'tag',
     Attr: 'attr',
+    Svg: 'svg',
     CData: 'cdata',
     Doctype: 'doctype',
     Comment: 'comment'
@@ -69,6 +70,7 @@ if (typeof(module) !== 'undefined' && typeof(module.exports) !== 'undefined') {
 
     var Stream = require('stream');
     inherits(Parser, Stream);
+
 
     Parser.prototype.writable = true;
     Parser.prototype.write = function(data) {
@@ -294,6 +296,7 @@ if (typeof(module) !== 'undefined' && typeof(module.exports) !== 'undefined') {
             state.needData = true;
         }
     };
+
 
     Parser.re_parseAttr_findName = /\s*([^=<>\s'"\/]+)\s*/g;
     Parser.prototype._parseAttr_findName = function Parser$_parseAttr_findName () {

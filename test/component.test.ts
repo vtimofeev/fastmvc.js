@@ -55,12 +55,34 @@ describe('ft - component package ', function () {
             content:'<div .base="progress" .value="0" class="{state.base}"><div class="{state.base}-bg" style="width:{(state.value*100)}%"></div></div>',
         },
         "ft.Component": {
-            content: '<div>' +
-            '<h1>First component</h1>' +
-            '<ft.Button onclick="toggleGroup" .createDelay="1000">Toggle group</ft.Button>' +
-            '<ft.Button onclick="toggleGroup" .createDelay="2000">Toggle group</ft.Button>' +
+            content: '<div .base="COMPONENT">' +
+            '<h1>First component, global mouse {data.mouseX} {data.mouseY} </h1>' +
+            '<h2>First component, global mouse {data.mouseX} {data.mouseY} </h2>' +
+            '<h3>First component, global mouse {data.mouseX} {data.mouseY} </h3>' +
+            '<h4>First component, global mouse {data.mouseX} {data.mouseY} </h4>' +
+            '<h1>First component, global mouse {data.mouseX} {data.mouseY} </h1>' +
+            '<h2>First component, global mouse {data.mouseX} {data.mouseY} </h2>' +
+            '<h3>First component, global mouse {data.mouseX} {data.mouseY} </h3>' +
+            '<h4>First component, global mouse {data.mouseX} {data.mouseY} </h4>' +
+            '<h1>First component, global mouse {data.mouseX} {data.mouseY} </h1>' +
+            '<h2>First component, global mouse {data.mouseX} {data.mouseY} </h2>' +
+            '<h3>First component, global mouse {data.mouseX} {data.mouseY} </h3>' +
+            '<h4>First component, global mouse {data.mouseX} {data.mouseY} </h4>' +
+            '<h1>First component, global mouse {data.mouseX} {data.mouseY} </h1>' +
+            '<h2>First component, global mouse {data.mouseX} {data.mouseY} </h2>' +
+            '<h3>First component, global mouse {data.mouseX} {data.mouseY} </h3>' +
+            '<h4>First component, global mouse {data.mouseX} {data.mouseY} </h4>' +
+            '<h1>First component, global mouse {data.mouseX} {data.mouseY} </h1>' +
+            '<h2>First component, global mouse {data.mouseX} {data.mouseY} </h2>' +
+            '<h3>First component, global mouse {data.mouseX} {data.mouseY} </h3>' +
+            '<h4>First component, global mouse {data.mouseX} {data.mouseY} </h4>' +
+
+            '<ft.Button onclick="toggleGroup" .data="{app.scope.d.reset}" .createDelay="1000">Toggle group</ft.Button>' +
+            '<ft.Button onclick="toggleGroup" .data="{app.scope.d.reset}" .createDelay="2000">Toggle group' +
+                '<div>Ola<ft.Button .data="{data.reset}" .createDelay="4000" onclick="{alert(1)}"></ft.Button></div>' +
+            '</ft.Button>' +
             '<ft.Button onclick="toggleGroup" .createDelay="3000">Toggle group</ft.Button>' +
-            '<div>ahaha</div>' +
+            '<div>ahaha {data.children.length} {data.reset.title}</div>' +
             '<div .data="{data.children}"' +
             ' children.selected="{(child.model!==app.scope.d.selectedItem)}" ' +
             ' children.class="ft.Button" children.onclick="selectItem2" children.disabled="{data.childrenDisabled}"></div>' +
@@ -138,26 +160,26 @@ describe('ft - component package ', function () {
     var tm:ft.ITemplateManager = ft.templateManager;
     var app = new fmvc.Facade('testapp', null, document.body);
     var model = new fmvc.Model<IAppData>('scope');
-    model.data = {selected: null, childrenDisabled: false, children: null, reset: buttonReset };
+    model.data = {selected: null, childrenDisabled: false, children: null, reset: buttonReset, mouseX:0, mouseY:0 };
 
     var mediator = new fmvc.Mediator('appmed', document.body);
     app.register(model, mediator);
 
     model.changes = {children: _.map(
-        _.range(5),
+        _.range(200),
         (v)=>{return new fmvc.Model('data-' + v, {title:  Math.round(Math.random()*100), action: Math.random()});}
     )};
 
     setInterval(function() {
         _.each(model.data.children, (m,v)=>{
             try {
-                //model.data.children[v].data = {title:  Math.round(Math.random() * 100), action: Math.random()}
+                model.data.children[v].data = {title:  Math.round(Math.random() * 100), action: Math.random()}
             }
             catch(e) {
                 console.log(v);
             }
         });
-    }, 1e10);
+    }, 500);
 
     model.changes = {selectedItem: model.data.children[2]};
     console.log('---Setdata ', model.d.selectedItem);
@@ -176,6 +198,16 @@ describe('ft - component package ', function () {
                     //container.innerHTML = '';
                     instance = window[key]('view-' + key, params);
                     instance.setModel(model);
+                    instance.logMouseMove = function (e) {
+                        instance.model.changes = { mouseX : e.clientX , mouseY : e.clientY };
+                        //instance.model.mouseY = e.clientY;
+                        //instance.invalidateData();
+                    };
+                    instance.afterEnter = function() {
+                        console.log('After enter', this.name);
+                        this.globalEmitter.on('mousemove', this.logMouseMove, this);
+                    };
+
                     //model.changes = { children: buttonsDs };
                     //model.bind(instance, instance.invalidateApp);
                     mediator.addView(instance);

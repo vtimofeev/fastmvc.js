@@ -54,13 +54,18 @@ var ft;
             //console.log('Exec multi expression, simple', isSimpleExpression);
             return isSimpleExpression ?
                 this.executeExpression(ex, context, classes) :
-                _.reduce(ex.expressions, function (memo, value, index) { return (memo ? memo = memo.replace('{$' + index + '}', (contextValue = _this.getParsedContextValue(value, context, classes))) : null,
-                    (contextValue ? memo : '') /* return special if classes */); }, ex.result, this);
+                _.reduce(ex.expressions, function (memo, value, index) {
+                    contextValue = _this.getParsedContextValue(value, context, classes);
+                    memo = memo ? memo.replace('{$' + index + '}', contextValue) : '{error multiexpression}';
+                    return memo;
+                    /* return special if classes */
+                }, ex.result, this);
         };
         Expression.prototype.getParsedContextValue = function (value, context, classes) {
             return this.parseContextValue(this.getContextValue(value, context), value, classes);
         };
         Expression.prototype.parseContextValue = function (value, ex, classes) {
+            var exStr;
             if (classes && _.isBoolean(value) && (exStr = this.ifString(ex)) && exStr[0] != '(' && exStr.indexOf('.') > 0) {
                 var values = exStr.split('.');
                 var varName = (values.length === 2) ? values[1] : null;
@@ -76,9 +81,16 @@ var ft;
             var r;
             if (r = context.getDynamicProperty(v))
                 return r;
+            //console.log('Execute ', v, context);
             if (typeof v === 'string') {
                 ft.counters.expressionCtx++;
-                if (v.indexOf(GetContext.dataField) === 0 || v.indexOf(GetContext.appField) === 0) {
+                if (v === GetContext.data) {
+                    r = context.data;
+                    if (r === undefined)
+                        r = null;
+                    context.setDynamicProperty(v, r);
+                }
+                else if (v.indexOf(GetContext.dataField) === 0 || v.indexOf(GetContext.appField) === 0) {
                     if (!this.funcMap[v]) {
                         this.funcMap[v] = new Function('var v=null; try {v=this.' + v + ';} catch(e) {v=\'{' + v + '}\';} return v;');
                     }
@@ -101,12 +113,6 @@ var ft;
                         this.funcMap[v] = new Function('var v=null; try {v=' + v + ';} catch(e) {v=\'{' + v + '}\';} return v;');
                     }
                     r = this.funcMap[v].apply(context);
-                }
-                else if (v === GetContext.data) {
-                    r = context.data;
-                    if (r === undefined)
-                        r = null;
-                    context.setDynamicProperty(v, r);
                 }
                 if (r !== undefined)
                     return r;
@@ -155,7 +161,9 @@ var ft;
             }, value, this);
             var simplyfiedExpressions = _.map(expressions, this.simplifyExpression, this);
             _.each(expressions, function (v) { return expressionVars = expressionVars.concat(v.vars); });
-            return { name: this.getName(), content: value, result: result, vars: expressionVars, expressions: simplyfiedExpressions };
+            var r = { name: this.getName(), content: value, result: result, vars: expressionVars, expressions: simplyfiedExpressions };
+            //console.log('Expression ', r.name, ' result ', r);
+            return r;
         };
         Expression.prototype.simplifyExpression = function (expression) {
             var ex = this.ifExpression(expression);

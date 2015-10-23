@@ -7,6 +7,7 @@ var ft;
     var TemplateParser = (function () {
         function TemplateParser() {
             this._skipProperties = ['raw'];
+            this._svgTagNames = ('circle clipPath defs ellipse g line linearGradient mask path pattern polygon polyline radialGradient rect stop svg text tspan').split(' ');
             this._componentParams = _.values(ft.TemplateParams);
             this._propAttribs = {
                 style: {
@@ -62,7 +63,7 @@ var ft;
             (o.attributes ? o.attribs = o.attributes : null);
             var skipped = ['extend'];
             var def = { type: null, path: null, name: null, attribs: {}, params: {}, handlers: {} };
-            def.type = (o.type === 'cdata' ? 'text' : o.type); // @todo move cdata to tree creator
+            def.type = this.fixParserTypes(o.type, o.name); // @todo move cdata to tree creator
             def.name = o.name;
             def.path = path;
             def.parentPath = path.indexOf(',') > 0 ? path.substring(0, path.lastIndexOf(',')) : null;
@@ -80,6 +81,15 @@ var ft;
             _.each(_.keys(def), function (key) { return (_.isEmpty(def[key]) ? delete def[key] : null); });
             r.pathMap[path] = def;
             return def;
+        };
+        TemplateParser.prototype.fixParserTypes = function (type, name) {
+            if (type === 'cdata') {
+                return 'text';
+            }
+            else if (type === 'tag' && this._svgTagNames.indexOf(name)) {
+                return 'svg';
+            }
+            return type;
         };
         TemplateParser.prototype.getGroupKey = function (key, group) {
             if (group === 'handlers')

@@ -20,9 +20,9 @@ var fmvc;
     };
     fmvc.frameExecution = 0;
     var nextFrameHandlers = [];
-    var maxFrameCount = 250;
+    var maxFrameCount = 1000;
     var waiting = false;
-    var frameStep = 2;
+    var frameStep = 1;
     function requestFrameHandler() {
         if (waiting)
             return;
@@ -40,7 +40,7 @@ var fmvc;
     }
     fmvc.nextFrameHandler = nextFrameHandler;
     function executeNextFrameHandlers(time) {
-        if (++fmvc.frameExecution % frameStep) {
+        if (++fmvc.frameExecution % frameStep === 0) {
             var executedHandlers = nextFrameHandlers.splice(0, maxFrameCount);
             _.each(executedHandlers, function (v, k) { return v(); });
         }
@@ -178,6 +178,18 @@ var fmvc;
             this._inDocument = true;
             //this.invalidate(InvalidateType.Data | InvalidateType.Children);
         };
+        View.prototype.beforeEnter = function () {
+        };
+        View.prototype.afterEnter = function () {
+        };
+        View.prototype.beforeCreate = function () {
+        };
+        View.prototype.afterCreate = function () {
+        };
+        View.prototype.beforeExit = function () {
+        };
+        View.prototype.afterExit = function () {
+        };
         View.prototype.exit = function () {
             this._states = {};
             this._inDocument = false;
@@ -193,6 +205,7 @@ var fmvc;
             this._invalidate = this._invalidate | value;
             if (!this._isWaitingForValidate) {
                 this._isWaitingForValidate = true;
+                //console.log('Invalidate... ', this.name);
                 nextFrameHandler(this.validate, this);
             }
         };
@@ -238,8 +251,9 @@ var fmvc;
             if (this._inDocument)
                 throw 'Cant render view, it is in document';
             this.createDom();
-            element.appendChild(this.getElement());
             this.enter();
+            element.appendChild(this.getElement());
+            this.afterEnter();
             return this;
         };
         View.prototype.unrender = function () {

@@ -14,9 +14,9 @@ module fmvc {
 
     export var frameExecution:number = 0;
     var nextFrameHandlers:Function[] = [];
-    var maxFrameCount:number = 250;
+    var maxFrameCount:number = 1000;
     var waiting:boolean = false;
-    var frameStep:number = 2;
+    var frameStep:number = 1;
 
     function requestFrameHandler() {
         if(waiting) return;
@@ -32,7 +32,7 @@ module fmvc {
 
 
     function executeNextFrameHandlers(time:number):void {
-        if(++frameExecution%frameStep) {
+        if(++frameExecution%frameStep===0) {
             var executedHandlers = nextFrameHandlers.splice(0, maxFrameCount);
             _.each(executedHandlers, (v:Function, k:number)=>v());
         }
@@ -173,6 +173,26 @@ module fmvc {
             //this.invalidate(InvalidateType.Data | InvalidateType.Children);
         }
 
+        public beforeEnter() {
+        }
+
+        public afterEnter() {
+        }
+
+        public beforeCreate() {
+        }
+
+        public afterCreate() {
+        }
+
+        public beforeExit() {
+        }
+
+        public afterExit() {
+        }
+
+
+
         public exit():void {
             this._states = {};
             this._inDocument = false;
@@ -186,6 +206,7 @@ module fmvc {
             this._invalidate = this._invalidate | value;
             if(!this._isWaitingForValidate) {
                 this._isWaitingForValidate = true;
+                //console.log('Invalidate... ', this.name);
                 nextFrameHandler(this.validate, this);
             }
         }
@@ -198,7 +219,6 @@ module fmvc {
         public invalidateApp():void {
             this.invalidate(InvalidateType.App);
         }
-
 
         public validate():void {
             if(!this.inDocument) return;
@@ -229,8 +249,9 @@ module fmvc {
         public render(element:Element):IView {
             if(this._inDocument) throw 'Cant render view, it is in document';
             this.createDom();
-            element.appendChild(this.getElement());
             this.enter();
+            element.appendChild(this.getElement());
+            this.afterEnter();
             return this;
         }
 
@@ -277,6 +298,15 @@ module fmvc {
 
         getElement():HTMLElement;
         setElement(value:HTMLElement):void;
+        
+        // overrides start
+        beforeCreate():void;
+        afterCreate():void;
+        beforeEnter():void;
+        afterEnter():void;
+        beforeExit():void;
+        afterExit():void;
+        // overrides end
 
         getState(name:string):any;
         setState(name:string, value:any):void;

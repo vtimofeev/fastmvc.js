@@ -37,7 +37,7 @@ module fmvc {
 
         public getView(name:string):IView
         {
-            return _.find<IView>(this.views,(view:IView) => view.name === name);
+            return _.find<IView>(this.views,(view:View) => view.name === name);
         }
 
         public removeView(name:string):Mediator {

@@ -118,6 +118,7 @@ module ft {
 
     export interface IExpressionName {
         name:string;
+        context?:ITemplateView;
     }
 
     export interface ISimpleExpression {

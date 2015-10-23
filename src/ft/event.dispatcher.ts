@@ -1,4 +1,5 @@
 ///<reference path='./d.ts'/>
+declare var EventEmitter:any;
 
 module ft {
     export var BrowserEvent = {
@@ -9,7 +10,8 @@ module ft {
         MOUSEOUT: 'mouseout',
         MOUSEDOWN: 'mousedown',
         MOUSEUP: 'mouseup',
-        CHANGE: 'change'
+        CHANGE: 'change',
+        MOUSEMOVE: 'mousemove'
     };
 
     export var SpecialEvent = {
@@ -21,14 +23,22 @@ module ft {
         DRAG: 'drag' // start,end,move
     };
 
+    export interface IEventEmitter3 {
+        on(event, handler, context):void;
+        once(event, handler, context):void;
+        off(event, handler, context):void;
+        emit(event, ...args:any[]):any;
+    }
+
     export var browserElementEvents:string[] = [BrowserEvent.MOUSEOUT, BrowserEvent.MOUSEOVER, BrowserEvent.CLICK];
-    export var browserWindowEvents:string[] = [ BrowserEvent.KEYDOWN, BrowserEvent.KEYUP];
+    export var browserWindowEvents:string[] = [ BrowserEvent.KEYDOWN, BrowserEvent.KEYUP,  BrowserEvent.MOUSEMOVE];
     export var specialEvents:string[] = [SpecialEvent.ACTION];
 
 
     export class EventDispatcher  {
         private eventMap:{[event:string]:boolean} = {};
         private viewHelper:TemplateViewHelper;
+        public global:IEventEmitter3 = new EventEmitter();
 
         constructor(viewHelper:TemplateViewHelper) {
             this.viewHelper = viewHelper;
@@ -37,7 +47,9 @@ module ft {
         }
 
         public browserHandler(e:any):void {
+            this.global.emit(e.type, e);
             var el:HTMLElement = e.target || e.currentTarget;
+
 
             var pathId:string = el.getAttribute(AttributePathId);
             var pathDefinition = this.viewHelper.getPathDefinitionByPathId(pathId);
@@ -48,6 +60,9 @@ module ft {
                 this.viewHelper.dispatchTreeEventDown(event);
             }
         }
+
+
+
 
         private getTreeEventByBrowserEvent(name:string, def:IDomDef, view:ITemplateView, e:any):ITreeEvent {
             return {name: name, target:view, def: def, e: e, cancelled:false, prevented:false, depth: 1e2, executionHandlersCount: 0};
@@ -60,6 +75,7 @@ module ft {
         public disposeEvent(e:ITreeEvent):void {
             return; e.target = e.previousTarget = e.currentTarget = e.e = null;
         }
+
 
 
         public on(type:string):void {

@@ -9,7 +9,8 @@ var ft;
         MOUSEOUT: 'mouseout',
         MOUSEDOWN: 'mousedown',
         MOUSEUP: 'mouseup',
-        CHANGE: 'change'
+        CHANGE: 'change',
+        MOUSEMOVE: 'mousemove'
     };
     ft.SpecialEvent = {
         ACTION: 'action',
@@ -20,16 +21,18 @@ var ft;
         DRAG: 'drag' // start,end,move
     };
     ft.browserElementEvents = [ft.BrowserEvent.MOUSEOUT, ft.BrowserEvent.MOUSEOVER, ft.BrowserEvent.CLICK];
-    ft.browserWindowEvents = [ft.BrowserEvent.KEYDOWN, ft.BrowserEvent.KEYUP];
+    ft.browserWindowEvents = [ft.BrowserEvent.KEYDOWN, ft.BrowserEvent.KEYUP, ft.BrowserEvent.MOUSEMOVE];
     ft.specialEvents = [ft.SpecialEvent.ACTION];
     var EventDispatcher = (function () {
         function EventDispatcher(viewHelper) {
             this.eventMap = {};
+            this.global = new EventEmitter();
             this.viewHelper = viewHelper;
             _.bindAll(this, 'browserHandler');
             _.each(_.values(ft.BrowserEvent), this.on, this);
         }
         EventDispatcher.prototype.browserHandler = function (e) {
+            this.global.emit(e.type, e);
             var el = e.target || e.currentTarget;
             var pathId = el.getAttribute(ft.AttributePathId);
             var pathDefinition = this.viewHelper.getPathDefinitionByPathId(pathId);
