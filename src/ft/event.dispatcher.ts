@@ -11,7 +11,8 @@ module ft {
         MOUSEDOWN: 'mousedown',
         MOUSEUP: 'mouseup',
         CHANGE: 'change',
-        MOUSEMOVE: 'mousemove'
+        MOUSEMOVE: 'mousemove',
+        SCROLL: 'scroll'
     };
 
     export var SpecialEvent = {
@@ -31,14 +32,14 @@ module ft {
     }
 
     export var browserElementEvents:string[] = [BrowserEvent.MOUSEOUT, BrowserEvent.MOUSEOVER, BrowserEvent.CLICK];
-    export var browserWindowEvents:string[] = [ BrowserEvent.KEYDOWN, BrowserEvent.KEYUP,  BrowserEvent.MOUSEMOVE];
+    export var browserWindowEvents:string[] = [ BrowserEvent.KEYDOWN, BrowserEvent.KEYUP,  BrowserEvent.MOUSEMOVE, BrowserEvent.SCROLL];
     export var specialEvents:string[] = [SpecialEvent.ACTION];
 
 
     export class EventDispatcher  {
         private eventMap:{[event:string]:boolean} = {};
         private viewHelper:TemplateViewHelper;
-        public global:IEventEmitter3 = new EventEmitter();
+        public global:IEventEmitter3 = <IEventEmitter3> new EventEmitter();
 
         constructor(viewHelper:TemplateViewHelper) {
             this.viewHelper = viewHelper;
@@ -69,7 +70,7 @@ module ft {
         }
 
         public getCustomTreeEvent(name:string, data:any, view:ITemplateView, depth:number = 1):ITreeEvent {
-            return {name: name, target:view, previousTarget: null, currentTarget:view, data:data, cancelled:false, prevented:false, depth: depth, executionHandlersCount: 0};
+            return {name: name, target:view, def: view.domDef, previousTarget: null, currentTarget:view, data:data, cancelled:false, prevented:false, depth: depth, executionHandlersCount: 0};
         }
 
         public disposeEvent(e:ITreeEvent):void {

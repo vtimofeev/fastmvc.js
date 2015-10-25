@@ -10,7 +10,8 @@ var ft;
         MOUSEDOWN: 'mousedown',
         MOUSEUP: 'mouseup',
         CHANGE: 'change',
-        MOUSEMOVE: 'mousemove'
+        MOUSEMOVE: 'mousemove',
+        SCROLL: 'scroll'
     };
     ft.SpecialEvent = {
         ACTION: 'action',
@@ -21,7 +22,7 @@ var ft;
         DRAG: 'drag' // start,end,move
     };
     ft.browserElementEvents = [ft.BrowserEvent.MOUSEOUT, ft.BrowserEvent.MOUSEOVER, ft.BrowserEvent.CLICK];
-    ft.browserWindowEvents = [ft.BrowserEvent.KEYDOWN, ft.BrowserEvent.KEYUP, ft.BrowserEvent.MOUSEMOVE];
+    ft.browserWindowEvents = [ft.BrowserEvent.KEYDOWN, ft.BrowserEvent.KEYUP, ft.BrowserEvent.MOUSEMOVE, ft.BrowserEvent.SCROLL];
     ft.specialEvents = [ft.SpecialEvent.ACTION];
     var EventDispatcher = (function () {
         function EventDispatcher(viewHelper) {
@@ -47,7 +48,7 @@ var ft;
         };
         EventDispatcher.prototype.getCustomTreeEvent = function (name, data, view, depth) {
             if (depth === void 0) { depth = 1; }
-            return { name: name, target: view, previousTarget: null, currentTarget: view, data: data, cancelled: false, prevented: false, depth: depth, executionHandlersCount: 0 };
+            return { name: name, target: view, def: view.domDef, previousTarget: null, currentTarget: view, data: data, cancelled: false, prevented: false, depth: depth, executionHandlersCount: 0 };
         };
         EventDispatcher.prototype.disposeEvent = function (e) {
             return;

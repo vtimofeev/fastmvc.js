@@ -5,13 +5,29 @@
     <title>Browser ft components test</title>
     <link rel="stylesheet" href="../../node_modules/mocha/mocha.css" />
     <style>
-        p {
+
+        .container {
+            margin: -10px;
+            display: inline-block;
+            padding: 10px;
+            overflow: hidden;
+        }
+        .block {
+            cursor: pointer;
+            box-sizing: border-box;
             display: inline-block;
             width: 40px;
             line-height: 24px;
             height: 24px;
             font-size: 12px;
+            margin: 0;
             background-color: cornflowerblue;
+            /*transition: all .3s;
+            border: 1px solid mediumblue;*/
+        }
+        .block-hover {
+            background-color: cadetblue;
+            /*transform: perspective( 50px ) rotateY(89deg);*/
         }
 </style>
 </head>
