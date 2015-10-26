@@ -589,6 +589,11 @@ module ft {
             if(this.parent) this.parent.internalHandler(type, e);
         }
 
+        protected globalHandler(events:string|string[], handler:Function) {
+            _.each(_.isArray(events)?events:[events], (v)=>this.globalEmitter.on(events, handler);
+
+        }
+
         ////////////////////////////////////////////////////////////////
         // Expressions
         ////////////////////////////////////////////////////////////////

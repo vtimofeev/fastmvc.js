@@ -65,7 +65,7 @@ module fmvc {
             return this.getData();
         }
         public set data(value:T) {
-            this.setData(value);
+            this.reset().setData(value);
         }
         public getData():T {
             return this._data;

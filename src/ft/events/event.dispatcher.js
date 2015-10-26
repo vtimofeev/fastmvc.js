@@ -1,4 +1,4 @@
-///<reference path='./d.ts'/>
+///<reference path='./../d.ts'/>
 var ft;
 (function (ft) {
     ft.BrowserEvent = {

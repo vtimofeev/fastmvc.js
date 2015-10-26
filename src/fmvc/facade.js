@@ -20,7 +20,23 @@ var fmvc;
             this.register(new fmvc.Logger(fmvc.FacadeModel.Log)); // создание модели логгера, записываем модель в фасад (для глобального доступа и обработки событий из модели)
             this.init();
         }
+        Object.defineProperty(Facade.prototype, "mode", {
+            /*
+                Mode - тип работы приложения, 0 - дебаг, 1 - продакшн
+             */
+            get: function () {
+                return this._mode;
+            },
+            set: function (value) {
+                this._mode = value;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Object.defineProperty(Facade.prototype, "root", {
+            /*
+                
+             */
             get: function () {
                 return this._root;
             },

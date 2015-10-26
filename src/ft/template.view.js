@@ -554,6 +554,10 @@ var ft;
             if (this.parent)
                 this.parent.internalHandler(type, e);
         };
+        TemplateView.prototype.globalHandler = function (events, handler) {
+            var _this = this;
+            _.each(_.isArray(events) ? events : [events], function (v) { return _this.globalEmitter.on(events, handler); });
+        };
         ////////////////////////////////////////////////////////////////
         // Expressions
         ////////////////////////////////////////////////////////////////

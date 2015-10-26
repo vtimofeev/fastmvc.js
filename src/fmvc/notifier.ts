@@ -22,8 +22,8 @@ module fmvc
                 this.registerHandler();
             }
             else {
-                this.unbind(this._facade);
                 this.removeHandler();
+                this.unbind(this._facade);
                 this._facade = value;
             }
         }
@@ -59,20 +59,33 @@ module fmvc
             return this;
         }
 
+        public bind(object:any, handler:any):Notifier
+        {
+            this.addListener(object, handler);
+            return this;
+        }
+
+        public unbind(object:any, handler?:any):Notifier
+        {
+            this.removeListener(object, handler);
+            return this;
+        }
+
         // Послаем сообщение сначала в фасад, потом частным слушателям (для моделей)
         public sendEvent(name:string, data:any = null, changes:any = null, sub:string = null, error:any = null):void
         {
-            //this.log('SendEvent: ' + name);
             if(this._disposed) throw Error('Model ' + this.name + ' is disposed and cant send event');
+            if(!this._listeners) return;
+
+            // facade, mediators, other is optional
             var e:IEvent = {name: name, sub:sub, data: data, changes:changes, error: error, target: this};
-            if(this._listeners) this._sendToListners(e);
-            if(this._facade) this._facade.eventHandler(e);
+            this.sendToListeners(e);
         }
 
-        public log(...messages:string[]):Notifier
+        public log(...args:string[]):Notifier
         {
-            if(this.facade) this.facade.logger.add(this.name, messages);
-            else console.log(this.name, messages);
+            if(this.facade) this.facade.logger.add(this.name, args);
+            else console.log(this.name, args);
             return this;
         }
 
@@ -84,33 +97,23 @@ module fmvc
         {
         }
 
-        public bind(object:any, handler?:any):Notifier
-        {
-            this.addListener(object, handler);
-            return this;
-        }
-
-        public unbind(object:any):Notifier
-        {
-            this.removeListener(object);
-            return this;
-        }
-
         private addListener(object:INotifier, handler:Function):void
         {
             if(!this._listeners) this._listeners = [];
-            var hasListener = _.filter(this._listeners, (v)=>v.target===object);
-            if(_.isEmpty(hasListener)) {
+            var hasListener = _.filter(this._listeners, (v)=>(v.target===object&&v.handler===handler));
+            if(!hasListener || !hasListener.length) {
                 this._listeners.push({target: object, handler: handler});
             }
-            else this.log('Try duplicate listener ' , object.name);
+            else {
+                this.log('Try duplicate listener ' , object.name);
+            }
         }
 
-        private removeListener(object:INotifier):void
+        private removeListener(object:INotifier, handler?:any):void
         {
             var deletedOffset:number = 0;
             this._listeners.forEach(function(lo:IListener, i:number) {
-                if(lo.target === object) { this.splice(i - deletedOffset, 1); deletedOffset++; }
+                if(lo.target === object && (!handler || handler === lo.handler)) { this.splice(i - deletedOffset, 1); deletedOffset++; }
             }, this._listeners);
         }
 
@@ -119,9 +122,15 @@ module fmvc
             this._listeners = null;
         }
 
-        private _sendToListners(e:IEvent)
+        private sendToListeners(e:IEvent):void
         {
-            _.each(this._listeners, function(lo:IListener) { if(!lo.target.disposed) (lo.handler).call(lo.target, e); });
+            var lo:IListener;
+            var target:INotifier;
+            for(var i:number = 0,  len:number = this._listeners.length; i < len; i++) {
+                 lo = this._listeners[i];
+                 target = lo.target;
+                 target.disposed?this.unbind(lo):(lo.handler).call(target, e);
+            }
         }
 
         public dispose():void {
@@ -142,9 +151,9 @@ module fmvc
         type:string;
         disposed:boolean;
         facade:fmvc.Facade;
-        sendEvent(name:string, data:any):void;
-        registerHandler():void;
-        removeHandler():void;
+        sendEvent(name:string, data:any, ...rest):void;
+        bind(context:INotifier, handler:Function):INotifier;
+        unbind(context:INotifier, handler?:Function):INotifier;
         dispose():void;
     }
 

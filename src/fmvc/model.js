@@ -59,7 +59,7 @@ var fmvc;
                 return this.getData();
             },
             set: function (value) {
-                this.setData(value);
+                this.reset().setData(value);
             },
             enumerable: true,
             configurable: true

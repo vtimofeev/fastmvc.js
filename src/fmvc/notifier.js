@@ -19,8 +19,8 @@ var fmvc;
                     this.registerHandler();
                 }
                 else {
-                    this.unbind(this._facade);
                     this.removeHandler();
+                    this.unbind(this._facade);
                     this._facade = value;
                 }
             },
@@ -61,58 +61,58 @@ var fmvc;
             this.facade = facade;
             return this;
         };
+        Notifier.prototype.bind = function (object, handler) {
+            this.addListener(object, handler);
+            return this;
+        };
+        Notifier.prototype.unbind = function (object, handler) {
+            this.removeListener(object, handler);
+            return this;
+        };
         // Послаем сообщение сначала в фасад, потом частным слушателям (для моделей)
         Notifier.prototype.sendEvent = function (name, data, changes, sub, error) {
             if (data === void 0) { data = null; }
             if (changes === void 0) { changes = null; }
             if (sub === void 0) { sub = null; }
             if (error === void 0) { error = null; }
-            //this.log('SendEvent: ' + name);
             if (this._disposed)
                 throw Error('Model ' + this.name + ' is disposed and cant send event');
+            if (!this._listeners)
+                return;
+            // facade, mediators, other is optional
             var e = { name: name, sub: sub, data: data, changes: changes, error: error, target: this };
-            if (this._listeners)
-                this._sendToListners(e);
-            if (this._facade)
-                this._facade.eventHandler(e);
+            this.sendToListeners(e);
         };
         Notifier.prototype.log = function () {
-            var messages = [];
+            var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
-                messages[_i - 0] = arguments[_i];
+                args[_i - 0] = arguments[_i];
             }
             if (this.facade)
-                this.facade.logger.add(this.name, messages);
+                this.facade.logger.add(this.name, args);
             else
-                console.log(this.name, messages);
+                console.log(this.name, args);
             return this;
         };
         Notifier.prototype.registerHandler = function () {
         };
         Notifier.prototype.removeHandler = function () {
         };
-        Notifier.prototype.bind = function (object, handler) {
-            this.addListener(object, handler);
-            return this;
-        };
-        Notifier.prototype.unbind = function (object) {
-            this.removeListener(object);
-            return this;
-        };
         Notifier.prototype.addListener = function (object, handler) {
             if (!this._listeners)
                 this._listeners = [];
-            var hasListener = _.filter(this._listeners, function (v) { return v.target === object; });
-            if (_.isEmpty(hasListener)) {
+            var hasListener = _.filter(this._listeners, function (v) { return (v.target === object && v.handler === handler); });
+            if (!hasListener || !hasListener.length) {
                 this._listeners.push({ target: object, handler: handler });
             }
-            else
+            else {
                 this.log('Try duplicate listener ', object.name);
+            }
         };
-        Notifier.prototype.removeListener = function (object) {
+        Notifier.prototype.removeListener = function (object, handler) {
             var deletedOffset = 0;
             this._listeners.forEach(function (lo, i) {
-                if (lo.target === object) {
+                if (lo.target === object && (!handler || handler === lo.handler)) {
                     this.splice(i - deletedOffset, 1);
                     deletedOffset++;
                 }
@@ -121,9 +121,14 @@ var fmvc;
         Notifier.prototype.removeAllListeners = function () {
             this._listeners = null;
         };
-        Notifier.prototype._sendToListners = function (e) {
-            _.each(this._listeners, function (lo) { if (!lo.target.disposed)
-                (lo.handler).call(lo.target, e); });
+        Notifier.prototype.sendToListeners = function (e) {
+            var lo;
+            var target;
+            for (var i = 0, len = this._listeners.length; i < len; i++) {
+                lo = this._listeners[i];
+                target = lo.target;
+                target.disposed ? this.unbind(lo) : (lo.handler).call(target, e);
+            }
         };
         Notifier.prototype.dispose = function () {
             this.removeAllListeners();

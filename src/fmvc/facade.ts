@@ -16,10 +16,26 @@ module fmvc {
         private _type:string;
         private _events:any = {};
         private _root:any;
+        private _mode:number;
 
         public model:{[id:string]:Model<any>} = {};
         public mediator:{[id:string]:Mediator} = {};
 
+
+        /*
+            Mode - тип работы приложения, 0 - дебаг, 1 - продакшн
+         */
+        public get mode():number {
+            return this._mode;
+        }
+
+        public set mode(value:number) {
+            this._mode = value;
+        }
+
+        /*
+            
+         */
         public get root():Element {
             return this._root;
         }
