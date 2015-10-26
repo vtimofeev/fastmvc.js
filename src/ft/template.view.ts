@@ -590,7 +590,7 @@ module ft {
         }
 
         protected globalHandler(events:string|string[], handler:Function) {
-            _.each(_.isArray(events)?events:[events], (v)=>this.globalEmitter.on(events, handler);
+            _.each(_.isArray(events)?events:[events], (v)=>this.globalEmitter.on(events, handler));
 
         }
 
