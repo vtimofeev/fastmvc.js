@@ -24,6 +24,7 @@ module ft {
             if (!ComponentContructorFunc) throw 'Children class ' + className + ' not found' ;
 
             var prevChildren = this._children;
+            var exParams:any = this.getChildrenExpressionParams(this.getParameters());
 
             var childrenViews:ITemplateView[] = _.map(this.data, function (v:any, k:number) {
                 var child = prevChildren && prevChildren.length ? (prevChildren.splice(0, 1)[0]) : ComponentContructorFunc(this.parent.name + ':' + className + '-' + k, this.childrenLocalParams);
@@ -33,7 +34,6 @@ module ft {
                 return child;
             }, this);
             this._children = childrenViews;
-
 
             _.each(prevChildren, (v:ITemplateView)=>v.dispose());
 
@@ -48,7 +48,7 @@ module ft {
                     this.getElement().appendChild(child.getElement());
                 }
 
-                //child.invalidateData();
+                child.invalidateData();
                 child.invalidateApp();
             }, this);
         }
@@ -91,18 +91,28 @@ module ft {
         }
 
         protected applyChildrenParameters():void {
-            var params:any = this.getChildrenExpressionParams(this._params);
+            var params:any = this.getChildrenExpressionParams(this.getParameters());
+            console.log('Apply children params ', this.name, params);
+
             var length = this._children ? this._children.length : 0;
 
             _.each(this._children, (child:ITemplateView, index:number)=> {
                 if (child.disposed) return;
+                child.invalidateData();
 
                 _.each(params, (value:IExpressionName, key:string)=> {
                     this.setCurrentChildToExecutionContext(child, index, length, value.context || this.parent);
-                    var childValue:any = this.getChildExpressionValue(value);
+                    var childValue:any = this.getExpressionValue(value);
                     var childParamName:string = this.getChildrenParamName(key);
-                    child.applyParameter(childValue, childParamName);
+                    if(childParamName === 'selected' || childParamName === 'disabled') {
+                        console.log('Apply children parameter ', childParamName, childValue);
+
+                        child.applyParameter(childValue, childParamName);
+                    }
                 });
+
+                /*
+                */
             }, this);
         }
 
@@ -146,6 +156,8 @@ module ft {
 
         validateData() {
             this.createChildren();
+            this.applyChildrenParameters();
+
         }
 
         validateState() {

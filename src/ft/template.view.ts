@@ -110,8 +110,8 @@ module ft {
         // Internal
         ////////////////////////////////////////////////////////////////
 
-        get globalEmitter():IEventEmitter3 {
-            return dispatcher.global;
+        get dispatcher():EventDispatcher {
+            return dispatcher;
         }
 
         get domDef():IDomDef {
@@ -141,6 +141,7 @@ module ft {
         set isChildren(value:boolean) {
             this._isChildren = value;
         }
+
 
         ////////////////////////////////////////////////////////////////        
         // States
@@ -264,6 +265,7 @@ module ft {
                     break;
             }
         }
+
 
         getParameterValue(value:IExpressionName|any, key:string):any {
             var r = _.isObject(value)?this.getExpressionValue(value):value;
@@ -500,11 +502,11 @@ module ft {
 
             var stateHandlers = {
                 hover: {
-                    mouseover: this.mouseoverHandler,
-                    mouseout: this.mouseoutHandler
+                    pointerover: this.mouseoverHandler,
+                    pointerout: this.mouseoutHandler
                 },
                 selected: {
-                    click: this.clickHandler
+                    action: this.clickHandler
                 },
                 focused: {
                     focus: this.focusHandler,
@@ -587,11 +589,6 @@ module ft {
         protected internalHandler(type, e:any):void {
             //console.log('Internal handler ... ', type, e);
             if(this.parent) this.parent.internalHandler(type, e);
-        }
-
-        protected globalHandler(events:string|string[], handler:Function) {
-            _.each(_.isArray(events)?events:[events], (v)=>this.globalEmitter.on(events, handler));
-
         }
 
         ////////////////////////////////////////////////////////////////

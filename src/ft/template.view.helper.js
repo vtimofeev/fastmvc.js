@@ -299,9 +299,13 @@ var ft;
                     return;
                 case 'params':
                     // Default params changed: Data: model, data; states: selected, focused, children, base, custom
+                    var view;
                     if (key.indexOf('.') < 0) {
-                        var view = root.getTreeElementByPath(host.path);
-                        view.applyParameter(value, key, root);
+                        view = root.getTreeElementByPath(host.path);
+                        if (!(view instanceof ft.TemplateView)) {
+                            view = root.getChildrenViewByPath(host.path);
+                        }
+                        view.applyParameter(view.getParameters()[key], key);
                     }
                     else if (key.indexOf('children.') === 0) {
                         var childrenView = root.getChildrenViewByPath(host.path);

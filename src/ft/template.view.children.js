@@ -1,5 +1,5 @@
 ///<reference path="./d.ts" />
-var __extends = (this && this.__extends) || function (d, b) {
+var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
@@ -19,6 +19,7 @@ var ft;
             if (!ComponentContructorFunc)
                 throw 'Children class ' + className + ' not found';
             var prevChildren = this._children;
+            var exParams = this.getChildrenExpressionParams(this.getParameters());
             var childrenViews = _.map(this.data, function (v, k) {
                 var child = prevChildren && prevChildren.length ? (prevChildren.splice(0, 1)[0]) : ComponentContructorFunc(this.parent.name + ':' + className + '-' + k, this.childrenLocalParams);
                 if (v instanceof fmvc.Model)
@@ -39,7 +40,7 @@ var ft;
                     child.enter();
                     this.getElement().appendChild(child.getElement());
                 }
-                //child.invalidateData();
+                child.invalidateData();
                 child.invalidateApp();
             }, this);
         };
@@ -81,17 +82,24 @@ var ft;
         };
         TemplateChildrenView.prototype.applyChildrenParameters = function () {
             var _this = this;
-            var params = this.getChildrenExpressionParams(this._params);
+            var params = this.getChildrenExpressionParams(this.getParameters());
+            console.log('Apply children params ', this.name, params);
             var length = this._children ? this._children.length : 0;
             _.each(this._children, function (child, index) {
                 if (child.disposed)
                     return;
+                child.invalidateData();
                 _.each(params, function (value, key) {
                     _this.setCurrentChildToExecutionContext(child, index, length, value.context || _this.parent);
-                    var childValue = _this.getChildExpressionValue(value);
+                    var childValue = _this.getExpressionValue(value);
                     var childParamName = _this.getChildrenParamName(key);
-                    child.applyParameter(childValue, childParamName);
+                    if (childParamName === 'selected' || childParamName === 'disabled') {
+                        console.log('Apply children parameter ', childParamName, childValue);
+                        child.applyParameter(childValue, childParamName);
+                    }
                 });
+                /*
+                */
             }, this);
         };
         // Executes when applyValueToHost executed
@@ -131,6 +139,7 @@ var ft;
         };
         TemplateChildrenView.prototype.validateData = function () {
             this.createChildren();
+            this.applyChildrenParameters();
         };
         TemplateChildrenView.prototype.validateState = function () {
         };

@@ -1,5 +1,5 @@
 ///<reference path="./d.ts" />
-var __extends = (this && this.__extends) || function (d, b) {
+var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
@@ -78,12 +78,12 @@ var ft;
             //this.setParameters(_.extend({}, template.domTree.params, params));
             this.life = LifeState.Init;
         }
-        Object.defineProperty(TemplateView.prototype, "globalEmitter", {
+        Object.defineProperty(TemplateView.prototype, "dispatcher", {
             ////////////////////////////////////////////////////////////////
             // Internal
             ////////////////////////////////////////////////////////////////
             get: function () {
-                return dispatcher.global;
+                return dispatcher;
             },
             enumerable: true,
             configurable: true
@@ -464,11 +464,11 @@ var ft;
                 value = value.split(',');
             var stateHandlers = {
                 hover: {
-                    mouseover: this.mouseoverHandler,
-                    mouseout: this.mouseoutHandler
+                    pointerover: this.mouseoverHandler,
+                    pointerout: this.mouseoutHandler
                 },
                 selected: {
-                    click: this.clickHandler
+                    action: this.clickHandler
                 },
                 focused: {
                     focus: this.focusHandler,
@@ -553,10 +553,6 @@ var ft;
             //console.log('Internal handler ... ', type, e);
             if (this.parent)
                 this.parent.internalHandler(type, e);
-        };
-        TemplateView.prototype.globalHandler = function (events, handler) {
-            var _this = this;
-            _.each(_.isArray(events) ? events : [events], function (v) { return _this.globalEmitter.on(events, handler); });
         };
         ////////////////////////////////////////////////////////////////
         // Expressions

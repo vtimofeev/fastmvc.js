@@ -11,52 +11,42 @@ var ft;
         KeyUp: 'keyup',
         KeyDown: 'keydown',
     };
-    ft.PointerEvent = {
-        Click: 'click',
-        MouseOver: 'mouseover',
-        MouseOut: 'mouseout',
-        MouseDown: 'mousedown',
-        MouseUp: 'mouseup',
-        MouseMove: 'mousemove'
-    };
-    ft.TouchEvent = {
-        TouchStart: 'touchstart',
-        TouchEnd: 'touchend',
-        TouchMove: 'touchmove',
-        TouchCancel: 'touchcancel'
-    };
-    ft.ResutEvent = {
-        Act: 'act',
-        DoubleAct: 'doubleact',
-        LongAct: 'longact',
-        PointerOver: 'pointerover',
-        PointerMove: 'pointermove',
-        PointerOut: 'pointerout',
-        PointerDown: 'pointerdown',
-        PointerUp: 'pointerup',
-        Swipe: 'swipe',
-        Pan: 'pan',
-        Pinch: 'pinch',
-    };
-    ft.browserElementEvents = [ft.BrowserEvent.MOUSEOUT, ft.BrowserEvent.MOUSEOVER, ft.BrowserEvent.CLICK];
-    ft.browserWindowEvents = [ft.BrowserEvent.KEYDOWN, ft.BrowserEvent.KEYUP, ft.BrowserEvent.MOUSEMOVE, ft.BrowserEvent.SCROLL];
-    ft.specialEvents = [SpecialEvent.ACTION];
+    /*
+    export interface IEventEmitter3 {
+        on(event, handler, context):void;
+        once(event, handler, context):void;
+        off(event, handler, context):void;
+        emit(event, ...args:any[]):any;
+    }
+    */
     var EventDispatcher = (function () {
         function EventDispatcher(viewHelper) {
             this.eventMap = {};
             this.viewHelper = viewHelper;
+            this.pointer = new ft.PointerModel();
             _.bindAll(this, 'browserHandler');
-            _.each(_.values(ft.BrowserEvent, ft.PointerEvent), this.on, this);
+            var listenEvents = [].concat(_.values(ft.BrowserEvent), _.values(ft.PointerEvent), _.values(ft.TouchEvent));
+            _.each(listenEvents, this.on, this);
         }
         EventDispatcher.prototype.browserHandler = function (e) {
-            //this.global.emit(e.type, e);
-            var el = e.target || e.currentTarget;
-            var pathId = el.getAttribute(ft.AttributePathId);
+            var target = e.target || e.currentTarget;
+            var pathId = target.getAttribute ? target.getAttribute(ft.AttributePathId) : null;
             var pathDefinition = this.viewHelper.getPathDefinitionByPathId(pathId);
-            //console.log('Trigger ', e.type, pathId, pathDefinition);
+            var pointerEvent = this.pointer.getCompositeEvent(e);
+            if (pointerEvent) {
+                this.pointer.setData(pointerEvent);
+                e.preventDefault();
+            }
             if (pathDefinition) {
-                var event = this.getTreeEventByBrowserEvent(e.type, pathDefinition.data, pathDefinition.root, e);
+                var sequenceEvent = this.pointer.addSequenceEvent(pointerEvent, target);
+                var event = this.getTreeEventByBrowserEvent(pointerEvent.name, pathDefinition.data, pathDefinition.root, e);
+                //console.log('dispatch composite event', pathDefinition.data.path, pointerEvent);
                 this.viewHelper.dispatchTreeEventDown(event);
+                if (sequenceEvent) {
+                    var sequenceEvent = this.getTreeEventByBrowserEvent(sequenceEvent.name, pathDefinition.data, pathDefinition.root, e);
+                    console.log('dispatch sequence event', pathDefinition.data.path, sequenceEvent);
+                    this.viewHelper.dispatchTreeEventDown(sequenceEvent);
+                }
             }
         };
         EventDispatcher.prototype.getTreeEventByBrowserEvent = function (name, def, view, e) {
@@ -65,10 +55,6 @@ var ft;
         EventDispatcher.prototype.getCustomTreeEvent = function (name, data, view, depth) {
             if (depth === void 0) { depth = 1; }
             return { name: name, target: view, def: view.domDef, previousTarget: null, currentTarget: view, data: data, cancelled: false, prevented: false, depth: depth, executionHandlersCount: 0 };
-        };
-        EventDispatcher.prototype.disposeEvent = function (e) {
-            return;
-            e.target = e.previousTarget = e.currentTarget = e.e = null;
         };
         EventDispatcher.prototype.on = function (type) {
             if (this.eventMap[type])
@@ -79,6 +65,10 @@ var ft;
         EventDispatcher.prototype.off = function (type) {
             this.eventMap[type] = false;
             window.removeEventListener(type, this.browserHandler);
+        };
+        EventDispatcher.prototype.disposeEvent = function (e) {
+            return;
+            e.target = e.previousTarget = e.currentTarget = e.e = null;
         };
         return EventDispatcher;
     })();

@@ -81,7 +81,8 @@ var ft;
             var r;
             if (r = context.getDynamicProperty(v))
                 return r;
-            //console.log('Execute ', v, context);
+            if (context.data && !context.data.title) {
+            }
             if (typeof v === 'string') {
                 ft.counters.expressionCtx++;
                 if (v === GetContext.data) {

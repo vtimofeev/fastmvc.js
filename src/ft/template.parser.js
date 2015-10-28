@@ -76,6 +76,7 @@ var ft;
                 var group = this.getAttribGroup(key);
                 var groupKey = this.getGroupKey(key, group);
                 def[group][groupKey] = this.parseExpressionAttrib(value, key, r.expressionMap, path, group);
+                console.log('Group, key: ', group, groupKey, key);
             }, this);
             def.children = _.map(o.children, function (v, index) { return (_this.htmlObjectToDomTree(v, r, def.path + ',' + index)); }, this);
             _.each(_.keys(def), function (key) { return (_.isEmpty(def[key]) ? delete def[key] : null); });
@@ -146,7 +147,7 @@ var ft;
         };
         TemplateParser.prototype.getExpressionHost = function (path, group /* attribs, params, data */, key /* class, href */, keyProperty) {
             if (keyProperty === void 0) { keyProperty = null; }
-            return { path: path, group: group, key: key, keyProperty: keyProperty };
+            return { path: path, group: group, key: this.getGroupKey(key, group), keyProperty: keyProperty };
         };
         // Выделяем из шаблонной строки JS код (handlers)
         TemplateParser.prototype.parseJsValue = function (value) {

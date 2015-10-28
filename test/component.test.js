@@ -18,15 +18,34 @@ describe('ft - component package ', function () {
         { title: 'Три (локальный)', action: 'clickThree' },
         { title: 'Четыре (локальный)', action: 'clickFour' }
     ];
-    buttonsDs = _.map(_.range(100), function (v) { return { title: v + ' - ' + Math.random(), action: Math.random() }; });
-    buttonsDs2 = _.map(_.range(100), function (v) { return { title: v + ' - ' + Math.random(), action: Math.random() }; });
+    buttonsDs = _.map(_.range(100), function (v) {
+        return { title: v + ' - ' + Math.random(), action: Math.random() };
+    });
+    buttonsDs2 = _.map(_.range(100), function (v) {
+        return { title: v + ' - ' + Math.random(), action: Math.random() };
+    });
     var buttonReset = { title: 'Очистить (локальный)', action: 'actionReset' };
+    var interval;
+    var intervalUpdate = function (value) {
+        clearInterval(interval);
+        if (value === 0)
+            return;
+        interval = setInterval(function () {
+            _.each(model.data.children, function (m, v) {
+                if (!model.disposed)
+                    model.data.children[v].data = { title: Math.round(Math.random() * 100), action: Math.random() };
+            });
+        }, value);
+    };
     var templateObjs = {
         "ft.Button": {
-            content: '<div .base="button" .stateHandlers="hover,selected" onclick="buttonClick"  class="{state.base} {state.base}-{state.life} {state.base}-{state.selected} {state.base}-{state.hover} {state.base}-{state.disabled}">{(data&&data.title?data.title:data?data:\"\")}</div>',
+            content: '<div .base="button" .stateHandlers="hover,selected" onaction="buttonClick"  class="{state.base} {state.base}-{state.life} {state.base}-{state.selected} {state.base}-{state.hover} {state.base}-{state.disabled}">{(data&&(\"title\" in data)?data.title:data?data:\"\")}</div>',
+        },
+        "ft.NumberButton": {
+            content: '<div .base="button" .stateHandlers="hover" class="{state.base} {state.base}-{state.selected} {state.base}-{state.hover} {state.base}-{state.disabled}">{data}</div>',
         },
         "ft.ButtonGroup": {
-            content: '<div .base="buttonGroup" class="{state.base}"  children.class="ft.Button" children.stateHandlers="hover"></div>',
+            content: '<div .base="buttonGroup" children.data={data} class="{state.base}"  children.class="ft.Button" children.stateHandlers="hover"></div>',
         },
         "ft.Progress": {
             content: '<div .base="progress" .value="0" class="{state.base}"><div class="{state.base}-bg" style="width:{(state.value*100)}%"></div></div>',
@@ -37,34 +56,27 @@ describe('ft - component package ', function () {
                 '<h2>First component, global mouse {data.mouseX} {data.mouseY} </h2>' +
                 '<h3>First component, global mouse {data.mouseX} {data.mouseY} </h3>' +
                 '<h4>First component, global mouse {data.mouseX} {data.mouseY} </h4>' +
-                '<h1>First component, global mouse {data.mouseX} {data.mouseY} </h1>' +
-                '<h2>First component, global mouse {data.mouseX} {data.mouseY} </h2>' +
-                '<h3>First component, global mouse {data.mouseX} {data.mouseY} </h3>' +
-                '<h4>First component, global mouse {data.mouseX} {data.mouseY} </h4>' +
-                '<h1>First component, global mouse {data.mouseX} {data.mouseY} </h1>' +
-                '<h2>First component, global mouse {data.mouseX} {data.mouseY} </h2>' +
-                '<h3>First component, global mouse {data.mouseX} {data.mouseY} </h3>' +
-                '<h4>First component, global mouse {data.mouseX} {data.mouseY} </h4>' +
-                '<h1>First component, global mouse {data.mouseX} {data.mouseY} </h1>' +
-                '<h2>First component, global mouse {data.mouseX} {data.mouseY} </h2>' +
-                '<h3>First component, global mouse {data.mouseX} {data.mouseY} </h3>' +
-                '<h4>First component, global mouse {data.mouseX} {data.mouseY} </h4>' +
-                '<h1>First component, global mouse {data.mouseX} {data.mouseY} </h1>' +
-                '<h2>First component, global mouse {data.mouseX} {data.mouseY} </h2>' +
-                '<h3>First component, global mouse {data.mouseX} {data.mouseY} </h3>' +
-                '<h4>First component, global mouse {data.mouseX} {data.mouseY} </h4>' +
-                '<ft.Button onclick="toggleGroup" .data="{app.scope.d.reset}" .createDelay="1000">Toggle group</ft.Button>' +
-                '<ft.Button onclick="toggleGroup" .data="{app.scope.d.reset}" .createDelay="2000">Toggle group' +
-                '<div>Ola<ft.Button .data="{data.reset}" .createDelay="4000" onclick="{alert(1)}"></ft.Button></div>' +
+                '<h1>Count</h1>' +
+                '<div children.data="{data.count}" children.class="ft.NumberButton" children.selected="{(child.data!==data.countItemSelected)}" children.onaction="countSelected"></div>' +
+                '<h1>Updates</h1>' +
+                '<ft.Button onaction="update0">Update 0</ft.Button>' +
+                '<ft.Button onaction="update50">Update 50</ft.Button>' +
+                '<ft.Button onaction="update100">Update 100</ft.Button>' +
+                '<ft.Button onaction="update1000">Update 1 000</ft.Button>' +
+                '<ft.Button onaction="update10000">Update 10 000</ft.Button>' +
+                '<h1>Toggle</h1>' +
+                '<ft.Button onaction="toggleGroup" .data="{app.scope.d.reset}" .createDelay="1000">Toggle group</ft.Button>' +
+                '<ft.Button onaction="toggleGroup" .data="{app.scope.d.reset}" .createDelay="2000">Toggle group' +
+                '<div>Ola<ft.Button .data="{data.reset}" .createDelay="4000" onaction="{alert(1)}"></ft.Button></div>' +
                 '</ft.Button>' +
-                '<ft.Button onclick="toggleGroup" .createDelay="3000">Toggle group</ft.Button>' +
+                '<ft.Button onaction="toggleGroup" .createDelay="3000">Toggle group</ft.Button>' +
                 '<div>ahaha {data.children.length} {data.reset.title}</div>' +
                 '<div .data="{data.children}"' +
-                ' children.selected="{(child.model!==app.scope.d.selectedItem)}" ' +
+                ' children.selected="{(child.model!==data.selectedItem)}" ' +
                 ' children.class="ft.Button" children.onclick="selectItem2" children.disabled="{data.childrenDisabled}"></div>' +
-                '<ft.ButtonGroup .data="{app.scope.d.children}" children.createDelay="{(childIndex+1500)}" children.base="button" children.focused="anydata" children.onclick="selectItem" ' +
+                '<ft.ButtonGroup .data="{data.children}" children.createDelay="{(childIndex+1500)}" children.base="button" children.focused="anydata" children.onclick="selectItem" ' +
                 ' children.disabled="{data.childrenDisabled}" ' +
-                ' children.selected="{(child.model===app.scope.d.selectedItem)}"></ft.ButtonGroup>' +
+                ' children.selected="{(child.model!==app.scope.d.selectedItem)}"></ft.ButtonGroup>' +
                 '</div>',
             extends: {
                 internalHandler: function (name, e) {
@@ -74,8 +86,23 @@ describe('ft - component package ', function () {
                         this.invalidateData();
                         console.log('On toggle this children disabled: ', this.model.data.childrenDisabled);
                     }
-                    if (name === 'selectItem')
+                    else if (name === 'selectItem')
                         this.model.changes = { selectedItem: e.target.model };
+                    else if (name === 'update0')
+                        intervalUpdate(0);
+                    else if (name === 'update50')
+                        intervalUpdate(50);
+                    else if (name === 'update100')
+                        intervalUpdate(100);
+                    else if (name === 'update1000')
+                        intervalUpdate(1000);
+                    else if (name === 'update10000')
+                        intervalUpdate(10000);
+                    else if (name === 'countSelected') {
+                        this.model.changes = { countItemSelected: e.target.data };
+                        //this.invalidateApp();
+                        updateChildrenCount(e.target.data);
+                    }
                 }
             },
             action: 'create'
@@ -84,21 +111,27 @@ describe('ft - component package ', function () {
     var tm = ft.templateManager;
     var app = new fmvc.Facade('testapp', null, document.body);
     var model = new fmvc.Model('scope');
-    model.data = { selected: null, childrenDisabled: false, children: null, reset: buttonReset, mouseX: 0, mouseY: 0 };
+    model.data = {
+        selected: null,
+        childrenDisabled: false, children: null,
+        reset: buttonReset,
+        mouseX: 0,
+        mouseY: 0,
+        count: [0, 10, 50, 100, 200, 500, 1000],
+        countItemSelected: 10
+    };
     var mediator = new fmvc.Mediator('appmed', document.body);
     app.register(model, mediator);
-    model.changes = { children: _.map(_.range(200), function (v) { return new fmvc.Model('data-' + v, { title: Math.round(Math.random() * 100), action: Math.random() }); }) };
-    setInterval(function () {
-        _.each(model.data.children, function (m, v) {
-            try {
-                model.data.children[v].data = { title: Math.round(Math.random() * 100), action: Math.random() };
-            }
-            catch (e) {
-                console.log(v);
-            }
-        });
-    }, 500);
-    model.changes = { selectedItem: model.data.children[2] };
+    function updateChildrenCount(value) {
+        model.changes = {
+            children: _.map(_.range(value), function (v) {
+                return new fmvc.Model('data-' + v, { title: Math.round(Math.random() * 100), action: Math.random() });
+            })
+        };
+    }
+    updateChildrenCount(model.data.countItemSelected);
+    //model.changes = {selectedItem: model.data.children[2]};
+    intervalUpdate(1000);
     console.log('---Setdata ', model.d.selectedItem);
     describe('ft - ButtonGroup/DataButton', function () {
         _.each(templateObjs, function (obj, key) {
@@ -107,18 +140,16 @@ describe('ft - component package ', function () {
                 var params = { setStates: obj.states };
                 var instance = null;
                 if (obj.action === 'create') {
-                    //var container:HTMLElement = document.getElementById('template-container');
-                    //container.innerHTML = '';
                     instance = window[key]('view-' + key, params);
                     instance.setModel(model);
                     instance.logMouseMove = function (e) {
-                        instance.model.changes = { mouseX: e.clientX, mouseY: e.clientY };
-                        //instance.model.mouseY = e.clientY;
-                        //instance.invalidateData();
+                        //console.log('Args: ', arguments);
+                        instance.model.changes = { mouseX: e.data.clientX, mouseY: e.data.clientY };
                     };
                     instance.afterEnter = function () {
                         console.log('After enter', this.name);
-                        this.globalEmitter.on('mousemove', this.logMouseMove, this);
+                        //this.globalEmitter.on('mousemove', this.logMouseMove, this);
+                        this.dispatcher.pointer.bind(this, this.logMouseMove);
                     };
                     //model.changes = { children: buttonsDs };
                     //model.bind(instance, instance.invalidateApp);
@@ -153,17 +184,17 @@ describe('ft - component package ', function () {
                  console.log('Prevalidate on data changed: ---------------------------------------------', instance);
 
 
-                instance.data.children = buttonsDs2;
-                instance.invalidate(fmvc.InvalidateType.Data);
+                 instance.data.children = buttonsDs2;
+                 instance.invalidate(fmvc.InvalidateType.Data);
 
-                console.log('Prevalidate on data changed 2: ---------------------------------------------', instance);
-                instance.validate();
-                */
+                 console.log('Prevalidate on data changed 2: ---------------------------------------------', instance);
+                 instance.validate();
+                 */
             });
         });
         it('should exist component constructors', function () {
-            assert(ft.DataButton, 'should exist ft.DataButton (window)');
-            assert(ft.ButtonGroup, 'should exist ft.ButtonGroup (window)');
+            //assert(ft.DataButton, 'should exist ft.DataButton (window)');
+            //assert(ft.ButtonGroup, 'should exist ft.ButtonGroup (window)');
         });
     });
 });

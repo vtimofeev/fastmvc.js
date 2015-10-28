@@ -274,8 +274,6 @@ module ft {
             //this.getDomElement(parent).replaceChild(this.getDomElement(object), this.getCommentElement(data));
             this.getDomElement(parent).removeChild(this.getDomElement(object));
             if (object instanceof TemplateView) object.setTreeElementPath(data.path, null);
-
-
         }
 
 
@@ -365,7 +363,6 @@ module ft {
                             el.style[host.keyProperty] = (value ? value : '');
                             return;
                         case 'class':
-
                             var previousClassValue = root.getPathClassValue(host.path, host.keyProperty);
                             previousClassValue && previousClassValue !== value ? el.classList.toggle(previousClassValue, false) : null;
                             value ? el.classList.toggle(value, true) : null;
@@ -384,13 +381,17 @@ module ft {
                     return;
                 case 'params':
                     // Default params changed: Data: model, data; states: selected, focused, children, base, custom
+
+                    var view:TemplateView|TemplateChildrenView;
                     if (key.indexOf('.') < 0) {
-                        var view = <TemplateView> root.getTreeElementByPath(host.path);
-                        view.applyParameter(value, key, root);
+                        view = <TemplateView> root.getTreeElementByPath(host.path);
+                        if(!(view instanceof TemplateView)) {
+                            view = <TemplateChildrenView> root.getChildrenViewByPath(host.path);
+                        }
+                        view.applyParameter(view.getParameters()[key], key);
                     }
                     // Children.params changed
                     else if (key.indexOf('children.') === 0) {
-
                         var childrenView = <TemplateChildrenView> root.getChildrenViewByPath(host.path);
                         if (!childrenView) {
                             console.warn('Has no ChildrenView instance and cant set hostValue ', host.path, key);

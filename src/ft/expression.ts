@@ -98,7 +98,9 @@ module ft {
         public getContextValue(v:string|IExpression, context:ITemplateView):any {
             var r;
             if(r = context.getDynamicProperty(v)) return r;
-            //console.log('Execute ', v, context);
+            if (context.data && !context.data.title) {
+                //console.log('Execute ', v, context.data);
+            }
 
             if(typeof v === 'string') {
                 counters.expressionCtx++;

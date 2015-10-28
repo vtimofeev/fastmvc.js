@@ -1,5 +1,4 @@
 ///<reference path='./../d.ts'/>
-declare var EventEmitter:any;
 
 module ft {
     export var BrowserEvent = {
@@ -15,75 +14,54 @@ module ft {
         KeyDown: 'keydown',
     };
 
-    export var PointerEvent = {
-        Click: 'click',
-        MouseOver: 'mouseover',
-        MouseOut: 'mouseout',
-        MouseDown: 'mousedown',
-        MouseUp: 'mouseup',
-        MouseMove: 'mousemove'
-    };
 
-    export var TouchEvent = {
-        TouchStart: 'touchstart',
-        TouchEnd: 'touchend',
-        TouchMove: 'touchmove',
-        TouchCancel: 'touchcancel'
-    };
-
-    export var ResutEvent = {
-        Act: 'act', // click - tap
-        DoubleAct: 'doubleact',
-        LongAct: 'longact',
-
-        PointerOver: 'pointerover',
-        PointerMove: 'pointermove',
-        PointerOut: 'pointerout',
-        PointerDown: 'pointerdown',
-        PointerUp: 'pointerup',
-
-        Swipe: 'swipe',
-        Pan: 'pan',
-        Pinch: 'pinch',
-    };
-
+    /*
     export interface IEventEmitter3 {
         on(event, handler, context):void;
         once(event, handler, context):void;
         off(event, handler, context):void;
         emit(event, ...args:any[]):any;
     }
-
-    export var browserElementEvents:string[] = [BrowserEvent.MOUSEOUT, BrowserEvent.MOUSEOVER, BrowserEvent.CLICK];
-    export var browserWindowEvents:string[] = [ BrowserEvent.KEYDOWN, BrowserEvent.KEYUP,  BrowserEvent.MOUSEMOVE, BrowserEvent.SCROLL];
-    export var specialEvents:string[] = [SpecialEvent.ACTION];
-
+    */
 
     export class EventDispatcher  {
         private eventMap:{[event:string]:boolean} = {};
         private viewHelper:TemplateViewHelper;
-        //public global:IEventEmitter3 = <IEventEmitter3> new EventEmitter();
         private pointer:ft.PointerModel;
         private keyboard:ft.KeyboardModel;
 
         constructor(viewHelper:TemplateViewHelper) {
             this.viewHelper = viewHelper;
+            this.pointer = new ft.PointerModel();
+
             _.bindAll(this, 'browserHandler');
-            _.each(_.values(BrowserEvent,PointerEvent), this.on, this);
+            var listenEvents:string[] = [].concat(_.values(ft.BrowserEvent), _.values(ft.PointerEvent),  _.values(ft.TouchEvent));
+            _.each(listenEvents, this.on, this);
         }
 
         protected browserHandler(e:any):void {
-            //this.global.emit(e.type, e);
-            var el:HTMLElement = e.target || e.currentTarget;
+            var target:HTMLElement = e.target || e.currentTarget;
 
-
-            var pathId:string = el.getAttribute(AttributePathId);
+            var pathId:string = target.getAttribute?target.getAttribute(AttributePathId):null;
             var pathDefinition = this.viewHelper.getPathDefinitionByPathId(pathId);
-            //console.log('Trigger ', e.type, pathId, pathDefinition);
+
+            var pointerEvent:IPointerEvent = this.pointer.getCompositeEvent(e);
+            if(pointerEvent) { // set global pointer data
+                this.pointer.setData(pointerEvent);
+                e.preventDefault();
+            }
 
             if (pathDefinition){
-                var event:ITreeEvent = this.getTreeEventByBrowserEvent(e.type, pathDefinition.data, pathDefinition.root, e);
+                var sequenceEvent:IPointerEvent = this.pointer.addSequenceEvent(pointerEvent, target);
+                var event:ITreeEvent = this.getTreeEventByBrowserEvent(pointerEvent.name, pathDefinition.data, pathDefinition.root, e);
+                //console.log('dispatch composite event', pathDefinition.data.path, pointerEvent);
                 this.viewHelper.dispatchTreeEventDown(event);
+
+                if(sequenceEvent) {
+                    var sequenceEvent = this.getTreeEventByBrowserEvent(sequenceEvent.name, pathDefinition.data, pathDefinition.root, e);
+                    console.log('dispatch sequence event',  pathDefinition.data.path, sequenceEvent);
+                    this.viewHelper.dispatchTreeEventDown(sequenceEvent);
+                }
             }
         }
 
@@ -95,9 +73,6 @@ module ft {
             return {name: name, target:view, def: view.domDef, previousTarget: null, currentTarget:view, data:data, cancelled:false, prevented:false, depth: depth, executionHandlersCount: 0};
         }
 
-        public disposeEvent(e:ITreeEvent):void {
-            return; e.target = e.previousTarget = e.currentTarget = e.e = null;
-        }
 
         public on(type:string):void {
             if(this.eventMap[type]) return;
@@ -109,6 +84,10 @@ module ft {
         public off(type:string):void {
             this.eventMap[type] = false;
             window.removeEventListener(type, this.browserHandler);
+        }
+
+        public disposeEvent(e:ITreeEvent):void {
+            return; e.target = e.previousTarget = e.currentTarget = e.e = null;
         }
     }
 }
