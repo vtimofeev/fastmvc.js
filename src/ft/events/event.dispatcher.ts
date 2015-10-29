@@ -53,26 +53,29 @@ module ft {
 
             if (pathDefinition){
                 var sequenceEvent:IPointerEvent = this.pointer.addSequenceEvent(pointerEvent, target);
-                var event:ITreeEvent = this.getTreeEventByBrowserEvent(pointerEvent.name, pathDefinition.data, pathDefinition.root, e);
+                var event:ITreeEvent = this.getTreeEventByBrowserEvent(pointerEvent.name, pathDefinition.data, pathDefinition.root, e, pointerEvent);
                 //console.log('dispatch composite event', pathDefinition.data.path, pointerEvent);
                 this.viewHelper.dispatchTreeEventDown(event);
 
                 if(sequenceEvent) {
-                    var sequenceEvent = this.getTreeEventByBrowserEvent(sequenceEvent.name, pathDefinition.data, pathDefinition.root, e);
+                    var sequenceEvent = this.getTreeEventByBrowserEvent(sequenceEvent.name, pathDefinition.data, pathDefinition.root, e, sequenceEvent);
                     console.log('dispatch sequence event',  pathDefinition.data.path, sequenceEvent);
                     this.viewHelper.dispatchTreeEventDown(sequenceEvent);
                 }
             }
         }
 
-        private getTreeEventByBrowserEvent(name:string, def:IDomDef, view:ITemplateView, e:any):ITreeEvent {
-            return {name: name, target:view, def: def, e: e, cancelled:false, prevented:false, depth: 1e2, executionHandlersCount: 0};
+        private getTreeEventByBrowserEvent(name:string, def:IDomDef, view:ITemplateView, e:any, pe:IPointerEvent):ITreeEvent {
+            return {name: name, target:view, def: def, e: e, pe:pe, cancelled:false, prevented:false, depth: 1e2, executionHandlersCount: 0};
         }
 
         public getCustomTreeEvent(name:string, data:any, view:ITemplateView, depth:number = 1):ITreeEvent {
             return {name: name, target:view, def: view.domDef, previousTarget: null, currentTarget:view, data:data, cancelled:false, prevented:false, depth: depth, executionHandlersCount: 0};
         }
 
+        public getPointer():PointerModel {
+            return this.pointer;
+        }
 
         public on(type:string):void {
             if(this.eventMap[type]) return;

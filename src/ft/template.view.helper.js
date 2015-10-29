@@ -209,8 +209,7 @@ var ft;
         // Creation
         // -----------------------------------------------------------------------------------------------------------
         TemplateViewHelper.prototype.createComponentElement = function (data, root) {
-            var ComponentConstructor = window[data.name];
-            var result = ComponentConstructor('view-' + data.name + '-' + this.getNextId(), this.applyFirstContextToExpressionParameters(data.params, root));
+            var result = ft.templateManager.createInstance(data.name, 'view-' + data.name + '-' + this.getNextId(), this.applyFirstContextToExpressionParameters(data.params, root));
             result.parent = root;
             result.domDef = data;
             if (result !== root)

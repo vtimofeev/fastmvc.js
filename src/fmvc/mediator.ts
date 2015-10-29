@@ -50,7 +50,7 @@ module fmvc {
         }
 
         public internalHandler(e:any):void {
-            if (e && e.global) {
+            if (e && e.globalScope) {
                 this.facade.eventHandler(e);
             }
             else {

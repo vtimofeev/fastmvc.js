@@ -37,25 +37,33 @@ describe('ft - component package ', function () {
             });
         }, value);
     };
-    var templateObjs = {
-        "ft.Button": {
+    var templateObjs = [
+        {
+            className: "ft.Button",
             content: '<div .base="button" .stateHandlers="hover,selected" onaction="buttonClick"  class="{state.base} {state.base}-{state.life} {state.base}-{state.selected} {state.base}-{state.hover} {state.base}-{state.disabled}">{(data&&(\"title\" in data)?data.title:data?data:\"\")}</div>',
         },
-        "ft.NumberButton": {
+        {
+            className: "ft.NumberButton",
             content: '<div .base="button" .stateHandlers="hover" class="{state.base} {state.base}-{state.selected} {state.base}-{state.hover} {state.base}-{state.disabled}">{data}</div>',
         },
-        "ft.ButtonGroup": {
+        {
+            className: "ft.ButtonGroup",
             content: '<div .base="buttonGroup" children.data={data} class="{state.base}"  children.class="ft.Button" children.stateHandlers="hover"></div>',
         },
-        "ft.Progress": {
+        ui.HSliderDefinition,
+        {
+            className: "ft.Progress",
             content: '<div .base="progress" .value="0" class="{state.base}"><div class="{state.base}-bg" style="width:{(state.value*100)}%"></div></div>',
         },
-        "ft.Component": {
+        {
+            className: "ft.Component",
             content: '<div .base="COMPONENT">' +
                 '<h1>First component, global mouse {data.mouseX} {data.mouseY} </h1>' +
                 '<h2>First component, global mouse {data.mouseX} {data.mouseY} </h2>' +
                 '<h3>First component, global mouse {data.mouseX} {data.mouseY} </h3>' +
                 '<h4>First component, global mouse {data.mouseX} {data.mouseY} </h4>' +
+                '<h1>Slider</h1>' +
+                '<ui.HSlider>Slider content</ui.HSlider>' +
                 '<h1>Count</h1>' +
                 '<div children.data="{data.count}" children.class="ft.NumberButton" children.selected="{(child.data!==data.countItemSelected)}" children.onaction="countSelected"></div>' +
                 '<h1>Updates</h1>' +
@@ -70,24 +78,23 @@ describe('ft - component package ', function () {
                 '<div>Ola<ft.Button .data="{data.reset}" .createDelay="4000" onaction="{alert(1)}"></ft.Button></div>' +
                 '</ft.Button>' +
                 '<ft.Button onaction="toggleGroup" .createDelay="3000">Toggle group</ft.Button>' +
-                '<div>ahaha {data.children.length} {data.reset.title}</div>' +
+                '<div>{data.children.length} {data.reset.title}</div>' +
                 '<div .data="{data.children}"' +
                 ' children.selected="{(child.model!==data.selectedItem)}" ' +
-                ' children.class="ft.Button" children.onclick="selectItem2" children.disabled="{data.childrenDisabled}"></div>' +
-                '<ft.ButtonGroup .data="{data.children}" children.createDelay="{(childIndex+1500)}" children.base="button" children.focused="anydata" children.onclick="selectItem" ' +
+                ' children.class="ft.Button" children.onaction="selectItemFirst" children.disabled="{data.childrenDisabled}"></div>' +
+                '<ft.ButtonGroup .data="{data.children}" children.createDelay="{(childIndex+1500)}" children.base="button" children.focused="anydata" children.onaction="selectItemSecond" ' +
                 ' children.disabled="{data.childrenDisabled}" ' +
-                ' children.selected="{(child.model!==app.scope.d.selectedItem)}"></ft.ButtonGroup>' +
+                ' children.selected="{(child.model!==data.selectedItem)}"></ft.ButtonGroup>' +
                 '</div>',
-            extends: {
+            mixin: {
                 internalHandler: function (name, e) {
                     console.log('Internal extension handler ', name);
                     if (name === 'toggleGroup') {
                         this.model.changes = { childrenDisabled: !this.model.data.childrenDisabled };
-                        this.invalidateData();
-                        console.log('On toggle this children disabled: ', this.model.data.childrenDisabled);
                     }
-                    else if (name === 'selectItem')
+                    else if (name === 'selectItemFirst') {
                         this.model.changes = { selectedItem: e.target.model };
+                    }
                     else if (name === 'update0')
                         intervalUpdate(0);
                     else if (name === 'update50')
@@ -107,7 +114,7 @@ describe('ft - component package ', function () {
             },
             action: 'create'
         }
-    };
+    ];
     var tm = ft.templateManager;
     var app = new fmvc.Facade('testapp', null, document.body);
     var model = new fmvc.Model('scope');
@@ -134,13 +141,15 @@ describe('ft - component package ', function () {
     intervalUpdate(1000);
     console.log('---Setdata ', model.d.selectedItem);
     describe('ft - ButtonGroup/DataButton', function () {
-        _.each(templateObjs, function (obj, key) {
+        _.each(templateObjs, function (obj, index) {
+            var key = obj.className;
             it('should create instances ' + key, function () {
-                var CreateTemplate = tm.createTemplate(key, obj.content);
-                var params = { setStates: obj.states };
+                tm.createClass(key, obj.content, null, null);
+                //var params:any = {setStates: obj.states};
                 var instance = null;
                 if (obj.action === 'create') {
-                    instance = window[key]('view-' + key, params);
+                    instance = tm.createInstance(key, 'view-' + key, params);
+                    _.each(obj.mixin, function (v, k) { return instance[k] = v; });
                     instance.setModel(model);
                     instance.logMouseMove = function (e) {
                         //console.log('Args: ', arguments);
@@ -149,12 +158,11 @@ describe('ft - component package ', function () {
                     instance.afterEnter = function () {
                         console.log('After enter', this.name);
                         //this.globalEmitter.on('mousemove', this.logMouseMove, this);
-                        this.dispatcher.pointer.bind(this, this.logMouseMove);
+                        this.globalPointer.bind(this, this.logMouseMove);
                     };
                     //model.changes = { children: buttonsDs };
                     //model.bind(instance, instance.invalidateApp);
                     mediator.addView(instance);
-                    _.each(obj.extends, function (v, k) { return instance[k] = v; });
                 }
                 console.log('Instance: ', instance);
                 ///instance.render(container);

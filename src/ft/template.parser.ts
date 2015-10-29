@@ -95,7 +95,7 @@ module ft {
                var group = this.getAttribGroup(key);
                var groupKey = this.getGroupKey(key, group);
                def[group][groupKey] = this.parseExpressionAttrib(value, key, r.expressionMap, path, group);
-               console.log('Group, key: ', group, groupKey, key);
+               //console.log('Group, key: ', group, groupKey, key);
 
             }, this);
 

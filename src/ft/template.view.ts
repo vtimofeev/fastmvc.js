@@ -110,8 +110,8 @@ module ft {
         // Internal
         ////////////////////////////////////////////////////////////////
 
-        get dispatcher():EventDispatcher {
-            return dispatcher;
+        get globalPointer():PointerModel {
+            return dispatcher.getPointer();
         }
 
         get domDef():IDomDef {

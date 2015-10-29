@@ -78,12 +78,12 @@ var ft;
             //this.setParameters(_.extend({}, template.domTree.params, params));
             this.life = LifeState.Init;
         }
-        Object.defineProperty(TemplateView.prototype, "dispatcher", {
+        Object.defineProperty(TemplateView.prototype, "globalPointer", {
             ////////////////////////////////////////////////////////////////
             // Internal
             ////////////////////////////////////////////////////////////////
             get: function () {
-                return dispatcher;
+                return dispatcher.getPointer();
             },
             enumerable: true,
             configurable: true

@@ -39,22 +39,25 @@ var ft;
             }
             if (pathDefinition) {
                 var sequenceEvent = this.pointer.addSequenceEvent(pointerEvent, target);
-                var event = this.getTreeEventByBrowserEvent(pointerEvent.name, pathDefinition.data, pathDefinition.root, e);
+                var event = this.getTreeEventByBrowserEvent(pointerEvent.name, pathDefinition.data, pathDefinition.root, e, pointerEvent);
                 //console.log('dispatch composite event', pathDefinition.data.path, pointerEvent);
                 this.viewHelper.dispatchTreeEventDown(event);
                 if (sequenceEvent) {
-                    var sequenceEvent = this.getTreeEventByBrowserEvent(sequenceEvent.name, pathDefinition.data, pathDefinition.root, e);
+                    var sequenceEvent = this.getTreeEventByBrowserEvent(sequenceEvent.name, pathDefinition.data, pathDefinition.root, e, sequenceEvent);
                     console.log('dispatch sequence event', pathDefinition.data.path, sequenceEvent);
                     this.viewHelper.dispatchTreeEventDown(sequenceEvent);
                 }
             }
         };
-        EventDispatcher.prototype.getTreeEventByBrowserEvent = function (name, def, view, e) {
-            return { name: name, target: view, def: def, e: e, cancelled: false, prevented: false, depth: 1e2, executionHandlersCount: 0 };
+        EventDispatcher.prototype.getTreeEventByBrowserEvent = function (name, def, view, e, pe) {
+            return { name: name, target: view, def: def, e: e, pe: pe, cancelled: false, prevented: false, depth: 1e2, executionHandlersCount: 0 };
         };
         EventDispatcher.prototype.getCustomTreeEvent = function (name, data, view, depth) {
             if (depth === void 0) { depth = 1; }
             return { name: name, target: view, def: view.domDef, previousTarget: null, currentTarget: view, data: data, cancelled: false, prevented: false, depth: depth, executionHandlersCount: 0 };
+        };
+        EventDispatcher.prototype.getPointer = function () {
+            return this.pointer;
         };
         EventDispatcher.prototype.on = function (type) {
             if (this.eventMap[type])

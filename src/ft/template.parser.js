@@ -76,7 +76,7 @@ var ft;
                 var group = this.getAttribGroup(key);
                 var groupKey = this.getGroupKey(key, group);
                 def[group][groupKey] = this.parseExpressionAttrib(value, key, r.expressionMap, path, group);
-                console.log('Group, key: ', group, groupKey, key);
+                //console.log('Group, key: ', group, groupKey, key);
             }, this);
             def.children = _.map(o.children, function (v, index) { return (_this.htmlObjectToDomTree(v, r, def.path + ',' + index)); }, this);
             _.each(_.keys(def), function (key) { return (_.isEmpty(def[key]) ? delete def[key] : null); });

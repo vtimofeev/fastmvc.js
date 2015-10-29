@@ -4,31 +4,19 @@ module ft {
     export class TemplateChildrenView extends ft.TemplateView {
         // children array
         private _children:ITemplateView[];
-
-        // child context expression execution
-        public child:ITemplateView;
-        public childIndex:number;
-        public childrenLength:number;
-
-        //
         protected childrenLocalParams:any;
 
-        constructor(name:string, params:ITemplateViewParams, template:ITemplate) {
-            super(name, params, {domTree:{}});
+        constructor(name:string, params:ITemplateViewParams) {
+            super(name, params, {domTree: {}});
         }
 
         private createChildren():void {
             var def:IDomDef = this.domDef;
             var className:string = def.params[TemplateParams.childrenClass];
-            var ComponentContructorFunc:any = <ITemplateConstructor> (window[className]);
-            if (!ComponentContructorFunc) throw 'Children class ' + className + ' not found' ;
-
             var prevChildren = this._children;
-            var exParams:any = this.getChildrenExpressionParams(this.getParameters());
 
             var childrenViews:ITemplateView[] = _.map(this.data, function (v:any, k:number) {
-                var child = prevChildren && prevChildren.length ? (prevChildren.splice(0, 1)[0]) : ComponentContructorFunc(this.parent.name + ':' + className + '-' + k, this.childrenLocalParams);
-
+            var child = prevChildren && prevChildren.length ? (prevChildren.splice(0, 1)[0]) : templateManager.createInstance(className, this.parent.name + ':' + className + '-' + k, this.childrenLocalParams);
                 if (v instanceof fmvc.Model) child.model = v;
                 else child.data = v;
                 return child;
@@ -36,12 +24,12 @@ module ft {
             this._children = childrenViews;
 
             _.each(prevChildren, (v:ITemplateView)=>v.dispose());
+            this.applyChildrenParameters();
 
             _.each(this._children, function (child:ITemplateView) {
                 child.parent = this.parent;
                 child.domDef = def;
                 if (!child.inDocument) {
-                    //child.applyParameters();
                     child.isChildren = true;
                     child.createDom();
                     child.enter();
@@ -92,50 +80,40 @@ module ft {
 
         protected applyChildrenParameters():void {
             var params:any = this.getChildrenExpressionParams(this.getParameters());
-            console.log('Apply children params ', this.name, params);
-
+            //console.log('Apply children params ', this.name, params);
             var length = this._children ? this._children.length : 0;
-
             _.each(this._children, (child:ITemplateView, index:number)=> {
                 if (child.disposed) return;
                 child.invalidateData();
-
                 _.each(params, (value:IExpressionName, key:string)=> {
                     this.setCurrentChildToExecutionContext(child, index, length, value.context || this.parent);
-                    var childValue:any = this.getExpressionValue(value);
                     var childParamName:string = this.getChildrenParamName(key);
-                    if(childParamName === 'selected' || childParamName === 'disabled') {
-                        console.log('Apply children parameter ', childParamName, childValue);
-
-                        child.applyParameter(childValue, childParamName);
-                    }
+                    if (childParamName === 'data' || childParamName === 'model') return;
+                    var childValue:any = this.getExpressionValue(value);
+                    child.applyParameter(childValue, childParamName);
                 });
-
-                /*
-                */
             }, this);
         }
 
-        // Executes when applyValueToHost executed
-        public applyChildrenParameter(value:IExpressionName|any, key:string):void {
+        public applyChildrenParameter(value:IExpressionName|any, key:string):void { // Executes when applyValueToHost
             var value:any = this._resultParams[key];
             var length = this._children ? this._children.length : 0;
+            //console.log('Apply children parameter ', value, key);
 
             _.each(this._children, function (child:ITemplateView, index:number) {
                 if (child.disposed) return;
                 this.setCurrentChildToExecutionContext(child, index, length, value.context || this.parent);
                 var childValue:any = _.isObject(value) ? this.getExpressionValue(value) : value;
                 var childParamName:string = this.getChildrenParamName(key);
+                //console.log('Apply each parameter value ', childParamName, childValue);
                 child.applyParameter(childValue, childParamName);
             }, this);
-            //this.setChildContext(null, 0);
         }
 
-        // virtual
-        createDom() {
+        createDom() { // virtual
             if (!this.getElement()) throw 'Cant create children dom, cause not set element directly';
             this.createParameters();
-            console.log('Children params is ', this.getParameters());
+            //console.log('Children params is ', this.getParameters());
         }
 
         enter() {
@@ -161,9 +139,6 @@ module ft {
         }
 
         validateState() {
-        }
-
-        unrender() {
         }
 
         dispose() {

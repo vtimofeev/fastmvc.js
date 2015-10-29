@@ -1,42 +1,75 @@
 ///<reference path="./d.ts" />
 var ft;
 (function (ft) {
-    ft.global = window || {};
-    var tp = new ft.TemplateParser();
+    ft.globalScope = window || {};
+    var templateParser = new ft.TemplateParser();
+    /**
+     * Менеджер классов,
+     * 1. используется для создания классов и регистрации их в глобальном скоупе, имеет возможности для переопределения встроенных методов и параметорв, создания новых.
+     * 2. используется для получения экземпляров классов
+     *
+     */
     var TemplateManager = (function () {
         function TemplateManager() {
             this._templateMap = {};
-            this._templateFunc = {};
+            this._instanceFunc = {};
         }
-        TemplateManager.prototype.createTemplate = function (name, content) {
+        /**
+         * Создаем класc - функцию которая линкует экземпляр "TemplateView" с параметрами заданными при создании класса, и расширением методоа
+         * ***В функции конструкторе используется хак переопределения возвращаемого значения, это работает только для объектов
+         *
+         * @param className
+         * @param content
+         * @param params
+         * @param mixin
+         * @returns {ITemplateConstructor}
+         */
+        TemplateManager.prototype.createClass = function (className, content, params, mixin) {
             var templateData = this.parse(content);
-            var result = this.addTemplate(name, templateData).getTemplateViewFunc(name);
-            if (typeof window !== 'undefined') {
-                ft.global[name] = result;
-                var pathParts = name.split('.');
-                _.reduce(pathParts, function (g, v) { return (g[v] ? g[v] : (g[v] = {})); }, ft.global); // create constructor map at window
-            }
+            if (this._templateMap[className])
+                throw 'TemplateManager: cant add ITempalte object of ' + className + ' cause it exists.';
+            this._templateMap[className] = templateData;
+            var result = this.createInstanceFunc(className, params, mixin);
+            this.registerClass(className, result);
             return result;
         };
+        /**
+         * Фабрика классов, создание экземпляров по имени класса, имени экземпляра, параметрам и расширению методов ( которые в свою очередь будут расширять базовые)
+         * Возвращает расширенный экземпляр TemplateView
+         *
+         * @param className
+         * @param name
+         * @param params
+         * @param mixin
+         * @returns {any}
+         */
+        TemplateManager.prototype.createInstance = function (className, name, params, mixin) {
+            return this._instanceFunc[className](name, params, mixin);
+        };
+        /* Регистрируем класс (функцию конструктор), в глобальном скоупе */
+        TemplateManager.prototype.registerClass = function (className, value) {
+            _.reduce(className.split('.'), function (g, v) { return (g[v] ? g[v] : (g[v] = {})); }, ft.globalScope); // create constructor map at window
+        };
+        /* Создаем функцию конструктор, связанную с текущим именем класса и расширением - параметоров и методоа */
+        TemplateManager.prototype.createInstanceFunc = function (className, baseParams, baseMixin) {
+            var template = this._templateMap[className];
+            if (!this._instanceFunc[className]) {
+                this._instanceFunc[className] = function (name, params, mixin) {
+                    var instanceParams = _.extend({}, baseParams, params); // extend base parameters
+                    var instanceMixin = _.extend({}, baseMixin, mixin); // extend methods
+                    var instance = new ft.TemplateView(name, instanceParams, template);
+                    _.each(instanceMixin, function (v, k) { return instance[key] = v; });
+                    return instance;
+                };
+            }
+            return this._instanceFunc[className];
+        };
+        /* Парсим текстовый шаблон, затем дополнительно обрабатываем для представления в виде "ITemplate" */
         TemplateManager.prototype.parse = function (value) {
-            var objs = tp.parseHtml(value);
-            var template = tp.htmlObjectToTemplate(objs);
+            var objs = templateParser.parseHtml(value);
+            var template = templateParser.htmlObjectToTemplate(objs);
+            //@todo: Добавить проверку синтаксиса html и выражений, выводить в специальный логгер
             return template;
-        };
-        TemplateManager.prototype.addTemplate = function (name, value) {
-            if (this._templateMap[name])
-                throw 'TemplateManager: cant add constructor ' + name + ' cause it exists';
-            this._templateMap[name] = value;
-            return this;
-        };
-        TemplateManager.prototype.getTemplate = function (name) {
-            return this._templateMap[name];
-        };
-        TemplateManager.prototype.getTemplateViewFunc = function (templateName) {
-            var t = this;
-            return this._templateFunc[templateName] || (this._templateFunc[templateName] = function (name, params) {
-                return new ft.TemplateView(name, params, t.getTemplate(templateName));
-            });
         };
         return TemplateManager;
     })();

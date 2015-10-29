@@ -57,7 +57,7 @@ var fmvc;
             configurable: true
         });
         Mediator.prototype.internalHandler = function (e) {
-            if (e && e.global) {
+            if (e && e.globalScope) {
                 this.facade.eventHandler(e);
             }
             else {

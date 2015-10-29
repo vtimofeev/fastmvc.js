@@ -44,11 +44,8 @@ module ft {
     }
 
     export interface ITemplateManager {
-        createTemplate(name:string, content:string):ITemplateConstructor;
-        parse(value:string):ITemplate;
-        addTemplate(name:string, value:ITemplate):ITemplateManager;
-        getTemplate(name:string):ITemplate;
-        getTemplateViewFunc(templateName:string):ft.ITemplateConstructor;
+        createClass(className:string, content:string, params?:any, mixin?:any):ITemplateConstructor;
+        createInstance(className:string, name:string, params?:any, mixin?:any):any;
     }
 
     export interface ITemplateViewHelper {
@@ -97,7 +94,7 @@ module ft {
     }
 
     export interface ITemplateConstructor {
-        (name:string, params?:ITemplateViewParams):ft.TemplateView
+        (name:string, params?:any, mixin?:any):ft.TemplateView
     }
 
     export interface IDynamicTree {
@@ -151,8 +148,6 @@ module ft {
         expressions?:(IExpression|string)[];
     }
 
-    export interface ITemplateViewParams {
-    }
 
     export interface ITemplateView extends fmvc.IView {
         domDef:IDomDef;
@@ -239,6 +234,7 @@ module ft {
 
     export interface ITreeEvent extends fmvc.IEvent {
         e?:any; /* browser event */
+        pe?:IPointerEvent;
         //target:fmvc.Notifier; fmvc.IEvent
 
         def:IDomDef; // from which node we start dispatch event

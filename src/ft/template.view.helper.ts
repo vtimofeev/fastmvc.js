@@ -5,6 +5,7 @@ module ft {
     var svgNs:string = "http://www.w3.org/2000/svg";
     var ComplexDomElementAttributes:string[] = ['style', 'class'];
 
+
     export class TemplateViewHelper implements ITemplateViewHelper {
         private idCounter:number = 0;
         private domElementPathIds:{[id:string]:ITemplateView} = {};
@@ -14,6 +15,7 @@ module ft {
         public enterTreeObject:IGetTreeObjectFunctor;
         public exitTreeObject:IGetTreeObjectFunctor;
         public setDataTreeObject:IGetTreeObjectFunctor;
+
 
         constructor() {
             _.bindAll(this,
@@ -282,8 +284,7 @@ module ft {
         // -----------------------------------------------------------------------------------------------------------
 
         createComponentElement(data:IDomDef, root:TemplateView):ITemplateView {
-            var ComponentConstructor:ITemplateConstructor = window[data.name];
-            var result = ComponentConstructor('view-' + data.name + '-' + this.getNextId(), this.applyFirstContextToExpressionParameters(data.params, root));
+            var result = templateManager.createInstance(data.name, 'view-' + data.name + '-' + this.getNextId(), this.applyFirstContextToExpressionParameters(data.params, root));
             result.parent = root;
             result.domDef = data;
             if (result !== root) result.createDom();
@@ -577,6 +578,7 @@ module ft {
                 // exec event on parent
                 def = view.domDef;
                 e.currentTarget = view.parent;
+
                 e.currentDef = def;
                 this.triggerDefEvent(e);
 
