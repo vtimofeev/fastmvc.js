@@ -62,10 +62,13 @@ module ft {
             var template = this._templateMap[className];
             if (!this._instanceFunc[className]) {
                 this._instanceFunc[className] = function (name:string, params?:any, mixin?:any):ft.TemplateView {
+                    //console.log('CreateInstance  ', name, baseParams, baseMixin, params, mixin);
                     var instanceParams:any = _.extend({}, baseParams, params); // extend base parameters
                     var instanceMixin:any = _.extend({}, baseMixin, mixin); // extend methods
                     var instance = new ft.TemplateView(name, instanceParams, template);
-                    _.each(instanceMixin, (v, k)=>instance[key]=v);
+                    //console.log('CreateInstance base (p),(m) local (p),(m) instance p,m ', name, baseParams, baseMixin, params, mixin, instanceParams, instanceMixin);
+                    _.each(instanceMixin, (v, k)=>instance[k]=v);
+
                     return instance;
                 };
             }

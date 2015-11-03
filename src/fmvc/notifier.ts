@@ -99,14 +99,24 @@ module fmvc
 
         private addListener(object:INotifier, handler:Function):void
         {
+            var hasBind:boolean = this.hasBind(object, handler);
             if(!this._listeners) this._listeners = [];
-            var hasListener = _.filter(this._listeners, (v)=>(v.target===object&&v.handler===handler));
-            if(!hasListener || !hasListener.length) {
+
+            if(!hasBind) {
                 this._listeners.push({target: object, handler: handler});
             }
-            else {
-                this.log('Try duplicate listener ' , object.name);
+        }
+
+        public hasBind(object:INotifier, handler:Function):boolean {
+            var l:number,i:number, ol:IListener;
+            if(!this._listeners) return false;
+
+            for(i=0, l=this._listeners.length; i<l;i++) {
+                ol = this._listeners[i];
+                if(ol.target === object && ol.handler === handler) return true;
             }
+
+            return false;
         }
 
         private removeListener(object:INotifier, handler?:any):void

@@ -45,8 +45,9 @@ module ft {
             var pathId:string = target.getAttribute?target.getAttribute(AttributePathId):null;
             var pathDefinition = this.viewHelper.getPathDefinitionByPathId(pathId);
 
-            var pointerEvent:IPointerEvent = this.pointer.getCompositeEvent(e);
-            if(pointerEvent) { // set global pointer data
+            var pointerEvent:IPointerEvent = this.pointer.tryTransformToCompositeEvent(e);
+            if(pointerEvent.isComposite) { // set global pointer data
+                //console.log('New pointer event: ', pointerEvent.name);
                 this.pointer.setData(pointerEvent);
                 e.preventDefault();
             }

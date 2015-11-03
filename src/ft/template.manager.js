@@ -55,10 +55,12 @@ var ft;
             var template = this._templateMap[className];
             if (!this._instanceFunc[className]) {
                 this._instanceFunc[className] = function (name, params, mixin) {
+                    //console.log('CreateInstance  ', name, baseParams, baseMixin, params, mixin);
                     var instanceParams = _.extend({}, baseParams, params); // extend base parameters
                     var instanceMixin = _.extend({}, baseMixin, mixin); // extend methods
                     var instance = new ft.TemplateView(name, instanceParams, template);
-                    _.each(instanceMixin, function (v, k) { return instance[key] = v; });
+                    //console.log('CreateInstance base (p),(m) local (p),(m) instance p,m ', name, baseParams, baseMixin, params, mixin, instanceParams, instanceMixin);
+                    _.each(instanceMixin, function (v, k) { return instance[k] = v; });
                     return instance;
                 };
             }

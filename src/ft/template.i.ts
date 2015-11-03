@@ -190,7 +190,7 @@ module ft {
 
     export interface IDomDef {
         // system
-        type:string;  // system tag type = text,comment,tag (creation step)
+        type:string;  // system tag type = text,comment,tag,svg (creation step)
         path:string; // system path (creation step)
         parentPath?:string; //
         link?:string // system class link (in class property)

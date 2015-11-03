@@ -12,13 +12,15 @@ var ft;
     var Expression = (function () {
         function Expression() {
             this.counter = 0;
-            this.ExpressionMatchRe = /\{([\(\)\\,\.\|\?:;'"!@A-Za-z<>=\[\]& \+\-\/\*0-9]+)\}/g;
+            this.ExpressionMatchRe = /\{[\(\)\\\.,\|\?:;'"!@A-Za-z<>=\[\]& \+\-\/\*%0-9]+\}/g;
             this.VariableMatchRe = /([A-Za-z0-9 _\-"'\.]+)/gi;
             this.ExResult = '{$0}';
             this.funcMap = {};
         }
         Expression.prototype.strToExpression = function (value) {
-            return this.parseExpressionMultiContent(value);
+            var r = this.parseExpressionMultiContent(value);
+            console.log('Result of ', value, ' is ', r);
+            return r;
         };
         Expression.prototype.getExpressionNameObject = function (value) {
             return { name: value.name };
@@ -152,6 +154,7 @@ var ft;
         Expression.prototype.parseExpressionMultiContent = function (value) {
             var _this = this;
             var matches = value.match(this.ExpressionMatchRe);
+            console.log('Matches: ', matches, ' of ', value);
             if (!(matches && matches.length))
                 return null;
             var expressions = _.map(matches, function (v) { return _this.parseExpressionContent(v.substring(1, v.length - 1)); }, this);
@@ -163,7 +166,7 @@ var ft;
             var simplyfiedExpressions = _.map(expressions, this.simplifyExpression, this);
             _.each(expressions, function (v) { return expressionVars = expressionVars.concat(v.vars); });
             var r = { name: this.getName(), content: value, result: result, vars: expressionVars, expressions: simplyfiedExpressions };
-            //console.log('Expression ', r.name, ' result ', r);
+            console.log('Expression as part ', r.name, ' result ', r);
             return r;
         };
         Expression.prototype.simplifyExpression = function (expression) {
@@ -185,8 +188,8 @@ var ft;
          {a} - simple property
          {a|filterOne|filterTwo} - simple property with filters
          // excluded {a,b,c} - selector of properties
-         {(a||b||c)} - expression executed in context
-         {(a||b?'one':'two')} - expression executed in context
+         {a||b||c} - expression executed in context
+         {a||b?'one':'two'} - expression executed in context
          {data.name as A, (a||b) as V, c as D, (a||b||c) as E|i18n.t|s|d} - expression executed in context with filters
         */
         Expression.prototype.parseExpressionContent = function (value) {
@@ -202,7 +205,9 @@ var ft;
             var valueSpitByFilter = valueReplacedOr.split(/\|/); // get before first `|`
             var expression = (_.first(valueSpitByFilter)).replace(/###or/g, '||');
             result.filters = _.map(_.rest(valueSpitByFilter), function (v) { return String(v).trim(); }); // get after first `|`
+            console.log('Filters ', result.filters);
             var args = this.parseArguments(expression);
+            console.log('Args ', args, 'expression', expression);
             var vars;
             var e;
             if (_.isObject(args)) {
@@ -217,15 +222,16 @@ var ft;
             _.each(vars, function (v) { return _.isObject(v) ? result.vars = [].concat(result.vars, v.vars) : result.vars.push(v); });
             // remove empty keys
             _.each(_.keys(result), function (key) { return (_.isEmpty(result[key]) ? delete result[key] : null); });
+            console.log('Result expression after all ', result);
             return result;
         };
         Expression.prototype.tryParseRoundBracketExpression = function (value, index) {
             var _this = this;
             if (index === void 0) { index = 0; }
-            var expressions = this.getExpressionFromString(value);
+            var expressions = this.getExpressionFromString(value) || value;
             if (!expressions)
                 return value; // @todo review this fix (replace ! sign)
-            var expression = expressions[0];
+            var expression = _.isArray(expressions) ? expressions[0] : expressions;
             // skip direct execution (at handlers);
             if (expression.indexOf('this') > -1)
                 return expression;
@@ -234,7 +240,9 @@ var ft;
                 return memo.replace(new RegExp(v, 'g'), '###' + k);
             }, expression, this);
             _.each(variables, function (v, k) { return convertedExpression = convertedExpression.replace(new RegExp('###' + k, 'g'), _this.getExVarToJsVar(v)); }, this);
-            return { content: expression, expression: convertedExpression, vars: variables };
+            var r = { content: expression, expression: convertedExpression, vars: variables };
+            console.log('Expression after check round ', r);
+            return r;
         };
         Expression.prototype.getExVarToJsVar = function (v) {
             var requestVariable = ((v.indexOf('.') > -1 && v.indexOf('state.') === -1) || v === 'data' ? ('this.' + v) : (v.indexOf('state.') > -1 ? ('this.getState("' + v.replace('state.', '') + '")') : ''));

@@ -13,13 +13,15 @@ module ft {
     export class Expression {
 
         private counter:number = 0;
-        private ExpressionMatchRe:RegExp = /\{([\(\)\\,\.\|\?:;'"!@A-Za-z<>=\[\]& \+\-\/\*0-9]+)\}/g;
+        private ExpressionMatchRe:RegExp = /\{[\(\)\\\.,\|\?:;'"!@A-Za-z<>=\[\]& \+\-\/\*%0-9]+\}/g;
         private VariableMatchRe:RegExp = /([A-Za-z0-9 _\-"'\.]+)/gi;
         private ExResult:string = '{$0}';
         private funcMap:{[id:string]:Function} = {};
 
         public strToExpression(value:string):IExpression {
-            return this.parseExpressionMultiContent(value);
+            var r = this.parseExpressionMultiContent(value);
+            console.log('Result of ' , value, ' is ', r);
+            return r;
         }
         
         public getExpressionNameObject(value:IExpression):IExpressionName {
@@ -167,12 +169,13 @@ module ft {
         }
 
         public strToJsMatch(value:string):string {
-            var m = value.match(this.ExpressionMatchRe)
+            var m = value.match(this.ExpressionMatchRe);
             return m&&m[0]?(m[0]).substring(1,m[0].length-1):'this.internalHandler("' + value + '", e)';
         }
 
         private parseExpressionMultiContent(value:string):IExpression {
             var matches = value.match(this.ExpressionMatchRe);
+            console.log('Matches: ' , matches, ' of ', value);
 
             if (!(matches && matches.length)) return null;
 
@@ -188,7 +191,7 @@ module ft {
             var simplyfiedExpressions = _.map(expressions, this.simplifyExpression, this);
             _.each(expressions, (v)=>expressionVars = expressionVars.concat(v.vars));
             var r = {name: this.getName(), content: value, result: result, vars: expressionVars, expressions: simplyfiedExpressions};
-            //console.log('Expression ', r.name, ' result ', r);
+            console.log('Expression as part ', r.name, ' result ', r);
             return r;
         }
 
@@ -212,8 +215,8 @@ module ft {
          {a} - simple property
          {a|filterOne|filterTwo} - simple property with filters
          // excluded {a,b,c} - selector of properties
-         {(a||b||c)} - expression executed in context
-         {(a||b?'one':'two')} - expression executed in context
+         {a||b||c} - expression executed in context
+         {a||b?'one':'two'} - expression executed in context
          {data.name as A, (a||b) as V, c as D, (a||b||c) as E|i18n.t|s|d} - expression executed in context with filters
         */
         private parseExpressionContent(value:string):IExpression {
@@ -225,13 +228,14 @@ module ft {
                 filters: [], // фильтры
             };
 
-
             var valueReplacedOr = value.replace(/\|\|/g, '###or');
             var valueSpitByFilter = valueReplacedOr.split(/\|/); // get before first `|`
             var expression = (_.first(valueSpitByFilter)).replace(/###or/g, '||');
             result.filters = _.map(_.rest(valueSpitByFilter), (v)=>String(v).trim()); // get after first `|`
+            console.log('Filters ', result.filters);
 
             var args = this.parseArguments(expression);
+            console.log('Args ', args, 'expression', expression);
 
             var vars:(string|ISimpleExpression)[];
             var e;
@@ -244,21 +248,24 @@ module ft {
                 var firstExpression:ISimpleExpression = this.ifSimpleExpression(vars[0]);
                 result.args = firstExpression?firstExpression.expression:vars[0];
             }
+
             _.each(vars, (v)=>_.isObject(v)?result.vars=[].concat(result.vars,(<ISimpleExpression>v).vars):result.vars.push(<string>v));
 
             // remove empty keys
             _.each(_.keys(result), (key)=>(_.isEmpty(result[key]) ? delete result[key] : null));
+            console.log('Result expression after all ', result)
             return result;
         }
 
         private tryParseRoundBracketExpression(value:string, index:number = 0):ISimpleExpression|string {
-            var expressions = this.getExpressionFromString(value);
+            var expressions:string|string[] = this.getExpressionFromString(value) || value;
             if(!expressions) return value; // @todo review this fix (replace ! sign)
 
-            var expression = expressions[0];
+            var expression = _.isArray(expressions)?expressions[0]:expressions ;
 
             // skip direct execution (at handlers);
             if(expression.indexOf('this') > -1) return expression;
+
 
             var variables = _.compact(
                 _.filter(
@@ -273,7 +280,9 @@ module ft {
             }, expression, this);
 
             _.each(variables, (v,k)=>convertedExpression=convertedExpression.replace(new RegExp('###' + k, 'g'), this.getExVarToJsVar(v)), this);
-            return {content:expression, expression: convertedExpression, vars: variables};
+            var r =  {content:expression, expression: convertedExpression, vars: variables};
+            console.log('Expression after check round ', r);
+            return r;
         }
 
         private getExVarToJsVar(v:string):string {
@@ -283,7 +292,6 @@ module ft {
 
         private parseArguments(value:string):string|string[]|Object {
             if (value.indexOf(',') === -1) return this.parseArgument(value);
-
             var result = {};
             _.each(value.split(','), function (argument:string, index:number) {
                 var parsedArgs = this.parseArgument(argument);

@@ -32,8 +32,9 @@ var ft;
             var target = e.target || e.currentTarget;
             var pathId = target.getAttribute ? target.getAttribute(ft.AttributePathId) : null;
             var pathDefinition = this.viewHelper.getPathDefinitionByPathId(pathId);
-            var pointerEvent = this.pointer.getCompositeEvent(e);
-            if (pointerEvent) {
+            var pointerEvent = this.pointer.tryTransformToCompositeEvent(e);
+            if (pointerEvent.isComposite) {
+                //console.log('New pointer event: ', pointerEvent.name);
                 this.pointer.setData(pointerEvent);
                 e.preventDefault();
             }

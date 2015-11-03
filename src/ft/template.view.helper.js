@@ -4,111 +4,93 @@ var ft;
     ft.AttributePathId = 'data-path-id';
     var svgNs = "http://www.w3.org/2000/svg";
     var ComplexDomElementAttributes = ['style', 'class'];
+    var DomDefType = {
+        Tag: 'tag',
+        Svg: 'svg',
+        Text: 'text',
+        Comment: 'comment'
+    };
     var TemplateViewHelper = (function () {
         function TemplateViewHelper() {
             this.idCounter = 0;
             this.domElementPathIds = {};
-            this.composeNames_updateDynamicTree = _.compose(_.compact, _.flatten);
-            _.bindAll(this, 'createTreeObjectFunc', 'addOrReplaceTreeObjectFunc', 'getTreeObjectFunc', 'setDataTreeObjectFunc', 'enterTreeObjectFunc', 'exitTreeObjectFunc', 'removeTreeObject');
-            this.createTreeObject = this.createTreeObjectFunctor();
-            this.enterTreeObject = this.enterTreeObjectFunctor();
-            this.exitTreeObject = this.exitTreeObjectFunctor();
-            this.setDataTreeObject = this.setDataTreeObjectFunctor();
+            this.composeNames_updateDynamicTree = _.compose(_.union, _.compact, _.flatten);
         }
-        TemplateViewHelper.prototype.functorTreeObject = function (treeObjGetter, treeObjFunctor, childrenTreeObjMapper /* reverse if true */, childrenModificator, functorName) {
-            var t = this;
-            function instanceFunctor(data, root) {
-                var treeObject = treeObjGetter(data, root);
-                if (!treeObject)
-                    return null;
-                if (this.isCommentElement(this.getDomElement(treeObject)))
-                    return treeObject;
-                // execute tree object functor
-                if (treeObjFunctor)
-                    treeObjFunctor(treeObject, data, root);
-                // execute tree child mapper
-                if (childrenTreeObjMapper) {
-                    // create children mapper, or use this
-                    var childrenMapperInstance = _.partial((childrenTreeObjMapper === true ? instanceFunctor.bind(t) : childrenTreeObjMapper), _, root);
-                    var childrenMap = _.map(data.children, childrenMapperInstance, this);
-                    // children result executor, appendChild for example
-                    if (childrenModificator) {
-                        var childrenModificatorInstance = _.partial(childrenModificator, _, _, treeObject, data, root);
-                        _.each(childrenMap, function (v, k) { return childrenModificatorInstance(v, data.children[k]); }, this);
-                    }
-                }
-                return treeObject;
-            }
-            return instanceFunctor.bind(t);
-        };
-        TemplateViewHelper.prototype.createTreeObjectFunctor = function () {
-            return this.functorTreeObject(this.createTreeObjectFunc, null, true, this.addOrReplaceTreeObjectFunc, 'create');
-        };
-        TemplateViewHelper.prototype.enterTreeObjectFunctor = function () {
-            return this.functorTreeObject(this.getTreeObjectFunc, this.enterTreeObjectFunc, true, null, 'enter');
-        };
-        TemplateViewHelper.prototype.exitTreeObjectFunctor = function () {
-            return this.functorTreeObject(this.getTreeObjectFunc, this.exitTreeObjectFunc, true, this.removeTreeObject, 'exit');
-        };
-        TemplateViewHelper.prototype.setDataTreeObjectFunctor = function () {
-            return this.functorTreeObject(this.getTreeObjectFunc, this.setDataTreeObjectFunc, true, null, 'setdata');
-        };
-        TemplateViewHelper.prototype.getTreeObjectFunc = function (data, root) {
-            return root.getTreeElementByPath(data.path);
-        };
-        TemplateViewHelper.prototype.createTreeObjectFunc = function (data, root) {
-            var isIncluded = this.isTreeObjectIncluded(data, root);
-            var result;
-            var currentTreeElement = this.getTreeObjectFunc(data, root);
-            var hasVirtual = currentTreeElement && this.isCommentElement(currentTreeElement);
-            if (isIncluded) {
-                if (!currentTreeElement || hasVirtual) {
-                    result = this.isComponentDef(data) ? this.createComponentElement(data, root) : this.createDomElement(data.type, data, root);
-                    this.createChildrenViewTreeObjecFunc(result, data, root);
-                }
-                else {
-                    result = currentTreeElement;
-                }
+        TemplateViewHelper.prototype.createTree = function (data, root) {
+            var treeElement = this.createTreeElement(data, root);
+            root.setTreeElementPath(data.path, treeElement);
+            var treeDomElement = this.getDomElement(treeElement);
+            var i;
+            var childrenLength;
+            if (this.isCommentElement(treeDomElement)) {
+                return treeElement;
             }
             else {
-                result = hasVirtual ? currentTreeElement : this.createDomElement('comment', data, root);
-            }
-            return result;
-        };
-        TemplateViewHelper.prototype.enterTreeObjectFunc = function (object, data, root) {
-            this.setDataTreeObjectFunc(object, data, root);
-            if (object && object instanceof ft.TemplateView && !object.inDocument) {
-                object.enter();
-            }
-            if (this.hasChildrenView(data, root)) {
-                var childrenView = root.getChildrenViewByPath(data.path);
-                childrenView.enter();
-            }
-        };
-        TemplateViewHelper.prototype.exitTreeObjectFunc = function (object, data, root) {
-            var domElement = this.getDomElement(object);
-            var pathId = this.isTagElement(domElement) ? domElement.getAttribute(ft.AttributePathId) : null;
-            this.unregisterDomElementId(pathId);
-            if (this.hasChildrenView(data, root)) {
-                var childrenView = root.getChildrenViewByPath(data.path);
-                childrenView.dispose();
-            }
-            if (object && object instanceof ft.TemplateView && !object === root)
-                object.exit();
-            return object;
-        };
-        TemplateViewHelper.prototype.updateDynamicTreeFast = function (root, group, propertyName) {
-            var tmpl = root.getTemplate();
-            var dynamicTree = tmpl.dynamicTree;
-            var map = root.getTemplate().expressionMap;
-            for (var prop in dynamicTree) {
-                for (var name in dynamicTree[prop]) {
-                    for (var i in dynamicTree[prop][name]) {
-                        var ex = map[dynamicTree[prop][name][i]];
-                        //console.log('Update tree ... ' ,ex, root);
-                        this.applyExpressionToHosts(ex, root);
-                    }
+                for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
+                    var childrenTreeElement = this.createTree(data.children[i], root);
+                    //console.log('CreateDom Append child', childrenTreeElement);
+                    treeDomElement.appendChild(childrenTreeElement instanceof ft.TemplateView ? childrenTreeElement.getElement() : childrenTreeElement);
                 }
+                return treeElement;
+            }
+        };
+        TemplateViewHelper.prototype.validateTree = function (data, root) {
+            var treeElement = this.getTreeElement(data, root);
+            var treeDomElement = this.getDomElement(treeElement);
+            var included = this.isTreeObjectIncluded(data, root);
+            var isComment = this.isCommentElement(treeDomElement);
+            var newElement;
+            var i;
+            var childrenLength;
+            if (isComment && included) {
+                newElement = this.createTree(data, root);
+                this.enterTree(data, root);
+                treeDomElement.parentNode.replaceChild(treeDomElement, this.getDomElement(newElement));
+            }
+            else if (!isComment && !included) {
+                this.exitTree(data, root);
+                newElement = this.createTree(data, root);
+                treeDomElement.parentNode.replaceChild(treeDomElement, this.getDomElement(newElement));
+            }
+            else if (!isComment) {
+                for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
+                    this.validateTree(data.children[i], root);
+                }
+            }
+        };
+        TemplateViewHelper.prototype.enterTree = function (data, root) {
+            var treeElement = this.getTreeElement(data, root);
+            if (treeElement instanceof ft.TemplateView && treeElement !== root) {
+                treeElement.enter();
+            }
+            var i;
+            var childrenLength;
+            var treeDomElement = this.getDomElement(treeElement);
+            if (!this.isCommentElement(treeDomElement)) {
+                this.enterChildrenView(data, root);
+                for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
+                    this.enterTree(data.children[i], root);
+                }
+            }
+        };
+        TemplateViewHelper.prototype.exitTree = function (data, root) {
+            var treeElement = this.getTreeElement(data, root);
+            var i;
+            var childrenLength;
+            var treeDomElement = this.getDomElement(treeElement);
+            var isComment = this.isCommentElement(treeDomElement);
+            if (!isComment) {
+                this.exitChildrenView(data, root);
+                for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
+                    this.exitTree(data.children[i], root);
+                }
+            }
+            if (treeElement instanceof ft.TemplateView && treeElement !== root) {
+                treeElement.exit();
+            }
+            else {
+                var pathId = this.isTagElement(domElement) ? domElement.getAttribute(ft.AttributePathId) : null;
+                this.unregisterDomElementId(pathId);
             }
         };
         TemplateViewHelper.prototype.updateDynamicTree = function (root, group, propertyName) {
@@ -132,84 +114,37 @@ var ft;
             }
             var exNames = this.composeNames_updateDynamicTree(expressionArrays);
             var tmpl = root.getTemplate();
+            // console.log('Update dynamic tree ', root.name, exNames);
             var exObjArrays = _.map(exNames, function (v) { return (tmpl.expressionMap[v]); });
             _.each(exObjArrays, function (v, k) { return _this.applyExpressionToHosts(v, root); }, this);
-        };
-        TemplateViewHelper.prototype.getChangedExpressionNames = function (group, map, root) {
-            return _.map(map, function (exNames, propName) { return (root.isChangedDynamicProperty(propName) ? exNames : null); }, this);
-        };
-        TemplateViewHelper.prototype.setDataTreeObjectFunc = function (object, data, root) {
-            var _this = this;
-            var domElement = this.getDomElement(object);
-            //set all dom attributes
-            if (this.isTagElement(domElement) && !domElement.getAttribute(ft.AttributePathId)) {
-                // simple attributes (id, title, name...)
-                var attribs = data.attribs;
-                var attrsResult = attribs ? _.reduce(attribs, function (r, value, key) { return (_this.specialDomAttrs.indexOf(key) < 0 ? (r[key] = _this.getSimpleOrExpressionValue(value, root)) : null, r); }, {}, this) : {};
-                var domElementPathId = this.getNextId();
-                attrsResult[ft.AttributePathId] = domElementPathId;
-                if (this.isSvgNode(data.name)) {
-                    this.setDomElementAttributes(attrsResult, domElement);
-                }
-                else {
-                    this.setSvgElementAttributes(attrsResult, domElement);
-                }
-                this.registerDomElementId(domElementPathId, data, root);
-                // class
-                if (attribs && attribs.class) {
-                    var classesValues = this.getPropertyValues('attribs', 'class', data, root);
-                    this.setDomElementClasses(classesValues, domElement, data, root); // side effect, root add map enabled classes
-                }
-                // style
-                if (attribs && attribs.style) {
-                    var stylesValues = this.getPropertyValues('attribs', 'style', data, root);
-                    this.setDomElementStyles(stylesValues, domElement, root);
-                }
-            }
-            // data
-            if (data.data) {
-                domElement.textContent = this.getSimpleOrExpressionValue(data.data, root);
-            }
-        };
-        TemplateViewHelper.prototype.addOrReplaceTreeObjectFunc = function (object, data, parent, parentData, root) {
-            var objectElement = this.getDomElement(object);
-            if (objectElement.parentNode)
-                return;
-            var parentElement = this.getDomElement(parent);
-            if (!parentElement)
-                throw 'Has no parent element';
-            var previousObject = this.getTreeObjectFunc(data, root);
-            var previousElement = previousObject ? this.getDomElement(previousObject) : null;
-            if (previousObject && previousObject !== object) {
-                if (object instanceof ft.TemplateView) {
-                    object.enter();
-                    object.validate();
-                }
-                else {
-                    this.setDataTreeObjectFunc(object, data, root);
-                }
-                parentElement.replaceChild(objectElement, previousElement);
-            }
-            else {
-                //console.log('Append child. ', data.path, objectElement.parentNode, objectElement);
-                parentElement.appendChild(objectElement);
-            }
-            if (previousObject && !this.isCommentElement(previousObject)) {
-                this.exitTreeObject(data, root);
-            }
-            root.setTreeElementPath(data.path, object);
-        };
-        TemplateViewHelper.prototype.removeTreeObject = function (object, data, parent, parentData, root) {
-            //this.getDomElement(parent).replaceChild(this.getDomElement(object), this.getCommentElement(data));
-            this.getDomElement(parent).removeChild(this.getDomElement(object));
-            if (object instanceof ft.TemplateView)
-                object.setTreeElementPath(data.path, null);
         };
         // -----------------------------------------------------------------------------------------------------------
         // Creation
         // -----------------------------------------------------------------------------------------------------------
+        TemplateViewHelper.prototype.createTreeElement = function (data, root) {
+            var isIncluded = this.isTreeObjectIncluded(data, root);
+            var result = null;
+            if (isIncluded) {
+                if (this.isComponentDef(data)) {
+                    result = this.createComponentElement(data, root);
+                }
+                else {
+                    result = this.createDomElement(data.type, data, root);
+                }
+                this.createChildrenView(result, data, root);
+            }
+            else {
+                result = this.createDomElement('comment', data, root);
+            }
+            if (data.params && data.params.ln) {
+                root[data.params.ln] = result; // Установка ссылки на рутовый элемент
+            }
+            return result;
+        };
         TemplateViewHelper.prototype.createComponentElement = function (data, root) {
-            var result = ft.templateManager.createInstance(data.name, 'view-' + data.name + '-' + this.getNextId(), this.applyFirstContextToExpressionParameters(data.params, root));
+            var dataParams = this.applyFirstContextToExpressionParameters(data.params, root);
+            var result = ft.templateManager.createInstance(data.name, 'view-' + data.name + '-' + this.getNextId(), dataParams);
+            //console.log('CreateComponent ', data.name, result !== root, dataParams, result);
             result.parent = root;
             result.domDef = data;
             if (result !== root)
@@ -217,22 +152,28 @@ var ft;
             return result;
         };
         TemplateViewHelper.prototype.createDomElement = function (type, data, root) {
-            var name = data.name;
+            var result;
             switch (type) {
-                case 'text':
-                    return document.createTextNode(_.isString(data.data) ? data.data : '');
-                case 'comment':
+                case DomDefType.Tag:
+                    var result = document.createElement(data.name);
+                    this.initDomElement(result, data, root);
+                    return result;
+                case DomDefType.Text:
+                    var result = document.createTextNode('');
+                    this.initTextElement(result, data, root);
+                    return result;
+                case DomDefType.Comment:
                     return document.createComment(data.path);
+                case DomDefType.Svg:
+                    result = document.createElementNS(svgNs, data.name);
+                    this.initDomElement(result, data, root);
+                    return result;
                 default:
-                    if (name === 'svg' || name === 'circle') {
-                        return document.createElementNS(svgNs, name);
-                    }
-                    else {
-                        return document.createElement(name);
-                    }
+                    throw 'Cant create dom element ' + type + ' of ' + data.path + ', ' + root.name;
+                    return null;
             }
         };
-        TemplateViewHelper.prototype.createChildrenViewTreeObjecFunc = function (object, data, root) {
+        TemplateViewHelper.prototype.createChildrenView = function (object, data, root) {
             if (this.hasChildrenDef(data)) {
                 var childrenView = new ft.TemplateChildrenView(root.name + ':ChildView-' + this.getNextId(), this.applyFirstContextToExpressionParameters(root.getParameters(), root));
                 childrenView.domDef = data;
@@ -242,6 +183,62 @@ var ft;
                 childrenView.enter();
                 root.setChildrenViewPath(data.path, childrenView);
             }
+        };
+        TemplateViewHelper.prototype.initDomElement = function (object, data, root) {
+            var _this = this;
+            //console.log('Init dom element ', object, data, root);
+            var domElement = this.getDomElement(object);
+            //console.log(root.name, data.path, ' SetData');
+            /* Процесс установки аттрибутов, в том числе с расчетом выражений, для конкретного узла Dom */
+            if (this.isTagElement(domElement) && !domElement.getAttribute(ft.AttributePathId)) {
+                //console.log(root.name, data.path, ' ApplyData');
+                // Вычисление аттрибутов
+                var domElementPathId = this.getNextId();
+                var attribs = data.attribs;
+                var attrsResult = attribs ? _.reduce(attribs, function (r, value, key) { return (_this.specialDomAttrs.indexOf(key) < 0 ? (r[key] = _this.getSimpleOrExpressionValue(value, root)) : null, r); }, {}, this) : {};
+                // Установка глобального идентификатора элемента для событий
+                attrsResult[ft.AttributePathId] = domElementPathId;
+                // Установка аттрибутов
+                if (data.type === 'tag') {
+                    this.setDomElementAttributes(attrsResult, domElement);
+                }
+                else {
+                    this.setSvgElementAttributes(attrsResult, domElement);
+                }
+                // Регистрация элемента для диспетчера
+                this.registerDomElementId(domElementPathId, data, root);
+                // Установка классов
+                if (attribs && attribs.class) {
+                    var classesValues = this.getPropertyValues('attribs', 'class', data, root);
+                    this.setDomElementClasses(classesValues, domElement, data, root); // side effect, root add map enabled classes
+                }
+                // Установка стилей
+                if (attribs && attribs.style) {
+                    var stylesValues = this.getPropertyValues('attribs', 'style', data, root);
+                    this.setDomElementStyles(stylesValues, domElement, root);
+                }
+            }
+        };
+        /* Установка контента текстового элемента */
+        TemplateViewHelper.prototype.initTextElement = function (object, data, root) {
+            if (data.data) {
+                object.textContent = this.getSimpleOrExpressionValue(data.data, root);
+            }
+        };
+        // -----------------------------------------------------------------------------------------------------------
+        // Children view
+        // -----------------------------------------------------------------------------------------------------------
+        TemplateViewHelper.prototype.enterChildrenView = function (data, root) {
+            if (!this.hasChildrenView(data, root))
+                return;
+            var childrenView = root.getChildrenViewByPath(data.path);
+            childrenView.enter();
+        };
+        TemplateViewHelper.prototype.exitChildrenView = function (data, root) {
+            if (!this.hasChildrenView(data, root))
+                return;
+            var childrenView = root.getChildrenViewByPath(data.path);
+            childrenView.exit();
         };
         // -----------------------------------------------------------------------------------------------------------
         // Updates, apply value
@@ -255,18 +252,19 @@ var ft;
             for (i = 0; i < l; i++) {
                 host = exObj.hosts[i];
                 /*
-                performance bench
-                if(host.group === 'data') result = Math.round(Math.random()*100);
+                 performance bench
+                 if(host.group === 'data') result = Math.round(Math.random()*100);
                  */
                 result = result || (host.key === 'class' ? root.getCssClassExpressionValue(exObj) : root.getExpressionValue(exObj));
                 el = this.getDomElement(root.getTreeElementByPath(host.path));
+                //console.log('Apply ', root.name, host.path, host.key, result);
                 if (el && el.nodeType != 8)
                     this.applyValueToHost(result, el, host, root);
             }
         };
         TemplateViewHelper.prototype.applyValueToHost = function (value, el, host, root) {
             var key = host.key;
-            //console.log('Apply to ' , host.path, host.key, value);
+            //console.log('Apply to ', host.path, host.key, value);
             switch (host.group) {
                 case 'data':
                     el.textContent = value;
@@ -328,6 +326,9 @@ var ft;
         // -----------------------------------------------------------------------------------------------------------
         // Attrs & values
         // -----------------------------------------------------------------------------------------------------------
+        TemplateViewHelper.prototype.getTreeElement = function (data, root) {
+            return root.getTreeElementByPath(data.path);
+        };
         TemplateViewHelper.prototype.isSvgNode = function (name) {
             return name === 'svg' || name === 'circle' || false;
         };
@@ -335,6 +336,9 @@ var ft;
             var _this = this;
             var functor = (attrName === 'class') ? this.getClassSimpleOrExpressionValue : this.getSimpleOrExpressionValue;
             return _.reduce(data[group][attrName], function (result, value, key) { return (result[key] = functor.call(_this, value, root), result); }, {}, this);
+        };
+        TemplateViewHelper.prototype.getChangedExpressionNames = function (group, map, root) {
+            return _.map(map, function (exNames, propName) { return (root.isChangedDynamicProperty(propName) ? exNames : null); }, this);
         };
         TemplateViewHelper.prototype.getSimpleOrExpressionValue = function (value, root) {
             return _.isObject(value) ? this.getExpressionValue(value, root) : value;
@@ -346,6 +350,7 @@ var ft;
             return root.getExpressionValue(value);
         };
         TemplateViewHelper.prototype.registerDomElementId = function (id, data, root) {
+            //console.log('Register dom', id, data.path);
             this.domElementPathIds[id] = { data: data, root: root };
         };
         TemplateViewHelper.prototype.unregisterDomElementId = function (id) {
@@ -404,16 +409,18 @@ var ft;
             _.each(vals, function (value, name) { return object.style[name] = (value ? value : ''); });
         };
         TemplateViewHelper.prototype.setDomElementAttributes = function (attrs, object) {
-            _.each(attrs, function (value, name) {
+            for (name in attrs) {
+                var value = attrs[name];
                 var method = value ? object.setAttribute : object.removeAttribute;
                 method.call(object, name, value);
-            });
+            }
         };
         TemplateViewHelper.prototype.setSvgElementAttributes = function (attrs, object) {
-            _.each(attrs, function (value, name) {
+            for (name in attrs) {
+                var value = attrs[name];
                 var method = value ? object.setAttributeNS : object.removeAttributeNS;
                 method.call(object, null, name, value);
-            });
+            }
         };
         TemplateViewHelper.prototype.getDomElement = function (value) {
             return (value instanceof ft.TemplateView ? value.getElement() : value);
@@ -471,6 +478,7 @@ var ft;
             var view = (e.currentTarget || e.target);
             //console.log('Trigger def event, ', e.name, ' path ', def.path);
             if (!view.disabled && def.handlers && def.handlers[e.name]) {
+                //console.log('Has trigger event, ', e.name, ' path ', def.path);
                 view.evalHandler(def.handlers[e.name], e);
                 e.executionHandlersCount++;
             }

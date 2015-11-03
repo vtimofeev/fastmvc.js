@@ -49,7 +49,7 @@ var ft;
         function PointerModel(data, opts) {
             _super.call(this, PointerModel.Name, data, opts);
         }
-        PointerModel.prototype.getCompositeEvent = function (e) {
+        PointerModel.prototype.tryTransformToCompositeEvent = function (e) {
             var transformName = EventTransform[e.type];
             var isTouch = e.type.indexOf('touch') === 0;
             var eventData;
@@ -61,7 +61,7 @@ var ft;
             else {
                 eventData = e;
             }
-            var result = { name: transformName, clientX: eventData.clientX, clientY: eventData.clientY, time: e.timeStamp };
+            var result = { name: transformName, clientX: eventData.clientX, clientY: eventData.clientY, time: e.timeStamp, isComposite: true };
             return transformName ? result : e;
         };
         PointerModel.prototype.addSequenceEvent = function (e, target) {

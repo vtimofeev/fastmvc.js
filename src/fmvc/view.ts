@@ -9,19 +9,23 @@ module fmvc {
         Template: 32,
         Theme: 64,
         I18n: 128,
-        All: (1 | 2 | 4 | 8 | 16| 32 | 64 | 128)
+        All: (1 | 2 | 4 | 8 | 16 | 32 | 64 | 128)
+    };
+
+    var ViewBindedMethods = {
+        Validate: 'validate'
     };
 
     export var frameExecution:number = 0;
     var nextFrameHandlers:Function[] = [];
-    var maxFrameCount:number = 1000;
+    var maxFrameCount:number = 2000;
     var waiting:boolean = false;
     var frameStep:number = 1;
 
     function requestFrameHandler() {
-        if(waiting) return;
+        if (waiting) return;
         waiting = true;
-        window.requestAnimationFrame?window.requestAnimationFrame(executeNextFrameHandlers):setTimeout(executeNextFrameHandlers,0);
+        window.requestAnimationFrame ? window.requestAnimationFrame(executeNextFrameHandlers) : setTimeout(executeNextFrameHandlers, 0);
     }
 
     export function nextFrameHandler(handler:Function, context:IView, ...params:any[]) {
@@ -30,20 +34,20 @@ module fmvc {
         requestFrameHandler();
     }
 
-
     function executeNextFrameHandlers(time:number):void {
-        if(++frameExecution%frameStep===0) {
+        if (++frameExecution % frameStep === 0) {
             var executedHandlers = nextFrameHandlers.splice(0, maxFrameCount);
             _.each(executedHandlers, (v:Function, k:number)=>v());
         }
         waiting = false;
-        if(nextFrameHandlers.length) requestFrameHandler();
+        if (nextFrameHandlers.length) requestFrameHandler();
     }
 
 
     export class View extends Notifier implements IView {
         private _parent:IView;
         private _mediator:Mediator;
+
         private _model:Model<any>;
         private _data:any;
 
@@ -52,11 +56,14 @@ module fmvc {
         private _invalidate:number = 0;
         private _isWaitingForValidate:boolean = false;
         private _inDocument:boolean = false;
+        private _isDomCreated:boolean = false;
+
         private _element:HTMLElement;
+        private _binds:INotifier[];
 
         constructor(name:string) {
             super(name, TYPE_VIEW);
-            _.bindAll(this, 'validate');
+            _.bindAll(this, ViewBindedMethods.Validate);
         }
 
         get parent():IView {
@@ -67,13 +74,12 @@ module fmvc {
             this._parent = value;
         }
 
-        // Properties: mediator, data, model
         public getElement():HTMLElement {
             return <HTMLElement> this._element;
         }
 
         public setElement(value:HTMLElement) {
-            if(this._element) throw Error('Cant set element of the fmvc.View instance ' + this.name);
+            if (this._element) throw Error('Cant set element of the fmvc.View instance ' + this.name);
             this._element = value;
         }
 
@@ -101,7 +107,7 @@ module fmvc {
         }
 
         public setState(name:string, value:any):IView {
-            if(this._states[name] === value) return this;
+            if (this._states[name] === value) return this;
             this._states[name] = value;
             this.invalidate(InvalidateType.State);
             return this;
@@ -109,6 +115,10 @@ module fmvc {
 
         public getState(name:string):any {
             return this._states[name];
+        }
+
+        public get model():Model<any> {
+            return this._model;
         }
 
         public set model(value:Model<any>) {
@@ -120,7 +130,7 @@ module fmvc {
         }
 
         public setData(value:any):IView {
-            if(this._data === value) return this;
+            if (this._data === value) return this;
             this._data = value;
             this.invalidate(InvalidateType.Data);
             return this;
@@ -130,140 +140,191 @@ module fmvc {
             return this._data;
         }
 
-        public get app():any {
-            return (this._mediator&&this._mediator.facade)?this._mediator.facade.model:(this.parent?this.parent.app:null);
-        }
-
         public setModel(value:Model<any>):IView {
-            if(value != this._model) {
-                if(this._model) this._model.unbind(this);
+            if (value != this._model) {
+                if (this._model) this._model.unbind(this);
+                if (value && value instanceof Model) value.bind(this, this.modelChangeHandler);
+                this.setData(value ? value.data : null);
                 this._model = value;
-                if(value) this._model.bind(this, this.invalidateData);
-                this.setData(value?value.data:null);
             }
             return this;
         }
 
-        public get model():Model<any> {
-            return this._model;
+        public get app():any {
+            return (this._mediator && this._mediator.facade) ? this._mediator.facade.model : (this.parent ? this.parent.app : null);
         }
 
         public get inDocument():boolean {
             return this._inDocument;
         }
 
-        // events
-
-        public getEventNameByDomEvent(e:any):string {
-            return '';
+        public get isDomCreated():boolean {
+            return this._isDomCreated;
         }
 
-        public domHandler(e:any):void {
-            this.sendEvent(this.getEventNameByDomEvent(e), e);
-        }
-
-        // lifecycle
         public createDom():void {
+            if (this._isDomCreated) return;
+            this.beforeCreate();
+            this.createDomImpl();
+            this._isDomCreated = true;
+            this.afterCreate();
+        }
+
+        protected createDomImpl() {
             this.setElement(document.createElement('div'));
         }
 
         public enter():void {
-            if(this._inDocument) throw new Error('Cant enter, it is in document');
+            if (this._inDocument) throw new Error('Cant enter, it is in document');
+            this.enterImpl();
             this._inDocument = true;
-            //this.invalidate(InvalidateType.Data | InvalidateType.Children);
+            this.afterEnter();
         }
 
-        public beforeEnter() {
+        protected enterImpl():void {
+            if (this._model) this._model.bind(this, this.modelChangeHandler);
+            if (this._binds) this._binds.forEach((v)=>v.bind(this, this.invalidateApp));
         }
-
-        public afterEnter() {
-        }
-
-        public beforeCreate() {
-        }
-
-        public afterCreate() {
-        }
-
-        public beforeExit() {
-        }
-
-        public afterExit() {
-        }
-
-
 
         public exit():void {
-            this._states = {};
+            this.beforeExit();
+            this.exitImpl();
             this._inDocument = false;
+            this.afterExit();
+        }
+
+        protected modelChangeHandler(e:IEvent) {
+            this.setData(this.model.data);
+            this.invalidateData(); //@todo check
+            if (e && e.name === Event.Model.Disposed) this.dispose(); //@todo analyze
+        }
+
+        protected exitImpl():void {
+
+            if (this._model) this._model.unbind(this);
+            if (this._binds) this._binds.forEach((v)=>v.unbind(this));
+        }
+
+        public beforeCreate():void {
+        }
+
+        public afterCreate():void {
+        }
+
+        public beforeEnter():void {
+        }
+
+        public afterEnter():void {
+        }
+
+        public beforeExit():void {
+        }
+
+        public afterExit():void {
+        }
+
+        public afterRender():void {
+        }
+
+        public beforeUnrender():void {
+        }
+
+
+        public invalidate(value:number):void {
+            this._invalidate = this._invalidate | value;
+            if (!this._isWaitingForValidate) {
+                this._isWaitingForValidate = true;
+                nextFrameHandler(this.validate, this);
+            }
         }
 
         public get isWaitingForValidate() {
             return this._isWaitingForValidate;
         }
 
-        public invalidate(value:number):void {
-            this._invalidate = this._invalidate | value;
-            if(!this._isWaitingForValidate) {
-                this._isWaitingForValidate = true;
-                //console.log('Invalidate... ', this.name);
-                nextFrameHandler(this.validate, this);
-            }
-        }
-
-        public invalidateData(e?:IEvent):void {
+        public invalidateData():void {
             this.invalidate(InvalidateType.Data);
-            if(e && e.name === Event.Model.Disposed) this.dispose();
         }
 
         public invalidateApp():void {
             this.invalidate(InvalidateType.App);
         }
 
-        public validate():void {
-            if(!this.inDocument) return;
-            if(!this._invalidate) return;
+        public invalidateAll():void {
+            this.invalidate(InvalidateType.App | InvalidateType.Data | InvalidateType.State);
+        }
 
-                if (this._invalidate & InvalidateType.Data) this.validateData();
-                if (this._invalidate & InvalidateType.State) this.validateState();
-                if (this._invalidate & InvalidateType.Parent) this.validateParent();
-                if (this._invalidate & InvalidateType.Children) this.validateChildren();
-                if (this._invalidate & InvalidateType.App) this.validateApp();
+        public validate():void {
+            if (!this._inDocument || !this._invalidate) return;
+
+            if (this._invalidate & InvalidateType.State) this.validateState();
+            if (this._invalidate & InvalidateType.Data) this.validateData();
+            if (this._invalidate & InvalidateType.App) this.validateApp();
+
+            //if (this._invalidate & InvalidateType.Parent) this.validateParent();
+            //if (this._invalidate & InvalidateType.Children) this.validateChildren();
             /*
-            if(this._invalidate & InvalidateType.Template) this.validateTemplate();
-            if(this._invalidate & InvalidateType.Theme) this.validateTheme();
-            if(this._invalidate & InvalidateType.I18n) this.validateI18n();
-            */
+             if(this._invalidate & InvalidateType.Template) this.validateTemplate();
+             if(this._invalidate & InvalidateType.Theme) this.validateTheme();
+             if(this._invalidate & InvalidateType.I18n) this.validateI18n();
+             */
             this._invalidate = 0;
             this._isWaitingForValidate = false;
         }
 
-        //protected validateRecreateTree():void {}
-        protected validateData():void {}
-        protected validateState():void {}
-        protected validateParent():void {}
-        protected validateChildren():void {}
-        protected validateApp():void {}
-        protected validateTemplate():void {}
+        protected validateData():void {
+        }
 
-        public render(element:Element):IView {
-            if(this._inDocument) throw 'Cant render view, it is in document';
+        protected validateState():void {
+        }
+
+        protected validateApp():void {
+        }
+
+        public render(parent:Element, replaced?:Element):IView {
+            var requiredValidate:boolean = this.isDomCreated;
             this.createDom();
             this.enter();
-            element.appendChild(this.getElement());
-            this.afterEnter();
+            if(requiredValidate) this.invalidateAll();
+
+            if (replaced) {
+                parent.replaceChild(this.getElement(), replaced);
+            }
+            else {
+                parent.appendChild(this.getElement());
+            }
+
+            this.afterRender();
             return this;
         }
 
-        public unrender() {
-            if(this.getElement().parentNode) this.getElement().parentNode.removeChild(this.getElement());
+        public unrender(replace?:Element):IView {
+            this.exit();
+            this.beforeUnrender();
+            var parentElement = this.getElement().parentNode;
+            if (!parentElement) return this;
+
+            if (replace) {
+                parentElement.replaceChild(replace, this.getElement());
+            } else {
+                parentElement.removeChild(this.getElement());
+            }
+            return this;
+
         }
 
-        // Overrides of Notifier
         public dispose() {
             this.exit();
             this.unrender();
             super.dispose();
+
+            // Clean refs
+            this._states = null;
+            this._parent = null;
+            this._mediator = null;
+            this._model = null;
+            this._data = null;
+            this._binds = null;
         }
 
         public sendEvent(name:string, data:any = null, sub:string = null, error:any = null, global:boolean = false):void {
@@ -275,11 +336,23 @@ module fmvc {
             if (this.mediator && this.mediator.facade) this.mediator.facade.logger.add(this.name, messages);
             return this;
         }
+
+        protected unregisterBind(value:INotifier):void {
+            var i:number = this._binds.indexOf(value);
+            if (i > -1) this._binds.splice(i, 1);
+            value.unbind(this);
+        }
+
+        protected registerBind(value:INotifier):void {
+            if (!this._binds) this._binds = [];
+            if (this._binds.indexOf(value) > -1) return;
+            this._binds.push(value);
+            if (this.inDocument) value.bind(this, this.invalidateApp);
+        }
     }
 
 
     export interface IView extends INotifier {
-        setModel(value:Model<any>):IView;
         app:any;
         data:any;
         model:Model<any>;
@@ -288,29 +361,38 @@ module fmvc {
         inDocument:boolean;
 
         setMediator(value:Mediator):IView;
+        setModel(value:Model<any>):IView;
+        setData(value:any):IView;
+
         createDom():void;
         enter():void;
         exit():void;
-        render(element:Element):IView;
+        render(element:Element, replace?:Element):IView;
+        unrender(replace?:Element):IView;
+
+        getState(name:string):any;
+        setState(name:string, value:any):void;
+        setStates(value:any):IView; // Return generic type Template/View
+
         invalidate(value:number):void;
+        invalidateData():void;
+        invalidateApp():void;
+        invalidateAll():void;
+
         validate():void;
-        domHandler(e:any):void;
 
         getElement():HTMLElement;
         setElement(value:HTMLElement):void;
-        
-        // overrides start
+
+        // overrides
         beforeCreate():void;
         afterCreate():void;
         beforeEnter():void;
         afterEnter():void;
         beforeExit():void;
         afterExit():void;
-        // overrides end
-
-        getState(name:string):any;
-        setState(name:string, value:any):void;
-        setStates(value:any):IView; // Return generic type Template/View
+        afterRender():void;
+        beforeUnrender():void;
     }
 
 }

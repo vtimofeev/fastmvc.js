@@ -22,12 +22,14 @@ declare module fmvc {
         private _type;
         private _events;
         private _root;
+        private _mode;
         model: {
             [id: string]: Model<any>;
         };
         mediator: {
             [id: string]: Mediator;
         };
+        mode: number;
         root: Element;
         name: string;
         type: string;
@@ -68,16 +70,17 @@ declare module fmvc {
         type: string;
         listenerCount: number;
         setFacade(facade: fmvc.Facade): Notifier;
+        bind(object: any, handler: any): Notifier;
+        unbind(object: any, handler?: any): Notifier;
         sendEvent(name: string, data?: any, changes?: any, sub?: string, error?: any): void;
-        log(...messages: string[]): Notifier;
+        log(...args: string[]): Notifier;
         registerHandler(): void;
         removeHandler(): void;
-        bind(object: any, handler?: any): Notifier;
-        unbind(object: any): Notifier;
         private addListener(object, handler);
-        private removeListener(object);
+        hasBind(object: INotifier, handler: Function): boolean;
+        private removeListener(object, handler?);
         private removeAllListeners();
-        private _sendToListners(e);
+        private sendToListeners(e);
         dispose(): void;
     }
     interface IListener {
@@ -89,9 +92,9 @@ declare module fmvc {
         type: string;
         disposed: boolean;
         facade: fmvc.Facade;
-        sendEvent(name: string, data: any): void;
-        registerHandler(): void;
-        removeHandler(): void;
+        sendEvent(name: string, data: any, ...rest: any[]): void;
+        bind(context: INotifier, handler: Function): INotifier;
+        unbind(context: INotifier, handler?: Function): INotifier;
         dispose(): void;
     }
     interface IEvent {
@@ -112,6 +115,7 @@ declare module fmvc {
         enabledState?: boolean;
         enabledEvents?: boolean;
         watchChanges?: boolean;
+        changesToCopy?: boolean;
         history?: boolean;
     }
     var ModelState: {
@@ -132,6 +136,7 @@ declare module fmvc {
         enabledEvents: boolean;
         enabledState: boolean;
         watchChanges: boolean;
+        changesToCopy: boolean;
         constructor(name: string, data?: any, opts?: IModelOptions);
         reset(): Model<T>;
         d: T;
@@ -139,11 +144,12 @@ declare module fmvc {
         getData(): T;
         setData(value: T): void;
         changes: any;
+        setChanges(value: T): void;
         parseValueAndSetChanges(value: T): any;
         state: string;
         prevState: string;
         setState(value: string): Model<T>;
-        length: any;
+        length: number;
         sendEvent(name: string, data?: any, changes?: any, sub?: string, error?: any): void;
         dispose(): void;
         queue(create?: boolean): ModelQueue<T>;
@@ -229,7 +235,9 @@ declare module fmvc {
         private _invalidate;
         private _isWaitingForValidate;
         private _inDocument;
+        private _isDomCreated;
         private _element;
+        private _binds;
         constructor(name: string);
         parent: IView;
         getElement(): HTMLElement;
@@ -243,39 +251,43 @@ declare module fmvc {
         model: Model<any>;
         data: any;
         setData(value: any): IView;
-        app: any;
         setModel(value: Model<any>): IView;
+        app: any;
         inDocument: boolean;
-        getEventNameByDomEvent(e: any): string;
-        domHandler(e: any): void;
+        isDomCreated: boolean;
         createDom(): void;
+        protected createDomImpl(): void;
         enter(): void;
-        beforeEnter(): void;
-        afterEnter(): void;
+        protected enterImpl(): void;
+        exit(): void;
+        protected modelChangeHandler(e: IEvent): void;
+        protected exitImpl(): void;
         beforeCreate(): void;
         afterCreate(): void;
+        beforeEnter(): void;
+        afterEnter(): void;
         beforeExit(): void;
         afterExit(): void;
-        exit(): void;
-        isWaitingForValidate: boolean;
+        afterRender(): void;
+        beforeUnrender(): void;
         invalidate(value: number): void;
-        invalidateData(e?: IEvent): void;
+        isWaitingForValidate: boolean;
+        invalidateData(): void;
         invalidateApp(): void;
+        invalidateAll(): void;
         validate(): void;
         protected validateData(): void;
         protected validateState(): void;
-        protected validateParent(): void;
-        protected validateChildren(): void;
         protected validateApp(): void;
-        protected validateTemplate(): void;
-        render(element: Element): IView;
-        unrender(): void;
+        render(parent: Element, replaced?: Element): IView;
+        unrender(replace?: Element): IView;
         dispose(): void;
         sendEvent(name: string, data?: any, sub?: string, error?: any, global?: boolean): void;
         log(...messages: any[]): View;
+        protected unregisterBind(value: INotifier): void;
+        protected registerBind(value: INotifier): void;
     }
     interface IView extends INotifier {
-        setModel(value: Model<any>): IView;
         app: any;
         data: any;
         model: Model<any>;
@@ -283,13 +295,21 @@ declare module fmvc {
         mediator: Mediator;
         inDocument: boolean;
         setMediator(value: Mediator): IView;
+        setModel(value: Model<any>): IView;
+        setData(value: any): IView;
         createDom(): void;
         enter(): void;
         exit(): void;
-        render(element: Element): IView;
+        render(element: Element, replace?: Element): IView;
+        unrender(replace?: Element): IView;
+        getState(name: string): any;
+        setState(name: string, value: any): void;
+        setStates(value: any): IView;
         invalidate(value: number): void;
+        invalidateData(): void;
+        invalidateApp(): void;
+        invalidateAll(): void;
         validate(): void;
-        domHandler(e: any): void;
         getElement(): HTMLElement;
         setElement(value: HTMLElement): void;
         beforeCreate(): void;
@@ -298,9 +318,8 @@ declare module fmvc {
         afterEnter(): void;
         beforeExit(): void;
         afterExit(): void;
-        getState(name: string): any;
-        setState(name: string, value: any): void;
-        setStates(value: any): IView;
+        afterRender(): void;
+        beforeUnrender(): void;
     }
 }
 declare module fmvc {

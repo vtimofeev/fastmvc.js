@@ -99,15 +99,23 @@ var fmvc;
         Notifier.prototype.removeHandler = function () {
         };
         Notifier.prototype.addListener = function (object, handler) {
+            var hasBind = this.hasBind(object, handler);
             if (!this._listeners)
                 this._listeners = [];
-            var hasListener = _.filter(this._listeners, function (v) { return (v.target === object && v.handler === handler); });
-            if (!hasListener || !hasListener.length) {
+            if (!hasBind) {
                 this._listeners.push({ target: object, handler: handler });
             }
-            else {
-                this.log('Try duplicate listener ', object.name);
+        };
+        Notifier.prototype.hasBind = function (object, handler) {
+            var l, i, ol;
+            if (!this._listeners)
+                return false;
+            for (i = 0, l = this._listeners.length; i < l; i++) {
+                ol = this._listeners[i];
+                if (ol.target === object && ol.handler === handler)
+                    return true;
             }
+            return false;
         };
         Notifier.prototype.removeListener = function (object, handler) {
             var deletedOffset = 0;

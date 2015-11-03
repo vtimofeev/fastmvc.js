@@ -69,7 +69,6 @@ var ft;
             def.parentPath = path.indexOf(',') > 0 ? path.substring(0, path.lastIndexOf(',')) : null;
             if (o.type != 'tag')
                 def.data = this.parseExpressionAttrib(o.data, 'data', r.expressionMap, path, 'data'); // set data or data expression
-            //if(o.attribs && o.attribs.extend) def.extend = o.attribs.extend;
             _.each(o.attribs, function (value, key) {
                 if (skipped.indexOf(key) >= 0 || !(value = value ? value.trim() : value))
                     return;
@@ -87,7 +86,7 @@ var ft;
             if (type === 'cdata') {
                 return 'text';
             }
-            else if (type === 'tag' && this._svgTagNames.indexOf(name)) {
+            else if (type === 'tag' && this._svgTagNames.indexOf(name) > -1) {
                 return 'svg';
             }
             return type;
@@ -104,11 +103,13 @@ var ft;
             if (name.indexOf('on') === 0) {
                 return 'handlers';
             }
+            else if (name.indexOf('bind2.') === 0) {
+                return 'bind2';
+            }
             else {
                 return (name.indexOf('.') === 0
                     || name.indexOf('children.') === 0 || name.indexOf('c.') === 0
-                    || this._componentParams.indexOf(name) > -1)
-                    ? 'params' : 'attribs';
+                    || this._componentParams.indexOf(name) > -1) ? 'params' : 'attribs';
             }
         };
         // Проверяем данное выражение конвертируется в объект класса или стиля (набор свойств: выражений)

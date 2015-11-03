@@ -34,7 +34,23 @@ var fmvc;
             this.register(new fmvc.Logger(fmvc.FacadeModel.Log)); // создание модели логгера, записываем модель в фасад (для глобального доступа и обработки событий из модели)
             this.init();
         }
+        Object.defineProperty(Facade.prototype, "mode", {
+            /*
+                Mode - тип работы приложения, 0 - дебаг, 1 - продакшн
+             */
+            get: function () {
+                return this._mode;
+            },
+            set: function (value) {
+                this._mode = value;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Object.defineProperty(Facade.prototype, "root", {
+            /*
+                
+             */
             get: function () {
                 return this._root;
             },
@@ -211,8 +227,8 @@ var fmvc;
                     this.registerHandler();
                 }
                 else {
-                    this.unbind(this._facade);
                     this.removeHandler();
+                    this.unbind(this._facade);
                     this._facade = value;
                 }
             },
@@ -253,58 +269,66 @@ var fmvc;
             this.facade = facade;
             return this;
         };
+        Notifier.prototype.bind = function (object, handler) {
+            this.addListener(object, handler);
+            return this;
+        };
+        Notifier.prototype.unbind = function (object, handler) {
+            this.removeListener(object, handler);
+            return this;
+        };
         // Послаем сообщение сначала в фасад, потом частным слушателям (для моделей)
         Notifier.prototype.sendEvent = function (name, data, changes, sub, error) {
             if (data === void 0) { data = null; }
             if (changes === void 0) { changes = null; }
             if (sub === void 0) { sub = null; }
             if (error === void 0) { error = null; }
-            //this.log('SendEvent: ' + name);
             if (this._disposed)
                 throw Error('Model ' + this.name + ' is disposed and cant send event');
+            if (!this._listeners)
+                return;
+            // facade, mediators, other is optional
             var e = { name: name, sub: sub, data: data, changes: changes, error: error, target: this };
-            if (this._listeners)
-                this._sendToListners(e);
-            if (this._facade)
-                this._facade.eventHandler(e);
+            this.sendToListeners(e);
         };
         Notifier.prototype.log = function () {
-            var messages = [];
+            var args = [];
             for (var _i = 0; _i < arguments.length; _i++) {
-                messages[_i - 0] = arguments[_i];
+                args[_i - 0] = arguments[_i];
             }
             if (this.facade)
-                this.facade.logger.add(this.name, messages);
+                this.facade.logger.add(this.name, args);
             else
-                console.log(this.name, messages);
+                console.log(this.name, args);
             return this;
         };
         Notifier.prototype.registerHandler = function () {
         };
         Notifier.prototype.removeHandler = function () {
         };
-        Notifier.prototype.bind = function (object, handler) {
-            this.addListener(object, handler);
-            return this;
-        };
-        Notifier.prototype.unbind = function (object) {
-            this.removeListener(object);
-            return this;
-        };
         Notifier.prototype.addListener = function (object, handler) {
+            var hasBind = this.hasBind(object, handler);
             if (!this._listeners)
                 this._listeners = [];
-            var hasListener = _.filter(this._listeners, function (v) { return v.target === object; });
-            if (_.isEmpty(hasListener)) {
+            if (!hasBind) {
                 this._listeners.push({ target: object, handler: handler });
             }
-            else
-                this.log('Try duplicate listener ', object.name);
         };
-        Notifier.prototype.removeListener = function (object) {
+        Notifier.prototype.hasBind = function (object, handler) {
+            var l, i, ol;
+            if (!this._listeners)
+                return false;
+            for (i = 0, l = this._listeners.length; i < l; i++) {
+                ol = this._listeners[i];
+                if (ol.target === object && ol.handler === handler)
+                    return true;
+            }
+            return false;
+        };
+        Notifier.prototype.removeListener = function (object, handler) {
             var deletedOffset = 0;
             this._listeners.forEach(function (lo, i) {
-                if (lo.target === object) {
+                if (lo.target === object && (!handler || handler === lo.handler)) {
                     this.splice(i - deletedOffset, 1);
                     deletedOffset++;
                 }
@@ -313,9 +337,14 @@ var fmvc;
         Notifier.prototype.removeAllListeners = function () {
             this._listeners = null;
         };
-        Notifier.prototype._sendToListners = function (e) {
-            _.each(this._listeners, function (lo) { if (!lo.target.disposed)
-                (lo.handler).call(lo.target, e); });
+        Notifier.prototype.sendToListeners = function (e) {
+            var lo;
+            var target;
+            for (var i = 0, len = this._listeners.length; i < len; i++) {
+                lo = this._listeners[i];
+                target = lo.target;
+                target.disposed ? this.unbind(lo) : (lo.handler).call(target, e);
+            }
         };
         Notifier.prototype.dispose = function () {
             this.removeAllListeners();
@@ -336,7 +365,7 @@ var __extends = this.__extends || function (d, b) {
 var fmvc;
 (function (fmvc) {
     fmvc.ModelState = {
-        None: '',
+        None: 'none',
         Parsing: 'parsing',
         Syncing: 'syncing',
         Synced: 'synced',
@@ -354,7 +383,8 @@ var fmvc;
             // model options
             this.enabledEvents = true;
             this.enabledState = true;
-            this.watchChanges = true;
+            this.watchChanges = false;
+            this.changesToCopy = false;
             if (opts)
                 _.extend(this, opts);
             if (data)
@@ -398,22 +428,28 @@ var fmvc;
         Model.prototype.setData = function (value) {
             if (this._data === value || this.disposed)
                 return;
-            var result = this.parseValueAndSetChanges(value);
-            if (this._data !== result || this._changes) {
-                this._data = result;
-                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
-            }
+            this._data = value;
+            this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
         };
         Object.defineProperty(Model.prototype, "changes", {
             get: function () {
                 return this._changes;
             },
             set: function (value) {
-                this.setData(value);
+                this.setChanges(value);
             },
             enumerable: true,
             configurable: true
         });
+        Model.prototype.setChanges = function (value) {
+            if (this._data === value || this.disposed)
+                return;
+            var result = this.parseValueAndSetChanges(value);
+            if (this._data !== result || this._changes) {
+                this._data = result;
+                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
+            }
+        };
         Model.prototype.parseValueAndSetChanges = function (value) {
             if (value instanceof Model)
                 throw Error('Cant set model data, data must be object, array or primitive');
@@ -425,7 +461,7 @@ var fmvc;
             if (_.isArray(value)) {
                 result = value.concat([]); //clone of array
             }
-            else if (_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
+            else if (this.watchChanges && _.isObject(prevData) && _.isObject(value)) {
                 // check changes and set auto data
                 for (var i in value) {
                     if (prevData[i] !== value[i]) {
@@ -474,7 +510,7 @@ var fmvc;
         };
         Object.defineProperty(Model.prototype, "length", {
             get: function () {
-                return _.isArray(this.data) ? this.data.length : 0;
+                return _.isArray(this.data) ? this.data.length : -1;
             },
             enumerable: true,
             configurable: true
@@ -832,9 +868,12 @@ var fmvc;
         I18n: 128,
         All: (1 | 2 | 4 | 8 | 16 | 32 | 64 | 128)
     };
+    var ViewBindedMethods = {
+        Validate: 'validate'
+    };
     fmvc.frameExecution = 0;
     var nextFrameHandlers = [];
-    var maxFrameCount = 1000;
+    var maxFrameCount = 2000;
     var waiting = false;
     var frameStep = 1;
     function requestFrameHandler() {
@@ -870,7 +909,8 @@ var fmvc;
             this._invalidate = 0;
             this._isWaitingForValidate = false;
             this._inDocument = false;
-            _.bindAll(this, 'validate');
+            this._isDomCreated = false;
+            _.bindAll(this, ViewBindedMethods.Validate);
         }
         Object.defineProperty(View.prototype, "parent", {
             get: function () {
@@ -882,7 +922,6 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        // Properties: mediator, data, model
         View.prototype.getElement = function () {
             return this._element;
         };
@@ -950,6 +989,17 @@ var fmvc;
             this.invalidate(fmvc.InvalidateType.Data);
             return this;
         };
+        View.prototype.setModel = function (value) {
+            if (value != this._model) {
+                if (this._model)
+                    this._model.unbind(this);
+                if (value && value instanceof fmvc.Model)
+                    value.bind(this, this.modelChangeHandler);
+                this.setData(value ? value.data : null);
+                this._model = value;
+            }
+            return this;
+        };
         Object.defineProperty(View.prototype, "app", {
             get: function () {
                 return (this._mediator && this._mediator.facade) ? this._mediator.facade.model : (this.parent ? this.parent.app : null);
@@ -957,17 +1007,6 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        View.prototype.setModel = function (value) {
-            if (value != this._model) {
-                if (this._model)
-                    this._model.unbind(this);
-                this._model = value;
-                if (value)
-                    this._model.bind(this, this.invalidateData);
-                this.setData(value ? value.data : null);
-            }
-            return this;
-        };
         Object.defineProperty(View.prototype, "inDocument", {
             get: function () {
                 return this._inDocument;
@@ -975,38 +1014,79 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        // events
-        View.prototype.getEventNameByDomEvent = function (e) {
-            return '';
-        };
-        View.prototype.domHandler = function (e) {
-            this.sendEvent(this.getEventNameByDomEvent(e), e);
-        };
-        // lifecycle
+        Object.defineProperty(View.prototype, "isDomCreated", {
+            get: function () {
+                return this._isDomCreated;
+            },
+            enumerable: true,
+            configurable: true
+        });
         View.prototype.createDom = function () {
+            if (this._isDomCreated)
+                return;
+            this.beforeCreate();
+            this.createDomImpl();
+            this._isDomCreated = true;
+            this.afterCreate();
+        };
+        View.prototype.createDomImpl = function () {
             this.setElement(document.createElement('div'));
         };
         View.prototype.enter = function () {
             if (this._inDocument)
                 throw new Error('Cant enter, it is in document');
+            this.enterImpl();
             this._inDocument = true;
-            //this.invalidate(InvalidateType.Data | InvalidateType.Children);
+            this.afterEnter();
         };
-        View.prototype.beforeEnter = function () {
+        View.prototype.enterImpl = function () {
+            var _this = this;
+            if (this._model)
+                this._model.bind(this, this.modelChangeHandler);
+            if (this._binds)
+                this._binds.forEach(function (v) { return v.bind(_this, _this.invalidateApp); });
         };
-        View.prototype.afterEnter = function () {
+        View.prototype.exit = function () {
+            this.beforeExit();
+            this.exitImpl();
+            this._inDocument = false;
+            this.afterExit();
+        };
+        View.prototype.modelChangeHandler = function (e) {
+            this.setData(this.model.data);
+            this.invalidateData(); //@todo check
+            if (e && e.name === fmvc.Event.Model.Disposed)
+                this.dispose(); //@todo analyze
+        };
+        View.prototype.exitImpl = function () {
+            var _this = this;
+            if (this._model)
+                this._model.unbind(this);
+            if (this._binds)
+                this._binds.forEach(function (v) { return v.unbind(_this); });
         };
         View.prototype.beforeCreate = function () {
         };
         View.prototype.afterCreate = function () {
         };
+        View.prototype.beforeEnter = function () {
+        };
+        View.prototype.afterEnter = function () {
+        };
         View.prototype.beforeExit = function () {
         };
         View.prototype.afterExit = function () {
         };
-        View.prototype.exit = function () {
-            this._states = {};
-            this._inDocument = false;
+        View.prototype.afterRender = function () {
+        };
+        View.prototype.beforeUnrender = function () {
+        };
+        View.prototype.invalidate = function (value) {
+            this._invalidate = this._invalidate | value;
+            if (!this._isWaitingForValidate) {
+                this._isWaitingForValidate = true;
+                nextFrameHandler(this.validate, this);
+            }
         };
         Object.defineProperty(View.prototype, "isWaitingForValidate", {
             get: function () {
@@ -1015,70 +1095,80 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
-        View.prototype.invalidate = function (value) {
-            this._invalidate = this._invalidate | value;
-            if (!this._isWaitingForValidate) {
-                this._isWaitingForValidate = true;
-                //console.log('Invalidate... ', this.name);
-                nextFrameHandler(this.validate, this);
-            }
-        };
-        View.prototype.invalidateData = function (e) {
+        View.prototype.invalidateData = function () {
             this.invalidate(fmvc.InvalidateType.Data);
-            if (e && e.name === fmvc.Event.Model.Disposed)
-                this.dispose();
         };
         View.prototype.invalidateApp = function () {
             this.invalidate(fmvc.InvalidateType.App);
         };
+        View.prototype.invalidateAll = function () {
+            this.invalidate(fmvc.InvalidateType.App | fmvc.InvalidateType.Data | fmvc.InvalidateType.State);
+        };
         View.prototype.validate = function () {
-            if (!this.inDocument)
+            if (!this._inDocument || !this._invalidate)
                 return;
-            if (!this._invalidate)
-                return;
-            if (this._invalidate & fmvc.InvalidateType.Data)
-                this.validateData();
             if (this._invalidate & fmvc.InvalidateType.State)
                 this.validateState();
-            if (this._invalidate & fmvc.InvalidateType.Parent)
-                this.validateParent();
-            if (this._invalidate & fmvc.InvalidateType.Children)
-                this.validateChildren();
+            if (this._invalidate & fmvc.InvalidateType.Data)
+                this.validateData();
             if (this._invalidate & fmvc.InvalidateType.App)
                 this.validateApp();
+            //if (this._invalidate & InvalidateType.Parent) this.validateParent();
+            //if (this._invalidate & InvalidateType.Children) this.validateChildren();
             /*
-            if(this._invalidate & InvalidateType.Template) this.validateTemplate();
-            if(this._invalidate & InvalidateType.Theme) this.validateTheme();
-            if(this._invalidate & InvalidateType.I18n) this.validateI18n();
-            */
+             if(this._invalidate & InvalidateType.Template) this.validateTemplate();
+             if(this._invalidate & InvalidateType.Theme) this.validateTheme();
+             if(this._invalidate & InvalidateType.I18n) this.validateI18n();
+             */
             this._invalidate = 0;
             this._isWaitingForValidate = false;
         };
-        //protected validateRecreateTree():void {}
-        View.prototype.validateData = function () { };
-        View.prototype.validateState = function () { };
-        View.prototype.validateParent = function () { };
-        View.prototype.validateChildren = function () { };
-        View.prototype.validateApp = function () { };
-        View.prototype.validateTemplate = function () { };
-        View.prototype.render = function (element) {
-            if (this._inDocument)
-                throw 'Cant render view, it is in document';
+        View.prototype.validateData = function () {
+        };
+        View.prototype.validateState = function () {
+        };
+        View.prototype.validateApp = function () {
+        };
+        View.prototype.render = function (parent, replaced) {
+            var requiredValidate = this.isDomCreated;
             this.createDom();
             this.enter();
-            element.appendChild(this.getElement());
-            this.afterEnter();
+            if (requiredValidate)
+                this.invalidateAll();
+            if (replaced) {
+                parent.replaceChild(this.getElement(), replaced);
+            }
+            else {
+                parent.appendChild(this.getElement());
+            }
+            this.afterRender();
             return this;
         };
-        View.prototype.unrender = function () {
-            if (this.getElement().parentNode)
-                this.getElement().parentNode.removeChild(this.getElement());
+        View.prototype.unrender = function (replace) {
+            this.exit();
+            this.beforeUnrender();
+            var parentElement = this.getElement().parentNode;
+            if (!parentElement)
+                return this;
+            if (replace) {
+                parentElement.replaceChild(replace, this.getElement());
+            }
+            else {
+                parentElement.removeChild(this.getElement());
+            }
+            return this;
         };
-        // Overrides of Notifier
         View.prototype.dispose = function () {
             this.exit();
             this.unrender();
             _super.prototype.dispose.call(this);
+            // Clean refs
+            this._states = null;
+            this._parent = null;
+            this._mediator = null;
+            this._model = null;
+            this._data = null;
+            this._binds = null;
         };
         View.prototype.sendEvent = function (name, data, sub, error, global) {
             if (data === void 0) { data = null; }
@@ -1097,6 +1187,21 @@ var fmvc;
             if (this.mediator && this.mediator.facade)
                 this.mediator.facade.logger.add(this.name, messages);
             return this;
+        };
+        View.prototype.unregisterBind = function (value) {
+            var i = this._binds.indexOf(value);
+            if (i > -1)
+                this._binds.splice(i, 1);
+            value.unbind(this);
+        };
+        View.prototype.registerBind = function (value) {
+            if (!this._binds)
+                this._binds = [];
+            if (this._binds.indexOf(value) > -1)
+                return;
+            this._binds.push(value);
+            if (this.inDocument)
+                value.bind(this, this.invalidateApp);
         };
         return View;
     })(fmvc.Notifier);
@@ -1155,7 +1260,7 @@ var fmvc;
             configurable: true
         });
         Mediator.prototype.internalHandler = function (e) {
-            if (e && e.global) {
+            if (e && e.globalScope) {
                 this.facade.eventHandler(e);
             }
             else {

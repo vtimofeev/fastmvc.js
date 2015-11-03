@@ -241,8 +241,8 @@ var ft;
         };
         TemplateView.prototype.applyParameter = function (value, key) {
             switch (key) {
-                case TmplDict.states: // Internal "include" parameters
-                case TmplDict.createDelay:
+                case TmplDict.states: // Internal "include" parameters, used at createTree and validateTree
+                case TmplDict.createDelay: //
                 case TmplDict.class:
                     break;
                 case ft.TemplateParams.stateHandlers:
@@ -257,8 +257,10 @@ var ft;
                         this.on(key.substring(2), (_.isString(value) ? function (e) { t.internalHandler(value, e); } : value));
                     }
                     else if (key in this) {
-                        if (_.isFunction(this[key]))
+                        // direct set states, values
+                        if (_.isFunction(this[key])) {
                             this[key](value);
+                        }
                         else {
                             this[key] = this.getParameterValue(value, key, this); //@todo check value type of states (boolean,number,...etc)
                         }
@@ -271,7 +273,7 @@ var ft;
         };
         TemplateView.prototype.getParameterValue = function (value, key) {
             var r = _.isObject(value) ? this.getExpressionValue(value) : value;
-            //console.log(this.name + ' :: apply parameter ', key, ' result=', r, value, value.context);
+            // console.log(this.name + ' :: apply parameter ', key, ' result=', r, value, value.context);
             return r;
         };
         ////////////////////////////////////////////////////////////////
@@ -326,34 +328,39 @@ var ft;
         // Dynamic properties
         ////////////////////////////////////////////////////////////////
         TemplateView.prototype.getDynamicProperty = function (name) {
+            //console.log('Get dp ', name, this._dynamicPropertiesMap[name])
             return this._dynamicPropertiesMap[name];
         };
         TemplateView.prototype.setDynamicProperty = function (name, value) {
+            // if(this.inDocument) todo check
             this._dynamicPropertiesMap[name] = value;
+            //console.log('Set dp ', name, this._dynamicPropertiesMap[name])
         };
         TemplateView.prototype.isChangedDynamicProperty = function (name) {
+            var prevValue = this._prevDynamicProperiesMap[name];
             var value = ft.expression.getContextValue(name, this);
-            var r = !(this._prevDynamicProperiesMap[name] === value);
+            var r = !(prevValue === value);
+            // console.log('Is changed ', name, r, value, this._prevDynamicProperiesMap[name]);
             return r;
         };
         ////////////////////////////////////////////////////////////////
-        // Lifecycle
+        // Lifecycle: Create
         ////////////////////////////////////////////////////////////////
-        TemplateView.prototype.createDom = function () {
-            if (this._element)
-                return;
-            this.beforeCreate();
+        TemplateView.prototype.beforeCreate = function () {
             this.life = LifeState.Create;
-            var start = getTime();
             this.setState(State.CreateTime, (new Date()).getTime());
             this.createParameters();
-            var e = ft.templateHelper.createTreeObject(this._template.domTree, this);
+            this.applyParameters();
+        };
+        TemplateView.prototype.createDomImpl = function () {
+            //console.log('Create ', this.name);
+            if (this._element)
+                return;
+            var e = ft.templateHelper.createTree(this._template.domTree, this);
             var element = e instanceof TemplateView ? e.getElement() : e;
             this.setElement(element);
             this.setTreeElementPath('0', this);
-            this.afterCreate();
             ft.counters.createDom++;
-            timers.createDom += getTime() - start;
         };
         TemplateView.prototype.createParameters = function () {
             var localParams = this.localDomDef ? this.localDomDef.params : null;
@@ -364,36 +371,37 @@ var ft;
                 var parentParams = ft.templateHelper.applyFirstContextToExpressionParameters(this.domDef ? this.domDef.params : null, this.parent);
                 this.setParameters(_.extend({}, localParams, parentParams, this._constructorParams));
             }
-            //console.log(this.name , ' has parameters is ', this.getParameters())
         };
-        TemplateView.prototype.enter = function () {
+        ////////////////////////////////////////////////////////////////
+        // Lifecycle: Enter
+        ////////////////////////////////////////////////////////////////
+        TemplateView.prototype.enterImpl = function () {
             var _this = this;
-            if (this.inDocument) {
-                return console.warn('Error, try to re-enter ', this.name);
-            }
-            var start = getTime();
-            this.beforeEnter();
+            //console.log('Enter ', this.name);
+            _super.prototype.enterImpl.call(this);
+            this.setState(State.CreateTime, (new Date()).getTime());
             this.life = LifeState.Enter;
-            this.applyParameters();
-            _super.prototype.enter.call(this);
-            ft.templateHelper.enterTreeObject(this._template.domTree, this);
-            this.invalidate(fmvc.InvalidateType.Data | fmvc.InvalidateType.App | fmvc.InvalidateType.State);
-            this.afterEnter();
-            timers.enter += getTime() - start;
             ft.counters.enter++;
-            setTimeout(function () { _this.life = LifeState.Active; }, 50);
+            //this.invalidate(fmvc.InvalidateType.Data | fmvc.InvalidateType.App | fmvc.InvalidateType.State);
+            ft.templateHelper.enterTree(this._template.domTree, this);
+            setTimeout(function () { return _this.life = LifeState.Active; }, 0);
         };
-        TemplateView.prototype.exit = function () {
-            var _this = this;
-            if (!this.inDocument) {
-                return console.warn('Error, try re-exit');
-            }
-            this.beforeExit();
-            ft.templateHelper.exitTreeObject(this._template.domTree, this);
+        ////////////////////////////////////////////////////////////////
+        // Lifecycle: Exit
+        ////////////////////////////////////////////////////////////////
+        TemplateView.prototype.exitImpl = function () {
+            // console.log('Exit ', this.name);
+            ft.templateHelper.exitTree(this._template.domTree, this);
+            _super.prototype.exitImpl.call(this);
             this.cleanDelays();
-            this.parent = null;
-            this.domDef = null;
-            _super.prototype.exit.call(this);
+        };
+        ////////////////////////////////////////////////////////////////
+        // Lifecycle: Dispose
+        ////////////////////////////////////////////////////////////////
+        TemplateView.prototype.dispose = function () {
+            var _this = this;
+            _super.prototype.dispose.call(this);
+            this._domDef = null;
             this._cssClassMap = null;
             this._dynamicPropertiesMap = null;
             this._prevDynamicProperiesMap = null;
@@ -402,10 +410,6 @@ var ft;
             _.each(this._resultParams, function (v, k) { v.context = null; delete _this._resultParams[k]; });
             _.each(this._dataChildren, function (v, k) { return delete _this._dataChildren[k]; });
             _.each(this._treeElementMapByPath, function (v, k) { return delete _this._treeElementMapByPath[k]; });
-            this.afterExit();
-        };
-        TemplateView.prototype.dispose = function () {
-            _super.prototype.dispose.call(this);
             this._resultParams = null;
             this._template = null;
             this._i18n = null;
@@ -418,16 +422,17 @@ var ft;
             return result;
         };
         TemplateView.prototype.validate = function () {
+            // console.log('Validate try ', this.name);
             if (!this.inDocument)
                 return;
+            // console.log('Validate ', this.name, this._dynamicPropertiesMap);
             var start = getTime();
-            if (!_.isEmpty(this._dynamicPropertiesMap)) {
+            if (!_.isEmpty(this._dynamicPropertiesMap))
                 _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
-                this._dynamicPropertiesMap = {};
-            }
             this._dynamicPropertiesMap = {};
             if (this._template.hasStates)
-                ft.templateHelper.createTreeObject(this._template.domTree, this);
+                ft.templateHelper.validateTree(this._template.domTree, this); // templateHelper.createTreeObject(this._template.domTree, this);
+            //console.log('Validate ...', this.name, this._invalidate);
             _super.prototype.validate.call(this);
             var result = getTime() - start;
             ft.counters.validate++;
@@ -519,6 +524,7 @@ var ft;
             var h = this._localHandlers ? this._localHandlers[path] : null;
             if (h && h[e.name]) {
                 var handlers = h[e.name];
+                console.log('Has component triggers ', e.name, this.name);
                 _.each(handlers, function (v) { v.call(_this, e); e.executionHandlersCount++; }, this);
             }
         };
@@ -596,23 +602,6 @@ var ft;
             }
             return r;
         };
-        /*
-        appendTo(value:ITemplateView|Element):TemplateView {
-            if (value instanceof TemplateView) {
-                value.append(this);
-            }
-            else {
-                this.render(<Element> value);
-            }
-            return this;
-        }
-
-        append(value:ITemplateView, ln?:string):TemplateView {
-            value.parent = this;
-            templateHelper.extendTree(value, ln, this);
-            return this;
-        }
-        */
         ////////////////////////////////////////////////////////////////
         // Delay of creation tree elements
         ////////////////////////////////////////////////////////////////

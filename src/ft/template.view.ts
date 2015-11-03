@@ -1,7 +1,7 @@
 ///<reference path="./d.ts" />
 
 module ft {
-    export var templateHelper:ITemplateViewHelper = new TemplateViewHelper();
+    export var templateHelper:TemplateViewHelper = new TemplateViewHelper();
 
     var localeFormatterCache = {};
     var templateFormatterChache = {};
@@ -73,8 +73,9 @@ module ft {
         private _i18n:any; // i18n store
 
         private _domDef:IDomDef; // Definition view related parent
+        private _constructorParams:any; // Params added at template constructor
         protected _resultParams:any; // Merged params from constructor and dom definition
-        private _constructorParams:any;
+
 
         // Maps of created element
         private _treeElementMapByPath:{[path:string]:TreeElement};
@@ -237,8 +238,8 @@ module ft {
 
         applyParameter(value:any, key:string):void {
             switch (key) {
-                case TmplDict.states: // Internal "include" parameters
-                case TmplDict.createDelay:
+                case TmplDict.states: // Internal "include" parameters, used at createTree and validateTree
+                case TmplDict.createDelay: //
                 case TmplDict.class: // Child class
                     break;
 
@@ -253,8 +254,11 @@ module ft {
                         var t = this;
                         this.on(key.substring(2), (_.isString(value)?(e)=>{ t.internalHandler(value,e); }:value));
                     }
-                    else if(key in this) { // direct set states, values
-                        if(_.isFunction(this[key])) this[key](value);
+                    else if(key in this) {
+                    // direct set states, values
+                        if(_.isFunction(this[key])) {
+                            this[key](value);
+                        }
                         else {
                             this[key] = this.getParameterValue(value, key, this); //@todo check value type of states (boolean,number,...etc)
                         }
@@ -269,7 +273,7 @@ module ft {
 
         getParameterValue(value:IExpressionName|any, key:string):any {
             var r = _.isObject(value)?this.getExpressionValue(value):value;
-            //console.log(this.name + ' :: apply parameter ', key, ' result=', r, value, value.context);
+            // console.log(this.name + ' :: apply parameter ', key, ' result=', r, value, value.context);
             return r;
         }
 
@@ -334,41 +338,43 @@ module ft {
         ////////////////////////////////////////////////////////////////
 
         getDynamicProperty(name:string):void {
+            //console.log('Get dp ', name, this._dynamicPropertiesMap[name])
             return this._dynamicPropertiesMap[name];
         }
 
         setDynamicProperty(name:string, value:string):void {
+            // if(this.inDocument) todo check
             this._dynamicPropertiesMap[name] = value;
+            //console.log('Set dp ', name, this._dynamicPropertiesMap[name])
         }
 
         isChangedDynamicProperty(name:string):boolean {
+            var prevValue = this._prevDynamicProperiesMap[name];
             var value = expression.getContextValue(name, this);
-            var r = !(this._prevDynamicProperiesMap[name] === value);
+            var r = !(prevValue === value);
+            // console.log('Is changed ', name, r, value, this._prevDynamicProperiesMap[name]);
             return r;
         }
 
         ////////////////////////////////////////////////////////////////
-        // Lifecycle
+        // Lifecycle: Create
         ////////////////////////////////////////////////////////////////
 
-        createDom():void {
-            if(this._element) return;
-            this.beforeCreate();
+        beforeCreate() {
             this.life = LifeState.Create;
-            var start = getTime();
             this.setState(State.CreateTime, (new Date()).getTime());
-
             this.createParameters();
+            this.applyParameters();
+        }
 
-            var e = <TreeElement> templateHelper.createTreeObject(this._template.domTree, this);
-
+        protected createDomImpl():void {
+            //console.log('Create ', this.name);
+            if(this._element) return;
+            var e = <TreeElement> templateHelper.createTree(this._template.domTree, this);
             var element:HTMLElement = e instanceof TemplateView ? (<ITemplateView>e).getElement() : <HTMLElement>e;
             this.setElement(element);
             this.setTreeElementPath('0', this);
-
-            this.afterCreate();
             counters.createDom++;
-            timers.createDom += getTime()-start;
         }
 
         protected createParameters():void {
@@ -379,43 +385,40 @@ module ft {
                 var parentParams = templateHelper.applyFirstContextToExpressionParameters(this.domDef?this.domDef.params:null, this.parent);
                 this.setParameters(_.extend({}, localParams, parentParams, this._constructorParams));
             }
-
-            //console.log(this.name , ' has parameters is ', this.getParameters())
         }
 
-        enter():void {
-            if (this.inDocument) {
-                return console.warn('Error, try to re-enter ', this.name);
-            }
-
-            var start = getTime();
-            this.beforeEnter();
-
+        ////////////////////////////////////////////////////////////////
+        // Lifecycle: Enter
+        ////////////////////////////////////////////////////////////////
+        protected enterImpl():void {
+            //console.log('Enter ', this.name);
+            super.enterImpl();
+            this.setState(State.CreateTime, (new Date()).getTime());
             this.life = LifeState.Enter;
-            this.applyParameters();
-            super.enter();
-            templateHelper.enterTreeObject(this._template.domTree, this);
-            this.invalidate(fmvc.InvalidateType.Data | fmvc.InvalidateType.App | fmvc.InvalidateType.State);
-            this.afterEnter();
-
-            timers.enter += getTime() - start;
             counters.enter++;
-            setTimeout(()=>{this.life=LifeState.Active;}, 50);
+            //this.invalidate(fmvc.InvalidateType.Data | fmvc.InvalidateType.App | fmvc.InvalidateType.State);
+            templateHelper.enterTree(this._template.domTree, this);
+            setTimeout(()=>this.life = LifeState.Active, 0);
         }
 
-        exit() {
-            if (!this.inDocument) {
-                return console.warn('Error, try re-exit');
-            }
+        ////////////////////////////////////////////////////////////////
+        // Lifecycle: Exit
+        ////////////////////////////////////////////////////////////////
 
-            this.beforeExit();
-            templateHelper.exitTreeObject(this._template.domTree, this);
+        protected exitImpl():void {
+            // console.log('Exit ', this.name);
+            templateHelper.exitTree(this._template.domTree, this);
+            super.exitImpl();
             this.cleanDelays();
-            this.parent = null;
-            this.domDef = null;
+        }
 
-            super.exit();
+        ////////////////////////////////////////////////////////////////
+        // Lifecycle: Dispose
+        ////////////////////////////////////////////////////////////////
+        dispose() {
+            super.dispose();
 
+            this._domDef = null;
             this._cssClassMap = null;
             this._dynamicPropertiesMap = null;
             this._prevDynamicProperiesMap = null;
@@ -425,15 +428,10 @@ module ft {
             _.each(this._resultParams, (v,k)=>{v.context=null; delete this._resultParams[k]});
             _.each(this._dataChildren, (v,k)=>delete this._dataChildren[k]);
             _.each(this._treeElementMapByPath, (v,k)=>delete this._treeElementMapByPath[k]);
-            this.afterExit();
-        }
 
-        dispose() {
-            super.dispose();
             this._resultParams = null;
             this._template = null;
             this._i18n = null;
-
         }
 
         ////////////////////////////////////////////////////////////////
@@ -446,18 +444,17 @@ module ft {
         }
 
         public validate():void {
+            // console.log('Validate try ', this.name);
             if(!this.inDocument) return;
+            // console.log('Validate ', this.name, this._dynamicPropertiesMap);
+
 
             var start = getTime();
 
-            if (!_.isEmpty(this._dynamicPropertiesMap)) {
-                _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
-                this._dynamicPropertiesMap = {};
-            }
-
+            if (!_.isEmpty(this._dynamicPropertiesMap)) _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
             this._dynamicPropertiesMap = {};
-
-            if(this._template.hasStates) templateHelper.createTreeObject(this._template.domTree, this);
+            if(this._template.hasStates) templateHelper.validateTree(this._template.domTree, this);// templateHelper.createTreeObject(this._template.domTree, this);
+            //console.log('Validate ...', this.name, this._invalidate);
             super.validate();
 
             var result = getTime()-start;
@@ -558,6 +555,7 @@ module ft {
             var h = this._localHandlers ? this._localHandlers[path] : null;
             if (h && h[e.name]) {
                 var handlers = h[e.name];
+                console.log('Has component triggers ', e.name, this.name);
                 _.each(handlers, (v)=>{ v.call(this, e); e.executionHandlersCount++; }, this);
             }
         }
@@ -640,24 +638,6 @@ module ft {
             }
             return r;
         }
-
-        /*
-        appendTo(value:ITemplateView|Element):TemplateView {
-            if (value instanceof TemplateView) {
-                value.append(this);
-            }
-            else {
-                this.render(<Element> value);
-            }
-            return this;
-        }
-
-        append(value:ITemplateView, ln?:string):TemplateView {
-            value.parent = this;
-            templateHelper.extendTree(value, ln, this);
-            return this;
-        }
-        */
 
         ////////////////////////////////////////////////////////////////
         // Delay of creation tree elements

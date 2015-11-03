@@ -2,8 +2,8 @@
 
 module ft {
     export class TemplateChildrenView extends ft.TemplateView {
-        // children array
-        private _children:ITemplateView[];
+
+        private _children:ITemplateView[]; // active children array
         protected childrenLocalParams:any;
 
         constructor(name:string, params:ITemplateViewParams) {
@@ -42,17 +42,13 @@ module ft {
         }
 
 
-        protected executeExpression(value:ft.IExpression):any {
-            return expression.execute(value, this.parent);
-        }
-
         protected setCurrentChildToExecutionContext(child:ITemplateView, index:number, length:number, context:ITemplateView):void {
             context.child = child;
             context.childIndex = index;
             context.childrenLength = length;
         }
 
-        private getChildrenLocalParams(params:any) {
+        private getChildrenLocalParams(params:any):any {
             var r:any = {};
             _.each(params, (v:any, key:string)=> {
                 if (key === 'data' || key === 'model') return;
@@ -61,7 +57,7 @@ module ft {
             return r;
         }
 
-        private getChildrenExpressionParams(params:any) {
+        private getChildrenExpressionParams(params:any):any {
             var r:any = {};
             _.each(params, (v:any, key:string)=> {
                 if (key === 'data' || key === 'model') return;
@@ -113,16 +109,13 @@ module ft {
         createDom() { // virtual
             if (!this.getElement()) throw 'Cant create children dom, cause not set element directly';
             this.createParameters();
-            //console.log('Children params is ', this.getParameters());
         }
 
         enter() {
             if (this.inDocument) return;
             this.childrenLocalParams = this.getChildrenLocalParams(this.getParameters());
-
             this.applyParameters();
             this.createChildren();
-            this.applyChildrenParameters();
             super.enter();
         }
 
@@ -134,8 +127,6 @@ module ft {
 
         validateData() {
             this.createChildren();
-            this.applyChildrenParameters();
-
         }
 
         validateState() {
@@ -147,5 +138,4 @@ module ft {
             this.parent = null;
         }
     }
-
 }

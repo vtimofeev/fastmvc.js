@@ -45,16 +45,7 @@ describe('ft - component package ', function () {
 
 
     var buttonReset = {title: 'Очистить (локальный)', action: 'actionReset'};
-    var interval:number;
-    var intervalUpdate = function (value:number) {
-        clearInterval(interval);
-        if (value === 0) return;
-        interval = setInterval(function () {
-            _.each(model.data.children, (m, v)=>{
-                if(!model.disposed) model.data.children[v].data = {title: Math.round(Math.random() * 100), action: Math.random()}
-            });
-        }, value);
-    };
+
 
     var templateObjs = [
         {
@@ -67,13 +58,27 @@ describe('ft - component package ', function () {
         },
         {
             className: "ft.ButtonGroup",
-            content: '<div .base="buttonGroup" children.data={data} class="{state.base}"  children.class="ft.Button" children.stateHandlers="hover"></div>',
+            content: '<div .base="buttonGroup" children.data={data} class="{state.base}"  children.class="ft.Button" children.stateHandlers="hover" ></div>',
+        },
+        {
+            className: "ft.TestButton",
+            content: '<div .stateHandlers="hover,selected" class="button button-{state.selected} button-{state.hover}">{data.title}</div>',
         },
         ui.HSliderDefinition,
         {
             className: "ft.Progress",
             content: '<div .base="progress" .value="0" class="{state.base}"><div class="{state.base}-bg" style="width:{(state.value*100)}%"></div></div>',
         },
+        {
+            className: 'ft.TestSlider',
+            content: '<div><h1>Slider content</h1><ft.Button .data="The button text" /><ui.HSlider></ui.HSlider>' +
+            '<div .data="{data.children}"' +
+        ' children.selected="{(child.model!==data.selectedItem)}" ' +
+        ' children.class="ft.TestButton" children.onaction="selectItemFirst" children.disabled="{data.childrenDisabled}"></div>' +
+            '<div>',
+            action: 'create'
+        },
+        /*
         {
             className: "ft.Component",
             content: '<div .base="COMPONENT">' +
@@ -199,16 +204,20 @@ describe('ft - component package ', function () {
     var model = new fmvc.Model<IAppData>('scope');
     model.data = {
         selected: null,
-        childrenDisabled: false, children: null,
+        childrenDisabled: false,
+        children: null,
         reset: buttonReset,
         mouseX: 0,
         mouseY: 0,
-        count: [0, 10,50,100,200,500,1000],
-        countItemSelected: 10
+        count: [0,5, 10,50,100,200,500,1000,2000],
+        countItemSelected: 2000
     };
 
     var mediator = new fmvc.Mediator('appmed', document.body);
     app.register(model, mediator);
+
+
+
 
     function updateChildrenCount(value) {
         model.changes = {
@@ -219,11 +228,28 @@ describe('ft - component package ', function () {
                 }
             )
         };
+
+        //console.log('Updated model ... ', model);
     }
     updateChildrenCount(model.data.countItemSelected);
 
     //model.changes = {selectedItem: model.data.children[2]};
-    intervalUpdate(1000);
+
+    var interval:number;
+    var intervalUpdate = function (value:number) {
+        clearInterval(interval);
+        if (value === 0) return;
+        interval = setInterval(function () {
+            _.each(model.data.children, (m, v)=>{
+                if(!model.disposed) {
+                    model.data.children[v].data = {title: Math.round(Math.random() * 100), action: Math.random()};
+                    //console.log('Model data ', v, model.data.children[v].data);
+                }
+            });
+        }, value);
+    };
+
+    setTimeout(()=>intervalUpdate(2000), 2000);
     console.log('---Setdata ', model.d.selectedItem);
 
 
@@ -232,13 +258,15 @@ describe('ft - component package ', function () {
             var key = obj.className;
 
             it('should create instances ' + key, function () {
-                tm.createClass(key, obj.content, null, null);
-                //var params:any = {setStates: obj.states};
+                tm.createClass(key, obj.content, obj.params, obj.mixin);
+
+                var params:any = {setStates: obj.states};
                 var instance:ft.ITemplateView = null;
                 if (obj.action === 'create') {
                     instance = tm.createInstance(key, 'view-' + key, params);
-                    _.each(obj.mixin, (v, k)=>instance[k] = v);
+                    //_.each(obj.mixin, (v, k)=>instance[k] = v);
                     instance.setModel(model);
+                    /*
                     instance.logMouseMove = function (e:fmvc.IEvent) {
                         //console.log('Args: ', arguments);
                         instance.model.changes = {mouseX: e.data.clientX, mouseY: e.data.clientY};
@@ -251,9 +279,18 @@ describe('ft - component package ', function () {
 
                     };
 
+                    */
                     //model.changes = { children: buttonsDs };
                     //model.bind(instance, instance.invalidateApp);
                     mediator.addView(instance);
+
+                    var s = new Date().getTime();
+                    for(var z = 0; z < 10000; z++) {
+                        var zi = tm.createInstance(key, 'view-' + key + z, params);
+                        //zi.setModel(model);
+                    }
+                    var e = new Date().getTime();
+                    console.log('Create 10000 zi ', key, e-s );
 
                 }
 

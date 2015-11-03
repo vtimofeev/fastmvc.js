@@ -7,6 +7,7 @@ module ft {
         clientX:number;
         clientY:number;
         time:number;
+        isComposite:boolean;
 
         /*
         alt:boolean;
@@ -70,7 +71,7 @@ module ft {
             super(PointerModel.Name, data, opts);
         }
 
-        public getCompositeEvent(e:any):IPointerEvent {
+        public tryTransformToCompositeEvent(e:any):IPointerEvent|any {
             var transformName:string = EventTransform[e.type];
             var isTouch:boolean = e.type.indexOf('touch')===0;
             var eventData:any;
@@ -82,7 +83,7 @@ module ft {
                 eventData = e;
             }
 
-            var result:IPointerEvent = {name: transformName, clientX: eventData.clientX, clientY: eventData.clientY, time: e.timeStamp};
+            var result:IPointerEvent = {name: transformName, clientX: eventData.clientX, clientY: eventData.clientY, time: e.timeStamp, isComposite: true};
             return transformName?result:e;
         }
 

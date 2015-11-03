@@ -5,11 +5,12 @@ module fmvc {
         enabledState?:boolean;
         enabledEvents?:boolean;
         watchChanges?:boolean;
+        changesToCopy?:boolean;
         history?:boolean;
     }
 
     export var ModelState = {
-        None: '',
+        None: 'none',
         Parsing: 'parsing', // parsing from source
         Syncing: 'syncing', // load from local/remote source
         Synced: 'synced',
@@ -17,8 +18,6 @@ module fmvc {
         Completed: 'completed',
         Error: 'error',
     };
-
-
 
     export class Model<T> extends fmvc.Notifier implements IModelOptions {
         // data, state, prevState
@@ -33,7 +32,8 @@ module fmvc {
         // model options
         public enabledEvents:boolean = true;
         public enabledState:boolean = true;
-        public watchChanges:boolean = true;
+        public watchChanges:boolean = false;
+        public changesToCopy:boolean = false;
 
         constructor(name:string, data:any = {}, opts?:IModelOptions) {
             super(name, TYPE_MODEL);
@@ -50,7 +50,6 @@ module fmvc {
             return this;
         }
 
-
         /*
         * Data layer
         */
@@ -65,18 +64,17 @@ module fmvc {
             return this.getData();
         }
         public set data(value:T) {
-            this.reset().setData(value);
+            this.setData(value);
         }
+
         public getData():T {
             return this._data;
         }
-        public setData(value:T) {
+
+        public setData(value:T):void {
             if (this._data === value || this.disposed) return;
-            const result:T = this.parseValueAndSetChanges(value);
-            if (this._data !== result || this._changes) {
-                this._data = result;
-                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
-            }
+            this._data = value;
+            this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
         }
 
         public get changes():any {
@@ -84,8 +82,19 @@ module fmvc {
         }
 
         public set changes(value:any) {
-            this.setData(<T>value);
+            this.setChanges(<T>value);
         }
+
+        public setChanges(value:T):void {
+            if (this._data === value || this.disposed) return;
+
+            const result:T = this.parseValueAndSetChanges(value);
+            if (this._data !== result || this._changes) {
+                this._data = result;
+                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
+            }
+        }
+
 
         public parseValueAndSetChanges(value:T):any {
             if (value instanceof Model) throw Error('Cant set model data, data must be object, array or primitive');
@@ -98,7 +107,7 @@ module fmvc {
             if (_.isArray(value)) {
                 result = (<any>value).concat([]); //clone of array
             }
-            else if (_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
+            else if (this.watchChanges && _.isObject(prevData) && _.isObject(value)) {
                 // check changes and set auto data
                 for (var i in value) {
                     if (prevData[i] !== value[i]) {
@@ -139,11 +148,9 @@ module fmvc {
             return this;
         }
 
-
-        public get length():any {
-            return _.isArray(this.data)?(<any>this.data).length:0;
+        public get length():number {
+            return _.isArray(this.data)?(<any>this.data).length:-1;
         }
-
 
         public sendEvent(name:string, data:any = null, changes:any = null, sub:string = null, error:any = null):void {
             if (this.enabledEvents) super.sendEvent(name, data, changes, sub, error);

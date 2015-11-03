@@ -8,7 +8,7 @@ var __extends = this.__extends || function (d, b) {
 var fmvc;
 (function (fmvc) {
     fmvc.ModelState = {
-        None: '',
+        None: 'none',
         Parsing: 'parsing',
         Syncing: 'syncing',
         Synced: 'synced',
@@ -26,7 +26,8 @@ var fmvc;
             // model options
             this.enabledEvents = true;
             this.enabledState = true;
-            this.watchChanges = true;
+            this.watchChanges = false;
+            this.changesToCopy = false;
             if (opts)
                 _.extend(this, opts);
             if (data)
@@ -59,7 +60,7 @@ var fmvc;
                 return this.getData();
             },
             set: function (value) {
-                this.reset().setData(value);
+                this.setData(value);
             },
             enumerable: true,
             configurable: true
@@ -70,22 +71,28 @@ var fmvc;
         Model.prototype.setData = function (value) {
             if (this._data === value || this.disposed)
                 return;
-            var result = this.parseValueAndSetChanges(value);
-            if (this._data !== result || this._changes) {
-                this._data = result;
-                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
-            }
+            this._data = value;
+            this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
         };
         Object.defineProperty(Model.prototype, "changes", {
             get: function () {
                 return this._changes;
             },
             set: function (value) {
-                this.setData(value);
+                this.setChanges(value);
             },
             enumerable: true,
             configurable: true
         });
+        Model.prototype.setChanges = function (value) {
+            if (this._data === value || this.disposed)
+                return;
+            var result = this.parseValueAndSetChanges(value);
+            if (this._data !== result || this._changes) {
+                this._data = result;
+                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
+            }
+        };
         Model.prototype.parseValueAndSetChanges = function (value) {
             if (value instanceof Model)
                 throw Error('Cant set model data, data must be object, array or primitive');
@@ -97,7 +104,7 @@ var fmvc;
             if (_.isArray(value)) {
                 result = value.concat([]); //clone of array
             }
-            else if (_.isObject(prevData) && _.isObject(value) && this.watchChanges) {
+            else if (this.watchChanges && _.isObject(prevData) && _.isObject(value)) {
                 // check changes and set auto data
                 for (var i in value) {
                     if (prevData[i] !== value[i]) {
@@ -146,7 +153,7 @@ var fmvc;
         };
         Object.defineProperty(Model.prototype, "length", {
             get: function () {
-                return _.isArray(this.data) ? this.data.length : 0;
+                return _.isArray(this.data) ? this.data.length : -1;
             },
             enumerable: true,
             configurable: true

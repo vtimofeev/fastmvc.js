@@ -1,26 +1,35 @@
 @import 'nib';
 
+$inner-margin = 12px;
 .hslider {
   position: relative;
   box-sizing: border-box;
   width: 200px;
   height 24px;
-  padding: 11px;
+  padding $inner-margin
   border: 1px solid black;
 }
 
 .hslider-bg {
-  absolute:  left 0px top 0px right 0px bottom 0px;
+  //absolute:  left $inner-margin top 0px right $inner-margin bottom 0px;
+  position: relative;
+  margin-top: -2px;
+  height: 4px;
   background-color: lightblue;
 }
 
-.hslider-button {
+.hslider-pg {
   absolute: top 0px left 0px;
-  margin-left: -10px;
-  margin-top: -10px;
-  width: 20px;
-  height: 20px;
+  height: 4px;
+  width: 0;
+  background-color: blue;
+}
 
+
+.hslider-button {
+  absolute: top -10px right -12px;
+  width: 24px;
+  height: 24px;
   background-color: red;
 }
 

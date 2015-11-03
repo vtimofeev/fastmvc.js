@@ -40,9 +40,6 @@ var ft;
                 child.invalidateApp();
             }, this);
         };
-        TemplateChildrenView.prototype.executeExpression = function (value) {
-            return ft.expression.execute(value, this.parent);
-        };
         TemplateChildrenView.prototype.setCurrentChildToExecutionContext = function (child, index, length, context) {
             context.child = child;
             context.childIndex = index;
@@ -113,7 +110,6 @@ var ft;
             if (!this.getElement())
                 throw 'Cant create children dom, cause not set element directly';
             this.createParameters();
-            //console.log('Children params is ', this.getParameters());
         };
         TemplateChildrenView.prototype.enter = function () {
             if (this.inDocument)
@@ -121,7 +117,6 @@ var ft;
             this.childrenLocalParams = this.getChildrenLocalParams(this.getParameters());
             this.applyParameters();
             this.createChildren();
-            this.applyChildrenParameters();
             _super.prototype.enter.call(this);
         };
         TemplateChildrenView.prototype.exit = function () {
@@ -131,7 +126,6 @@ var ft;
         };
         TemplateChildrenView.prototype.validateData = function () {
             this.createChildren();
-            this.applyChildrenParameters();
         };
         TemplateChildrenView.prototype.validateState = function () {
         };
