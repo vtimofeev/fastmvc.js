@@ -55,7 +55,7 @@ module ft {
             if (pathDefinition){
                 var sequenceEvent:IPointerEvent = this.pointer.addSequenceEvent(pointerEvent, target);
                 var event:ITreeEvent = this.getTreeEventByBrowserEvent(pointerEvent.name, pathDefinition.data, pathDefinition.root, e, pointerEvent);
-                //console.log('dispatch composite event', pathDefinition.data.path, pointerEvent);
+                console.log('dispatch composite event', pathDefinition.data.path, pointerEvent);
                 this.viewHelper.dispatchTreeEventDown(event);
 
                 if(sequenceEvent) {

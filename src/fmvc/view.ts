@@ -18,7 +18,7 @@ module fmvc {
 
     export var frameExecution:number = 0;
     var nextFrameHandlers:Function[] = [];
-    var maxFrameCount:number = 2000;
+    var maxFrameCount:number = 5000;
     var waiting:boolean = false;
     var frameStep:number = 1;
 
@@ -107,10 +107,17 @@ module fmvc {
         }
 
         public setState(name:string, value:any):IView {
-            if (this._states[name] === value) return this;
-            this._states[name] = value;
+            if (this.disposed) return;
+
+            var stateValue = this.getStateValue(name, value);
+            if (this._states[name] === stateValue) return this;
+            this._states[name] = stateValue;
             this.invalidate(InvalidateType.State);
             return this;
+        }
+
+        public getStateValue(name:string, value:any):any {
+            return value;
         }
 
         public getState(name:string):any {
@@ -130,6 +137,7 @@ module fmvc {
         }
 
         public setData(value:any):IView {
+            if (this._disposed) return this;
             if (this._data === value) return this;
             this._data = value;
             this.invalidate(InvalidateType.Data);
@@ -141,6 +149,7 @@ module fmvc {
         }
 
         public setModel(value:Model<any>):IView {
+            if (this._disposed) return this;
             if (value != this._model) {
                 if (this._model) this._model.unbind(this);
                 if (value && value instanceof Model) value.bind(this, this.modelChangeHandler);
@@ -200,7 +209,6 @@ module fmvc {
         }
 
         protected exitImpl():void {
-
             if (this._model) this._model.unbind(this);
             if (this._binds) this._binds.forEach((v)=>v.unbind(this));
         }

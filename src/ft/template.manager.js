@@ -13,6 +13,7 @@ var ft;
         function TemplateManager() {
             this._templateMap = {};
             this._instanceFunc = {};
+            _.bindAll(this, 'createClass', 'createInstance');
         }
         /**
          * Создаем класc - функцию которая линкует экземпляр "TemplateView" с параметрами заданными при создании класса, и расширением методоа
@@ -77,5 +78,7 @@ var ft;
     })();
     ft.TemplateManager = TemplateManager;
     ft.templateManager = new TemplateManager();
+    ft.createClass = ft.templateManager.createClass;
+    ft.createInstance = ft.templateManager.createInstance;
 })(ft || (ft = {}));
 //# sourceMappingURL=template.manager.js.map

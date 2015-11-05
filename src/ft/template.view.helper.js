@@ -63,11 +63,13 @@ var ft;
             if (treeElement instanceof ft.TemplateView && treeElement !== root) {
                 treeElement.enter();
             }
-            var i;
-            var childrenLength;
             var treeDomElement = this.getDomElement(treeElement);
-            if (!this.isCommentElement(treeDomElement)) {
+            if (this.isTagElement(treeDomElement)) {
+                // Регистрация элемента для диспетчера
+                this.registerDomElementId(treeDomElement.getAttribute(ft.AttributePathId), data, root);
                 this.enterChildrenView(data, root);
+                var i;
+                var childrenLength;
                 for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
                     this.enterTree(data.children[i], root);
                 }
@@ -75,10 +77,11 @@ var ft;
         };
         TemplateViewHelper.prototype.exitTree = function (data, root) {
             var treeElement = this.getTreeElement(data, root);
+            //console.log('Exit ', treeElement, data, root);
             var i;
             var childrenLength;
-            var treeDomElement = this.getDomElement(treeElement);
-            var isComment = this.isCommentElement(treeDomElement);
+            var domElement = this.getDomElement(treeElement);
+            var isComment = this.isCommentElement(domElement);
             if (!isComment) {
                 this.exitChildrenView(data, root);
                 for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
@@ -205,8 +208,6 @@ var ft;
                 else {
                     this.setSvgElementAttributes(attrsResult, domElement);
                 }
-                // Регистрация элемента для диспетчера
-                this.registerDomElementId(domElementPathId, data, root);
                 // Установка классов
                 if (attribs && attribs.class) {
                     var classesValues = this.getPropertyValues('attribs', 'class', data, root);
@@ -368,10 +369,13 @@ var ft;
                 return params;
             var r = {};
             _.each(params, function (v, k) {
-                var isExpression = typeof v === 'object' && v.name;
-                r[k] = isExpression ? _.extend({}, v) : v;
-                if (isExpression && !r[k].context)
-                    r[k].context = context;
+                var isExpression = v instanceof ft.ExpressionName;
+                if (isExpression) {
+                    r[k] = !v.context ? new ft.ExpressionName(v.name, context) : v;
+                }
+                else {
+                    r[k] = v;
+                }
             });
             return r;
         };
@@ -476,7 +480,7 @@ var ft;
         TemplateViewHelper.prototype.triggerDefEvent = function (e) {
             var def = (e.currentDef || e.def);
             var view = (e.currentTarget || e.target);
-            //console.log('Trigger def event, ', e.name, ' path ', def.path);
+            console.log('Trigger def event, ', e.name, ' path ', def.path);
             if (!view.disabled && def.handlers && def.handlers[e.name]) {
                 //console.log('Has trigger event, ', e.name, ' path ', def.path);
                 view.evalHandler(def.handlers[e.name], e);

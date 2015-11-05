@@ -11,25 +11,7 @@
 <div id="messages"></div>
 <div id="fixtures"></div>
 
-<div style="display: none">
-<tmpl id="template-simple">
-    <div class="template-simple">Simple text template, only static text and class</div>
-</tmpl>
-
-<tmpl id="template-data">
-    <div class="template-data">Template has the data {data}</div>
-</tmpl>
-<tmpl id="template-state">
-    <div
-            title="{data.name} {data.age}"
-            class="{state.base} {state.base}-{state.hover}"
-            style="background-color: red; top: 0px; left: {data.top}px"
-         >Template contains base state (string) {state.base} and hover state (boolean) {state.hover}</div>
-</tmpl>
-
-</div>
-
-<div id="template-container"></div>
+<div id="container"></div>
 
 <!-- Contrib !-->
 <script></script>
@@ -45,8 +27,10 @@
 
 <!-- Template !-->
 <script src="../build/fmvc.dev.js"></script>
+<script src="../src/ft/template.state.js"></script>
 <script src="../src/ft/expression.js"></script>
-<script src="../src/ft/event.dispatcher.js"></script>
+<script src="../src/ft/events/pointer.model.js"></script>
+<script src="../src/ft/events/event.dispatcher.js"></script>
 <script src="../src/ft/template.i.js"></script>
 <script src="../src/ft/template.js"></script>
 <script src="../src/ft/template.parser.js"></script>

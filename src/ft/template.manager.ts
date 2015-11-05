@@ -15,6 +15,7 @@ module ft {
         private _instanceFunc:{[className:string]:ITemplateConstructor} = {};
 
         constructor() {
+            _.bindAll(this, 'createClass', 'createInstance');
         }
 
         /**
@@ -85,4 +86,6 @@ module ft {
     }
 
     export var templateManager = new TemplateManager();
+    export var createClass = templateManager.createClass;
+    export var createInstance = templateManager.createInstance;
 }

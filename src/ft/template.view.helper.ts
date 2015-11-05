@@ -14,7 +14,7 @@ module ft {
 
     export class TemplateViewHelper implements ITemplateViewHelper {
         private idCounter:number = 0;
-        private domElementPathIds:{[id:string]:ITemplateView} = {};
+        public domElementPathIds:{[id:string]:ITemplateView} = {};
 
         constructor() {
         }
@@ -73,13 +73,16 @@ module ft {
                 treeElement.enter();
             }
 
-            var i:number;
-            var childrenLength:number;
             var treeDomElement:HTMLElement = this.getDomElement(treeElement);
 
-            if (!this.isCommentElement(treeDomElement)) {
+            if (this.isTagElement(treeDomElement)) {
+                // Регистрация элемента для диспетчера
+                this.registerDomElementId(treeDomElement.getAttribute(AttributePathId), data, root);
+
                 this.enterChildrenView(data, root);
 
+                var i:number;
+                var childrenLength:number;
                 for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
                     this.enterTree(data.children[i], root);
                 }
@@ -87,12 +90,14 @@ module ft {
         }
 
         public exitTree(data:IDomDef, root:TemplateView):void {
+
             var treeElement:TreeElement = this.getTreeElement(data, root);
+            //console.log('Exit ', treeElement, data, root);
 
             var i:number;
             var childrenLength:number;
-            var treeDomElement:HTMLElement = this.getDomElement(treeElement);
-            var isComment:boolean = this.isCommentElement(treeDomElement);
+            var domElement:HTMLElement = this.getDomElement(treeElement);
+            var isComment:boolean = this.isCommentElement(domElement);
             if (!isComment) {
                 this.exitChildrenView(data,root);
                 for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
@@ -239,8 +244,6 @@ module ft {
                     this.setSvgElementAttributes(attrsResult, domElement);
                 }
 
-                // Регистрация элемента для диспетчера
-                this.registerDomElementId(domElementPathId, data, root);
 
                 // Установка классов
                 if (attribs && attribs.class) {
@@ -432,14 +435,18 @@ module ft {
         // Utilites
         // ------------------------------------------------------------------------------------------------------------
 
-        public applyFirstContextToExpressionParameters(params:any, context:ITemplateView) {
+        public applyFirstContextToExpressionParameters(params:any, context:ITemplateView):IExpressionName {
             if (!context) return params;
 
             var r = {};
-            _.each(params, (v, k)=> {
-                var isExpression = typeof v === 'object' && v.name;
-                r[k] = isExpression ? _.extend({}, v) : v;
-                if (isExpression && !r[k].context) r[k].context = context;
+            _.each(params, (v:IExpressionName|any, k)=> {
+                var isExpression = v instanceof ExpressionName;
+
+                if(isExpression) {
+                    r[k] = !v.context?new ExpressionName(v.name, context): v;
+                } else {
+                    r[k] = v;
+                }
             });
             return r;
         }
@@ -568,7 +575,7 @@ module ft {
         private triggerDefEvent(e:ITreeEvent):void {
             var def:IDomDef = <IDomDef> (e.currentDef || e.def);
             var view = <ITemplateView> (e.currentTarget || e.target);
-            //console.log('Trigger def event, ', e.name, ' path ', def.path);
+            console.log('Trigger def event, ', e.name, ' path ', def.path);
 
 
             if (!view.disabled && def.handlers && def.handlers[e.name]) {
@@ -577,7 +584,5 @@ module ft {
                 e.executionHandlersCount++;
             }
         }
-
-
     }
 }

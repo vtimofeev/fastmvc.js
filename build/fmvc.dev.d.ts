@@ -247,6 +247,7 @@ declare module fmvc {
         setStates(value: any): IView;
         private setStateReverse(value, name);
         setState(name: string, value: any): IView;
+        getStateValue(name: string, value: any): any;
         getState(name: string): any;
         model: Model<any>;
         data: any;

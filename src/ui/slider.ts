@@ -9,10 +9,10 @@ module ui {
 
     export var HSliderDefinition = {
         className: 'ui.HSlider',
-        content: '<div .base="hslider" .value=".5" class="{state.base} {state.base}-{state.life} {state.base}-{state.selected} {state.base}-{state.hover}" >' +
+        content: '<div .base="hslider" .value=".5" class="{state.base} {state.base}-{state.selected} {state.base}-{state.hover}" >' +
         '<div ln="bg" class="{state.base}-bg">' +
-        '<div ln="pg" class="{state.base}-pg" style="width: {(state.value*100)}%;">' +
-        '<ft.Button .base="{state.base}-button" onpointerdown="{this.dragStart(e);}"/>' +
+        '<div ln="pg" class="{state.base}-pg" style="width: {state.value*100}%;">' +
+        '<ft.Button ln="dg" .base="{state.base}-button" .stateHandlers="hover" onpointerdown="{this.dragStart(e);}"/>' +
         '</div>' +
         '</div>' +
         '</div>',
@@ -21,30 +21,26 @@ module ui {
                 this.startX = e.pe.clientX;
                 this.startSize = this.bg.offsetWidth;
                 this.startValue = Number(this.value);
-                console.log('HSlider start', this.startX, this.getElement().offsetWidth, this.startSize, e);
+                this.dg.setState('selected', true);
                 this.globalPointer.bind(this, this.prepareChanges);
             },
 
             prepareChanges: function prepareChanges(e:fmvc.IEvent) {
-                //console.log('Prepare changes ', e);
                 var newX = e.data.clientX;
                 var result = (newX - this.startX) / this.startSize;
-
                 this.value = ui.validateMaxMin(this.startValue + result, 0, 1); // auto invalidate
-                //console.log('HSlider, x, result, value ', newX, result, this.value)
 
                 if (e.data.name === ft.CompositeEvent.PointerUp) {
-                    console.log('HSlider REMOVE !!!');
                     this.globalPointer.unbind(this);
-
+                    this.dg.setState('selected', false);
                 }
-            },
-            beforeEnter: function () {
-                console.log('hslider before enter ', this);
             },
 
             afterEnter: function () {
-                console.log('hslider after enter ', this);
+            },
+
+            disposeImpl: function() {
+                this.pg = this.bg = this.dg = null;
             }
         }
     };

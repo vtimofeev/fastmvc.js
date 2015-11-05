@@ -30,6 +30,6 @@
   height: 24px;
   background-color: #f00;
 }
-.hslider-button-hover {
+.hslider-button-selected {
   background-color: #00f;
 }

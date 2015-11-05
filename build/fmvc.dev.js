@@ -873,7 +873,7 @@ var fmvc;
     };
     fmvc.frameExecution = 0;
     var nextFrameHandlers = [];
-    var maxFrameCount = 2000;
+    var maxFrameCount = 5000;
     var waiting = false;
     var frameStep = 1;
     function requestFrameHandler() {
@@ -953,11 +953,17 @@ var fmvc;
             return this;
         };
         View.prototype.setState = function (name, value) {
-            if (this._states[name] === value)
+            if (this.disposed)
+                return;
+            var stateValue = this.getStateValue(name, value);
+            if (this._states[name] === stateValue)
                 return this;
-            this._states[name] = value;
+            this._states[name] = stateValue;
             this.invalidate(fmvc.InvalidateType.State);
             return this;
+        };
+        View.prototype.getStateValue = function (name, value) {
+            return value;
         };
         View.prototype.getState = function (name) {
             return this._states[name];
@@ -983,6 +989,8 @@ var fmvc;
             configurable: true
         });
         View.prototype.setData = function (value) {
+            if (this._disposed)
+                return this;
             if (this._data === value)
                 return this;
             this._data = value;
@@ -990,6 +998,8 @@ var fmvc;
             return this;
         };
         View.prototype.setModel = function (value) {
+            if (this._disposed)
+                return this;
             if (value != this._model) {
                 if (this._model)
                     this._model.unbind(this);

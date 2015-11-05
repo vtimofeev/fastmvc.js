@@ -36,7 +36,8 @@ module ft {
         on: 'on',
         states: 'states',
         createDelay: 'createDelay',
-        class: 'class'
+        class: 'class',
+        ln: 'ln'
     };
 
     export var FunctorType = {
@@ -148,6 +149,15 @@ module ft {
         // States
         ////////////////////////////////////////////////////////////////
 
+        // Проверяем типы данных приходящие в значении, если есть функция
+        public getStateValue(name:string, value:any):any {
+            if(ft.TemplateStateValueFunc[name]) {
+                return ft.TemplateStateValueFunc[name](value);
+            } else {
+                return value;
+            }
+        }
+
         // Состояние отвечающее за базовый класс
         get base():string {
             return this.getState(State.Base);
@@ -238,9 +248,10 @@ module ft {
 
         applyParameter(value:any, key:string):void {
             switch (key) {
-                case TmplDict.states: // Internal "include" parameters, used at createTree and validateTree
-                case TmplDict.createDelay: //
-                case TmplDict.class: // Child class
+                case TmplDict.states: // internal "include" parameters, used at createTree and validateTree
+                case TmplDict.createDelay: // delay create dom
+                case TmplDict.class: // child class
+                case TmplDict.ln: // link
                     break;
 
                 case TemplateParams.stateHandlers:
@@ -270,9 +281,8 @@ module ft {
             }
         }
 
-
         getParameterValue(value:IExpressionName|any, key:string):any {
-            var r = _.isObject(value)?this.getExpressionValue(value):value;
+            var r = value instanceof ExpressionName?this.getExpressionValue(value):value;
             // console.log(this.name + ' :: apply parameter ', key, ' result=', r, value, value.context);
             return r;
         }
@@ -608,6 +618,12 @@ module ft {
             return result;
         }
 
+        public getFilter(filter:string) {
+            var fnc = new Function('return this.'+filter+';');
+            return fnc.call(this) || this.parent?(<TemplateView>this.parent).getFilter(filter):null;
+        }
+
+
         public getCssClassExpressionValue(ex:IExpressionName):any {
             var exObj:IExpression = this.getExpressionByName(ex.name);
             var result = expression.execute(exObj, ex.context || this, true);
@@ -663,8 +679,8 @@ module ft {
                 if(!t.inDocument) return;
                 switch (functor) {
                     case FunctorType.Create:
-                        templateHelper.createTreeObject(t.getDomDefinitionByPath(data.parentPath) || t.domDef, t);
-                        templateHelper.enterTreeObject(t.getDomDefinitionByPath(data.parentPath) || t.domDef, t);
+                        templateHelper.createTree(t.getDomDefinitionByPath(data.parentPath) || t.domDef, t);
+                        templateHelper.enterTree(t.getDomDefinitionByPath(data.parentPath) || t.domDef, t);
                         return;
                 }
             }, delayValue);

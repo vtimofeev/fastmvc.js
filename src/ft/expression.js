@@ -7,8 +7,18 @@ var ft;
         dataField: 'data.',
         appField: 'app.',
         stateField: 'state',
-        openBracket: '('
+        openBracket: '(',
+        thisDot: 'this.'
     };
+    var ExpressionName = (function () {
+        function ExpressionName(name, context) {
+            if (context === void 0) { context = null; }
+            this.name = name;
+            this.context = context;
+        }
+        return ExpressionName;
+    })();
+    ft.ExpressionName = ExpressionName;
     var Expression = (function () {
         function Expression() {
             this.counter = 0;
@@ -19,60 +29,72 @@ var ft;
         }
         Expression.prototype.strToExpression = function (value) {
             var r = this.parseExpressionMultiContent(value);
-            console.log('Result of ', value, ' is ', r);
             return r;
         };
         Expression.prototype.getExpressionNameObject = function (value) {
-            return { name: value.name };
+            return new ExpressionName(value.name);
         };
-        Expression.prototype.execute = function (value, /*map:IExpressionMap,*/ context, classes) {
-            //console.log('Expression execute ... ', value, context, classes);
+        Expression.prototype.execute = function (value, context, classes) {
             return this.executeMultiExpression(value, context, classes);
         };
         //----------------------------------------------------------------------------------------------------------------------------------------
         // Execute
         //----------------------------------------------------------------------------------------------------------------------------------------
-        Expression.prototype.executeFilters = function (value /* args of i18n */, filters, context) {
+        Expression.prototype.executeFilters = function (value /* primitive, object args of i18n */, filters, context) {
             if (!filters || !filters.length)
                 return value;
-            return _.reduce(filters, function (memo /* args of i18n */, filter, index) {
-                if (filter.indexOf('i18n.') === 0)
-                    return context.getFormattedMessage(filter.replace('i18n.', ''), memo);
-                else
-                    return this.executePlainFilter(filter, memo);
+            return _.reduce(filters, function (memo /* primitive/object args of i18n */, filter, index) {
+                return this.executePlainFilter(filter, memo, context);
             }, value, this);
         };
-        Expression.prototype.executePlainFilter = function (filter, value) {
-            switch (filter) {
-                case 'hhmmss':
-                    return value; //ViewHelper.hhmmss(value);
+        Expression.prototype.executePlainFilter = function (filter, value, context) {
+            if (filter.indexOf('i18n.') === 0) {
+                return context.getFormattedMessage(filter.replace('i18n.', ''), value);
             }
-            return value;
+            else {
+                if (!this.funcMap[filter])
+                    this.funcMap[filter] = context.getFilter(filter);
+                try {
+                    var fnc = this.funcMap[filter];
+                    return fnc.call(context, value);
+                }
+                catch (e) {
+                    return '{error[' + filter + ']}';
+                }
+            }
         };
         Expression.prototype.executeMultiExpression = function (ex, context, classes) {
             var _this = this;
             var isSimpleExpression = (ex.expressions.length === 1);
             var contextValue;
-            //console.log('Exec multi expression, simple', isSimpleExpression);
             return isSimpleExpression ?
                 this.executeExpression(ex, context, classes) :
                 _.reduce(ex.expressions, function (memo, value, index) {
                     contextValue = _this.getParsedContextValue(value, context, classes);
-                    memo = memo ? memo.replace('{$' + index + '}', contextValue) : '{error multiexpression}';
-                    return memo;
-                    /* return special if classes */
+                    if (classes && (!memo || !contextValue))
+                        return '';
+                    var result = memo ? memo.replace('{$' + index + '}', contextValue) : '{error:multiExpression}';
+                    return result;
                 }, ex.result, this);
         };
         Expression.prototype.getParsedContextValue = function (value, context, classes) {
             return this.parseContextValue(this.getContextValue(value, context), value, classes);
         };
         Expression.prototype.parseContextValue = function (value, ex, classes) {
-            var exStr;
-            if (classes && _.isBoolean(value) && (exStr = this.ifString(ex)) && exStr[0] != '(' && exStr.indexOf('.') > 0) {
-                var values = exStr.split('.');
-                var varName = (values.length === 2) ? values[1] : null;
-                if (varName)
-                    return value ? varName : null;
+            if (classes) {
+                if (!!value) {
+                    if (value === true) {
+                        if (!_.isString(ex))
+                            throw 'Incorrect type at parseContextValue with classes true';
+                        return ex.split('.')[1];
+                    }
+                    else {
+                        return value;
+                    }
+                }
+                else {
+                    return null;
+                }
             }
             return value;
         };
@@ -80,11 +102,9 @@ var ft;
             return (_.isString(value) ? value : null);
         };
         Expression.prototype.getContextValue = function (v, context) {
-            var r;
+            var r, safeV;
             if (r = context.getDynamicProperty(v))
                 return r;
-            if (context.data && !context.data.title) {
-            }
             if (typeof v === 'string') {
                 ft.counters.expressionCtx++;
                 if (v === GetContext.data) {
@@ -95,6 +115,7 @@ var ft;
                 }
                 else if (v.indexOf(GetContext.dataField) === 0 || v.indexOf(GetContext.appField) === 0) {
                     if (!this.funcMap[v]) {
+                        //safeV = v.replace(/'/g, '"');
                         this.funcMap[v] = new Function('var v=null; try {v=this.' + v + ';} catch(e) {v=\'{' + v + '}\';} return v;');
                     }
                     r = this.funcMap[v].apply(context);
@@ -111,11 +132,14 @@ var ft;
                         r = null;
                     context.setDynamicProperty(v, r);
                 }
-                else if (v.indexOf(GetContext.openBracket) === 0) {
+                else if (v.indexOf(GetContext.openBracket) === 0 || v.indexOf(GetContext.thisDot) >= 0) {
                     if (!this.funcMap[v]) {
-                        this.funcMap[v] = new Function('var v=null; try {v=' + v + ';} catch(e) {v=\'{' + v + '}\';} return v;');
+                        safeV = v.replace(/'/g, '"');
+                        this.funcMap[v] = new Function('var v=null; try {v=' + v + ';} catch(e) {v=\'{' + safeV + '}\';} return v;');
                     }
                     r = this.funcMap[v].apply(context);
+                    if (r === undefined)
+                        r = null;
                 }
                 if (r !== undefined)
                     return r;
@@ -128,7 +152,7 @@ var ft;
         };
         Expression.prototype.getContextArguments = function (ex, context) {
             var _this = this;
-            return _.reduce(ex.args, function (r, v, k) { return (r[k] = _this.getContextValue(v, context), r); }, {}, this);
+            return _.isString(ex.args) ? this.getContextValue(ex.args, context) : _.reduce(ex.args, function (r, v, k) { return (r[k] = _this.getContextValue(v, context), r); }, {}, this);
         };
         Expression.prototype.executeExpression = function (ex, context, classes) {
             ft.counters.expression++;
@@ -154,7 +178,6 @@ var ft;
         Expression.prototype.parseExpressionMultiContent = function (value) {
             var _this = this;
             var matches = value.match(this.ExpressionMatchRe);
-            console.log('Matches: ', matches, ' of ', value);
             if (!(matches && matches.length))
                 return null;
             var expressions = _.map(matches, function (v) { return _this.parseExpressionContent(v.substring(1, v.length - 1)); }, this);
@@ -166,7 +189,6 @@ var ft;
             var simplyfiedExpressions = _.map(expressions, this.simplifyExpression, this);
             _.each(expressions, function (v) { return expressionVars = expressionVars.concat(v.vars); });
             var r = { name: this.getName(), content: value, result: result, vars: expressionVars, expressions: simplyfiedExpressions };
-            console.log('Expression as part ', r.name, ' result ', r);
             return r;
         };
         Expression.prototype.simplifyExpression = function (expression) {
@@ -205,9 +227,7 @@ var ft;
             var valueSpitByFilter = valueReplacedOr.split(/\|/); // get before first `|`
             var expression = (_.first(valueSpitByFilter)).replace(/###or/g, '||');
             result.filters = _.map(_.rest(valueSpitByFilter), function (v) { return String(v).trim(); }); // get after first `|`
-            console.log('Filters ', result.filters);
             var args = this.parseArguments(expression);
-            console.log('Args ', args, 'expression', expression);
             var vars;
             var e;
             if (_.isObject(args)) {
@@ -222,18 +242,18 @@ var ft;
             _.each(vars, function (v) { return _.isObject(v) ? result.vars = [].concat(result.vars, v.vars) : result.vars.push(v); });
             // remove empty keys
             _.each(_.keys(result), function (key) { return (_.isEmpty(result[key]) ? delete result[key] : null); });
-            console.log('Result expression after all ', result);
             return result;
         };
-        Expression.prototype.tryParseRoundBracketExpression = function (value, index) {
+        Expression.prototype.tryParseRoundBracketExpression = function (expression, index) {
+            //var expressions:string = value;
+            //if(!expressions) return value; // @todo review this fix (replace ! sign)
             var _this = this;
             if (index === void 0) { index = 0; }
-            var expressions = this.getExpressionFromString(value) || value;
-            if (!expressions)
-                return value; // @todo review this fix (replace ! sign)
-            var expression = _.isArray(expressions) ? expressions[0] : expressions;
+            //var expression = _.isArray(expressions)?expressions[0]:expressions ;
             // skip direct execution (at handlers);
-            if (expression.indexOf('this') > -1)
+            var variableMatches = expression.match(this.VariableMatchRe);
+            var hasOneMatch = variableMatches && variableMatches.length === 1;
+            if (expression.indexOf('this') > -1 || hasOneMatch)
                 return expression;
             var variables = _.compact(_.filter(_.map(expression.match(this.VariableMatchRe), function (v) { return v.trim(); }), function (v) { return (v.indexOf('\'') < 0 && v.indexOf('"') < 0 && v.match(/^[A-Za-z]+/gi)); }));
             var convertedExpression = _.reduce(variables, function (memo, v, k) {
@@ -241,7 +261,6 @@ var ft;
             }, expression, this);
             _.each(variables, function (v, k) { return convertedExpression = convertedExpression.replace(new RegExp('###' + k, 'g'), _this.getExVarToJsVar(v)); }, this);
             var r = { content: expression, expression: convertedExpression, vars: variables };
-            console.log('Expression after check round ', r);
             return r;
         };
         Expression.prototype.getExVarToJsVar = function (v) {

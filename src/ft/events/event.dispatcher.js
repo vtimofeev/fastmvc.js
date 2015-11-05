@@ -41,7 +41,7 @@ var ft;
             if (pathDefinition) {
                 var sequenceEvent = this.pointer.addSequenceEvent(pointerEvent, target);
                 var event = this.getTreeEventByBrowserEvent(pointerEvent.name, pathDefinition.data, pathDefinition.root, e, pointerEvent);
-                //console.log('dispatch composite event', pathDefinition.data.path, pointerEvent);
+                console.log('dispatch composite event', pathDefinition.data.path, pointerEvent);
                 this.viewHelper.dispatchTreeEventDown(event);
                 if (sequenceEvent) {
                     var sequenceEvent = this.getTreeEventByBrowserEvent(sequenceEvent.name, pathDefinition.data, pathDefinition.root, e, sequenceEvent);

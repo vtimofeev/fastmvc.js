@@ -37,7 +37,8 @@ var ft;
         on: 'on',
         states: 'states',
         createDelay: 'createDelay',
-        class: 'class'
+        class: 'class',
+        ln: 'ln'
     };
     ft.FunctorType = {
         Create: 'create',
@@ -125,10 +126,19 @@ var ft;
             enumerable: true,
             configurable: true
         });
+        ////////////////////////////////////////////////////////////////        
+        // States
+        ////////////////////////////////////////////////////////////////
+        // Проверяем типы данных приходящие в значении, если есть функция
+        TemplateView.prototype.getStateValue = function (name, value) {
+            if (ft.TemplateStateValueFunc[name]) {
+                return ft.TemplateStateValueFunc[name](value);
+            }
+            else {
+                return value;
+            }
+        };
         Object.defineProperty(TemplateView.prototype, "base", {
-            ////////////////////////////////////////////////////////////////        
-            // States
-            ////////////////////////////////////////////////////////////////
             // Состояние отвечающее за базовый класс
             get: function () {
                 return this.getState(State.Base);
@@ -241,9 +251,10 @@ var ft;
         };
         TemplateView.prototype.applyParameter = function (value, key) {
             switch (key) {
-                case TmplDict.states: // Internal "include" parameters, used at createTree and validateTree
-                case TmplDict.createDelay: //
-                case TmplDict.class:
+                case TmplDict.states: // internal "include" parameters, used at createTree and validateTree
+                case TmplDict.createDelay: // delay create dom
+                case TmplDict.class: // child class
+                case TmplDict.ln:
                     break;
                 case ft.TemplateParams.stateHandlers:
                     this.stateHandlers(_.isString(value) ? (value.split(',')) : value); //@todo move to parser
@@ -272,7 +283,7 @@ var ft;
             }
         };
         TemplateView.prototype.getParameterValue = function (value, key) {
-            var r = _.isObject(value) ? this.getExpressionValue(value) : value;
+            var r = value instanceof ft.ExpressionName ? this.getExpressionValue(value) : value;
             // console.log(this.name + ' :: apply parameter ', key, ' result=', r, value, value.context);
             return r;
         };
@@ -576,6 +587,10 @@ var ft;
             var result = ft.expression.execute(exObj, ex.context || this);
             return result;
         };
+        TemplateView.prototype.getFilter = function (filter) {
+            var fnc = new Function('return this.' + filter + ';');
+            return fnc.call(this) || this.parent ? this.parent.getFilter(filter) : null;
+        };
         TemplateView.prototype.getCssClassExpressionValue = function (ex) {
             var exObj = this.getExpressionByName(ex.name);
             var result = ft.expression.execute(exObj, ex.context || this, true);
@@ -626,8 +641,8 @@ var ft;
                     return;
                 switch (functor) {
                     case ft.FunctorType.Create:
-                        ft.templateHelper.createTreeObject(t.getDomDefinitionByPath(data.parentPath) || t.domDef, t);
-                        ft.templateHelper.enterTreeObject(t.getDomDefinitionByPath(data.parentPath) || t.domDef, t);
+                        ft.templateHelper.createTree(t.getDomDefinitionByPath(data.parentPath) || t.domDef, t);
+                        ft.templateHelper.enterTree(t.getDomDefinitionByPath(data.parentPath) || t.domDef, t);
                         return;
                 }
             }, delayValue);
