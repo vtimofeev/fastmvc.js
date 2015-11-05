@@ -420,7 +420,9 @@ module ft {
 
         registerDomElementId(id:string, data:IDomDef, root:ITemplateView):void {
             //console.log('Register dom', id, data.path);
-            this.domElementPathIds[id] = {data: data, root: root};
+            //@todo fix fast fix
+            if(!this.domElementPathIds[id]) this.domElementPathIds[id] = {data: data, root: root};
+            else console.log('Yet registred at dom ', id, data.path)
         }
 
         unregisterDomElementId(id:string):void {

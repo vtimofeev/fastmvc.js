@@ -352,7 +352,11 @@ var ft;
         };
         TemplateViewHelper.prototype.registerDomElementId = function (id, data, root) {
             //console.log('Register dom', id, data.path);
-            this.domElementPathIds[id] = { data: data, root: root };
+            //@todo fix fast fix
+            if (!this.domElementPathIds[id])
+                this.domElementPathIds[id] = { data: data, root: root };
+            else
+                console.log('Yet registred at dom ', id, data.path);
         };
         TemplateViewHelper.prototype.unregisterDomElementId = function (id) {
             if (id)
