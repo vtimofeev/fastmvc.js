@@ -35,7 +35,7 @@ module ft {
             this.pointer = new ft.PointerModel();
 
             _.bindAll(this, 'browserHandler');
-            var listenEvents:string[] = [].concat(_.values(ft.BrowserEvent), _.values(ft.PointerEvent),  _.values(ft.TouchEvent));
+            var listenEvents:string[] = [].concat(_.values(ft.BrowserEvent), _.values(ft.PointerEvent), _.values(ft.KeyboardEvent),  _.values(ft.TouchEvent));
             _.each(listenEvents, this.on, this);
         }
 
@@ -49,18 +49,18 @@ module ft {
             if(pointerEvent.isComposite) { // set global pointer data
                 //console.log('New pointer event: ', pointerEvent.name);
                 this.pointer.setData(pointerEvent);
-                e.preventDefault();
+                //e.preventDefault();
             }
 
             if (pathDefinition){
                 var sequenceEvent:IPointerEvent = this.pointer.addSequenceEvent(pointerEvent, target);
-                var event:ITreeEvent = this.getTreeEventByBrowserEvent(pointerEvent.name, pathDefinition.data, pathDefinition.root, e, pointerEvent);
-                console.log('dispatch composite event', pathDefinition.data.path, pointerEvent);
+                var event:ITreeEvent = this.getTreeEventByBrowserEvent(pointerEvent.name || e.type, pathDefinition.data, pathDefinition.root, e, pointerEvent);
+                //console.log('dispatch composite event', pathDefinition.data.path, pointerEvent);
                 this.viewHelper.dispatchTreeEventDown(event);
 
                 if(sequenceEvent) {
                     var sequenceEvent = this.getTreeEventByBrowserEvent(sequenceEvent.name, pathDefinition.data, pathDefinition.root, e, sequenceEvent);
-                    console.log('dispatch sequence event',  pathDefinition.data.path, sequenceEvent);
+                    //console.log('dispatch sequence event',  pathDefinition.data.path, sequenceEvent);
                     this.viewHelper.dispatchTreeEventDown(sequenceEvent);
                 }
             }

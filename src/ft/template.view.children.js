@@ -1,5 +1,5 @@
 ///<reference path="./d.ts" />
-var __extends = this.__extends || function (d, b) {
+var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
@@ -16,7 +16,8 @@ var ft;
             var def = this.domDef;
             var className = def.params[ft.TemplateParams.childrenClass];
             var prevChildren = this._children;
-            var childrenViews = _.map(this.data, function (v, k) {
+            var data = this.getParameterValue(this.getParameters()['children.data']) || this.data;
+            var childrenViews = _.map(data, function (v, k) {
                 var child = prevChildren && prevChildren.length ? (prevChildren.splice(0, 1)[0]) : ft.templateManager.createInstance(className, this.parent.name + ':' + className + '-' + k, this.childrenLocalParams);
                 if (v instanceof fmvc.Model)
                     child.model = v;
@@ -33,12 +34,14 @@ var ft;
                 if (!child.inDocument) {
                     child.isChildren = true;
                     child.createDom();
-                    child.enter();
+                    //child.enter();
+                    console.log(this.name, ' create children ', child.getElement().outerHTML);
                     this.getElement().appendChild(child.getElement());
                 }
-                child.invalidateData();
-                child.invalidateApp();
+                //child.invalidateData();
+                //child.invalidateApp();
             }, this);
+            console.log('Created children is ', this._children);
         };
         TemplateChildrenView.prototype.setCurrentChildToExecutionContext = function (child, index, length, context) {
             context.child = child;
@@ -81,7 +84,7 @@ var ft;
             _.each(this._children, function (child, index) {
                 if (child.disposed)
                     return;
-                child.invalidateData();
+                //child.invalidateData();
                 _.each(params, function (value, key) {
                     _this.setCurrentChildToExecutionContext(child, index, length, value.context || _this.parent);
                     var childParamName = _this.getChildrenParamName(key);
@@ -106,26 +109,30 @@ var ft;
                 child.applyParameter(childValue, childParamName);
             }, this);
         };
+        TemplateChildrenView.prototype.beforeCreate = function () {
+            this.createParameters();
+            this.applyParameters();
+            this.childrenLocalParams = this.getChildrenLocalParams(this.getParameters());
+        };
         TemplateChildrenView.prototype.createDom = function () {
             if (!this.getElement())
                 throw 'Cant create children dom, cause not set element directly';
-            this.createParameters();
-        };
-        TemplateChildrenView.prototype.enter = function () {
-            if (this.inDocument)
-                return;
-            this.childrenLocalParams = this.getChildrenLocalParams(this.getParameters());
-            this.applyParameters();
+            this.beforeCreate();
             this.createChildren();
-            _super.prototype.enter.call(this);
         };
-        TemplateChildrenView.prototype.exit = function () {
+        TemplateChildrenView.prototype.enterImpl = function () {
+            console.log('Enter children view ', this._children);
+            _.each(this._children, function (child) {
+                child.enter();
+            }, this);
+        };
+        TemplateChildrenView.prototype.exitImpl = function () {
             _.each(this._children, function (child) {
                 child.exit();
             }, this);
         };
         TemplateChildrenView.prototype.validateData = function () {
-            this.createChildren();
+            //this.createChildren();
         };
         TemplateChildrenView.prototype.validateState = function () {
         };

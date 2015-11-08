@@ -183,7 +183,7 @@ var ft;
                 childrenView.parent = root;
                 childrenView.setElement(this.getDomElement(object));
                 childrenView.createDom();
-                childrenView.enter();
+                //childrenView.enter();
                 root.setChildrenViewPath(data.path, childrenView);
             }
         };
@@ -484,7 +484,7 @@ var ft;
         TemplateViewHelper.prototype.triggerDefEvent = function (e) {
             var def = (e.currentDef || e.def);
             var view = (e.currentTarget || e.target);
-            console.log('Trigger def event, ', e.name, ' path ', def.path);
+            //console.log('Trigger def event, ', e.name, ' path ', def.path);
             if (!view.disabled && def.handlers && def.handlers[e.name]) {
                 //console.log('Has trigger event, ', e.name, ' path ', def.path);
                 view.evalHandler(def.handlers[e.name], e);

@@ -1,8 +1,10 @@
 var ui;
 (function (ui) {
-    ui.Progress = {
+    ui.ProgressDefinition = {
         component: 'ui.Progress',
-        content: '<div .base="progress" .value="0" class="{state.base}"><div class="{state.base}-value" style="width: {(state.value*100)}%;"></div></div>',
+        content: '<div .base="progress" .value="0" class="{state.base}">' +
+            '<div class="{state.base}-pg" style="width: {(state.value*100)}%;"></div>' +
+            '</div>',
         extension: {}
     };
 })(ui || (ui = {}));

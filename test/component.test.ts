@@ -65,6 +65,7 @@ describe('ft - component package ', function () {
             content: '<div .stateHandlers="hover,selected" class="button button-{state.selected} button-{state.hover}">{data.title}</div>',
         },
         ui.HSliderDefinition,
+        ui.InputDefinition,
         {
             className: "ft.Progress",
             content: '<div .base="progress" .value="0" class="{state.base}"><div class="{state.base}-bg" style="width:{(state.value*100)}%"></div></div>',
@@ -75,130 +76,16 @@ describe('ft - component package ', function () {
             '<h1>Slider content</h1>' +
             '<ft.Button .data="The button text"></ft.Button>' +
             '<ui.HSlider></ui.HSlider>' +
+            '<h4>{data.name}!</h4>'+
+            '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
+            '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
+
             '<div .data="{data.children}"' +
         ' children.selected="{(child.model!==data.selectedItem)}" ' +
         ' children.class="ft.TestButton" children.onaction="selectItemFirst" children.disabled="{data.childrenDisabled}"></div>' +
             '<div>',
             action: 'create'
         },
-        /*
-        {
-            className: "ft.Component",
-            content: '<div .base="COMPONENT">' +
-            '<h1>First component, global mouse {data.mouseX} {data.mouseY} </h1>' +
-            '<h2>First component, global mouse {data.mouseX} {data.mouseY} </h2>' +
-            '<h3>First component, global mouse {data.mouseX} {data.mouseY} </h3>' +
-            '<h4>First component, global mouse {data.mouseX} {data.mouseY} </h4>' +
-
-            '<h1>Slider</h1>' +
-            '<ui.HSlider>Slider content</ui.HSlider>' +
-
-            '<h1>Count</h1>' +
-             '<div children.data="{data.count}" children.class="ft.NumberButton" children.selected="{(child.data!==data.countItemSelected)}" children.onaction="countSelected"></div>'+
-
-
-            '<h1>Updates</h1>' +
-
-            '<ft.Button onaction="update0">Update 0</ft.Button>' +
-            '<ft.Button onaction="update50">Update 50</ft.Button>' +
-            '<ft.Button onaction="update100">Update 100</ft.Button>' +
-            '<ft.Button onaction="update1000">Update 1 000</ft.Button>' +
-            '<ft.Button onaction="update10000">Update 10 000</ft.Button>' +
-
-            '<h1>Toggle</h1>' +
-
-            '<ft.Button onaction="toggleGroup" .data="{app.scope.d.reset}" .createDelay="1000">Toggle group</ft.Button>' +
-            '<ft.Button onaction="toggleGroup" .data="{app.scope.d.reset}" .createDelay="2000">Toggle group' +
-            '<div>Ola<ft.Button .data="{data.reset}" .createDelay="4000" onaction="{alert(1)}"></ft.Button></div>' +
-            '</ft.Button>' +
-            '<ft.Button onaction="toggleGroup" .createDelay="3000">Toggle group</ft.Button>' +
-            '<div>{data.children.length} {data.reset.title}</div>' +
-            '<div .data="{data.children}"' +
-            ' children.selected="{(child.model!==data.selectedItem)}" ' +
-            ' children.class="ft.Button" children.onaction="selectItemFirst" children.disabled="{data.childrenDisabled}"></div>' +
-
-            '<ft.ButtonGroup .data="{data.children}" children.createDelay="{(childIndex+1500)}" children.base="button" children.focused="anydata" children.onaction="selectItemSecond" ' +
-            ' children.disabled="{data.childrenDisabled}" ' +
-            ' children.selected="{(child.model!==data.selectedItem)}"></ft.ButtonGroup>' +
-            '</div>',
-
-            mixin: {
-                internalHandler: function (name, e) {
-                    console.log('Internal extension handler ', name);
-                    if (name === 'toggleGroup') {
-                        this.model.changes = {childrenDisabled: !this.model.data.childrenDisabled};
-                        //this.invalidateData();
-                        //console.log('On toggle this children disabled: ', this.model.data.childrenDisabled);
-                    }
-                    else if (name === 'selectItemFirst') {
-                        this.model.changes = {selectedItem: e.target.model};
-                    }
-                    else if (name === 'update0') intervalUpdate(0);
-                    else if (name === 'update50') intervalUpdate(50);
-                    else if (name === 'update100') intervalUpdate(100);
-                    else if (name === 'update1000') intervalUpdate(1000);
-                    else if (name === 'update10000') intervalUpdate(10000);
-                    else if (name === 'countSelected') {
-                        this.model.changes = {countItemSelected:  e.target.data};
-                        //this.invalidateApp();
-                        updateChildrenCount(e.target.data)
-                    }
-
-
-                }
-
-            },
-            action: 'create'
-        }
-
-        /*
-         "ft.ButtonGroup": {
-         content: '<div .stateHandlers="hover" >' +
-         '<div class="button-{state.hover}">Заголовок с подсветкой</div>' +
-
-         '<ft.DataButton onclick="disable" state.disabled="{app.scope.d.disabled}">Disable children</ft.DataButton>' +
-         '<ft.DataButton onclick="enable" state.disabled="{(!app.scope.d.disabled)}">Enable children</ft.DataButton>' +
-
-         '<div states="{app.scope.d.selected}">Выбран элемент {app.scope.d.selected.title}</div>' +
-         '<div states="{(!app.scope.d.selected)}">Нет выбранного элемнта (глобальный-кнопка)</div>' +
-
-         '<ft.DataButton states="{app.scope.d.selected}" .data="{app.scope.d.selected}"> Выбран узел (глобальный) </ft.DataButton>' +
-         '<ft.DataButton states="{(!app.scope.d.selected)}" .data="{app.scope.d.reset}"> Нет узла (глобальный) </ft.DataButton>' +
-
-         '<div ln="childrenContainer" children.stateHandlers="hover" children.state.selected="{(ctx.data===app.scope.d.selected)}" children.state.disabled="{app.scope.d.disabled}" children.class="ft.DataButton" children.data="{app.scope.d.children}">' +
-         '</div>' +
-         '<ft.DataButton .stateHandlers="hover" .data="{app.scope.d.reset}" state.disabled="{app.scope.d.disabled}" state.selected="{app.scope.d.selected}" onclick="reset"> Очистить (глобальный) </ft.DataButton>' +
-
-         '</div>',
-
-         data: {disabled: false, children: buttonsDs, selected: buttonsDs[0], reset: buttonReset},
-         action: 'create'
-         },
-         "ft.SampleComponent": {
-         content: '<div .stateHandlers="hover" >' +
-         '<div class="button-{state.hover}" children.class="ft.DataButton" children.data="{app.scope.d.children}"  children.stateHandlers="hover">Заголовок с подсветкой</div>' +
-
-         '<ft.DataButton onclick="disable" state.disabled="{app.scope.d.disabled}">Disable children</ft.DataButton>' +
-         '<ft.DataButton onclick="enable" state.disabled="{(!app.scope.d.disabled)}">Enable children</ft.DataButton>' +
-
-         '<div states="{app.scope.d.selected}">Выбран элемент {app.scope.d.selected.d.title}</div>' +
-         '<div states="{(!app.scope.d.selected)}">Нет выбранного элемнта (глобальный-кнопка)</div>' +
-
-         '<ft.DataButton states="{app.scope.d.selected}" .model="{app.scope.d.selected}"> Выбран узел (глобальный) </ft.DataButton>' +
-         '<ft.DataButton states="{(!app.scope.d.selected)}" .data="{app.scope.d.reset}"> Нет узла (глобальный) </ft.DataButton>' +
-
-         '<div ln="childrenContainer" children.redispatchHandlers="mouseover,mouseout" children.stateHandlers="hover" children.state.selected="{(ctx.model===app.scope.d.selected)}" children.state.disabled="{app.scope.d.disabled}" children.class="ft.DataButton" children.data="{app.scope.d.children}">' +
-         '</div>' +
-         '<ft.DataButton .stateHandlers="hover" .data="{app.scope.d.reset}" state.disabled="{app.scope.d.disabled}" state.selected="{app.scope.d.selected}" onclick="reset"> Очистить (глобальный) </ft.DataButton>' +
-
-         '</div>',
-         data: {disabled: false, children: buttonsDs, selected: buttonsDs[0], reset: buttonReset},
-         action: 'create'
-
-         }
-         */
-
-
     ];
 
 
@@ -206,6 +93,8 @@ describe('ft - component package ', function () {
     var app = new fmvc.Facade('testapp', null, document.body);
     var model = new fmvc.Model<IAppData>('scope');
     model.data = {
+        name: 'Vasily 1',
+        placeholder: 'hello dolly',
         selected: null,
         childrenDisabled: false,
         children: null,
@@ -213,7 +102,7 @@ describe('ft - component package ', function () {
         mouseX: 0,
         mouseY: 0,
         count: [0,5, 10,50,100,200,500,1000,2000],
-        countItemSelected: 5
+        countItemSelected: 10
     };
 
     var mediator = new fmvc.Mediator('appmed', document.body);
@@ -252,7 +141,7 @@ describe('ft - component package ', function () {
         }, value);
     };
 
-    setTimeout(()=>intervalUpdate(50), 5000);
+    setTimeout(()=>intervalUpdate(500), 5000);
     console.log('---Setdata ', model.d.selectedItem);
 
 

@@ -2,7 +2,7 @@
 var ft;
 (function (ft) {
     ft.globalScope = window || {};
-    var templateParser = new ft.TemplateParser();
+    ft.templateParser = new ft.TemplateParser();
     /**
      * Менеджер классов,
      * 1. используется для создания классов и регистрации их в глобальном скоупе, имеет возможности для переопределения встроенных методов и параметорв, создания новых.
@@ -69,8 +69,8 @@ var ft;
         };
         /* Парсим текстовый шаблон, затем дополнительно обрабатываем для представления в виде "ITemplate" */
         TemplateManager.prototype.parse = function (value) {
-            var objs = templateParser.parseHtml(value);
-            var template = templateParser.htmlObjectToTemplate(objs);
+            var objs = ft.templateParser.parseHtml(value);
+            var template = ft.templateParser.htmlObjectToTemplate(objs);
             //@todo: Добавить проверку синтаксиса html и выражений, выводить в специальный логгер
             return template;
         };

@@ -158,6 +158,7 @@ module ft {
                     result = this.createDomElement(data.type, data, root);
 
                 }
+
                 this.createChildrenView(result, data, root);
             } else { // Элемент исключен из дерева
                 result = this.createDomElement('comment', data, root);
@@ -212,7 +213,7 @@ module ft {
                 childrenView.parent = root;
                 childrenView.setElement(this.getDomElement(object));
                 childrenView.createDom();
-                childrenView.enter();
+                //childrenView.enter();
                 root.setChildrenViewPath(data.path, childrenView);
             }
         }
@@ -577,7 +578,7 @@ module ft {
         private triggerDefEvent(e:ITreeEvent):void {
             var def:IDomDef = <IDomDef> (e.currentDef || e.def);
             var view = <ITemplateView> (e.currentTarget || e.target);
-            console.log('Trigger def event, ', e.name, ' path ', def.path);
+            //console.log('Trigger def event, ', e.name, ' path ', def.path);
 
 
             if (!view.disabled && def.handlers && def.handlers[e.name]) {

@@ -7,7 +7,7 @@ module ft {
     var templateFormatterChache = {};
     export var expression = new ft.Expression();
     var dispatcher = new ft.EventDispatcher(templateHelper);
-    var timers = {createDom: 0 , enter: 0, setData: 0, validate: 0};
+    var timers = {createDom: 0, enter: 0, setData: 0, validate: 0};
 
 
     var LifeState = {
@@ -33,11 +33,13 @@ module ft {
 
     var TmplDict = {
         childrenDot: 'children.',
+        stateDot: 'state.',
         on: 'on',
         states: 'states',
         createDelay: 'createDelay',
         class: 'class',
-        ln: 'ln'
+        ln: 'ln',
+        bindoutDot: 'bindout.'
     };
 
     export var FunctorType = {
@@ -52,7 +54,19 @@ module ft {
         State: 'state'
     }
 
-    export var counters = {expression: 0, expressionEx: 0, expressionCtx: 0, multiExpression: 0, createDom: 0 , enter: 0, setData: 0, validate: 0, validateState: 0, validateData: 0, validateApp: 0};
+    export var counters = {
+        expression: 0,
+        expressionEx: 0,
+        expressionCtx: 0,
+        multiExpression: 0,
+        createDom: 0,
+        enter: 0,
+        setData: 0,
+        validate: 0,
+        validateState: 0,
+        validateData: 0,
+        validateApp: 0
+    };
 
     setInterval(()=>console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(counters), ' frames ', fmvc.frameExecution), 5000);
 
@@ -76,7 +90,7 @@ module ft {
         private _domDef:IDomDef; // Definition view related parent
         private _constructorParams:any; // Params added at template constructor
         protected _resultParams:any; // Merged params from constructor and dom definition
-
+        private _stateBinds:any; // External binds
 
         // Maps of created element
         private _treeElementMapByPath:{[path:string]:TreeElement};
@@ -129,7 +143,7 @@ module ft {
         }
 
         set i18n(value:any) {
-           this._i18n = value;
+            this._i18n = value;
         }
 
         get i18n():any {
@@ -149,9 +163,33 @@ module ft {
         // States
         ////////////////////////////////////////////////////////////////
 
+        // Для связывания внутреннего состояния с внешними данными, используется внешний биндинг состояния
+        protected applyStateBinds(name:string, value:any):void {
+            if (!(this._stateBinds && this._stateBinds[name])) return;
+            //console.log('Apply bind ', name, value, this.parent.model, this.parent.data);
+            var dataRef:string[] = this._stateBinds[name];
+
+            var hasParentModel:boolean = !!this.parent.model;
+            if (hasParentModel) {
+                var changes = {};
+                changes[dataRef[1]] = value;
+                this.parent.model.changes = changes;
+                this.parent.invalidateData();
+
+            } else {
+                if (this.parent.data) {
+                    this.parent.data[dataRef[1]] = value;
+                    this.parent.invalidateData();
+                }
+                else {
+                    throw 'Cant apply state bind ' + name + ' at ' + this.name;
+                }
+            }
+        }
+
         // Проверяем типы данных приходящие в значении, если есть функция
-        public getStateValue(name:string, value:any):any {
-            if(ft.TemplateStateValueFunc[name]) {
+        protected getStateValue(name:string, value:any):any {
+            if (ft.TemplateStateValueFunc[name]) {
                 return ft.TemplateStateValueFunc[name](value);
             } else {
                 return value;
@@ -162,6 +200,7 @@ module ft {
         get base():string {
             return this.getState(State.Base);
         }
+
         set base(value:string) {
             this.setState(State.Base, value);
         }
@@ -170,6 +209,7 @@ module ft {
         get value():any {
             return this.getState(State.Value);
         }
+
         set value(value:any) {
             this.setState(State.Value, value);
         }
@@ -178,6 +218,7 @@ module ft {
         get custom():any {
             return this.getState(State.Custom);
         }
+
         set custom(value:any) {
             this.setState(State.Custom, value);
         }
@@ -186,6 +227,7 @@ module ft {
         get hover():string {
             return this.getState(State.Hover);
         }
+
         set hover(value:string) {
             this.setState(State.Hover, value);
         }
@@ -194,6 +236,7 @@ module ft {
         get selected():boolean {
             return this.getState(State.Selected);
         }
+
         set selected(value:boolean) {
             this.setState(State.Selected, value);
         }
@@ -202,6 +245,7 @@ module ft {
         get focused():boolean {
             return this.getState(State.Focused);
         }
+
         set focused(value:boolean) {
             this.setState(State.Focused, value);
         }
@@ -210,6 +254,7 @@ module ft {
         get disabled():boolean {
             return this.getState(State.Disabled);
         }
+
         set disabled(value:boolean) {
             this.setState(State.Disabled, value);
         }
@@ -218,6 +263,7 @@ module ft {
         get life():any {
             return this.getState(State.Life);
         }
+
         set life(value:any) {
             this.setState(State.Life, value);
         }
@@ -226,6 +272,7 @@ module ft {
         get createTime():number {
             return this.getState(State.CreateTime);
         }
+
         set createTime(value:number) {
             this.setState(State.CreateTime, value);
         }
@@ -254,20 +301,32 @@ module ft {
                 case TmplDict.ln: // link
                     break;
 
+
                 case TemplateParams.stateHandlers:
-                    this.stateHandlers(_.isString(value)?(value.split(',')):value); //@todo move to parser
+                    this.stateHandlers(_.isString(value) ? (value.split(',')) : value); //@todo move to parser
                     break;
                 default:
-                    if(key.indexOf(TmplDict.childrenDot) === 0) { // children parameter, skip
+                    if (key.indexOf(TmplDict.childrenDot) === 0) { // children parameter, skip
                         return;
                     }
-                    else if(key.indexOf(TmplDict.on) === 0) { // handlers, set handler
-                        var t = this;
-                        this.on(key.substring(2), (_.isString(value)?(e)=>{ t.internalHandler(value,e); }:value));
+                    else if (key.indexOf(TmplDict.bindoutDot) === 0) {
+                        var state = key.substr(8); //bind out state
+                        if (!this._stateBinds) this._stateBinds = {};
+                        this._stateBinds[state] = value.split('.');
                     }
-                    else if(key in this) {
-                    // direct set states, values
-                        if(_.isFunction(this[key])) {
+                    else if (key.indexOf(TmplDict.stateDot) === 0) {
+                        var state = key.substr(6);
+                        this.setState(state, this.getParameterValue(value, state, this));
+                    }
+                    else if (key.indexOf(TmplDict.on) === 0) { // handlers, set handler
+                        var t = this;
+                        this.on(key.substring(2), (_.isString(value) ? (e)=> {
+                            t.internalHandler(value, e);
+                        } : value));
+                    }
+                    else if (key in this) {
+                        // direct set states, values
+                        if (_.isFunction(this[key])) {
                             this[key](value);
                         }
                         else {
@@ -282,7 +341,7 @@ module ft {
         }
 
         getParameterValue(value:IExpressionName|any, key:string):any {
-            var r = value instanceof ExpressionName?this.getExpressionValue(value):value;
+            var r = value instanceof ExpressionName ? this.getExpressionValue(value) : value;
             // console.log(this.name + ' :: apply parameter ', key, ' result=', r, value, value.context);
             return r;
         }
@@ -292,7 +351,7 @@ module ft {
         ////////////////////////////////////////////////////////////////
 
         getTreeElementByPath(value:string):TreeElement {
-            return <TreeElement> this._treeElementMapByPath?this._treeElementMapByPath[value]:null;
+            return <TreeElement> this._treeElementMapByPath ? this._treeElementMapByPath[value] : null;
         }
 
         setTreeElementPath(path:string, value:TreeElement) {
@@ -311,7 +370,7 @@ module ft {
         getChildrenViewByPath(path:string):TemplateChildrenView {
             var result:TemplateChildrenView = this._dataChildren ? this._dataChildren[path] : null;
             var c:TemplateView;
-            result = result || (c = this.getTreeElementByPath(path), (c instanceof TemplateView?c.getDefaultChildrenView():null));
+            result = result || (c = this.getTreeElementByPath(path), (c instanceof TemplateView ? c.getDefaultChildrenView() : null));
             return result;
         }
 
@@ -329,7 +388,7 @@ module ft {
         }
 
         getDefaultChildrenView():TemplateChildrenView {
-            return this._dataChildren?_.values(this._dataChildren)[0]:null;
+            return this._dataChildren ? _.values(this._dataChildren)[0] : null;
         }
 
         setTreeElementLink(name:string, value:TreeElement):void {
@@ -379,7 +438,7 @@ module ft {
 
         protected createDomImpl():void {
             //console.log('Create ', this.name);
-            if(this._element) return;
+            if (this._element) return;
             var e = <TreeElement> templateHelper.createTree(this._template.domTree, this);
             var element:HTMLElement = e instanceof TemplateView ? (<ITemplateView>e).getElement() : <HTMLElement>e;
             this.setElement(element);
@@ -388,11 +447,11 @@ module ft {
         }
 
         protected createParameters():void {
-            var localParams = this.localDomDef?this.localDomDef.params:null;
-            if(this.isChildren) {
+            var localParams = this.localDomDef ? this.localDomDef.params : null;
+            if (this.isChildren) {
                 this.setParameters(_.extend({}, localParams, this._constructorParams));
             } else {
-                var parentParams = templateHelper.applyFirstContextToExpressionParameters(this.domDef?this.domDef.params:null, this.parent);
+                var parentParams = templateHelper.applyFirstContextToExpressionParameters(this.domDef ? this.domDef.params : null, this.parent);
                 this.setParameters(_.extend({}, localParams, parentParams, this._constructorParams));
             }
         }
@@ -432,12 +491,15 @@ module ft {
             this._cssClassMap = null;
             this._dynamicPropertiesMap = null;
             this._prevDynamicProperiesMap = null;
-            this._localHandlers  = null;
+            this._localHandlers = null;
             this._treeElementMapByPath = null;
 
-            _.each(this._resultParams, (v,k)=>{v.context=null; delete this._resultParams[k]});
-            _.each(this._dataChildren, (v,k)=>delete this._dataChildren[k]);
-            _.each(this._treeElementMapByPath, (v,k)=>delete this._treeElementMapByPath[k]);
+            _.each(this._resultParams, (v, k)=> {
+                v.context = null;
+                delete this._resultParams[k]
+            });
+            _.each(this._dataChildren, (v, k)=>delete this._dataChildren[k]);
+            _.each(this._treeElementMapByPath, (v, k)=>delete this._treeElementMapByPath[k]);
 
             this._resultParams = null;
             this._template = null;
@@ -455,7 +517,7 @@ module ft {
 
         public validate():void {
             // console.log('Validate try ', this.name);
-            if(!this.inDocument) return;
+            if (!this.inDocument) return;
             // console.log('Validate ', this.name, this._dynamicPropertiesMap);
 
 
@@ -463,32 +525,32 @@ module ft {
 
             if (!_.isEmpty(this._dynamicPropertiesMap)) _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
             this._dynamicPropertiesMap = {};
-            if(this._template.hasStates) templateHelper.validateTree(this._template.domTree, this);// templateHelper.createTreeObject(this._template.domTree, this);
+            if (this._template.hasStates) templateHelper.validateTree(this._template.domTree, this);// templateHelper.createTreeObject(this._template.domTree, this);
             //console.log('Validate ...', this.name, this._invalidate);
             super.validate();
 
-            var result = getTime()-start;
+            var result = getTime() - start;
             counters.validate++;
-            timers.validate+=result;
+            timers.validate += result;
 
         }
 
         protected validateApp():void {
-            if(this.canValidate(fmvc.InvalidateType.App)) {
+            if (this.canValidate(fmvc.InvalidateType.App)) {
                 counters.validateApp++;
                 templateHelper.updateDynamicTree(this, DynamicTreeGroup.App);
             }
         }
 
         protected validateData():void {
-            if(this.canValidate(fmvc.InvalidateType.Data)) {
+            if (this.canValidate(fmvc.InvalidateType.Data)) {
                 counters.validateData++;
                 templateHelper.updateDynamicTree(this, DynamicTreeGroup.Data);
             }
         }
 
         protected validateState():void {
-            if(this.canValidate(fmvc.InvalidateType.State)) {
+            if (this.canValidate(fmvc.InvalidateType.State)) {
                 counters.validateState++;
                 templateHelper.updateDynamicTree(this, DynamicTreeGroup.State);
             }
@@ -505,7 +567,7 @@ module ft {
         ////////////////////////////////////////////////////////////////
 
         protected stateHandlers(value:string[]) {
-            if(_.isString(value)) value = value.split(',');
+            if (_.isString(value)) value = value.split(',');
 
             var stateHandlers = {
                 hover: {
@@ -524,27 +586,27 @@ module ft {
         }
 
         private focusHandler(e:ITreeEvent):void {
-            if(!!this.getState(State.Disabled)) return;
+            if (!!this.getState(State.Disabled)) return;
             this.setState(State.Focused, true);
         }
 
         private blurHandler(e:ITreeEvent):void {
-            if(!!this.getState(State.Disabled)) return;
+            if (!!this.getState(State.Disabled)) return;
             this.setState(State.Focused, false);
         }
 
         private mouseoverHandler(e:ITreeEvent):void {
-            if(!!this.getState(State.Disabled)) return;
+            if (!!this.getState(State.Disabled)) return;
             this.setState(State.Hover, true);
         }
 
         private mouseoutHandler(e:ITreeEvent):void {
-            if(!!this.getState(State.Disabled)) return;
+            if (!!this.getState(State.Disabled)) return;
             this.setState(State.Hover, false);
         }
 
         private clickHandler(e:ITreeEvent):void {
-            if(!!this.getState(State.Disabled)) return;
+            if (!!this.getState(State.Disabled)) return;
             this.setState(State.Selected, !this.getState(State.Selected));
         }
 
@@ -565,15 +627,18 @@ module ft {
             var h = this._localHandlers ? this._localHandlers[path] : null;
             if (h && h[e.name]) {
                 var handlers = h[e.name];
-                console.log('Has component triggers ', e.name, this.name);
-                _.each(handlers, (v)=>{ v.call(this, e); e.executionHandlersCount++; }, this);
+                //console.log('Has component triggers ', e.name, this.name);
+                _.each(handlers, (v)=> {
+                    v.call(this, e);
+                    e.executionHandlersCount++;
+                }, this);
             }
         }
 
         public on(event:string, handler, path:string = '0') {
             if (!this._localHandlers) this._localHandlers = {};
             if (path && !this._localHandlers[path]) this._localHandlers[path] = {};
-            var handlers = this._localHandlers[path][event]?this._localHandlers[path][event]:[];
+            var handlers = this._localHandlers[path][event] ? this._localHandlers[path][event] : [];
             handlers.push(handler);
             this._localHandlers[path][event] = handlers;
         }
@@ -596,7 +661,7 @@ module ft {
 
         protected internalHandler(type, e:any):void {
             //console.log('Internal handler ... ', type, e);
-            if(this.parent) this.parent.internalHandler(type, e);
+            if (this.parent) this.parent.internalHandler(type, e);
         }
 
         ////////////////////////////////////////////////////////////////
@@ -605,22 +670,22 @@ module ft {
 
 
         public getExpressionByName(name:string):IExpression {
-            var value = this._template.expressionMap?this._template.expressionMap[name]:null;
-            value = value || (this.parent?this.parent.getExpressionByName(name):null);
+            var value = this._template.expressionMap ? this._template.expressionMap[name] : null;
+            value = value || (this.parent ? this.parent.getExpressionByName(name) : null);
             return value;
         }
 
         public getExpressionValue(ex:IExpressionName):any {
             var exName = ex.name;
-            if(this._dynamicPropertiesMap[exName]) return this._dynamicPropertiesMap[exName];
+            if (this._dynamicPropertiesMap[exName]) return this._dynamicPropertiesMap[exName];
             var exObj:IExpression = this.getExpressionByName(exName);
             var result = expression.execute(exObj, ex.context || this);
             return result;
         }
 
         public getFilter(filter:string) {
-            var fnc = new Function('return this.'+filter+';');
-            return fnc.call(this) || this.parent?(<TemplateView>this.parent).getFilter(filter):null;
+            var fnc = new Function('return this.' + filter + ';');
+            return fnc.call(this) || this.parent ? (<TemplateView>this.parent).getFilter(filter) : null;
         }
 
 
@@ -661,7 +726,7 @@ module ft {
 
         isDelay(data:IDomDef, functor:string):boolean {
             var result:boolean = false;
-            if(functor === FunctorType.Create) {
+            if (functor === FunctorType.Create) {
                 var delayValue:number = Number(data.params[functor + 'Delay']); //@todo apply types move to parser
                 result = ((new Date()).getTime() - this.createTime) < delayValue;
             }
@@ -676,7 +741,7 @@ module ft {
             var delayValue:number = Number(data.params[functor + 'Delay']) - ((new Date()).getTime() - this.createTime);
             var t = this;
             this._delays[delayName] = setTimeout(function delayedFunctor() { //@todo: step 2, switch anonymous to class methods
-                if(!t.inDocument) return;
+                if (!t.inDocument) return;
                 switch (functor) {
                     case FunctorType.Create:
                         templateHelper.createTree(t.getDomDefinitionByPath(data.parentPath) || t.domDef, t);
@@ -687,7 +752,7 @@ module ft {
         }
 
         cleanDelays():void {
-            _.each(this._delays, (v,k)=>clearTimeout(v));
+            _.each(this._delays, (v, k)=>clearTimeout(v));
         }
     }
 }

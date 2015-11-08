@@ -2,7 +2,7 @@
 
 module ft {
     export var globalScope:any = window || {};
-    var templateParser = new TemplateParser();
+    export var templateParser = new TemplateParser();
 
     /**
      * Менеджер классов,

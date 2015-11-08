@@ -1,4 +1,4 @@
-var __extends = this.__extends || function (d, b) {
+var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
@@ -109,8 +109,11 @@ var fmvc;
             if (this._states[name] === stateValue)
                 return this;
             this._states[name] = stateValue;
+            this.applyStateBinds(name, stateValue);
             this.invalidate(fmvc.InvalidateType.State);
             return this;
+        };
+        View.prototype.applyStateBinds = function (name, value) {
         };
         View.prototype.getStateValue = function (name, value) {
             return value;
@@ -193,8 +196,9 @@ var fmvc;
             this.setElement(document.createElement('div'));
         };
         View.prototype.enter = function () {
-            if (this._inDocument)
+            if (this._inDocument) {
                 throw new Error('Cant enter, it is in document');
+            }
             this.enterImpl();
             this._inDocument = true;
             this.afterEnter();

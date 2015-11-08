@@ -43,6 +43,7 @@ describe('ft - component package ', function () {
             content: '<div .stateHandlers="hover,selected" class="button button-{state.selected} button-{state.hover}">{data.title}</div>',
         },
         ui.HSliderDefinition,
+        ui.InputDefinition,
         {
             className: "ft.Progress",
             content: '<div .base="progress" .value="0" class="{state.base}"><div class="{state.base}-bg" style="width:{(state.value*100)}%"></div></div>',
@@ -53,6 +54,9 @@ describe('ft - component package ', function () {
                 '<h1>Slider content</h1>' +
                 '<ft.Button .data="The button text"></ft.Button>' +
                 '<ui.HSlider></ui.HSlider>' +
+                '<h4>{data.name}!</h4>' +
+                '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
+                '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
                 '<div .data="{data.children}"' +
                 ' children.selected="{(child.model!==data.selectedItem)}" ' +
                 ' children.class="ft.TestButton" children.onaction="selectItemFirst" children.disabled="{data.childrenDisabled}"></div>' +
@@ -64,6 +68,8 @@ describe('ft - component package ', function () {
     var app = new fmvc.Facade('testapp', null, document.body);
     var model = new fmvc.Model('scope');
     model.data = {
+        name: 'Vasily 1',
+        placeholder: 'hello dolly',
         selected: null,
         childrenDisabled: false,
         children: null,
@@ -71,7 +77,7 @@ describe('ft - component package ', function () {
         mouseX: 0,
         mouseY: 0,
         count: [0, 5, 10, 50, 100, 200, 500, 1000, 2000],
-        countItemSelected: 5
+        countItemSelected: 10
     };
     var mediator = new fmvc.Mediator('appmed', document.body);
     app.register(model, mediator);
@@ -98,7 +104,7 @@ describe('ft - component package ', function () {
             });
         }, value);
     };
-    setTimeout(function () { return intervalUpdate(50); }, 5000);
+    setTimeout(function () { return intervalUpdate(500); }, 5000);
     console.log('---Setdata ', model.d.selectedItem);
     describe('ft - ButtonGroup/DataButton', function () {
         _.each(templateObjs, function (obj, index) {

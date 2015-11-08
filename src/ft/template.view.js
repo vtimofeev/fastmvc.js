@@ -1,5 +1,5 @@
 ///<reference path="./d.ts" />
-var __extends = this.__extends || function (d, b) {
+var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
@@ -34,11 +34,13 @@ var ft;
     };
     var TmplDict = {
         childrenDot: 'children.',
+        stateDot: 'state.',
         on: 'on',
         states: 'states',
         createDelay: 'createDelay',
         class: 'class',
-        ln: 'ln'
+        ln: 'ln',
+        bindoutDot: 'bindout.'
     };
     ft.FunctorType = {
         Create: 'create',
@@ -50,7 +52,19 @@ var ft;
         Data: 'data',
         State: 'state'
     };
-    ft.counters = { expression: 0, expressionEx: 0, expressionCtx: 0, multiExpression: 0, createDom: 0, enter: 0, setData: 0, validate: 0, validateState: 0, validateData: 0, validateApp: 0 };
+    ft.counters = {
+        expression: 0,
+        expressionEx: 0,
+        expressionCtx: 0,
+        multiExpression: 0,
+        createDom: 0,
+        enter: 0,
+        setData: 0,
+        validate: 0,
+        validateState: 0,
+        validateData: 0,
+        validateApp: 0
+    };
     setInterval(function () { return console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(ft.counters), ' frames ', fmvc.frameExecution); }, 5000);
     function getFormatter(value, locale) {
         if (locale === void 0) { locale = 'en'; }
@@ -129,6 +143,29 @@ var ft;
         ////////////////////////////////////////////////////////////////        
         // States
         ////////////////////////////////////////////////////////////////
+        // Для связывания внутреннего состояния с внешними данными, используется внешний биндинг состояния
+        TemplateView.prototype.applyStateBinds = function (name, value) {
+            if (!(this._stateBinds && this._stateBinds[name]))
+                return;
+            //console.log('Apply bind ', name, value, this.parent.model, this.parent.data);
+            var dataRef = this._stateBinds[name];
+            var hasParentModel = !!this.parent.model;
+            if (hasParentModel) {
+                var changes = {};
+                changes[dataRef[1]] = value;
+                this.parent.model.changes = changes;
+                this.parent.invalidateData();
+            }
+            else {
+                if (this.parent.data) {
+                    this.parent.data[dataRef[1]] = value;
+                    this.parent.invalidateData();
+                }
+                else {
+                    throw 'Cant apply state bind ' + name + ' at ' + this.name;
+                }
+            }
+        };
         // Проверяем типы данных приходящие в значении, если есть функция
         TemplateView.prototype.getStateValue = function (name, value) {
             if (ft.TemplateStateValueFunc[name]) {
@@ -263,9 +300,21 @@ var ft;
                     if (key.indexOf(TmplDict.childrenDot) === 0) {
                         return;
                     }
+                    else if (key.indexOf(TmplDict.bindoutDot) === 0) {
+                        var state = key.substr(8); //bind out state
+                        if (!this._stateBinds)
+                            this._stateBinds = {};
+                        this._stateBinds[state] = value.split('.');
+                    }
+                    else if (key.indexOf(TmplDict.stateDot) === 0) {
+                        var state = key.substr(6);
+                        this.setState(state, this.getParameterValue(value, state, this));
+                    }
                     else if (key.indexOf(TmplDict.on) === 0) {
                         var t = this;
-                        this.on(key.substring(2), (_.isString(value) ? function (e) { t.internalHandler(value, e); } : value));
+                        this.on(key.substring(2), (_.isString(value) ? function (e) {
+                            t.internalHandler(value, e);
+                        } : value));
                     }
                     else if (key in this) {
                         // direct set states, values
@@ -418,7 +467,10 @@ var ft;
             this._prevDynamicProperiesMap = null;
             this._localHandlers = null;
             this._treeElementMapByPath = null;
-            _.each(this._resultParams, function (v, k) { v.context = null; delete _this._resultParams[k]; });
+            _.each(this._resultParams, function (v, k) {
+                v.context = null;
+                delete _this._resultParams[k];
+            });
             _.each(this._dataChildren, function (v, k) { return delete _this._dataChildren[k]; });
             _.each(this._treeElementMapByPath, function (v, k) { return delete _this._treeElementMapByPath[k]; });
             this._resultParams = null;
@@ -535,8 +587,11 @@ var ft;
             var h = this._localHandlers ? this._localHandlers[path] : null;
             if (h && h[e.name]) {
                 var handlers = h[e.name];
-                console.log('Has component triggers ', e.name, this.name);
-                _.each(handlers, function (v) { v.call(_this, e); e.executionHandlersCount++; }, this);
+                //console.log('Has component triggers ', e.name, this.name);
+                _.each(handlers, function (v) {
+                    v.call(_this, e);
+                    e.executionHandlersCount++;
+                }, this);
             }
         };
         TemplateView.prototype.on = function (event, handler, path) {

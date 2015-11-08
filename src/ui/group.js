@@ -2,7 +2,7 @@ var ui;
 (function (ui) {
     ui.Group = {
         component: 'ui.Group',
-        content: '<div .base="group" class="{state.base}" children.class="ui.Button" children.stateHandlers="hover"></div>',
+        content: '<div .base="group" children.base="groupButton" class="{state.base}" children.class="ui.Button" children.stateHandlers="hover"></div>',
         extension: {}
     };
 })(ui || (ui = {}));

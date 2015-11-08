@@ -112,11 +112,16 @@ module fmvc {
             var stateValue = this.getStateValue(name, value);
             if (this._states[name] === stateValue) return this;
             this._states[name] = stateValue;
+            this.applyStateBinds(name, stateValue);
             this.invalidate(InvalidateType.State);
             return this;
         }
 
-        public getStateValue(name:string, value:any):any {
+        protected applyStateBinds(name:string, value:any):void {
+
+        }
+
+        protected getStateValue(name:string, value:any):any {
             return value;
         }
 
@@ -184,7 +189,9 @@ module fmvc {
         }
 
         public enter():void {
-            if (this._inDocument) throw new Error('Cant enter, it is in document');
+            if (this._inDocument) {
+                throw new Error('Cant enter, it is in document');
+            }
             this.enterImpl();
             this._inDocument = true;
             this.afterEnter();

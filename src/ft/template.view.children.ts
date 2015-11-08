@@ -14,9 +14,10 @@ module ft {
             var def:IDomDef = this.domDef;
             var className:string = def.params[TemplateParams.childrenClass];
             var prevChildren = this._children;
+            var data:any[] = this.getParameterValue(this.getParameters()['children.data']) || this.data;
 
-            var childrenViews:ITemplateView[] = _.map(this.data, function (v:any, k:number) {
-            var child = prevChildren && prevChildren.length ? (prevChildren.splice(0, 1)[0]) : templateManager.createInstance(className, this.parent.name + ':' + className + '-' + k, this.childrenLocalParams);
+            var childrenViews:ITemplateView[] = _.map(data, function (v:any, k:number) {
+                var child = prevChildren && prevChildren.length ? (prevChildren.splice(0, 1)[0]) : templateManager.createInstance(className, this.parent.name + ':' + className + '-' + k, this.childrenLocalParams);
                 if (v instanceof fmvc.Model) child.model = v;
                 else child.data = v;
                 return child;
@@ -32,13 +33,16 @@ module ft {
                 if (!child.inDocument) {
                     child.isChildren = true;
                     child.createDom();
-                    child.enter();
+                    //child.enter();
+                    console.log(this.name, ' create children ', child.getElement().outerHTML);
                     this.getElement().appendChild(child.getElement());
                 }
 
-                child.invalidateData();
-                child.invalidateApp();
+                //child.invalidateData();
+                //child.invalidateApp();
             }, this);
+
+            console.log('Created children is ', this._children);
         }
 
 
@@ -80,7 +84,7 @@ module ft {
             var length = this._children ? this._children.length : 0;
             _.each(this._children, (child:ITemplateView, index:number)=> {
                 if (child.disposed) return;
-                child.invalidateData();
+                //child.invalidateData();
                 _.each(params, (value:IExpressionName, key:string)=> {
                     this.setCurrentChildToExecutionContext(child, index, length, value.context || this.parent);
                     var childParamName:string = this.getChildrenParamName(key);
@@ -106,27 +110,33 @@ module ft {
             }, this);
         }
 
+        beforeCreate() {
+            this.createParameters();
+            this.applyParameters();
+            this.childrenLocalParams = this.getChildrenLocalParams(this.getParameters());
+        }
+
         createDom() { // virtual
             if (!this.getElement()) throw 'Cant create children dom, cause not set element directly';
-            this.createParameters();
-        }
-
-        enter() {
-            if (this.inDocument) return;
-            this.childrenLocalParams = this.getChildrenLocalParams(this.getParameters());
-            this.applyParameters();
+            this.beforeCreate();
             this.createChildren();
-            super.enter();
         }
 
-        exit() {
+        enterImpl() {
+            console.log('Enter children view ', this._children);
+            _.each(this._children, function (child:ITemplateView) {
+                child.enter();
+            }, this);
+        }
+
+        exitImpl() {
             _.each(this._children, function (child:ITemplateView) {
                 child.exit();
             }, this);
         }
 
         validateData() {
-            this.createChildren();
+            //this.createChildren();
         }
 
         validateState() {
