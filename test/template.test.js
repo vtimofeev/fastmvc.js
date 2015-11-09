@@ -62,6 +62,16 @@ var templates = {
             }
         }
     },
+    'ft.TestStateButton': {
+        template: '<div .base="button" .stateHandlers="hover,selected" onaction="action" ' +
+            'class="{state.base} {state.base}-{state.selected} {state.base}-{state.hover} {state.base}-{state.disabled}">{data?data:"TestStateButton"}{state.selected?" is selected":""}{state.hover?\' is hover\':\'\'} ' +
+            '<div .states="{state.hover}">Hover state div</div></div>',
+        result: {
+            root: {
+                classes: ['button']
+            }
+        }
+    },
     'ft.OverrideParamsWithStatic': {
         template: '<div class="test-content"><div><ft.TestButton ln="tb"></ft.TestButton></div><div><ft.TestButton ln="cb" .state.my="their" .base="checkbox" .selected="true" .data="Checkbox"></ft.TestButton></div></div>',
         result: {
@@ -99,7 +109,13 @@ var templates = {
                 childNodes: 5
             }
         }
-    }
+    },
+    'ft.StateTest': {
+        template: '<div><h4>Test state data {data}</h4><div .states="{data}">Showed when data exist.</div></div>',
+        params: {
+            data: { items: [1, 2, 3, 4, 5], selected: 1, hover: 5, name: '5 items' }
+        }
+    },
 };
 var counter = 0;
 var container = document.getElementById('container');

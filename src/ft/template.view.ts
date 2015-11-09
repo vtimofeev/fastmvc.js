@@ -368,10 +368,16 @@ module ft {
         }
 
         getChildrenViewByPath(path:string):TemplateChildrenView {
-            var result:TemplateChildrenView = this._dataChildren ? this._dataChildren[path] : null;
-            var c:TemplateView;
-            result = result || (c = this.getTreeElementByPath(path), (c instanceof TemplateView ? c.getDefaultChildrenView() : null));
-            return result;
+            return this._dataChildren ? this._dataChildren[path] : null;
+        }
+
+
+        getDefaultChildrenView():TemplateChildrenView {
+            return this._dataChildren ? _.values(this._dataChildren)[0] : null;
+        }
+
+        getChildrenViewByPathOrDefault(path:string) {
+            return this.getChildrenViewByPath(path) || this.getDefaultChildrenView();
         }
 
         setChildrenViewPath(path, childrenView:TemplateChildrenView) {
@@ -385,10 +391,6 @@ module ft {
 
         getTemplate():ITemplate {
             return this._template;
-        }
-
-        getDefaultChildrenView():TemplateChildrenView {
-            return this._dataChildren ? _.values(this._dataChildren)[0] : null;
         }
 
         setTreeElementLink(name:string, value:TreeElement):void {

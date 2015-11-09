@@ -1,5 +1,5 @@
 ///<reference path="./d.ts" />
-var __extends = (this && this.__extends) || function (d, b) {
+var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
@@ -354,10 +354,13 @@ var ft;
             this._cssClassMap[path + '-' + name] = value;
         };
         TemplateView.prototype.getChildrenViewByPath = function (path) {
-            var result = this._dataChildren ? this._dataChildren[path] : null;
-            var c;
-            result = result || (c = this.getTreeElementByPath(path), (c instanceof TemplateView ? c.getDefaultChildrenView() : null));
-            return result;
+            return this._dataChildren ? this._dataChildren[path] : null;
+        };
+        TemplateView.prototype.getDefaultChildrenView = function () {
+            return this._dataChildren ? _.values(this._dataChildren)[0] : null;
+        };
+        TemplateView.prototype.getChildrenViewByPathOrDefault = function (path) {
+            return this.getChildrenViewByPath(path) || this.getDefaultChildrenView();
         };
         TemplateView.prototype.setChildrenViewPath = function (path, childrenView) {
             if (!this._dataChildren)
@@ -369,9 +372,6 @@ var ft;
         };
         TemplateView.prototype.getTemplate = function () {
             return this._template;
-        };
-        TemplateView.prototype.getDefaultChildrenView = function () {
-            return this._dataChildren ? _.values(this._dataChildren)[0] : null;
         };
         TemplateView.prototype.setTreeElementLink = function (name, value) {
             if (!this[name]) {

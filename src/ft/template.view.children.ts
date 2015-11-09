@@ -123,7 +123,7 @@ module ft {
         }
 
         enterImpl() {
-            console.log('Enter children view ', this._children);
+            //console.log('Enter children view ', this._children);
             _.each(this._children, function (child:ITemplateView) {
                 child.enter();
             }, this);

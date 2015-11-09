@@ -45,12 +45,13 @@ var ft;
             if (isComment && included) {
                 newElement = this.createTree(data, root);
                 this.enterTree(data, root);
-                treeDomElement.parentNode.replaceChild(treeDomElement, this.getDomElement(newElement));
+                console.log('Replace child ', treeDomElement, newElement);
+                treeDomElement.parentNode.replaceChild(this.getDomElement(newElement), treeDomElement);
             }
             else if (!isComment && !included) {
                 this.exitTree(data, root);
                 newElement = this.createTree(data, root);
-                treeDomElement.parentNode.replaceChild(treeDomElement, this.getDomElement(newElement));
+                treeDomElement.parentNode.replaceChild(this.getDomElement(newElement), treeDomElement);
             }
             else if (!isComment) {
                 for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
@@ -303,10 +304,14 @@ var ft;
                         if (!(view instanceof ft.TemplateView)) {
                             view = root.getChildrenViewByPath(host.path);
                         }
-                        view.applyParameter(view.getParameters()[key], key);
+                        if (view instanceof ft.TemplateView)
+                            view.applyParameter(view.getParameters()[key], key);
+                        else
+                            console.warn('Cant apply parameter ', key, 'to', view, 'path', host.path);
                     }
                     else if (key.indexOf('children.') === 0) {
-                        var childrenView = root.getChildrenViewByPath(host.path);
+                        view = root.getTreeElementByPath(host.path);
+                        var childrenView = root.getChildrenViewByPath(host.path) || view.getDefaultChildrenView();
                         if (!childrenView) {
                             console.warn('Has no ChildrenView instance and cant set hostValue ', host.path, key);
                             return;

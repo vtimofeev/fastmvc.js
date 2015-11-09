@@ -27,6 +27,10 @@ describe('ft - component package ', function () {
     var buttonReset = { title: 'Очистить (локальный)', action: 'actionReset' };
     var templateObjs = [
         {
+            className: "ft.Text",
+            content: '<div class="button">{data?data.title:""}</div>',
+        },
+        {
             className: "ft.Button",
             content: '<div .base="button" .stateHandlers="hover,selected" onaction="buttonClick"  class="{state.base} {state.base}-{state.life} {state.base}-{state.selected} {state.base}-{state.hover} {state.base}-{state.disabled}">{data&&(typeof data === "object")&&("title" in data)?data.title:(data?data:"")}</div>',
         },
@@ -59,7 +63,7 @@ describe('ft - component package ', function () {
                 '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
                 '<div .data="{data.children}"' +
                 ' children.selected="{(child.model!==data.selectedItem)}" ' +
-                ' children.class="ft.TestButton" children.onaction="selectItemFirst" children.disabled="{data.childrenDisabled}"></div>' +
+                ' children.class="ft.Text" children.onaction="selectItemFirst" children.disabled="{data.childrenDisabled}"></div>' +
                 '<div>',
             action: 'create'
         },
@@ -104,7 +108,7 @@ describe('ft - component package ', function () {
             });
         }, value);
     };
-    setTimeout(function () { return intervalUpdate(500); }, 5000);
+    setTimeout(function () { return intervalUpdate(1000); }, 5000);
     console.log('---Setdata ', model.d.selectedItem);
     describe('ft - ButtonGroup/DataButton', function () {
         _.each(templateObjs, function (obj, index) {
