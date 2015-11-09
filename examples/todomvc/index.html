@@ -8,9 +8,11 @@
 </head>
 <body>
 
-<template id="todo.ListView" type="ft">
-    <div class="view">
-        <div><ui.Checkbox .>{data.title}</ui.Checkbox><ui.Button .base="destroy"></ui.Button></div>
+<template id="todo.ListItem" type="ft">
+    <div class="view" .stateHandlers="focused,hover">
+        <ui.Checkbox .selected="{data.done}" onaction="toggle" .states="{!state.edit}">{data.title}</ui.Checkbox>
+        <div class="destroy" onaction="dispose" .states="{state.hover&&!state.edit}"></div>
+        <input type="text" onkeyenter="save" onkeyesc="esc" .states="{state.edit}"/>
     </div>
 </template>
 
