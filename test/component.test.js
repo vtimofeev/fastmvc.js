@@ -31,6 +31,10 @@ describe('ft - component package ', function () {
             content: '<div class="button">{data?data.title:""}</div>',
         },
         {
+            className: "ft.Li",
+            content: '<li>data {data.title}</li>',
+        },
+        {
             className: "ft.Button",
             content: '<div .base="button" .stateHandlers="hover,selected" onaction="buttonClick"  class="{state.base} {state.base}-{state.life} {state.base}-{state.selected} {state.base}-{state.hover} {state.base}-{state.disabled}">{data&&(typeof data === "object")&&("title" in data)?data.title:(data?data:"")}</div>',
         },
@@ -61,10 +65,7 @@ describe('ft - component package ', function () {
                 '<h4>{data.name}!</h4>' +
                 '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
                 '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
-                '<div .data="{data.children}"' +
-                ' children.selected="{(child.model!==data.selectedItem)}" ' +
-                ' children.class="ft.Text" children.onaction="selectItemFirst" children.disabled="{data.childrenDisabled}"></div>' +
-                '<div>',
+                '<ul children.data="{data.children}" children.class="ft.Li"/>',
             action: 'create'
         },
     ];
@@ -81,7 +82,7 @@ describe('ft - component package ', function () {
         mouseX: 0,
         mouseY: 0,
         count: [0, 5, 10, 50, 100, 200, 500, 1000, 2000],
-        countItemSelected: 10
+        countItemSelected: 10000
     };
     var mediator = new fmvc.Mediator('appmed', document.body);
     app.register(model, mediator);
@@ -108,12 +109,13 @@ describe('ft - component package ', function () {
             });
         }, value);
     };
-    setTimeout(function () { return intervalUpdate(1000); }, 5000);
+    setTimeout(function () { return intervalUpdate(500); }, 5000);
     console.log('---Setdata ', model.d.selectedItem);
     describe('ft - ButtonGroup/DataButton', function () {
         _.each(templateObjs, function (obj, index) {
             var key = obj.className;
             it('should create instances ' + key, function () {
+                this.timeout(5000);
                 tm.createClass(key, obj.content, obj.params, obj.mixin);
                 var params = { setStates: obj.states };
                 var instance = null;
@@ -139,8 +141,7 @@ describe('ft - component package ', function () {
                     //model.bind(instance, instance.invalidateApp);
                     mediator.addView(instance);
                     var s = new Date().getTime();
-                    for (var z = 0; z < 10000; z++) {
-                        var zi = tm.createInstance(key, 'view-' + key + z, params);
+                    for (var z = 0; z < 100; z++) {
                     }
                     var e = new Date().getTime();
                     console.log('Create 10000 zi ', key, e - s);

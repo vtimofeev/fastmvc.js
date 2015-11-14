@@ -52,6 +52,10 @@ describe('ft - component package ', function () {
             className: "ft.Text",
             content: '<div class="button">{data?data.title:""}</div>',
         },
+        {
+            className: "ft.Li",
+            content: '<li>data {data.title}</li>',
+        },
 
         {
             className: "ft.Button",
@@ -84,11 +88,12 @@ describe('ft - component package ', function () {
             '<h4>{data.name}!</h4>'+
             '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
             '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
-
+            '<ul children.data="{data.children}" children.class="ft.Li"/>'
+/*
             '<div .data="{data.children}"' +
         ' children.selected="{(child.model!==data.selectedItem)}" ' +
-        ' children.class="ft.Text" children.onaction="selectItemFirst" children.disabled="{data.childrenDisabled}"></div>' +
-            '<div>',
+        ' children.class="ft.Button" children.onaction="selectItemFirst" children.disabled="{data.childrenDisabled}"></div>' +
+            '<div>'*/,
             action: 'create'
         },
     ];
@@ -107,7 +112,7 @@ describe('ft - component package ', function () {
         mouseX: 0,
         mouseY: 0,
         count: [0,5, 10,50,100,200,500,1000,2000],
-        countItemSelected: 10
+        countItemSelected: 10000
     };
 
     var mediator = new fmvc.Mediator('appmed', document.body);
@@ -146,7 +151,7 @@ describe('ft - component package ', function () {
         }, value);
     };
 
-    setTimeout(()=>intervalUpdate(1000), 5000);
+    setTimeout(()=>intervalUpdate(500), 5000);
     console.log('---Setdata ', model.d.selectedItem);
 
 
@@ -155,6 +160,7 @@ describe('ft - component package ', function () {
             var key = obj.className;
 
             it('should create instances ' + key, function () {
+                this.timeout(5000);
                 tm.createClass(key, obj.content, obj.params, obj.mixin);
 
                 var params:any = {setStates: obj.states};
@@ -182,8 +188,8 @@ describe('ft - component package ', function () {
                     mediator.addView(instance);
 
                     var s = new Date().getTime();
-                    for(var z = 0; z < 10000; z++) {
-                        var zi = tm.createInstance(key, 'view-' + key + z, params);
+                    for(var z = 0; z < 100; z++) {
+                        //var zi = tm.createInstance(key, 'view-' + key + z, params);
                         //zi.setModel(model);
                     }
                     var e = new Date().getTime();

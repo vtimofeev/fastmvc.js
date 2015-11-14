@@ -1,4 +1,4 @@
-var __extends = this.__extends || function (d, b) {
+var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
@@ -142,7 +142,7 @@ var fmvc;
             configurable: true
         });
         View.prototype.setData = function (value) {
-            if (this._disposed)
+            if (this.disposed)
                 return this;
             if (this._data === value)
                 return this;
@@ -151,7 +151,7 @@ var fmvc;
             return this;
         };
         View.prototype.setModel = function (value) {
-            if (this._disposed)
+            if (this.disposed)
                 return this;
             if (value != this._model) {
                 if (this._model)

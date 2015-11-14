@@ -14,51 +14,57 @@ var
 
 var argv = require('optimist').
     usage('Gulp tasks \nUsage: $0 -e [string]').
-    demand(['e']).
     describe('e', 'String, environment "dev" or "prod"').argv;
 
+var Env = {Prod: 'prod', Dev: 'dev'};
 var project = {
     name: 'fmvc',
-    env: argv.e,
-    version: '0.9.0',
+    env: argv.e || 'prod',
+    version: '0.9.2',
     paths: {
-        ts: ['./src/fmvc/*.ts'/*,'./src/ui-out/*.ts'*/],
-        tsDev: ['./src/fmvc/*.ts'/*'./src/test-out/*.ts'*/]
+        fmvcSrc: ['./src/fmvc/*.ts'],
+        ftSrc: ['./src/ft/**/*.ts'] // fast templates
     }
 };
 
-gulp.task('ts', function() {
-    //var srcFilter = filter(['*', '!src/d.ts', '!src/compiler', '!src/test-out']);
-    var sourceDirs = [].concat(project.paths.ts, (project.env === 'dev')?project.paths.tsDev:[] );
+function buildTsSources(name, src) {
     var result = gulp
-        .src(sourceDirs)
+        .src(src)
         .pipe(debug({title: 'unicorn:'}))
         .pipe(tsc({
             module: 'commonjs',
             target: 'es5',
-            out: project.name + '.' + project.env + '.js',
+            out: name + (project.env === Env.Prod ? '' : '.' + project.env) + '.js',
             emitError: false,
             declaration: true,
             sourceMap: true
         }));
+
+    if (project.env === Env.Prod) {
+        result.pipe(uglify());
+    }
+
     return result.pipe(gulp.dest('build'));
+}
+
+
+gulp.task('build.fmvc', function () {
+    //var srcFilter = filter(['*', '!src/d.ts', '!src/compiler', '!src/test-out']);
+    return buildTsSources('fmvc', project.paths.fmvcSrc);
 });
 
-gulp.task('ui', function() {
-    new fmvc.Xml2Ts('./src/ui', './src/ui-out');
+
+gulp.task('build.ft', function () {
+    return buildTsSources('ft', project.paths.ftSrc);
 });
 
-gulp.task('test', function() {
-    new fmvc.Xml2Ts('./src/test', './src/test-out');
+gulp.task('build.ft.ui', function () {
+    return null;
 });
 
+var buildTasks = ['build.fmvc', 'build.ft'];
 gulp.task('watch', function () {
-    return gulp.watch('./src/fmvc/*.ts', { interval: 2000 }, ['ts']);
-    /*
-    gulp.watch('./src/ft/*.ts', { interval: 3000 }, ['ts']);
-    gulp.watch('./src/ui/*.*', { interval: 3000 }, ['ui', 'ts']);
-    gulp.watch('./src/test/*.*', { interval: 3000 }, ['test', 'ts']);
-    */
+    return gulp.watch('./src/fmvc/*.ts', {interval: 2000}, buildTasks);
 });
 
-gulp.task('default', ['ts', 'watch']);
+gulp.task('default', [].concat(buildTasks, ['watch']));

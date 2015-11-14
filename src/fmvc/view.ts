@@ -142,7 +142,7 @@ module fmvc {
         }
 
         public setData(value:any):IView {
-            if (this._disposed) return this;
+            if (this.disposed) return this;
             if (this._data === value) return this;
             this._data = value;
             this.invalidate(InvalidateType.Data);
@@ -154,7 +154,7 @@ module fmvc {
         }
 
         public setModel(value:Model<any>):IView {
-            if (this._disposed) return this;
+            if (this.disposed) return this;
             if (value != this._model) {
                 if (this._model) this._model.unbind(this);
                 if (value && value instanceof Model) value.bind(this, this.modelChangeHandler);

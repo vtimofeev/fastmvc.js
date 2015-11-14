@@ -34,7 +34,7 @@ module ft {
                     child.isChildren = true;
                     child.createDom();
                     //child.enter();
-                    console.log(this.name, ' create children ', child.getElement().outerHTML);
+                    //console.log(this.name, ' create children ', child.getElement().outerHTML);
                     this.getElement().appendChild(child.getElement());
                 }
 
@@ -42,7 +42,7 @@ module ft {
                 //child.invalidateApp();
             }, this);
 
-            console.log('Created children is ', this._children);
+            //console.log('Created children is ', this._children);
         }
 
 

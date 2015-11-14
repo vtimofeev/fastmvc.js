@@ -992,7 +992,7 @@ var fmvc;
             configurable: true
         });
         View.prototype.setData = function (value) {
-            if (this._disposed)
+            if (this.disposed)
                 return this;
             if (this._data === value)
                 return this;
@@ -1001,7 +1001,7 @@ var fmvc;
             return this;
         };
         View.prototype.setModel = function (value) {
-            if (this._disposed)
+            if (this.disposed)
                 return this;
             if (value != this._model) {
                 if (this._model)
