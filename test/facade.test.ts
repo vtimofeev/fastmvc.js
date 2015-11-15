@@ -71,13 +71,13 @@ describe('fmvc', function() {
             assert(_.isEqual(m0.data, model0Data), 'is equal');
         });
 
-        it('should has no changes (object, watchChanges=false', function() {
+        it('should has no changes (object, changesWatch=false', function() {
             m0.setData(model1Data);
             assert(_.isEqual(m0.data, model1Data), 'is equal to the new data');
             assert(!m0.changes, 'has no changes cause it disabled');
         });
 
-        it('should has changes (object, watchChanges=true)', function() {
+        it('should has changes (object, changesWatch=true)', function() {
             m0_1.setData(model1Data);
             assert(_.isEqual(m0_1.data, model1Data), 'is equal to the new data');
             assert(m0_1.changes, 'has changes: ' + JSON.stringify(m0_1.changes));

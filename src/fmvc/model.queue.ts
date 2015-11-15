@@ -34,7 +34,7 @@ module fmvc {
 
         parse(method:any):ModelQueue<T> {
             this.model.setState(ModelState.Parsing);
-            this.sync(method, [this.model], this, {done: ModelState.Completed, fault: ModelState.Error});
+            this.sync(method, [this.model], this, {done: ModelState.Parsed, fault: ModelState.Error});
             return this;
         }
 
