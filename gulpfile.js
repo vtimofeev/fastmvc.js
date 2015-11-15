@@ -1,5 +1,5 @@
 var
-    fmvc = require('./src/compiler/xml2ts'),
+    //fmvc = require('./src/compiler/xml2ts'),
     gulp = require('gulp'), // Сообственно Gulp JS
     debug = require('gulp-debug'),
     stylus = require('gulp-stylus'), // Плагин для Stylus
