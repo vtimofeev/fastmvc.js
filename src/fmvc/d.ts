@@ -3,7 +3,7 @@
 ///<reference path='./notifier.ts'/>
 /////<reference path='./event.dispatcher.ts'/>
 ///<reference path='./model.ts'/>
-///<reference path='./model.queue.ts'/>
+
 ///<reference path='./source.model.ts'/>
 ///<reference path='./logger.ts'/>
 
@@ -14,6 +14,7 @@
 
 ///<reference path='../../../DefinitelyTyped/lodash/lodash.d.ts'/>
 ///<reference path='../../../DefinitelyTyped/jquery/jquery.d.ts'/>
+///<reference path='../../../DefinitelyTyped/bluebird/bluebird.d.ts'/>
 
 declare var MessageFormat:any;
 

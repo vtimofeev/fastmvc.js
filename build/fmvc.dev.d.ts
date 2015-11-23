@@ -1,5 +1,6 @@
 /// <reference path="../../DefinitelyTyped/lodash/lodash.d.ts" />
 /// <reference path="../../DefinitelyTyped/jquery/jquery.d.ts" />
+/// <reference path="../../DefinitelyTyped/bluebird/bluebird.d.ts" />
 declare module fmvc {
     class Event {
         static Model: {
@@ -114,63 +115,65 @@ declare module fmvc {
     interface IModelOptions {
         enabledState?: boolean;
         enabledEvents?: boolean;
-        watchChanges?: boolean;
-        changesToCopy?: boolean;
         history?: boolean;
+        enabledChanges?: boolean;
+        changes_autoCommit?: boolean;
+    }
+    interface IPromise {
+        then(onSuccess: Function, onReject: Function): IPromise;
+        catch(onRejects: any): IPromise;
     }
     var ModelState: {
         None: string;
+        New: string;
         Parsing: string;
+        Parsed: string;
         Syncing: string;
         Synced: string;
         Changed: string;
-        Completed: string;
         Error: string;
+    };
+    var ModelAction: {
+        Get: string;
+        Insert: string;
+        Update: string;
+        Delete: string;
+        Add: string;
     };
     class Model<T> extends fmvc.Notifier implements IModelOptions {
         private _data;
-        private _state;
         private _changes;
+        private _changedData;
+        private _invalid;
+        private _currentTask;
+        private _state;
         private _prevState;
-        private _queue;
         enabledEvents: boolean;
         enabledState: boolean;
-        watchChanges: boolean;
-        changesToCopy: boolean;
+        enableValidate: boolean;
+        enableCommit: boolean;
+        autoCommit: boolean;
+        history: boolean;
         constructor(name: string, data?: any, opts?: IModelOptions);
         reset(): Model<T>;
         d: T;
         data: T;
+        invalid: any;
         getData(): T;
         setData(value: T): void;
         changes: any;
-        setChanges(value: T): void;
-        parseValueAndSetChanges(value: T): any;
+        setChanges(value: T | any): void;
+        protected applyChanges(changes: T | any): void;
+        commit(): boolean | IPromise;
+        protected sync(): IPromise;
+        protected syncImpl(): IPromise;
+        protected syncErrorHandler(): void;
+        protected validate(): boolean;
         state: string;
         prevState: string;
         setState(value: string): Model<T>;
         length: number;
         sendEvent(name: string, data?: any, changes?: any, sub?: string, error?: any): void;
-        dispose(): void;
-        queue(create?: boolean): ModelQueue<T>;
-    }
-}
-declare module fmvc {
-    class ModelQueue<T> {
-        private model;
-        private currentPromise;
-        private error;
-        constructor(model: fmvc.Model<T>);
-        load(object: any): ModelQueue<T>;
-        promise: any;
-        loadXml(object: any): ModelQueue<T>;
-        parse(method: any): ModelQueue<T>;
-        async(getPromiseMethod: any, args: any[], context: any, states?: any): ModelQueue<T>;
-        sync(method: Function, args?: any[], context?: any, states?: any): ModelQueue<T>;
-        complete(method: Function, args?: any[], context?: any, states?: any): void;
-        executeError(err?: any): any;
-        fault(method: Function, args?: any[], context?: any, states?: any): ModelQueue<T>;
-        setup(): JQueryPromise<{}>;
         dispose(): void;
     }
 }

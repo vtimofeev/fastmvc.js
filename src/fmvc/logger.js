@@ -2,15 +2,14 @@
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
 var fmvc;
 (function (fmvc) {
     var Logger = (function (_super) {
         __extends(Logger, _super);
         function Logger(name, config) {
-            _super.call(this, name, [], { enabledEvents: false, watchChanges: false });
+            _super.call(this, name, []);
             this._config = { filter: [], length: 100000, console: true };
             this._modules = [];
             if (config)

@@ -6,6 +6,10 @@ var ui;
         return value < min ? min : value > max ? max : value;
     }
     ui.validateMaxMin = validateMaxMin;
+    function validateStep(value, step) {
+        return Math.round(value / step) * step;
+    }
+    ui.validateStep = validateStep;
     ui.HSliderDefinition = {
         className: 'ui.HSlider',
         content: '<div .base="hslider" .value=".5" class="{state.base} {state.base}-{state.selected} {state.base}-{state.hover}" >' +
@@ -26,7 +30,8 @@ var ui;
             prepareChanges: function prepareChanges(e) {
                 var newX = e.data.clientX;
                 var result = (newX - this.startX) / this.startSize;
-                this.value = ui.validateMaxMin(this.startValue + result, 0, 1); // auto invalidate
+                var preValue = ui.validateMaxMin(this.startValue + result, 0, 1); // auto invalidate
+                this.value = validateStep(preValue, 0.1);
                 if (e.data.name === ft.CompositeEvent.PointerUp) {
                     this.globalPointer.unbind(this);
                     this.dg.setState('selected', false);

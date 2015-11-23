@@ -3,6 +3,7 @@ var
     gulp = require('gulp'), // Сообственно Gulp JS
     debug = require('gulp-debug'),
     stylus = require('gulp-stylus'), // Плагин для Stylus
+    nib = require('nib'), // stylus nib library
     ts = require('gulp-typescript'), // Typescript для Gulp
     tsc = require('gulp-tsc'), // TypescriptC для Gulp
     imagemin = require('gulp-imagemin'), // Минификация изображений
@@ -11,6 +12,7 @@ var
     rename = require('gulp-rename'), // Переименование
     concat = require('gulp-concat'), // Склейка файлов
     mocha = require('gulp-mocha'); // Тесты
+
 
 var argv = require('optimist').
     usage('Gulp tasks \nUsage: $0 -e [string]').
@@ -29,6 +31,7 @@ var project = {
 
 function buildTsSources(name, src) {
     var result = gulp
+
         .src(src)
         .pipe(debug({title: 'unicorn:'}))
         .pipe(tsc({
@@ -65,6 +68,24 @@ gulp.task('build.ft.ui', function () {
 var buildTasks = ['build.fmvc', 'build.ft'];
 gulp.task('watch', function () {
     return gulp.watch('./src/fmvc/*.ts', {interval: 2000}, buildTasks);
+});
+
+gulp.task('stylus', function() {
+    var s = stylus({use: nib()});
+        s.on('error',function(e){
+            console.log(e);
+            s.end();
+        });
+
+        return gulp.src('./src/ui/stylus/default.styl')
+        .pipe(s)
+        .pipe(gulp.dest('./src/ui/stylus'));
+
+
+});
+
+gulp.task('swatch', function() {
+    return gulp.watch('./src/ui/stylus/**/*.styl', ['stylus']);
 });
 
 gulp.task('default', [].concat(buildTasks, ['watch']));

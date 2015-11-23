@@ -112,7 +112,7 @@ describe('ft - component package ', function () {
         mouseX: 0,
         mouseY: 0,
         count: [0,5, 10,50,100,200,500,1000,2000],
-        countItemSelected: 10000
+        countItemSelected: 10
     };
 
     var mediator = new fmvc.Mediator('appmed', document.body);
@@ -151,7 +151,8 @@ describe('ft - component package ', function () {
         }, value);
     };
 
-    setTimeout(()=>intervalUpdate(500), 5000);
+    setTimeout(()=>intervalUpdate(1000), 10);
+
     console.log('---Setdata ', model.d.selectedItem);
 
 
@@ -189,8 +190,8 @@ describe('ft - component package ', function () {
 
                     var s = new Date().getTime();
                     for(var z = 0; z < 100; z++) {
-                        //var zi = tm.createInstance(key, 'view-' + key + z, params);
-                        //zi.setModel(model);
+                        var zi = tm.createInstance(key, 'view-' + key + z, params);
+                        zi.setModel(model);
                     }
                     var e = new Date().getTime();
                     console.log('Create 10000 zi ', key, e-s );

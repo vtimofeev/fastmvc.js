@@ -366,31 +366,39 @@ var fmvc;
 (function (fmvc) {
     fmvc.ModelState = {
         None: 'none',
+        New: 'new',
         Parsing: 'parsing',
+        Parsed: 'parsed',
         Syncing: 'syncing',
         Synced: 'synced',
         Changed: 'changed',
-        Completed: 'completed',
         Error: 'error',
+    };
+    fmvc.ModelAction = {
+        Get: 'get',
+        Insert: 'insert',
+        Update: 'update',
+        Delete: 'delete',
+        Add: 'add',
     };
     var Model = (function (_super) {
         __extends(Model, _super);
         function Model(name, data, opts) {
-            if (data === void 0) { data = {}; }
+            if (data === void 0) { data = null; }
             _super.call(this, name, fmvc.TYPE_MODEL);
-            // queue
-            this._queue = null;
             // model options
             this.enabledEvents = true;
             this.enabledState = true;
-            this.watchChanges = false;
-            this.changesToCopy = false;
+            this.enableValidate = false;
+            this.enableCommit = false; // re,validate & sync changes
+            this.autoCommit = false; //
+            this.history = false;
             if (opts)
                 _.extend(this, opts);
-            if (data)
-                this.data = data;
-            if (data)
-                this.setState(fmvc.ModelState.Completed);
+            if (data) {
+                this.setData(data);
+                this.setState(fmvc.ModelState.New);
+            }
         }
         Model.prototype.reset = function () {
             this._data = null;
@@ -401,8 +409,8 @@ var fmvc;
         };
         Object.defineProperty(Model.prototype, "d", {
             /*
-            * Data layer
-            */
+             * Data layer
+             */
             get: function () {
                 return this.getData();
             },
@@ -418,6 +426,13 @@ var fmvc;
             },
             set: function (value) {
                 this.setData(value);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(Model.prototype, "invalid", {
+            get: function () {
+                return this._invalid;
             },
             enumerable: true,
             configurable: true
@@ -444,43 +459,81 @@ var fmvc;
         Model.prototype.setChanges = function (value) {
             if (this._data === value || this.disposed)
                 return;
-            var result = this.parseValueAndSetChanges(value);
-            if (this._data !== result || this._changes) {
-                this._data = result;
-                this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
-            }
-        };
-        Model.prototype.parseValueAndSetChanges = function (value) {
-            if (value instanceof Model)
-                throw Error('Cant set model data, data must be object, array or primitive');
-            var result = null;
-            var prevData = this._data;
-            var changes = null;
-            var hasChanges = false;
-            this._changes = null;
-            if (_.isArray(value)) {
-                result = value.concat([]); //clone of array
-            }
-            else if (this.watchChanges && _.isObject(prevData) && _.isObject(value)) {
-                // check changes and set auto data
-                for (var i in value) {
-                    if (prevData[i] !== value[i]) {
-                        if (!changes)
-                            changes = {};
-                        hasChanges = true;
-                        changes[i] = value[i];
-                        prevData[i] = value[i];
-                    }
-                }
-                this._changes = value;
-                result = prevData;
+            if (!this.enableCommit) {
+                this.applyChanges(value);
             }
             else {
-                result = (_.isObject(value)) ? _.extend((prevData ? prevData : {}), value) : value; // primitive || array || object && !watchChanges , no data && any value (object etc)
+                if (_.isObject(value) && _.isObject(this._data))
+                    this._changedData = _.extend(this._changedData || _.extend({}, this._data), value);
+                else
+                    this._changedData = value;
+                this.state = fmvc.ModelState.Changed;
+                if (this.autoCommit)
+                    this.commit();
             }
-            return result;
+        };
+        Model.prototype.applyChanges = function (changes) {
+            if (_.isObject(changes) && _.isObject(this._data))
+                _.extend(this._data, changes);
+            else
+                this._data = changes; // array, string, number, boolean
+            this.state = fmvc.ModelState.Synced;
+            this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
+        };
+        Model.prototype.commit = function () {
+            if (this._changedData) {
+                var isValid = this.validate();
+                if (isValid) {
+                    return this.sync().then(this.applyChanges, this.syncErrorHandler);
+                }
+                return isValid;
+            }
+            return true;
+        };
+        Model.prototype.sync = function () {
+            this.state = fmvc.ModelState.Syncing;
+            return this.syncImpl();
+        };
+        Model.prototype.syncImpl = function () {
+            return null;
+        };
+        Model.prototype.syncErrorHandler = function () {
+            this.state = fmvc.ModelState.Error;
+        };
+        Model.prototype.validate = function () {
+            return false;
         };
         Object.defineProperty(Model.prototype, "state", {
+            /*
+            public parseValueAndSetChanges(value:T):any {
+                if (value instanceof Model) throw Error('Cant set model data, data must be object, array or primitive');
+                var result = null;
+                var prevData = _.clone(this._data);
+                var changes:{[id:string]:any} = null;
+                var hasChanges:boolean = false;
+    
+                if (_.isArray(value)) {
+                    result = (<any>value).concat([]); //clone of array
+                }
+                else if (this.changesWatch && _.isObject(prevData) && _.isObject(value)) {
+                    // check changes and set auto data
+                    for (var i in value) {
+                        if (prevData[i] !== value[i]) {
+                            if (!changes) changes = {};
+                            hasChanges = true;
+                            changes[i] = value[i];
+                            prevData[i] = value[i];
+                        }
+                    }
+                    this._changes = value;
+                    result = prevData;
+                }
+                else {
+                    result = (_.isObject(value)) ? _.extend((prevData ? prevData : {}), value) : value; // primitive || array || object && !watchChanges , no data && any value (object etc)
+                }
+                return result;
+            }
+            */
             /*
              *   Internal state layer
              */
@@ -525,125 +578,12 @@ var fmvc;
         };
         Model.prototype.dispose = function () {
             this.sendEvent(fmvc.Event.Model.Disposed);
-            this._queue ? this._queue.dispose() : null;
-            this._queue = null;
             this._data = null;
             _super.prototype.dispose.call(this);
-        };
-        //-----------------------------------------------------------------------------
-        // Queue
-        //-----------------------------------------------------------------------------
-        Model.prototype.queue = function (create) {
-            if (create === void 0) { create = false; }
-            if (create && this._queue)
-                this._queue.dispose();
-            return this._queue && !create ? this._queue : (this._queue = new fmvc.ModelQueue(this));
         };
         return Model;
     })(fmvc.Notifier);
     fmvc.Model = Model;
-})(fmvc || (fmvc = {}));
-///<reference path='./d.ts'/>
-var fmvc;
-(function (fmvc) {
-    // It uses Zepto or JQuery deferred
-    var ModelQueue = (function () {
-        function ModelQueue(model) {
-            this.model = model;
-        }
-        ModelQueue.prototype.load = function (object) {
-            this.model.setState(fmvc.ModelState.Syncing);
-            this.async($.ajax, [object], $, { done: fmvc.ModelState.Synced, fault: fmvc.ModelState.Error });
-            return this;
-        };
-        Object.defineProperty(ModelQueue.prototype, "promise", {
-            get: function () {
-                return this.currentPromise;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        ModelQueue.prototype.loadXml = function (object) {
-            var defaultAjaxRequestObject = _.defaults(object, {
-                method: 'GET',
-                dataType: 'xml',
-                data: { rnd: (Math.round(Math.random() * 1e9)) }
-            });
-            return this.load(defaultAjaxRequestObject);
-        };
-        ModelQueue.prototype.parse = function (method) {
-            this.model.setState(fmvc.ModelState.Parsing);
-            this.sync(method, [this.model], this, { done: fmvc.ModelState.Completed, fault: fmvc.ModelState.Error });
-            return this;
-        };
-        ModelQueue.prototype.async = function (getPromiseMethod, args, context, states) {
-            var deferred = $.Deferred();
-            var queuePromise = this.setup();
-            var t = this;
-            queuePromise.then(function done(value) {
-                (getPromiseMethod.apply(context, args)).then(function successPromise(result) {
-                    console.log('Async success ', result);
-                    deferred.resolve(result);
-                }, function faultPromise(result) {
-                    console.log('Async fault ', arguments);
-                    deferred.reject(result);
-                    t.executeError(result);
-                });
-            }, function fault() {
-                deferred.reject();
-                t.executeError();
-            });
-            this.currentPromise = deferred.promise();
-            return this;
-        };
-        ModelQueue.prototype.sync = function (method, args, context, states) {
-            var deferred = $.Deferred();
-            var queuePromise = this.setup();
-            var t = this;
-            queuePromise.done(function doneQueue(value) {
-                var methodArgs = [value].concat(args);
-                var result = method.apply(context, methodArgs);
-                console.log('Call sync method ', result, ' args ', methodArgs);
-                if (result)
-                    deferred.resolve(result);
-                else {
-                    deferred.reject();
-                    t.executeError();
-                }
-            });
-            this.currentPromise = deferred.promise();
-            return this;
-        };
-        ModelQueue.prototype.complete = function (method, args, context, states) {
-            this.sync(method, context, args, states);
-        };
-        ModelQueue.prototype.executeError = function (err) {
-            console.log('Product error ', arguments);
-            if (this.error) {
-                this.error.method.apply(this.error.context, this.error.args);
-            }
-        };
-        ModelQueue.prototype.fault = function (method, args, context, states) {
-            this.error = { method: method, args: args, context: context, states: states };
-            return this;
-        };
-        ModelQueue.prototype.setup = function () {
-            var queueDeferred = $.Deferred();
-            $.when(this.currentPromise).then(function doneQueue(value) {
-                queueDeferred.resolve(value);
-            }, function faultQueue() {
-                queueDeferred.reject();
-            });
-            return queueDeferred.promise();
-        };
-        ModelQueue.prototype.dispose = function () {
-            this.model = null;
-            this.currentPromise = null;
-            this.error = null;
-        };
-        return ModelQueue;
-    })();
-    fmvc.ModelQueue = ModelQueue;
 })(fmvc || (fmvc = {}));
 ///<reference path='./d.ts'/>
 var fmvc;
@@ -788,7 +728,7 @@ var fmvc;
     var Logger = (function (_super) {
         __extends(Logger, _super);
         function Logger(name, config) {
-            _super.call(this, name, [], { enabledEvents: false, watchChanges: false });
+            _super.call(this, name, []);
             this._config = { filter: [], length: 100000, console: true };
             this._modules = [];
             if (config)
@@ -1309,11 +1249,11 @@ var fmvc;
 ///<reference path='./notifier.ts'/>
 /////<reference path='./event.dispatcher.ts'/>
 ///<reference path='./model.ts'/>
-///<reference path='./model.queue.ts'/>
 ///<reference path='./source.model.ts'/>
 ///<reference path='./logger.ts'/>
 ///<reference path='./view.ts'/>
 ///<reference path='./mediator.ts'/>
 ///<reference path='../../../DefinitelyTyped/lodash/lodash.d.ts'/>
 ///<reference path='../../../DefinitelyTyped/jquery/jquery.d.ts'/>
+///<reference path='../../../DefinitelyTyped/bluebird/bluebird.d.ts'/>
 //# sourceMappingURL=fmvc.dev.js.map

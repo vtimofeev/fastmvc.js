@@ -28,7 +28,7 @@ var fmvc;
         };
         ModelQueue.prototype.parse = function (method) {
             this.model.setState(fmvc.ModelState.Parsing);
-            this.sync(method, [this.model], this, { done: fmvc.ModelState.Completed, fault: fmvc.ModelState.Error });
+            this.sync(method, [this.model], this, { done: fmvc.ModelState.Parsed, fault: fmvc.ModelState.Error });
             return this;
         };
         ModelQueue.prototype.async = function (getPromiseMethod, args, context, states) {

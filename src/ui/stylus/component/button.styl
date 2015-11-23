@@ -1,0 +1,79 @@
+@import '../core/base';
+
+.button  {
+  @extends .core;
+
+  cursor: pointer;
+  border-radius: $c.radius.element;
+
+  text-align: center;
+
+  color: $btn.color.default;
+  background-color: $btn.bgColor.default;
+  //border: 1px solid $c.borderColor.default;
+
+  transition: background-color 0.1s ease-out;
+
+  margin-bottom : 10px;
+  margin-top : 10px;
+}
+
+.button-active {
+  padding-top: 1px;
+  background-color: $btn.bgColor.default - $btn.const.active;
+}
+
+.button-hover {
+  background-color: $btn.bgColor.default + $btn.const.hover;
+}
+
+.button-selected {
+  font-weight: bold;
+  background-color: $btn.bgColor.default - $btn.const.selected;
+}
+
+.button-selected-hover {
+  background-color: $btn.bgColor.default + $btn.const.selectedHover;
+}
+
+.button-disabled {
+  background-color: $btn.bgColor.disabled !important;
+}
+
+createButton($name, $bgColor, $color, $bgColorDisabled = $btn.bgColor.disabled, $colorDisabled = $btn.color.disabled) {
+  .button-{$name} {
+    @extends .button;
+    background-color: $bgColor;
+    color: $color;
+  }
+  .button-{$name}-active {
+    @extends .button-active;
+    background-color: $bgColor - $btn.const.active;
+  }
+  .button-{$name}-hover {
+    @extends .button-hover;
+    background-color: $bgColor + $btn.const.hover;
+  }
+  .button-{$name}-selected {
+    @extends .button-selected;
+    background-color: $bgColor - $btn.const.selected;
+  }
+  .button-{$name}-selected-hover {
+    @extends .button-selected-hover;
+    background-color: $bgColor + $btn.const.selectedHover;
+  }
+  .button-{$name}-disabled {
+    @extends .button-disabled;
+    background-color: $bgColorDisabled !important;
+  }
+}
+
+
+createButton('apply', green, white);
+createButton('cancel', red, white);
+
+
+
+
+
+

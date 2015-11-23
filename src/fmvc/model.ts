@@ -1,6 +1,5 @@
 ///<reference path='./d.ts'/>
 module fmvc {
-
     export interface IModelOptions {
         enabledState?:boolean;
         enabledEvents?:boolean;
@@ -27,8 +26,12 @@ module fmvc {
         Error: 'error',
     };
 
-    export var ModelSyncedState = {
-
+    export var ModelAction = {
+        Get: 'get',
+        Insert: 'insert',
+        Update: 'update',
+        Delete: 'delete',
+        Add: 'add',
     };
 
     export class Model<T> extends fmvc.Notifier implements IModelOptions {
@@ -38,34 +41,27 @@ module fmvc {
         private _changedData:T;
         private _invalid:{[name:string]:string[]}; // object only
 
+        private _currentTask:IPromise;
 
         private _state:string;
         private _prevState:string;
 
-        // queue
-        private _syncTimeout:number;
-        private _queue:ModelQueue<T> = null;
-
         // model options
         public enabledEvents:boolean = true;
         public enabledState:boolean = true;
+        public enableValidate:boolean  = false;
+        public enableCommit:boolean = false; // re,validate & sync changes
+        public autoCommit:boolean = false; //
+
         public history:boolean = false;
-
-        public enabledChanges:boolean = false; // re,validate & sync changes
-        public changesAutoCommit:boolean = false; //
-        public changesSyncToLocalStore:boolean = false;
-
-        public syncOptThrottle:number = 1000;
-
-        public syncToApi:boolean = false;
-        public syncToLocalStorage:boolean = false;
-
 
         constructor(name:string, data:any = null, opts?:IModelOptions) {
             super(name, TYPE_MODEL);
             if (opts) _.extend(this, opts);
-            if (data) this.data = data;
-            if (data) this.setState(ModelState.New);
+            if (data) {
+                this.setData(data);
+                this.setState(ModelState.New);
+            }
         }
 
         public reset():Model<T> {
@@ -95,13 +91,11 @@ module fmvc {
             return this._invalid;
         }
 
-
         public set data(value:T) {
             this.setData(value);
         }
 
         public getData():T {
-
             return this._data;
         }
 
@@ -122,21 +116,15 @@ module fmvc {
         public setChanges(value:T|any):void {
             if (this._data === value || this.disposed) return;
 
-            if (!this.enabledChanges) {
+            if (!this.enableCommit) {
                 this.applyChanges(value);
             }
             else {
                 if(_.isObject(value) && _.isObject(this._data)) this._changedData = <T>_.extend(this._changedData || _.extend({}, this._data), value);
                 else this._changedData = value;
                 this.state = ModelState.Changed;
-
-                if(this.changesAutoCommit) {
-                    clearTimeout(this._syncTimeout);
-                    this._syncTimeout = setTimeout(this.commit, this.syncOptThrottle);
-                }
-
+                if(this.autoCommit) this.commit();
             }
-
         }
 
         protected applyChanges(changes:T|any):void {
@@ -176,7 +164,7 @@ module fmvc {
 
         protected validate():boolean {
 
-
+            return false;
         }
 
 
@@ -245,8 +233,6 @@ module fmvc {
 
         public dispose():void {
             this.sendEvent(Event.Model.Disposed);
-            this._queue ? this._queue.dispose() : null;
-            this._queue = null;
             this._data = null;
             super.dispose();
         }
@@ -254,10 +240,6 @@ module fmvc {
         //-----------------------------------------------------------------------------
         // Queue
         //-----------------------------------------------------------------------------
-        public queue(create:boolean = false):ModelQueue<T> {
-            if (create && this._queue) this._queue.dispose();
-            return this._queue && !create ? this._queue : (this._queue = new ModelQueue(this));
-        }
     }
 
 

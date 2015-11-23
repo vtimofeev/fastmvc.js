@@ -12,7 +12,7 @@ module fmvc {
         private _modules:any = [];
 
         constructor(name:string, config?:ILoggerConfig) {
-            super(name, [], {enabledEvents:false, watchChanges:false});
+            super(name, []);
             if(config) this.config = config;
             console.log('Construct facade logger ');
         }

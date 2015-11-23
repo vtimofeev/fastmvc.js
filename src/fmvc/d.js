@@ -3,11 +3,11 @@
 ///<reference path='./notifier.ts'/>
 /////<reference path='./event.dispatcher.ts'/>
 ///<reference path='./model.ts'/>
-///<reference path='./model.queue.ts'/>
 ///<reference path='./source.model.ts'/>
 ///<reference path='./logger.ts'/>
 ///<reference path='./view.ts'/>
 ///<reference path='./mediator.ts'/>
 ///<reference path='../../../DefinitelyTyped/lodash/lodash.d.ts'/>
 ///<reference path='../../../DefinitelyTyped/jquery/jquery.d.ts'/>
+///<reference path='../../../DefinitelyTyped/bluebird/bluebird.d.ts'/>
 //# sourceMappingURL=d.js.map

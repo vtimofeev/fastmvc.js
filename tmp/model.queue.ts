@@ -23,6 +23,7 @@ module fmvc {
             return this.currentPromise;
         }
 
+
         loadXml(object:any):ModelQueue<T> {
             var defaultAjaxRequestObject:any = _.defaults(object, {
                 method: 'GET',
