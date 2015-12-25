@@ -437,6 +437,16 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(Model.prototype, "schemas", {
+            get: function () {
+                return this.getSchemas();
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Model.prototype.getSchemas = function () {
+            return null;
+        };
         Model.prototype.getData = function () {
             return this._data;
         };

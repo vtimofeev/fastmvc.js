@@ -1,3 +1,11 @@
+if(typeof module !== undefined) {
+    var Tautologistics = require('../src/contrib/htmlparser'),
+        window = {addEventListener: function(){}, removeEventListener: function(){}},
+        document = require('../src/ft/virtual.document'),
+        _ = require('lodash');
+
+}
+
 var fmvc;
 (function (fmvc) {
     var Event = (function () {
@@ -1421,9 +1429,9 @@ var ft;
         };
         Expression.prototype.getContextValue = function (v, context) {
             var r, safeV;
+            //console.log('Context', context.name, context.states , 'value', v);
             if (r = context.getDynamicProperty(v))
                 return r;
-            console.log('V is ', v, ' check');
             if (typeof v === 'string') {
                 ft.counters.expressionCtx++;
                 if (v === GetContext.data || v === GetContext.model) {
@@ -1438,7 +1446,6 @@ var ft;
                         this.funcMap[v] = new Function('var v=null; try {v=this.' + v + ';} catch(e) {v=\'{' + v + '}\';} return v;');
                     }
                     r = this.funcMap[v].apply(context);
-                    console.log('V is ', v, ' in internal exp ', r, this.funcMap[v]);
                     r = r === undefined ? null : r;
                     context.setDynamicProperty(v, r);
                 }
@@ -2937,7 +2944,7 @@ var ft;
         };
         TemplateView.prototype.getParameterValue = function (value, key) {
             var r = value instanceof ft.ExpressionName ? this.getExpressionValue(value) : value;
-            console.log(this.name + ' :: apply parameter ', key, ' result=', r, value, value.context);
+            // console.log(this.name + ' :: apply parameter ', key, ' result=', r, value, value.context);
             return r;
         };
         ////////////////////////////////////////////////////////////////
@@ -3454,6 +3461,10 @@ var ft;
     })(ft.TemplateView);
     ft.TemplateChildrenView = TemplateChildrenView;
 })(ft || (ft = {}));
+
+if(module) {
+    module.exports = {ft: ft, fmvc: fmvc, document: document};
+}
 ///<reference path="../fmvc/d.ts" />
 ///<reference path="./template.state.ts" />
 ///<reference path="./expression.ts" />
@@ -3467,4 +3478,4 @@ var ft;
 ///<reference path="./template.manager.ts" />
 ///<reference path="./template.view.ts" />
 ///<reference path="./template.view.children.ts" />
-//# sourceMappingURL=ft.js.map
+//# sourceMappingURL=ft.dev.js.map
