@@ -16,7 +16,7 @@ module ui {
         content: '<div .base="hslider" .value=".5" class="{state.base} {state.base}-{state.selected} {state.base}-{state.hover}" >' +
         '<div ln="bg" class="{state.base}-bg">' +
         '<div ln="pg" class="{state.base}-pg" style="width: {state.value*100}%;">' +
-        '<ft.Button ln="dg" .base="{state.base}-button" .stateHandlers="hover" onpointerdown="{this.dragStart(e);}"/>' +
+        '<ui.Button ln="dg" .base="{state.base}-button" .stateHandlers="hover" onpointerdown="{this.dragStart(e);}"/>' +
         '</div>' +
         '</div>' +
         '</div>',

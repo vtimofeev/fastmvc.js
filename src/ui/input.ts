@@ -23,7 +23,7 @@ module ui {
         className: 'ui.Input',
         content: '<input ' +
         ' .base="input" .value="" .state.placeholder="" .state.valid="" .state.type="text" ' +
-        ' placeholder="{state.placeholder}" value="{state.value}" type="{state.type}" ' +
+        ' placeholder="{state.placeholder||state.title}" value="{state.value}" type="{state.type}" ' +
         ' class="{state.base} {state.base}-{state.type} {state.base}-{state.valid}"' +
         ' onkeydown="down" onkeyup="up" ' +
         '/>',
