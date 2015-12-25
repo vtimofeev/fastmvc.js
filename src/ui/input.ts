@@ -1,4 +1,4 @@
-module ui {
+module ui.def {
     /*
      Input data model
 
@@ -13,13 +13,9 @@ module ui {
      value
      placeholder
      valid
-
-
-
-
      */
 
-    export var InputDefinition = {
+    export var Input = {
         className: 'ui.Input',
         content: '<input ' +
         ' .base="input" .value="" .state.placeholder="" .state.valid="" .state.type="text" ' +

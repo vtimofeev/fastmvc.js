@@ -161,7 +161,7 @@ children.data="data.users"
 children.model="data.users"
 children.class="ft.Button"
 children.stateHandlers="hover,selected"
-children.state.selected="{(data.selected===ctx.data}"
+children.state.selected="{data.selected===ctx.data}"
 
 Установка собственных обработчиков:
 on* (browser event type)

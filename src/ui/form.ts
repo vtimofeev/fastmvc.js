@@ -1,22 +1,22 @@
 ///<reference path="../ft/d.ts" />
 
-module ui {
+module ui.def {
     interface IFormField {
         field:string,
         title:any
     }
 
-
     export var FormDefinition = {
         className: 'ui.Form',
-        content: '<div .base="form" .state.schemaType="insert" class="{state.base}"><h1>Form {model.name}</h1></div>',
+        content: '<div .base="form" .state.schemaType="insert" class="{state.base}">' +
+        '<h1>Form {model.name}</h1>' +
+        '</div>',
         mixin: {
             afterEnter: function() {
                 console.log('Create form ', this.model.schemas, this.getState('schemaType') );
                 if(!this.model || !this.model.schemas || !this.model.schemas[this.getState('schemaType')]) return;
 
                 var schema:any[] = this.model.schemas[this.getState('schemaType')];
-                console.log('Schema ... ', schema);
                 schema.forEach(function(value:IFormField) {
                     console.log('Schema value is ... ' , value);
                     var states = {
@@ -29,7 +29,6 @@ module ui {
                         setStates: states
                     };
                     params[bindout] = value.field;
-
                     var instance = ft.templateManager.createInstance('ui.Input', this.name + '-field-' + value.field, params);
                     instance.render(this.getElement());
                 }, this);

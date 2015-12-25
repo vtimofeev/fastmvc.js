@@ -52,7 +52,7 @@ describe('ft - component package ', function () {
         },
         ui.HSliderDefinition,
         ui.InputDefinition,
-        ui.GroupDefinition,
+        ui.Group,
         {
             className: "ft.Progress",
             content: '<div .base="progress" .value="0" class="{state.base}"><div class="{state.base}-bg" style="width:{(state.value*100)}%"></div></div>',
@@ -64,10 +64,10 @@ describe('ft - component package ', function () {
                 '<ft.Button .data="The button text"></ft.Button>' +
                 '<ui.HSlider></ui.HSlider>' +
                 '<h4>{data.name}!</h4>' +
-                '<ui.Group children.data="{data.children}"></ui.Group>' +
                 '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
                 '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
-                '<ul children.data="{data.children}" children.class="ft.Li"/>',
+                '<ul children.data="{data.children}" children.class="ft.Li"/>' +
+                '</div>',
             /*
                         '<div .data="{data.children}"' +
                     ' children.selected="{(child.model!==data.selectedItem)}" ' +
@@ -120,6 +120,9 @@ describe('ft - component package ', function () {
     console.log('---Setdata ', model.d.selectedItem);
     describe('ft - ButtonGroup/DataButton', function () {
         _.each(templateObjs, function (obj, index) {
+            console.log(obj);
+            if (!obj)
+                return;
             var key = obj.className;
             it('should create instances ' + key, function () {
                 this.timeout(5000);

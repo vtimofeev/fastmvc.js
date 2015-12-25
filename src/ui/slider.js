@@ -28,9 +28,7 @@ var ui;
                 this.globalPointer.bind(this, this.prepareChanges);
             },
             prepareChanges: function prepareChanges(e) {
-                var newX = e.data.clientX;
-                var result = (newX - this.startX) / this.startSize;
-                var preValue = ui.validateMaxMin(this.startValue + result, 0, 1); // auto invalidate
+                var newX = e.data.clientX, result = (newX - this.startX) / this.startSize, preValue = ui.validateMaxMin(this.startValue + result, 0, 1); // auto invalidate
                 this.value = validateStep(preValue, 0.1);
                 if (e.data.name === ft.CompositeEvent.PointerUp) {
                     this.globalPointer.unbind(this);

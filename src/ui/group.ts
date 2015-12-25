@@ -1,7 +1,7 @@
-module ui {
-    export var GroupDefinition = {
+module ui.def {
+    export var Group = {
         className: 'ui.Group',
-        content: '<div .base="group" class="{state.base}" children.selected="{ctx.data===state.value}" children.base="button" children.class="ft.Button" children.stateHandlers="hover"' +
+        content: '<div .base="group" class="{state.base}" .children.selected="{ctx.data===state.value}" .children.base="button" .children.class="ui.Button" .children.stateHandlers="hover"' +
         ' children.onaction="item"></div>',
         mixin: {
             internalHandler: function (e) {

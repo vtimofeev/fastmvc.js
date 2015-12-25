@@ -87,16 +87,16 @@ describe('ft - component package ', function () {
             '<ft.Button .data="The button text"></ft.Button>' +
             '<ui.HSlider></ui.HSlider>' +
             '<h4>{data.name}!</h4>'+
-           '<ui.Group />' +
             '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
             '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
-            '<ul children.data="{data.children}" children.class="ft.Li"/>',
+            '<ul children.data="{data.children}" children.class="ft.Li"/>' +
+            '</div>',
 
 /*
             '<div .data="{data.children}"' +
         ' children.selected="{(child.model!==data.selectedItem)}" ' +
         ' children.class="ft.Button" children.onaction="selectItemFirst" children.disabled="{data.childrenDisabled}"></div>' +
-            '<div>'*/,
+            '<div>'*/
             action: 'create'
         },
     ];
@@ -161,7 +161,10 @@ describe('ft - component package ', function () {
 
     describe('ft - ButtonGroup/DataButton', function () {
         _.each(templateObjs, function (obj:ITemplateTestObject, index:number) {
+            console.log(obj);
+            if(!obj) return;
             var key = obj.className;
+
 
             it('should create instances ' + key, function () {
                 this.timeout(5000);
