@@ -996,4 +996,6 @@ exports.ElementType = Mode;
 
 exports.DomUtils = DomUtils;
 
+exports.NodeHtmlParser = exports;
+
 })();
