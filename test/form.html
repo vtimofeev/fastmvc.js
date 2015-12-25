@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Browser ft components test</title>
+    <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
+    <link href="../src/ui/stylus/default.css" rel="stylesheet" />
+</head>
+<body>
+
+<div id="mocha"><p><a href=".">Index</a></p></div>
+<div id="messages"></div>
+<div id="fixtures"></div>
+
+<div id="template-container"></div>
+
+<!-- Contrib !-->
+<script></script>
+<script src="../src/contrib/messageformat.js"></script>
+<script src="../src/contrib/underscore.js"></script>
+<script src="../src/contrib/htmlparser.js"></script>
+<script src="../src/contrib/eventemitter3.js"></script>
+<script src="../src/contrib/utils.js"></script>
+
+<!-- Test !-->
+<script src="../node_modules/mocha/mocha.js"></script>
+<script src="../node_modules/chai/chai.js"></script>
+
+<script src="../build/ft.js"></script>
+<script src="../src/ui/button.js"></script>
+<script src="../src/ui/slider.js"></script>
+<script src="../src/ui/input.js"></script>
+<script src="../src/ui/group.js"></script>
+<script src="../src/ui/form.js"></script>
+
+<!-- Bdd !-->
+<script>mocha.setup('bdd')</script>
+<script src="form.js"></script>
+<script>mocha.run();</script>
+
+</body>
+</html>
