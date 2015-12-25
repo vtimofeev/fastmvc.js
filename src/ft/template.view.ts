@@ -342,7 +342,7 @@ module ft {
 
         getParameterValue(value:IExpressionName|any, key:string):any {
             var r = value instanceof ExpressionName ? this.getExpressionValue(value) : value;
-            // console.log(this.name + ' :: apply parameter ', key, ' result=', r, value, value.context);
+             console.log(this.name + ' :: apply parameter ', key, ' result=', r, value, value.context);
             return r;
         }
 

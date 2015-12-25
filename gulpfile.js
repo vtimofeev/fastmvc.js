@@ -44,7 +44,7 @@ function buildTsSources(name, src) {
         }));
 
     if (project.env === Env.Prod) {
-        result.pipe(uglify());
+        //result.pipe(uglify());
     }
 
     return result.pipe(gulp.dest('build'));

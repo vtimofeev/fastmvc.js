@@ -46,6 +46,7 @@ module fmvc {
         private _state:string;
         private _prevState:string;
 
+
         // model options
         public enabledEvents:boolean = true;
         public enabledState:boolean = true;
@@ -89,6 +90,14 @@ module fmvc {
 
         public get invalid():any {
             return this._invalid;
+        }
+
+        public get schemas():any {
+            return this.getSchemas();
+        }
+
+        public getSchemas():any {
+            return null;
         }
 
         public set data(value:T) {

@@ -3,6 +3,8 @@
 module ft {
     var GetContext = {
         string: 'string',
+        model: 'model',
+        modelField: 'model.',
         data: 'data',
         dataField: 'data.',
         appField: 'app.',
@@ -114,21 +116,24 @@ module ft {
         public getContextValue(v:string|IExpression, context:ITemplateView):any {
             var r, safeV;
             if(r = context.getDynamicProperty(v)) return r;
+            console.log('V is ', v , ' check');
+
 
             if(typeof v === 'string') {
                 counters.expressionCtx++;
-                if(v === GetContext.data) {
-                    r = context.data;
+                if(v === GetContext.data || v === GetContext.model) {
+                    r = context[v];
                     if(r === undefined) r = null;
                     context.setDynamicProperty(v, r);
                 }
-                else if(v.indexOf(GetContext.dataField) === 0 || v.indexOf(GetContext.appField) === 0) {
+                else if(v.indexOf(GetContext.dataField) === 0 || v.indexOf(GetContext.appField) === 0 || v.indexOf(GetContext.modelField) === 0) {
+
                     if(!this.funcMap[v]) {
                         //safeV = v.replace(/'/g, '"');
                         this.funcMap[v] = new Function('var v=null; try {v=this.' + v + ';} catch(e) {v=\'{' + v + '}\';} return v;');
                     }
                     r = this.funcMap[v].apply(context);
-
+                    console.log('V is ', v , ' in internal exp ', r, this.funcMap[v]);
                     r = r===undefined?null:r;
                     context.setDynamicProperty(v, r);
                 }
