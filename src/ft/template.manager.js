@@ -15,6 +15,10 @@ var ft;
             this._instanceFunc = {};
             _.bindAll(this, 'createClass', 'createInstance');
         }
+        TemplateManager.prototype.loadDefs = function (value) {
+            var _this = this;
+            value.forEach(function (v) { return _this.createClass(v.className, v.content, v.params, v.mixin); }, this);
+        };
         /**
          * Создаем класc - функцию которая линкует экземпляр "TemplateView" с параметрами заданными при создании класса, и расширением методоа
          * ***В функции конструкторе используется хак переопределения возвращаемого значения, это работает только для объектов
@@ -80,5 +84,6 @@ var ft;
     ft.templateManager = new TemplateManager();
     ft.createClass = ft.templateManager.createClass;
     ft.createInstance = ft.templateManager.createInstance;
+    ft.loadDefs = ft.templateManager.loadDefs;
 })(ft || (ft = {}));
 //# sourceMappingURL=template.manager.js.map

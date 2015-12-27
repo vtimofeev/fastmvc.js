@@ -86,9 +86,10 @@ var ft;
             if (classes) {
                 if (!!value) {
                     if (value === true) {
-                        if (!_.isString(ex))
+                        if (typeof ex === 'string')
+                            ex.split('.')[1];
+                        else
                             throw 'Incorrect type at parseContextValue with classes true';
-                        return ex.split('.')[1];
                     }
                     else {
                         return value;
@@ -105,9 +106,8 @@ var ft;
         };
         Expression.prototype.getContextValue = function (v, context) {
             var r, safeV;
-            if (r = context.getDynamicProperty(v))
+            if (typeof v === 'string' && (r = context.getDynamicProperty(v)))
                 return r;
-            console.log('V is ', v, ' check');
             if (typeof v === 'string') {
                 ft.counters.expressionCtx++;
                 if (v === GetContext.data || v === GetContext.model) {

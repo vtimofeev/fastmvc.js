@@ -13,6 +13,7 @@ module ft {
         thisDot: 'this.'
     };
 
+
     export class ExpressionName implements IExpressionName {
 
         public name:string;
@@ -40,7 +41,7 @@ module ft {
             return new ExpressionName(value.name);
         }
         
-        public execute(value:IExpression, context:ITemplateView, classes?:boolean):any {
+        public execute(value:IExpression, context:TemplateView, classes?:boolean):any {
             return this.executeMultiExpression(value, context, classes);
         }
 
@@ -48,7 +49,7 @@ module ft {
         // Execute
         //----------------------------------------------------------------------------------------------------------------------------------------
 
-        private executeFilters(value:any/* primitive, object args of i18n */, filters:string[], context:ITemplateView):any {
+        private executeFilters(value:any/* primitive, object args of i18n */, filters:string[], context:TemplateView):any {
             if(!filters || !filters.length) return value;
 
             return _.reduce(filters,
@@ -57,7 +58,7 @@ module ft {
                 }, value, this);
         }
 
-        private executePlainFilter(filter:string, value:any, context:ITemplateView):string {
+        private executePlainFilter(filter:string, value:any, context:TemplateView):string {
             if(filter.indexOf('i18n.') === 0) {
                 return context.getFormattedMessage(filter.replace('i18n.', ''),value);
             }
@@ -73,7 +74,7 @@ module ft {
             }
         }
 
-        private executeMultiExpression(ex:IExpression, context:ITemplateView, classes:boolean):any {
+        private executeMultiExpression(ex:IExpression, context:TemplateView, classes:boolean):any {
             var isSimpleExpression:Boolean = (ex.expressions.length === 1);
             var contextValue;
             return isSimpleExpression?
@@ -88,7 +89,7 @@ module ft {
                     }, ex.result, this);
         }
 
-        private getParsedContextValue(value:ExpressionValue, context:ITemplateView, classes:boolean) {
+        private getParsedContextValue(value:ExpressionValue, context:TemplateView, classes:boolean) {
             return this.parseContextValue(this.getContextValue(value, context), value, classes);
 
         }
@@ -97,8 +98,8 @@ module ft {
             if(classes) {
                     if(!!value) {
                         if(value === true) {
-                            if (!_.isString(ex)) throw 'Incorrect type at parseContextValue with classes true';
-                            return ex.split('.')[1];
+                            if (typeof ex === 'string') ex.split('.')[1];
+                            else throw 'Incorrect type at parseContextValue with classes true';
                         } else {
                             return value;
                         }
@@ -113,11 +114,9 @@ module ft {
             return <string> (_.isString(value)?value:null);
         }
 
-        public getContextValue(v:string|IExpression, context:ITemplateView):any {
+        public getContextValue(v:string|IExpression, context:TemplateView):any {
             var r, safeV;
-            if(r = context.getDynamicProperty(v)) return r;
-            console.log('V is ', v , ' check');
-
+            if(typeof v === 'string' && (r = context.getDynamicProperty(v))) return r;
 
             if(typeof v === 'string') {
                 counters.expressionCtx++;
@@ -166,11 +165,11 @@ module ft {
             throw new Error('Not supported variable ' + v + ' in ' + context.name);
         }
 
-        private getContextArguments(ex:IExpression, context:ITemplateView):any {
+        private getContextArguments(ex:IExpression, context:TemplateView):any {
             return _.isString(ex.args)?this.getContextValue(ex.args,context):_.reduce(ex.args, (r:any,v:string,k:string)=>(r[k]=this.getContextValue(v,context),r),{},this);
         }
 
-        private executeExpression(ex:IExpression, context:ITemplateView, classes?:boolean):any {
+        private executeExpression(ex:IExpression, context:TemplateView, classes?:boolean):any {
             counters.expression++;
             var r:any = ex.args?this.getContextArguments(ex,context):this.getParsedContextValue(ex.expressions[0],context,classes);
             if(!r && classes) return '';// empty class expression

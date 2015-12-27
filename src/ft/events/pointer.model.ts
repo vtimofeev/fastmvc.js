@@ -6,8 +6,8 @@ module ft {
         sequence?:number;
         clientX:number;
         clientY:number;
-        time:number;
-        isComposite:boolean;
+        time?:number;
+        isComposite?:boolean;
 
         /*
         alt:boolean;
@@ -59,11 +59,11 @@ module ft {
         touchcancel: 'pointerup'
     };
 
-    export class PointerModel<IPointerData> extends fmvc.Model {
+    export class PointerModel extends fmvc.Model<IPointerEvent> {
         public static Name:string = 'PointerModel';
 
         private target:HTMLElement;
-        private sequence:IPointerData[];
+        private sequence:IPointerEvent[];
         private sequenceLastDownIndex:number;
         private sequenceTime:number;
 

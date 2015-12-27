@@ -32,7 +32,7 @@ module ft {
 
         constructor(viewHelper:TemplateViewHelper) {
             this.viewHelper = viewHelper;
-            this.pointer = new ft.PointerModel();
+            this.pointer = new ft.PointerModel(null, null);
 
             _.bindAll(this, 'browserHandler');
             var listenEvents:string[] = [].concat(_.values(ft.BrowserEvent), _.values(ft.PointerEvent), _.values(ft.KeyboardEvent),  _.values(ft.TouchEvent));
@@ -59,18 +59,18 @@ module ft {
                 this.viewHelper.dispatchTreeEventDown(event);
 
                 if(sequenceEvent) {
-                    var sequenceEvent = this.getTreeEventByBrowserEvent(sequenceEvent.name, pathDefinition.data, pathDefinition.root, e, sequenceEvent);
+                    var sequenceTreeEvent = this.getTreeEventByBrowserEvent(sequenceEvent.name, pathDefinition.data, pathDefinition.root, e, sequenceEvent);
                     //console.log('dispatch sequence event',  pathDefinition.data.path, sequenceEvent);
-                    this.viewHelper.dispatchTreeEventDown(sequenceEvent);
+                    this.viewHelper.dispatchTreeEventDown(sequenceTreeEvent);
                 }
             }
         }
 
-        private getTreeEventByBrowserEvent(name:string, def:IDomDef, view:ITemplateView, e:any, pe:IPointerEvent):ITreeEvent {
+        private getTreeEventByBrowserEvent(name:string, def:IDomDef, view:TemplateView, e:any, pe:IPointerEvent):ITreeEvent {
             return {name: name, target:view, def: def, e: e, pe:pe, cancelled:false, prevented:false, depth: 1e2, executionHandlersCount: 0};
         }
 
-        public getCustomTreeEvent(name:string, data:any, view:ITemplateView, depth:number = 1):ITreeEvent {
+        public getCustomTreeEvent(name:string, data:any, view:TemplateView, depth:number = 1):ITreeEvent {
             return {name: name, target:view, def: view.domDef, previousTarget: null, currentTarget:view, data:data, cancelled:false, prevented:false, depth: depth, executionHandlersCount: 0};
         }
 

@@ -12,9 +12,9 @@ module ft {
     };
 
 
-    export class TemplateViewHelper implements ITemplateViewHelper {
+    export class TemplateViewHelper {
         private idCounter:number = 0;
-        public domElementPathIds:{[id:string]:ITemplateView} = {};
+        public domElementPathIds:{[id:string]:TemplateView} = {};
 
         constructor() {
         }
@@ -69,7 +69,7 @@ module ft {
             }
         }
 
-        enterTree(data:IDomDef, root:ITemplateView):void {
+        enterTree(data:IDomDef, root:TemplateView):void {
             var treeElement:TreeElement = this.getTreeElement(data, root);
 
             if (treeElement instanceof TemplateView && treeElement !== root) {
@@ -117,7 +117,7 @@ module ft {
         }
 
         private composeNames_updateDynamicTree = _.compose(_.union, _.compact, _.flatten);
-        updateDynamicTree(root:ITemplateView, group?:string, propertyName?:string):void {
+        updateDynamicTree(root:TemplateView, group?:string, propertyName?:string):void {
             var dynamicTree:any = root.getTemplate().dynamicTree;
             if (!dynamicTree) return;
 
@@ -149,7 +149,7 @@ module ft {
         // Creation
         // -----------------------------------------------------------------------------------------------------------
 
-        private createTreeElement(data:IDomDef, root:ITemplateView):TreeElement {
+        private createTreeElement(data:IDomDef, root:TemplateView):TreeElement {
             var isIncluded:boolean = this.isTreeObjectIncluded(data, root);
             var result:TreeElement = null;
 
@@ -175,7 +175,7 @@ module ft {
         }
 
 
-        createComponentElement(data:IDomDef, root:TemplateView):ITemplateView {
+        createComponentElement(data:IDomDef, root:TemplateView):TemplateView {
             var dataParams:any = this.applyFirstContextToExpressionParameters(data.params, root);
             var result = templateManager.createInstance(data.name, 'view-' + data.name + '-' + this.getNextId(), dataParams);
             //console.log('CreateComponent ', data.name, result !== root, dataParams, result);
@@ -209,7 +209,7 @@ module ft {
             }
         }
 
-        createChildrenView(object:TreeElement, data:IDomDef, root:ITemplateView):TreeElement {
+        createChildrenView(object:TreeElement, data:IDomDef, root:TemplateView):TreeElement {
             if (this.hasChildrenDef(data)) {
                 var childrenView = new TemplateChildrenView(root.name + ':ChildView-' + this.getNextId(), this.applyFirstContextToExpressionParameters(root.getParameters(), root));
                 childrenView.domDef = data;
@@ -221,7 +221,7 @@ module ft {
             }
         }
 
-        private initDomElement(object:TreeElement, data:IDomDef, root:ITemplateView) {
+        private initDomElement(object:TreeElement, data:IDomDef, root:TemplateView) {
             //console.log('Init dom element ', object, data, root);
             var domElement = <HTMLElement> this.getDomElement(object);
             //console.log(root.name, data.path, ' SetData');
@@ -265,7 +265,7 @@ module ft {
         }
 
         /* Установка контента текстового элемента */
-        private initTextElement(object:TreeElement, data:IDomDef, root:ITemplateView) {
+        private initTextElement(object:TreeElement, data:IDomDef, root:TemplateView) {
             if (data.data) {
                 object.textContent = this.getSimpleOrExpressionValue(data.data, root);
             }
@@ -276,14 +276,14 @@ module ft {
         // -----------------------------------------------------------------------------------------------------------
 
 
-        private enterChildrenView(data:IDomDef, root:ITemplateView):void {
+        private enterChildrenView(data:IDomDef, root:TemplateView):void {
             if (!this.hasChildrenView(data, root)) return;
 
             var childrenView:TemplateChildrenView = root.getChildrenViewByPath(data.path);
             childrenView.enter();
         }
 
-        private exitChildrenView(data:IDomDef, root:ITemplateView):void {
+        private exitChildrenView(data:IDomDef, root:TemplateView):void {
             if (!this.hasChildrenView(data, root)) return;
 
             var childrenView:TemplateChildrenView = root.getChildrenViewByPath(data.path);
@@ -296,7 +296,7 @@ module ft {
         // -----------------------------------------------------------------------------------------------------------
 
 
-        applyExpressionToHosts(exObj:IExpression, root:ITemplateView):void {
+        applyExpressionToHosts(exObj:IExpression, root:TemplateView):void {
             var result;
             var el:HTMLElement;
             var i:number;
@@ -319,7 +319,7 @@ module ft {
             }
         }
 
-        applyValueToHost(value:any, el:HTMLElement, host:IExpressionHost, root:ITemplateView):any {
+        applyValueToHost(value:any, el:HTMLElement, host:IExpressionHost, root:TemplateView):any {
             var key:string = host.key;
 
             //console.log('Apply to ', host.path, host.key, value);
@@ -394,7 +394,7 @@ module ft {
         // -----------------------------------------------------------------------------------------------------------
 
 
-        private getTreeElement(data:IDomDef, root:ITemplateView):TreeElement {
+        private getTreeElement(data:IDomDef, root:TemplateView):TreeElement {
             return root.getTreeElementByPath(data.path);
         }
 
@@ -402,31 +402,31 @@ module ft {
             return name === 'svg' || name === 'circle' || false;
         }
 
-        getPropertyValues(group:string, attrName:string, data:IDomDef, root:ITemplateView):IObj {
+        getPropertyValues(group:string, attrName:string, data:IDomDef, root:TemplateView):IObj {
             var functor = (attrName === 'class') ? this.getClassSimpleOrExpressionValue : this.getSimpleOrExpressionValue;
 
             return _.reduce(data[group][attrName], (result:any, value:ExpressionValue, key:string)=>(
                 result[key] = functor.call(this, value, root), result), {}, this);
         }
 
-        getChangedExpressionNames(group:string, map:IDynamicMap, root:ITemplateView):(string|string[])[] {
+        getChangedExpressionNames(group:string, map:IDynamicMap, root:TemplateView):(string|string[])[] {
             return _.map(map, (exNames:string[], propName:string)=>(root.isChangedDynamicProperty(propName) ? exNames : null), this);
         }
 
-        getSimpleOrExpressionValue(value:ExpressionNameValue, root:ITemplateView) {
+        getSimpleOrExpressionValue(value:ExpressionNameValue, root:TemplateView) {
             return _.isObject(value) ? this.getExpressionValue(<IExpressionName> value, root) : value;
         }
 
-        getClassSimpleOrExpressionValue(value:ExpressionNameValue, root:ITemplateView) {
+        getClassSimpleOrExpressionValue(value:ExpressionNameValue, root:TemplateView) {
             return _.isObject(value) ? root.getCssClassExpressionValue(<IExpressionName> value) : value;
         }
 
 
-        getExpressionValue(value:IExpressionName, root:ITemplateView):any {
+        getExpressionValue(value:IExpressionName, root:TemplateView):any {
             return root.getExpressionValue(value);
         }
 
-        registerDomElementId(id:string, data:IDomDef, root:ITemplateView):void {
+        registerDomElementId(id:string, data:IDomDef, root:TemplateView):void {
             //console.log('Register dom', id, data.path);
             //@todo fix fast fix
             if(!this.domElementPathIds[id]) this.domElementPathIds[id] = {data: data, root: root};
@@ -437,7 +437,7 @@ module ft {
             if (id) delete this.domElementPathIds[id];
         }
 
-        getPathDefinitionByPathId(id:string):{data:IDomDef, root:ITemplateView} {
+        getPathDefinitionByPathId(id:string):{data:IDomDef, root:TemplateView} {
             return this.domElementPathIds[id];
         }
 
@@ -445,7 +445,7 @@ module ft {
         // Utilites
         // ------------------------------------------------------------------------------------------------------------
 
-        public applyFirstContextToExpressionParameters(params:any, context:ITemplateView):IExpressionName {
+        public applyFirstContextToExpressionParameters(params:any, context:TemplateView):IExpressionName {
             if (!context) return params;
 
             var r = {};
@@ -461,7 +461,7 @@ module ft {
             return r;
         }
 
-        private hasDelay(data:IDomDef, root:ITemplateView, functorName:string) {
+        private hasDelay(data:IDomDef, root:TemplateView, functorName:string) {
             return data.params && data.params[functorName + 'Delay'] && root.isDelay(data, functorName);
         }
 
@@ -481,7 +481,7 @@ module ft {
             return ComplexDomElementAttributes;
         }
 
-        setDomElementClasses(vals:IObj, object:HTMLElement, data:IDomDef, root:ITemplateView) {
+        setDomElementClasses(vals:IObj, object:HTMLElement, data:IDomDef, root:TemplateView) {
             var previousClassValue:string;
             _.each(vals,
                 (value:any, name:string)=> {
@@ -494,7 +494,7 @@ module ft {
             );
         }
 
-        setDomElementStyles(vals:IObj, object:HTMLElement, root:ITemplateView) {
+        setDomElementStyles(vals:IObj, object:HTMLElement, root:TemplateView) {
             _.each(vals, (value:any, name:string)=>object.style[name] = (value ? value : ''));
         }
 
@@ -523,7 +523,7 @@ module ft {
             return data.type && data.name && (data.name.indexOf('.') > 0);
         }
 
-        isTreeObjectIncluded(data:IDomDef, root:ITemplateView):boolean {
+        isTreeObjectIncluded(data:IDomDef, root:TemplateView):boolean {
             var states:any = data.params ? data.params[TemplateParams.states] : null;
             var hasDelay:Boolean = this.hasDelay(data, root, 'create');
 
@@ -539,7 +539,7 @@ module ft {
             return !!(data.params && data.params[TemplateParams.childrenClass]);
         }
 
-        hasChildrenView(data:IDomDef, root:ITemplateView) {
+        hasChildrenView(data:IDomDef, root:TemplateView) {
             return !!root.getChildrenViewByPath(data.path);
         }
 
@@ -550,7 +550,7 @@ module ft {
 
         dispatchTreeEventDown(e:ITreeEvent) {
             var def:IDomDef = <IDomDef> (e.currentDef || e.def);
-            var view = <ITemplateView> (e.currentTarget || e.target);
+            var view = <TemplateView> (e.currentTarget || e.target);
             var template = view.getTemplate();
 
             // Execute current def handler
@@ -584,7 +584,7 @@ module ft {
 
         private triggerDefEvent(e:ITreeEvent):void {
             var def:IDomDef = <IDomDef> (e.currentDef || e.def);
-            var view = <ITemplateView> (e.currentTarget || e.target);
+            var view = <TemplateView> (e.currentTarget || e.target);
             //console.log('Trigger def event, ', e.name, ' path ', def.path);
 
 

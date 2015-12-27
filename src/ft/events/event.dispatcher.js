@@ -23,7 +23,7 @@ var ft;
         function EventDispatcher(viewHelper) {
             this.eventMap = {};
             this.viewHelper = viewHelper;
-            this.pointer = new ft.PointerModel();
+            this.pointer = new ft.PointerModel(null, null);
             _.bindAll(this, 'browserHandler');
             var listenEvents = [].concat(_.values(ft.BrowserEvent), _.values(ft.PointerEvent), _.values(ft.KeyboardEvent), _.values(ft.TouchEvent));
             _.each(listenEvents, this.on, this);
@@ -43,9 +43,9 @@ var ft;
                 //console.log('dispatch composite event', pathDefinition.data.path, pointerEvent);
                 this.viewHelper.dispatchTreeEventDown(event);
                 if (sequenceEvent) {
-                    var sequenceEvent = this.getTreeEventByBrowserEvent(sequenceEvent.name, pathDefinition.data, pathDefinition.root, e, sequenceEvent);
+                    var sequenceTreeEvent = this.getTreeEventByBrowserEvent(sequenceEvent.name, pathDefinition.data, pathDefinition.root, e, sequenceEvent);
                     //console.log('dispatch sequence event',  pathDefinition.data.path, sequenceEvent);
-                    this.viewHelper.dispatchTreeEventDown(sequenceEvent);
+                    this.viewHelper.dispatchTreeEventDown(sequenceTreeEvent);
                 }
             }
         };

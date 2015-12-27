@@ -3,10 +3,10 @@
 module ft {
     export class TemplateChildrenView extends ft.TemplateView {
 
-        private _children:ITemplateView[]; // active children array
+        private _children:TemplateView[]; // active children array
         protected childrenLocalParams:any;
 
-        constructor(name:string, params:ITemplateViewParams) {
+        constructor(name:string, params:TemplateViewParams) {
             super(name, params, {domTree: {}});
         }
 
@@ -16,7 +16,7 @@ module ft {
             var prevChildren = this._children;
             var data:any[] = this.getParameterValue(this.getParameters()['children.data']) || this.data;
 
-            var childrenViews:ITemplateView[] = _.map(data, function (v:any, k:number) {
+            var childrenViews:TemplateView[] = _.map(data, function (v:any, k:number) {
                 var child = prevChildren && prevChildren.length ? (prevChildren.splice(0, 1)[0]) : templateManager.createInstance(className, this.parent.name + ':' + className + '-' + k, this.childrenLocalParams);
                 if (v instanceof fmvc.Model) child.model = v;
                 else child.data = v;
@@ -24,10 +24,10 @@ module ft {
             }, this);
             this._children = childrenViews;
 
-            _.each(prevChildren, (v:ITemplateView)=>v.dispose());
+            _.each(prevChildren, (v:TemplateView)=>v.dispose());
             this.applyChildrenParameters();
 
-            _.each(this._children, function (child:ITemplateView) {
+            _.each(this._children, function (child:TemplateView) {
                 child.parent = this.parent;
                 child.domDef = def;
                 if (!child.inDocument) {
@@ -46,7 +46,7 @@ module ft {
         }
 
 
-        protected setCurrentChildToExecutionContext(child:ITemplateView, index:number, length:number, context:ITemplateView):void {
+        protected setCurrentChildToExecutionContext(child:TemplateView, index:number, length:number, context:TemplateView):void {
             context.child = child;
             context.childIndex = index;
             context.childrenLength = length;
@@ -82,7 +82,7 @@ module ft {
             var params:any = this.getChildrenExpressionParams(this.getParameters());
             //console.log('Apply children params ', this.name, params);
             var length = this._children ? this._children.length : 0;
-            _.each(this._children, (child:ITemplateView, index:number)=> {
+            _.each(this._children, (child:TemplateView, index:number)=> {
                 if (child.disposed) return;
                 //child.invalidateData();
                 _.each(params, (value:IExpressionName, key:string)=> {
@@ -100,7 +100,7 @@ module ft {
             var length = this._children ? this._children.length : 0;
             //console.log('Apply children parameter ', value, key);
 
-            _.each(this._children, function (child:ITemplateView, index:number) {
+            _.each(this._children, function (child:TemplateView, index:number) {
                 if (child.disposed) return;
                 this.setCurrentChildToExecutionContext(child, index, length, value.context || this.parent);
                 var childValue:any = _.isObject(value) ? this.getExpressionValue(value) : value;
@@ -124,13 +124,13 @@ module ft {
 
         enterImpl() {
             //console.log('Enter children view ', this._children);
-            _.each(this._children, function (child:ITemplateView) {
+            _.each(this._children, function (child:TemplateView) {
                 child.enter();
             }, this);
         }
 
         exitImpl() {
-            _.each(this._children, function (child:ITemplateView) {
+            _.each(this._children, function (child:TemplateView) {
                 child.exit();
             }, this);
         }

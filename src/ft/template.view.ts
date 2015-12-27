@@ -83,7 +83,7 @@ module ft {
         return (new Date()).getTime();
     }
 
-    export class TemplateView extends fmvc.View implements ITemplateView {
+    export class TemplateView extends fmvc.View  {
         private _template:ITemplate;
         private _i18n:any; // i18n store
 
@@ -114,7 +114,7 @@ module ft {
         // Delays
         private _delays:any;
 
-        constructor(name:string, params?:ITemplateViewParams, template?:ITemplate) {
+        constructor(name:string, params?:TemplateViewParams, template?:ITemplate) {
             super(name);
             this._template = template;
             this._constructorParams = params;
@@ -342,7 +342,6 @@ module ft {
 
         getParameterValue(value:IExpressionName|any, key:string):any {
             var r = value instanceof ExpressionName ? this.getExpressionValue(value) : value;
-             console.log(this.name + ' :: apply parameter ', key, ' result=', r, value, value.context);
             return r;
         }
 
@@ -442,7 +441,7 @@ module ft {
             //console.log('Create ', this.name);
             if (this._element) return;
             var e = <TreeElement> templateHelper.createTree(this._template.domTree, this);
-            var element:HTMLElement = e instanceof TemplateView ? (<ITemplateView>e).getElement() : <HTMLElement>e;
+            var element:HTMLElement = e instanceof TemplateView ? (<TemplateView>e).getElement() : <HTMLElement>e;
             this.setElement(element);
             this.setTreeElementPath('0', this);
             counters.createDom++;

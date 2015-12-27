@@ -18,6 +18,11 @@ module ft {
             _.bindAll(this, 'createClass', 'createInstance');
         }
 
+        public loadDefs(value):void {
+            value.forEach((v)=>this.createClass(v.className, v.content, v.params, v.mixin), this);
+        }
+
+
         /**
          * Создаем класc - функцию которая линкует экземпляр "TemplateView" с параметрами заданными при создании класса, и расширением методоа
          * ***В функции конструкторе используется хак переопределения возвращаемого значения, это работает только для объектов
@@ -52,6 +57,7 @@ module ft {
         public createInstance(className:string, name:string, params?:any, mixin?:any):ft.TemplateView {
             return this._instanceFunc[className](name, params, mixin);
         }
+
 
         /* Регистрируем класс (функцию конструктор), в глобальном скоупе */
         private registerClass(className:string, value:ITemplateConstructor):void {
@@ -88,4 +94,5 @@ module ft {
     export var templateManager = new TemplateManager();
     export var createClass = templateManager.createClass;
     export var createInstance = templateManager.createInstance;
+    export var loadDefs = templateManager.loadDefs;
 }

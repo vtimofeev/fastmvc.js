@@ -332,7 +332,6 @@ var ft;
         };
         TemplateView.prototype.getParameterValue = function (value, key) {
             var r = value instanceof ft.ExpressionName ? this.getExpressionValue(value) : value;
-            console.log(this.name + ' :: apply parameter ', key, ' result=', r, value, value.context);
             return r;
         };
         ////////////////////////////////////////////////////////////////

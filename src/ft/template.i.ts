@@ -1,7 +1,7 @@
 ///<reference path="./d.ts" />
 
 module ft {
-    export type TreeElement = ITemplateView|Comment|HTMLElement|Text;
+    export type TreeElement = TemplateView|Comment|HTMLElement|Text;
     export type ExpressionValue = string|IExpression;
     export type ExpressionNameValue = string|IExpressionName;
 
@@ -48,15 +48,17 @@ module ft {
         createInstance(className:string, name:string, params?:any, mixin?:any):any;
     }
 
-    export interface ITemplateViewHelper {
-        //getIdMap():{[id:string]:ITemplateView}
+    /*
+    export interface TemplateViewHelper {
+        //getIdMap():{[id:string]:TemplateView}
         createTreeObject:IGetTreeObjectFunctor;
         enterTreeObject:IGetTreeObjectFunctor;
         exitTreeObject:IGetTreeObjectFunctor;
         setDataTreeObject:IGetTreeObjectFunctor;
-        updateDynamicTree(view:ITemplateView, group?:string):void;
+        updateDynamicTree(view:TemplateView, group?:string):void;
         dispatchTreeEventDown(e:ITreeEvent):void;
     }
+    */
 
     export interface IHtmlObject {
         type:string; // 'tag', 'text', 'comment'
@@ -71,7 +73,7 @@ module ft {
     export interface IExpressionManager {
         parse(value:string):IExpression;
         getExpressionName(value:IExpression):IExpressionName;
-        execute(value:IExpression, root:ITemplateView):any;
+        execute(value:IExpression, root:TemplateView):any;
     }
 
     export interface ITemplate {
@@ -83,7 +85,6 @@ module ft {
         expressionMap?:IExpressionMap;
         hasStates?:boolean;
         pathMap: {[path:string]:IDomDef};
-
 
         i18n?: any;
         styleMapByTheme?: {[name:string]:any};
@@ -115,7 +116,7 @@ module ft {
 
     export interface IExpressionName {
         name:string;
-        context?:ITemplateView;
+        context?:TemplateView;
     }
 
     export interface ISimpleExpression {
@@ -149,7 +150,8 @@ module ft {
     }
 
 
-    export interface ITemplateView extends fmvc.IView {
+    /*
+    export interface TemplateView extends fmvc.IView {
         domDef:IDomDef;
         localDomDef:IDomDef;
 
@@ -183,6 +185,7 @@ module ft {
         handleTreeEvent(e:ITreeEvent);
         dispatchTreeEvent(e:ITreeEvent);
     }
+    */
 
     export  interface IAttrPropertyMap {
         [propName:string]:ExpressionValue;
@@ -217,15 +220,15 @@ module ft {
     }
 
     export interface ITreeObjectFunctor {
-        (object:TreeElement, data:IDomDef, root:ITemplateView):any
+        (object:TreeElement, data:IDomDef, root:TemplateView):any
     }
 
     export interface IChildrenTreeObjectFunctor {
-        (object:TreeElement, parent:TreeElement, data:IDomDef, root:ITemplateView):any
+        (object:TreeElement, parent:TreeElement, data:IDomDef, root:TemplateView):any
     }
 
     export interface IGetTreeObjectFunctor {
-        (data:IDomDef, root:ITemplateView):TreeElement
+        (data:IDomDef, root:TemplateView):TreeElement
     }
 
     export  interface IGetElementFunctor {
