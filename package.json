@@ -1,7 +1,6 @@
 {
   "name": "fastmvc.js",
-  "version": "0.8.2",
-  "private": true,
+  "version": "0.9.0",
   "scripts": {
     "start": "node app.js"
   },
