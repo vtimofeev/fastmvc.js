@@ -10,7 +10,7 @@ module fmvc {
     }
 
     export interface IPromise {
-        then(onSuccess:Function, onReject:Function):IPromise;
+        then(onSuccess:Function, onReject?:Function):IPromise;
         catch(onRejects):IPromise;
     }
 
@@ -84,6 +84,10 @@ module fmvc {
             this.setData(value);
         }
 
+        public get count():number {
+            return (this.data && this.data instanceof Array)?(<any>this.data).length:-1;
+        }
+
         public get data():T {
             return this.getData();
         }
@@ -129,16 +133,21 @@ module fmvc {
                 this.applyChanges(value);
             }
             else {
-                if(_.isObject(value) && _.isObject(this._data)) this._changedData = <T>_.extend(this._changedData || _.extend({}, this._data), value);
-                else this._changedData = value;
+                if(_.isObject(value) && _.isObject(this._data))
+                    this._changedData = <T>_.extend(this._changedData || _.extend({}, this._data), value);
+                else
+                    this._changedData = value;
+
                 this.state = ModelState.Changed;
                 if(this.autoCommit) this.commit();
             }
         }
 
         protected applyChanges(changes:T|any):void {
-            if(_.isObject(changes) && _.isObject(this._data)) _.extend(this._data, changes);
-            else this._data = changes; // array, string, number, boolean
+            if(_.isObject(changes) && _.isObject(this._data))
+                _.extend(this._data, changes);
+            else
+                this._data = changes; // was array, string, number, boolean
 
             this.state = ModelState.Synced;
             this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
@@ -149,7 +158,7 @@ module fmvc {
                 var isValid = this.validate();
 
                 if(isValid) {
-                    return this.sync().then(this.applyChanges, this.syncErrorHandler);
+                    return this.sync().then(this.applyChanges).catch(this.syncErrorHandler);
                 }
                 return isValid;
             }

@@ -62,6 +62,13 @@ var fmvc;
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(Model.prototype, "count", {
+            get: function () {
+                return (this.data && this.data instanceof Array) ? this.data.length : -1;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Object.defineProperty(Model.prototype, "data", {
             get: function () {
                 return this.getData();
@@ -128,7 +135,7 @@ var fmvc;
             if (_.isObject(changes) && _.isObject(this._data))
                 _.extend(this._data, changes);
             else
-                this._data = changes; // array, string, number, boolean
+                this._data = changes; // was array, string, number, boolean
             this.state = fmvc.ModelState.Synced;
             this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
         };
@@ -136,7 +143,7 @@ var fmvc;
             if (this._changedData) {
                 var isValid = this.validate();
                 if (isValid) {
-                    return this.sync().then(this.applyChanges, this.syncErrorHandler);
+                    return this.sync().then(this.applyChanges).catch(this.syncErrorHandler);
                 }
                 return isValid;
             }
