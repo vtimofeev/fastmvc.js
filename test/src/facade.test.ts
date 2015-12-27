@@ -1,6 +1,6 @@
-///<reference path="../src/d.ts/mocha/mocha.d.ts" />
-///<reference path="../../DefinitelyTyped/chai/chai.d.ts" />
-///<reference path="../src/fmvc/d.ts" />
+///<reference path="../../src/d.ts/mocha/mocha.d.ts" />
+///<reference path="../../../DefinitelyTyped/chai/chai.d.ts" />
+///<reference path="../../src/fmvc/d.ts" />
 
 var expect = chai.expect;
 var assert = chai.assert;
@@ -62,30 +62,31 @@ describe('fmvc', function() {
     });
 
     describe('fmvc.Model', function() {
-        var m0 = new fmvc.Model(model0Name, model0Data, {enabledEvents: false, watchChanges: false});
-        var m0_1 = new fmvc.Model(model1Name, model0Data, {enabledEvents: true, watchChanges: true});
+        var m0 = new fmvc.Model(model0Name, model0Data, {enabledEvents: false});
+        var m0_1 = new fmvc.Model(model1Name, model0Data, {enabledEvents: true});
         var ma0 = new fmvc.Model(model0Name, model0ArrayData);
 
         it('should has basic properties (object)', function() {
-            assert(m0.data !== model0Data, 'data must not equal');
             assert(_.isEqual(m0.data, model0Data), 'is equal');
         });
 
-        it('should has no changes (object, changesWatch=false', function() {
+        it('should has no changes by model.setData(value)', function() {
             m0.setData(model1Data);
             assert(_.isEqual(m0.data, model1Data), 'is equal to the new data');
             assert(!m0.changes, 'has no changes cause it disabled');
         });
 
-        it('should has changes (object, changesWatch=true)', function() {
-            m0_1.setData(model1Data);
+        it('should has no changes by model.setChanges(value) with autoCommit', function() {
+            m0_1.setChanges(model1Data);
             assert(_.isEqual(m0_1.data, model1Data), 'is equal to the new data');
-            assert(m0_1.changes, 'has changes: ' + JSON.stringify(m0_1.changes));
+            assert(_.isEqual(m0_1.data, model0Data), 'is equal (rewrited)');
+
+            //@todo check with autocommit
         });
 
         it('should has no changes (array)', function() {
             assert(_.isEqual(ma0.data, model0ArrayData), 'equal array');
-            assert(ma0.data !== model0ArrayData, 'not same');
+            assert(ma0.data === model0ArrayData, 'are same');
             ma0.data = model1ArrayData;
             assert(!_.isEqual(ma0.data, model0ArrayData), 'not equal array');
             assert(!ma0.changes, 'has no changes');
@@ -114,6 +115,7 @@ describe('fmvc', function() {
             assert.deepEqual(cm.data, [2,3,4], 'arrays should be same');
             cm.setResultFunc((src)=>_.filter(src,(v:number)=>(v%2===0))).apply();
             assert.deepEqual(cm.data, [2,4], 'arrays should be same');
+            console.log('---', cm, cm.data);
             assert.equal(cm.count, 2, 'should contains 2 elements')
         });
 
