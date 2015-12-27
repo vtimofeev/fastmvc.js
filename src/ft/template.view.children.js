@@ -9,7 +9,7 @@ var ft;
     var TemplateChildrenView = (function (_super) {
         __extends(TemplateChildrenView, _super);
         function TemplateChildrenView(name, params) {
-            _super.call(this, name, params, { domTree: {} });
+            _super.call(this, name, params);
         }
         TemplateChildrenView.prototype.createChildren = function () {
             var def = this.domDef;

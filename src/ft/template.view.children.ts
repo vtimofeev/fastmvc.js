@@ -7,7 +7,7 @@ module ft {
         protected childrenLocalParams:any;
 
         constructor(name:string, params:TemplateViewParams) {
-            super(name, params, {domTree: {}});
+            super(name, params);
         }
 
         private createChildren():void {
@@ -46,7 +46,7 @@ module ft {
         }
 
 
-        protected setCurrentChildToExecutionContext(child:TemplateView, index:number, length:number, context:TemplateView):void {
+        protected setCurrentChildToExecutionContext(child:TemplateView, index:number, length:number, context:any):void {
             context.child = child;
             context.childIndex = index;
             context.childrenLength = length;

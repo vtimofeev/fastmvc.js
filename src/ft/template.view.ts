@@ -568,7 +568,7 @@ module ft {
         ////////////////////////////////////////////////////////////////
 
         protected stateHandlers(value:string[]) {
-            if (_.isString(value)) value = value.split(',');
+            if (typeof value === 'string') value = value.split(',');
 
             var stateHandlers = {
                 hover: {

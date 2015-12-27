@@ -526,7 +526,7 @@ var ft;
         ////////////////////////////////////////////////////////////////
         TemplateView.prototype.stateHandlers = function (value) {
             var _this = this;
-            if (_.isString(value))
+            if (typeof value === 'string')
                 value = value.split(',');
             var stateHandlers = {
                 hover: {

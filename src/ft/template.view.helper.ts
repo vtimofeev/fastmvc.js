@@ -577,7 +577,7 @@ module ft {
                 e.cancelled = !!e.executionHandlersCount && e.name === 'click';
 
                 // exec parent next domDef to root
-                e.currentDef = def.parentPath ? view.parent.getTemplate().pathMap[def.parentPath] : null;
+                e.currentDef = def.parentPath ? (<TemplateView>view.parent).getTemplate().pathMap[def.parentPath] : null;
                 if (!e.cancelled && e.currentDef) this.dispatchTreeEventDown(e);
             }
         }

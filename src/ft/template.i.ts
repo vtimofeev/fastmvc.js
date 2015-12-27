@@ -4,15 +4,14 @@ module ft {
     export type TreeElement = TemplateView|Comment|HTMLElement|Text;
     export type ExpressionValue = string|IExpression;
     export type ExpressionNameValue = string|IExpressionName;
+    export type TemplateViewParams = any[];
 
 
 
 
     // Params of dom element or component
 
-
-
-    export var TemplateParams = {
+        export var TemplateParams = {
         ln:'ln', // create public field in TemplateView that has name as value
         states:'states', // state when object is created, '{state.selected}'
         setStates:'setStates', // View, 'selected,focused,disabled,hover,draggable,counter' or 'selected=true,focused=false,disabled=true,counter={data.counter},modelCounter={app.counter.data}'
