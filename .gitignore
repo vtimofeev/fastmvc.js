@@ -1,2 +1,8 @@
+/build
+/tmp
 /.idea
 node*
+/src/ft/**/*.js
+/src/fmvc/**/*.js
+/src/ui/**/*.js
+
