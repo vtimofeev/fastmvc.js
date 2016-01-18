@@ -4,13 +4,11 @@ module todo {
             super(name, root, theme, locale, i18nDict);
         }
 
-
         public initModels() {
             var itemsData = [{title: 'First', done: false}, {title: 'Second', done: true}];
             var items = new fmvc.Model('items', itemsData.map((v, k)=>new fmvc.Model('item-' + k, v)) );
             this.register(items);
         }
-
 
         public initMediators() {
             return super.initMediators();

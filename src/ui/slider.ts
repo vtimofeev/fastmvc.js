@@ -2,7 +2,7 @@
 ///<reference path="../../src/ft/d.ts" />
 
 
-module ui {
+module ui.def {
     export function validateMaxMin(value:number, min:number, max:number) {
         return value < min ? min : value > max ? max : value;
     }
@@ -32,7 +32,7 @@ module ui {
             prepareChanges: function prepareChanges(e:fmvc.IEvent) {
                 var newX = e.data.clientX,
                     result = (newX - this.startX) / this.startSize,
-                    preValue = ui.validateMaxMin(this.startValue + result, 0, 1); // auto invalidate
+                    preValue = ui.def.validateMaxMin(this.startValue + result, 0, 1); // auto invalidate
 
                 this.value = validateStep(preValue, 0.1);
 

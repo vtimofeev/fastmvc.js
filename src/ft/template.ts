@@ -9,6 +9,7 @@ module ft {
         dynamicTree:IDynamicTree;
         styleMapByTheme:{[name:string]:any};
         expressionMap:IExpressionMap;
+        pathMap: {[path:string]:IDomDef};
 
         constructor() {
         }

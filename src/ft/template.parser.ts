@@ -1,5 +1,8 @@
 ///<reference path="./d.ts" />
 declare var Tautologistics:any;
+///<reference path='../../../DefinitelyTyped/lodash/lodash.d.ts'/>
+
+
 
 module ft {
     var htmlparser:any = Tautologistics.NodeHtmlParser;
@@ -9,7 +12,6 @@ module ft {
     export class TemplateParser implements ITemplateParser {
         private _htmlparserHandler:any;
         private _htmlParser:any;
-
 
 
         private _skipProperties:string[] = ['raw'];
@@ -184,7 +186,7 @@ module ft {
         }
 
         // Парсим строку с выражением
-        parseExpressionValue(value:any, map:any, path:string, group:string, key:string, keyProperty:string):IExpression {
+        parseExpressionValue(value:any, map:any, path:string, group:string, key:string, keyProperty:string = null):IExpression {
             var ex = expression.strToExpression(value);
 
             var expressionNameObj:IExpressionName = ex?expression.getExpressionNameObject(ex):null;

@@ -95,10 +95,11 @@ module ft {
         }
 
         private parseContextValue(value:any, ex:IExpression|string, classes:boolean):any {
+            console.log('Parse context value: ', value, ex, classes);
             if(classes) {
                     if(!!value) {
                         if(value === true) {
-                            if (typeof ex === 'string') ex.split('.')[1];
+                            if (typeof ex === 'string') return ex.split('.')[1];
                             else throw 'Incorrect type at parseContextValue with classes true';
                         } else {
                             return value;

@@ -1,4 +1,6 @@
 ///<reference path='./d.ts'/>
+
+
 module fmvc {
     export interface IModelOptions {
         enabledState?:boolean;
@@ -134,7 +136,7 @@ module fmvc {
             }
             else {
                 if(_.isObject(value) && _.isObject(this._data))
-                    this._changedData = <T>_.extend(this._changedData || _.extend({}, this._data), value);
+                    this._changedData = <T>_.extend(this._changedData || {}/*_.extend({}, this._dat)a*/, value);
                 else
                     this._changedData = value;
 
@@ -150,30 +152,65 @@ module fmvc {
                 this._data = changes; // was array, string, number, boolean
 
             this.state = ModelState.Synced;
-            this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
+            this.sendEvent(fmvc.Event.Model.Changed, this._data, changes);
+        }
+
+        public get(opts?:any):IPromise {
+            this.state = ModelState.Syncing;
+            return this.getImpl(opts);
+        }
+
+        public delete():IPromise {
+            this.state = ModelState.Syncing;
+            return this.deleteImpl();
+        }
+
+        protected deleteImpl():IPromise {
+            var p = new Promise();
+            p.then(this.dispose, this.remoteErrorHandler);
+            p.resolve(null);
+            return p;
+        }
+
+        protected getImpl(opts:any):IPromise {
+            // must be overrided
+            var p = new Promise();
+            p.then(this.getHandler, this.remoteErrorHandler);
+            p.resolve({});
+            return p;
+        }
+
+        protected getHandler(data:any|T) {
+            this.state = ModelState.Synced;
+            this.setData(data);
+        }
+
+        protected remoteErrorHandler() {
+            this.state = ModelState.Error;
         }
 
         public commit():boolean|IPromise {
             if(this._changedData) {
                 var isValid = this.validate();
-
                 if(isValid) {
-                    return this.sync().then(this.applyChanges).catch(this.syncErrorHandler);
+                    return this.sync();
                 }
                 return isValid;
             }
-
             return true;
-
         }
 
-        protected sync():IPromise {
+        protected sync(opts?:any):IPromise {
             this.state = ModelState.Syncing;
-            return this.syncImpl();
+            var p = this.syncImpl(opts);
+            p.then(this.applyChanges).catch(this.remoteErrorHandler);
+            return p;
         }
 
-        protected syncImpl():IPromise {
-            return null;
+        protected syncImpl(opts?:any):IPromise {
+            var p = new Promise();
+            p.resolve(this.changes);
+            return p;
         }
 
         protected syncErrorHandler() {
