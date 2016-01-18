@@ -7,12 +7,23 @@ var gulp = require('gulp'), // Сообственно Gulp JS
     imagemin = require('gulp-imagemin'), // Минификация изображений
     filter = require('gulp-filter'), // Фильтр
     uglify = require('gulp-uglify'), // Минификация JS
+    clean = require('gulp-clean'), // Очистка
     rename = require('gulp-rename'), // Переименование
     concat = require('gulp-concat'), // Склейка файлов
     mocha = require('gulp-mocha'); // Тесты
 
 
-gulp.task('clean.ui.js', function () {
+gulp.task('clean.ui', function () {
+    return gulp.src([
+            './src/app/**/*.js*',
+            './src/ui/**/*.js*',
+            './src/fmvc/**/*.js*',
+            './src/ft/**/*.js*',
+            './src/stylus/**/*.css',
+            './test/src/**/*.js*'
+            ], {read: false})
+                .pipe(clean());
+});
 
 gulp.task('build.ui.js', function () {
     return gulp.src(['./src/ui/**/*.js', '!./src/ui/build.js'])

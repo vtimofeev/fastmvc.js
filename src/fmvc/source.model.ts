@@ -14,7 +14,6 @@ module fmvc {
         private _resultFuncs:any[];
         private throttleApplyChanges:Function;
 
-
         constructor(name:string, source:any[], opts?:IModelOptions) {
             super(name, null, opts);
             this.throttleApplyChanges = _.throttle(_.bind(this.apply, this), 100, {leading:false});

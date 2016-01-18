@@ -18,8 +18,16 @@ module ft {
             _.bindAll(this, 'createClass', 'createInstance');
         }
 
-        public loadDefs(value):void {
-            value.forEach((v)=>this.createClass(v.className, v.content, v.params, v.mixin), this);
+        public load(value):void {
+            if (_.isArray(value)) {
+                value.forEach((v)=>this.createClass(v.className, v.content, v.params, v.mixin), this);
+            }
+            else if (_.isObject(value)) {
+                this.createClass(value.className, value.content, value.params, value.mixin);
+            }
+            else {
+                throw 'TemplateManager:load unsupported argument ' + value;
+            }
         }
 
 
@@ -35,6 +43,7 @@ module ft {
          */
         public createClass(className:string, content:string, params:any, mixin:any):ITemplateConstructor {
             var templateData:ITemplate = this.parse(content);
+            console.log('Add ', className, content);
 
             if (this._templateMap[className]) throw 'TemplateManager: cant add ITempalte object of ' + className + ' cause it exists.';
             this._templateMap[className] = templateData;
@@ -74,7 +83,7 @@ module ft {
                     var instanceMixin:any = _.extend({}, baseMixin, mixin); // extend methods
                     var instance = new ft.TemplateView(name, instanceParams, template);
                     //console.log('CreateInstance base (p),(m) local (p),(m) instance p,m ', name, baseParams, baseMixin, params, mixin, instanceParams, instanceMixin);
-                    _.each(instanceMixin, (v, k)=>instance[k]=v);
+                    _.each(instanceMixin, (v, k)=>instance[k] = v);
 
                     return instance;
                 };
@@ -94,5 +103,5 @@ module ft {
     export var templateManager = new TemplateManager();
     export var createClass = templateManager.createClass;
     export var createInstance = templateManager.createInstance;
-    export var loadDefs = templateManager.loadDefs;
+    export var load = templateManager.load;
 }
