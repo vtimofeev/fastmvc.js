@@ -7,7 +7,7 @@ module fmvc {
    };
 
 
-   export class RepoModel<T extends fmvc.Model<any>> extends fmvc.Model<T> {
+   export class ModelStorage<T extends fmvc.Model<any>> extends fmvc.Model<T> {
        private modelClass:any;
        private modelData:any;
        private throttleGet:any;
@@ -18,13 +18,13 @@ module fmvc {
            this.throttleGet = _.throttle(_.bind(this.getImpl, this), 100, {leading:false});
        }
 
-       setRepoModel(modelClass:any, defaultData:any):void {
+       setBaseModel(modelClass:any, defaultData:any):void {
            this.modelClass = modelClass;
            this.modelData = defaultData;
        }
 
-       protected ModelClass():Function {
-           return this.modelClass;
+       protected getBaseModelInstance():T {
+           return new (this.modelClass)(this.name + '_instance_' + this.count, this.modelData);
        }
 
        protected getModelDefaultData():any {
@@ -36,8 +36,7 @@ module fmvc {
        }
 
        protected createById(id:string):T {
-           var data = _.extend({id: id}, this.getModelDefaultData());
-           var instance:T = <T>(new this.ModelClass(this.name + '_instance_' + this.count, data));
+           var instance:T = this.getBaseModelInstance();
            this.data[id] = instance;
            instance.get({id: id});
            return instance;
