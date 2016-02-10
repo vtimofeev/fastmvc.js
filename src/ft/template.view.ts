@@ -9,7 +9,6 @@ module ft {
     var dispatcher = new ft.EventDispatcher(templateHelper);
     var timers = {createDom: 0, enter: 0, setData: 0, validate: 0};
 
-
     var LifeState = {
         Init: 'init',
         Create: 'create',
@@ -26,6 +25,7 @@ module ft {
         Disabled: 'disabled',
         Value: 'value',
         Custom: 'custom',
+        Type: 'type',
         Base: 'base',
         Life: 'life',
         CreateTime: 'createTime'
@@ -52,7 +52,7 @@ module ft {
         App: 'app',
         Data: 'data',
         State: 'state'
-    }
+    };
 
     export var counters = {
         expression: 0,
@@ -139,7 +139,7 @@ module ft {
         }
 
         get localDomDef():IDomDef {
-            return this.getTemplate().domTree;
+            return this.getTemplate()?this.getTemplate().domTree:null;
         }
 
         set i18n(value:any) {
@@ -203,6 +203,15 @@ module ft {
 
         set base(value:string) {
             this.setState(State.Base, value);
+        }
+
+        // Состояние отвечающее за тип ( обычно ui компонента, например кнопка )
+        get type():any {
+            return this.getState(State.Type);
+        }
+
+        set type(value:any) {
+            this.setState(State.Type, value);
         }
 
         // Состояние отвечающее за значение
@@ -301,7 +310,6 @@ module ft {
                 case TmplDict.ln: // link
                     break;
 
-
                 case TemplateParams.stateHandlers:
                     this.stateHandlers(_.isString(value) ? (value.split(',')) : value); //@todo move to parser
                     break;
@@ -316,7 +324,7 @@ module ft {
                     }
                     else if (key.indexOf(TmplDict.stateDot) === 0) {
                         var state = key.substr(6);
-                        this.setState(state, this.getParameterValue(value, state, this));
+                        this.setState(state, this.getParameterValue(value, state));
                     }
                     else if (key.indexOf(TmplDict.on) === 0) { // handlers, set handler
                         var t = this;
@@ -330,7 +338,7 @@ module ft {
                             this[key](value);
                         }
                         else {
-                            this[key] = this.getParameterValue(value, key, this); //@todo check value type of states (boolean,number,...etc)
+                            this[key] = this.getParameterValue(value, key); //@todo check value type of states (boolean,number,...etc)
                         }
                     }
                     else {
@@ -519,14 +527,14 @@ module ft {
         public validate():void {
             // console.log('Validate try ', this.name);
             if (!this.inDocument) return;
-            // console.log('Validate ', this.name, this._dynamicPropertiesMap);
+            console.log('Validate ', this.name, this);
 
 
             var start = getTime();
 
             if (!_.isEmpty(this._dynamicPropertiesMap)) _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
             this._dynamicPropertiesMap = {};
-            if (this._template.hasStates) templateHelper.validateTree(this._template.domTree, this);// templateHelper.createTreeObject(this._template.domTree, this);
+            if (this._template && this._template.hasStates) templateHelper.validateTree(this._template.domTree, this);// templateHelper.createTreeObject(this._template.domTree, this);
             //console.log('Validate ...', this.name, this._invalidate);
             super.validate();
 

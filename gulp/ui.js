@@ -27,16 +27,15 @@ gulp.task('clean.ui', function () {
 
 gulp.task('build.ui.js', function () {
     return gulp.src(['./src/ui/**/*.js', '!./src/ui/build.js'])
-        .pipe(concat('build.js'))
-        .pipe(gulp.dest('./build/ui'));
-
+        .pipe(concat('ui.js'))
+        .pipe(gulp.dest('./build'));
 });
 
 gulp.task('build.ui.stylus', function () {
     return gulp.src('./src/stylus/default.styl')
         .pipe(stylus({use: nib()}))
-        .pipe(rename('build.css'))
-        .pipe(gulp.dest('./build/stylus'));
+        .pipe(rename('styles.css'))
+        .pipe(gulp.dest('./build'));
 });
 
 gulp.task('watch.ui.stylus', function() {

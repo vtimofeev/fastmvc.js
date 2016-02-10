@@ -3,26 +3,22 @@
 
 module fmvc {
     export interface IModelOptions {
-        enabledState?:boolean;
-        enabledEvents?:boolean;
-        history?:boolean;
-
-        enabledChanges?:boolean;
-        changes_autoCommit?:boolean;
+        type?:string // типы хранилища StorageModelType, например по ключу (key) или массив элементов (array)
+        state?:boolean;
+        event?:boolean;
+        validate?:boolean;
+        remote?:boolean; // удаленная модель, требует сохранения
     }
 
     export interface IPromise {
         then(onSuccess:Function, onReject?:Function):IPromise;
-        catch(onRejects):IPromise;
+        catch(onRejects:Function):IPromise;
     }
 
 
     export var ModelState = {
         None: 'none',
-        New: 'new',
-        Parsing: 'parsing', // parsing from source
-        Parsed: 'parsed',
-        Syncing: 'syncing', // load from local/remote source
+        Syncing: 'syncing',
         Synced: 'synced',
         Changed: 'changed',
         Error: 'error',
@@ -36,58 +32,64 @@ module fmvc {
         Add: 'add',
     };
 
-    export class Model<T> extends fmvc.Notifier implements IModelOptions {
-        // data, state, prevState
+
+    export class Model<T> extends Notifier {
         private _data:T;
-        private _changes:any;
         private _changedData:T;
         private _invalid:{[name:string]:string[]}; // object only
-
-        private _currentTask:IPromise;
 
         private _state:string;
         private _prevState:string;
 
-
         // model options
-        public enabledEvents:boolean = true;
-        public enabledState:boolean = true;
-        public enableValidate:boolean  = false;
-        public enableCommit:boolean = false; // re,validate & sync changes
-        public autoCommit:boolean = false; //
+        protected opts:IModelOptions = {
+            event: true,
+            state: true,
+            validate: false,
+            remote: false
+        };
 
-        public history:boolean = false;
 
         constructor(name:string, data:any = null, opts?:IModelOptions) {
             super(name, TYPE_MODEL);
-            if (opts) _.extend(this, opts);
-            if (data) {
-                this.setData(data);
-                this.setState(ModelState.New);
-            }
+            opts && _.extend(this.opts, opts);
+            data && this.setData(data);
         }
 
         public reset():Model<T> {
             this._data = null;
-            this._changes = null;
             this._state = ModelState.None;
             this.sendEvent(Event.Model.Changed);
             return this;
         }
 
-        /*
-         * Data layer
-         */
-        public get d():T {
-            return this.getData();
+        /** states */
+        public get state():string {
+            return this._state;
+        }
+        public get prevState():string {
+            return this._prevState;
+        }
+        public set state(value:string) {
+            this.setState(value);
+        }
+        public setState(value:string):Model<T> {
+            if (!this.opts.state || this._state === value) return this;
+            this._prevState = value;
+            this._state = value;
+            this.sendEvent(Event.Model.StateChanged, this._state);
+            return this;
         }
 
-        public set d(value:T) {
-            this.setData(value);
-        }
 
+        /** data layer */
         public get count():number {
-            return (this.data && this.data instanceof Array)?(<any>this.data).length:-1;
+            return (this.data && this.data instanceof Array) ? (<any>this.data).length : -1;
+        }
+
+
+        public get length():number {
+            return _.isArray(this.data) ? (<any>this.data).length : -1;
         }
 
         public get data():T {
@@ -117,11 +119,11 @@ module fmvc {
         public setData(value:T):void {
             if (this._data === value || this.disposed) return;
             this._data = value;
-            this.sendEvent(fmvc.Event.Model.Changed, this._data, this._changes);
+            this.sendEvent(Event.Model.Changed, this._data);
         }
 
-        public get changes():any {
-            return this._changes;
+        public get changes():T|any {
+            return this._changedData;
         }
 
         public set changes(value:T|any) {
@@ -131,52 +133,59 @@ module fmvc {
         public setChanges(value:T|any):void {
             if (this._data === value || this.disposed) return;
 
-            if (!this.enableCommit) {
-                this.applyChanges(value);
+            if (!this.opts.remote) {
+                this._changedData = value;
+                this.applyChanges();
             }
             else {
-                if(_.isObject(value) && _.isObject(this._data))
-                    this._changedData = <T>_.extend(this._changedData || {}/*_.extend({}, this._dat)a*/, value);
+                if (_.isObject(value) && _.isObject(this._data))
+                    this._changedData = <T>_.extend(this._changedData || {}, value);
                 else
                     this._changedData = value;
 
                 this.state = ModelState.Changed;
-                if(this.autoCommit) this.commit();
             }
         }
 
-        protected applyChanges(changes:T|any):void {
-            if(_.isObject(changes) && _.isObject(this._data))
+        protected applyChanges():void {
+            var changes = this._changedData;
+
+
+            if (_.isObject(changes) && _.isObject(this._data))
                 _.extend(this._data, changes);
             else
                 this._data = changes; // was array, string, number, boolean
 
+
+            this._changedData = null;
             this.state = ModelState.Synced;
-            this.sendEvent(fmvc.Event.Model.Changed, this._data, changes);
+            this.sendEvent(Event.Model.Changed, this._data, changes);
         }
 
         public get(opts?:any):IPromise {
             this.state = ModelState.Syncing;
-            return this.getImpl(opts);
+            var p = this.getImpl(opts);
+            p.then(this.getHandler).catch(this.remoteErrorHandler);
+            return p;
+        }
+
+        protected validate():boolean {
+            return false;
+        }
+
+        public save(opts?:IModelOptions):IPromise {
+            if((this.opts.validate || opts.validate) && !this.validate()) return null;
+
+            this.state = ModelState.Syncing;
+            var p = this.saveImpl(opts);
+            p.then(this.applyChanges).catch(this.remoteErrorHandler);
+            return p;
         }
 
         public delete():IPromise {
             this.state = ModelState.Syncing;
-            return this.deleteImpl();
-        }
-
-        protected deleteImpl():IPromise {
-            var p = new Promise();
-            p.then(this.dispose, this.remoteErrorHandler);
-            p.resolve(null);
-            return p;
-        }
-
-        protected getImpl(opts:any):IPromise {
-            // must be overrided
-            var p = new Promise();
-            p.then(this.getHandler, this.remoteErrorHandler);
-            p.resolve({});
+            var p = this.deleteImpl();
+            p.then(this.dispose).catch(this.remoteErrorHandler);
             return p;
         }
 
@@ -189,112 +198,29 @@ module fmvc {
             this.state = ModelState.Error;
         }
 
-        public commit():boolean|IPromise {
-            if(this._changedData) {
-                var isValid = this.validate();
-                if(isValid) {
-                    return this.sync();
-                }
-                return isValid;
-            }
-            return true;
+        protected deleteImpl():IPromise {
+            return null;
         }
 
-        protected sync(opts?:any):IPromise {
-            this.state = ModelState.Syncing;
-            var p = this.syncImpl(opts);
-            p.then(this.applyChanges).catch(this.remoteErrorHandler);
-            return p;
+        protected saveImpl(opts?:any):IPromise {
+            return null;
         }
 
-        protected syncImpl(opts?:any):IPromise {
-            var p = new Promise();
-            p.resolve(this.changes);
-            return p;
-        }
-
-        protected syncErrorHandler() {
-            this.state = ModelState.Error;
-        }
-
-        protected validate():boolean {
-
-            return false;
-        }
-
-
-        /*
-        public parseValueAndSetChanges(value:T):any {
-            if (value instanceof Model) throw Error('Cant set model data, data must be object, array or primitive');
-            var result = null;
-            var prevData = _.clone(this._data);
-            var changes:{[id:string]:any} = null;
-            var hasChanges:boolean = false;
-
-            if (_.isArray(value)) {
-                result = (<any>value).concat([]); //clone of array
-            }
-            else if (this.changesWatch && _.isObject(prevData) && _.isObject(value)) {
-                // check changes and set auto data
-                for (var i in value) {
-                    if (prevData[i] !== value[i]) {
-                        if (!changes) changes = {};
-                        hasChanges = true;
-                        changes[i] = value[i];
-                        prevData[i] = value[i];
-                    }
-                }
-                this._changes = value;
-                result = prevData;
-            }
-            else {
-                result = (_.isObject(value)) ? _.extend((prevData ? prevData : {}), value) : value; // primitive || array || object && !watchChanges , no data && any value (object etc)
-            }
-            return result;
-        }
-        */
-
-
-        /*
-         *   Internal state layer
-         */
-        public get state():string {
-            return this._state;
-        }
-
-        public get prevState():string {
-            return this._prevState;
-        }
-
-        public set state(value:string) {
-            this.setState(value);
-        }
-
-        public setState(value:string):Model<T> {
-            if (!this.enabledState || this._state === value) return this;
-            this._prevState = value;
-            this._state = value;
-            this.sendEvent(fmvc.Event.Model.StateChanged, this._state);
-            return this;
-        }
-
-        public get length():number {
-            return _.isArray(this.data) ? (<any>this.data).length : -1;
+        protected getImpl(opts:any):IPromise {
+            return null;
         }
 
         public sendEvent(name:string, data:any = null, changes:any = null, sub:string = null, error:any = null):void {
-            if (this.enabledEvents) super.sendEvent(name, data, changes, sub, error);
+            if (this.opts.event) super.sendEvent(name, data, changes, sub, error);
         }
 
         public dispose():void {
             this.sendEvent(Event.Model.Disposed);
+            this._changedData = null;
             this._data = null;
             super.dispose();
         }
 
-        //-----------------------------------------------------------------------------
-        // Queue
-        //-----------------------------------------------------------------------------
     }
 
 

@@ -1,16 +1,11 @@
 ///<reference path='./d.ts'/>
 
 module fmvc {
-   var RepoModelType = {
-       Id: 'id',
-       Sorted: 'sorted'
-   };
 
-
-   export class ModelStorage<T extends fmvc.Model<any>> extends fmvc.Model<T> {
-       private modelClass:any;
-       private modelData:any;
-       private throttleGet:any;
+   export class KeyStorageModel<T extends fmvc.Model<any>> extends fmvc.Model<T> {
+       protected modelClass:any;
+       protected modelData:any;
+       protected throttleGet:any;
 
        constructor(name:string, data:any, opts?:IModelOptions) {
            super(name, data || {}, opts);
@@ -18,17 +13,13 @@ module fmvc {
            this.throttleGet = _.throttle(_.bind(this.getImpl, this), 100, {leading:false});
        }
 
-       setBaseModel(modelClass:any, defaultData:any):void {
+       setChildModel(modelClass:any, defaultData:any):void {
            this.modelClass = modelClass;
            this.modelData = defaultData;
        }
 
        protected getBaseModelInstance():T {
            return new (this.modelClass)(this.name + '_instance_' + this.count, this.modelData);
-       }
-
-       protected getModelDefaultData():any {
-           return this.modelData || null;
        }
 
        getById(id:string):T {
@@ -41,22 +32,27 @@ module fmvc {
            instance.get({id: id});
            return instance;
        }
+    }
 
-       protected getImpl():IPromise {
-           return null;
-       }
+    export class ArrayStorageModel<T extends fmvc.Model<any>> extends fmvc.Model<T> {
+        private modelClass:any;
+        private modelData:any;
+        private throttleGet:any;
 
-       mgetBySortedField(field:string, sortDirection:string, fromIndex:any, toIndex:any):T[] {
-           return null;
-       }
+        constructor(name:string, data:any, opts?:IModelOptions) {
+            super(name, data || [], opts);
+            this.state = ModelState.None;
+            this.throttleGet = _.throttle(_.bind(this.getImpl, this), 100, {leading:false});
+        }
 
-       protected mgetBySortedFieldImpl():IPromise {
-           return null;
-       }
+        setChildModel(modelClass:any, defaultData:any):ArrayStorageModel<T> {
+            this.modelClass = modelClass;
+            this.modelData = defaultData;
+            return this;
+        }
 
-
-
-
-
+        protected getBaseModelInstance():T {
+            return new (this.modelClass)(this.name + '_instance_' + this.count, this.modelData);
+        }
     }
 }

@@ -48,7 +48,7 @@ module fmvc {
             return this._name;
         }
 
-        constructor(name:string, type:string, root:Element) {
+        constructor(name:string, type?:string, root?:Element) {
             this._name = name; // Уникальное имя приложения
             this._type = type; // Тип приложения
             this._root = root; // Контейнер приложения

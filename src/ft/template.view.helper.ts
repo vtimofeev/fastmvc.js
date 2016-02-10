@@ -211,7 +211,7 @@ module ft {
 
         createChildrenView(object:TreeElement, data:IDomDef, root:TemplateView):TreeElement {
             if (this.hasChildrenDef(data)) {
-                var childrenView = new TemplateChildrenView(root.name + ':ChildView-' + this.getNextId(), this.applyFirstContextToExpressionParameters(root.getParameters(), root));
+                var childrenView = new TemplateChildrenView(root.name + ':ChildView-' + this.getNextId(), this.applyFirstContextToExpressionParameters(root.getParameters(), root), {});
                 childrenView.domDef = data;
                 childrenView.parent = root;
                 childrenView.setElement(this.getDomElement(object));

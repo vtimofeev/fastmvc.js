@@ -58,7 +58,7 @@ module fmvc {
             }
 
             // send event
-            if(this.enabledEvents) this.sendEvent('log', data, null, null);
+            if(this.opts.event) this.sendEvent('log', data, null, null);
             return this;
         }
     }

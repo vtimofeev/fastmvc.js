@@ -1,11 +1,12 @@
 /build
 /tmp
 /.idea
+/typings
 node*
-/src/ft/**/*.js
-/src/fmvc/**/*.js
-/src/ui/**/*.js
+/src/ft/**/*.js*
+/src/fmvc/**/*.js*
+/src/ui/**/*.js*
 /src/stylus/**/*.css
-/test/src/**/*.js
+/test/src/**/*.js*
 
 

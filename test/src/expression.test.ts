@@ -7,6 +7,7 @@ var expect = chai.expect;
 var assert = <chai.Assert> chai.assert;
 var expression = new ft.Expression();
 
+
 var expressionContext = {
     data: {
         name: 'Vasily',

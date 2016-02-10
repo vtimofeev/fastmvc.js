@@ -1,7 +1,7 @@
 ///<reference path='../fmvc/d.ts'/>
 
 module fmvc {
-    export var DefaultModel = {
+    export var ModelName = {
         locale: 'locale',
         i18n: 'i18n',
         theme:'theme',
@@ -10,17 +10,17 @@ module fmvc {
 
 
     export class AppFacade extends Facade {
-        constructor(name:string, root:Element, theme:string = '', locale:string = 'ru', i18nDict:any = {}){
-            super(name,root);
+        constructor(name:string, root:Element, type:string = '', theme:string = '', locale:string = 'ru', i18nDict:any = {}){
+            super(name,type, root);
 
             // Модель локали, содержит строку указывающую на локализацию
-            var localeModel:Model<any> = new Model<any>(DefaultModel.locale, {value: locale});
+            var localeModel:Model<string> = new Model<string>(ModelName.locale, locale);
             // Модель темы, содержит строку указывающую на тему
-            var themeModel:Model<any> = new Model<any>(DefaultModel.theme, {value: theme});
+            var themeModel:Model<any> = new Model<any>(ModelName.theme, {value: theme});
             // Объект содержащий глобальные данные i18n
-            var i18nModel:Model<any> = new Model<any>(DefaultModel.i18n, i18nDict);
+            var i18nModel:Model<any> = new Model<any>(ModelName.i18n, i18nDict);
             // Добавляем модели по умолчанию в фасад
-            this.register([localeModel, i18nModel, themeModel]);
+            this.register(localeModel, i18nModel, themeModel);
         }
 
         init() {
@@ -28,17 +28,17 @@ module fmvc {
 
         // Текущее значение локали
         public get locale():string {
-            return this.model[DefaultModel.locale].data.value;
+            return this.model[ModelName.locale].data.value;
         }
 
         // Текущее значение темы
         public get theme():string {
-            return this.model[DefaultModel.locale].data.value;
+            return this.model[ModelName.locale].data.value;
         }
 
         // i18n
         public get i18n():any {
-            return this.model[DefaultModel.i18n].data;
+            return this.model[ModelName.i18n].data;
         }
 
     }

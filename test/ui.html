@@ -2,9 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>FT: expressions test</title>
+    <title>FT: ui test</title>
     <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
-    <link rel="stylesheet" href="../build/stylus/build.css">
+    <link rel="stylesheet" href="../build/styles.css">
+    <style>
+        body {
+            margin: 50px;
+        }
+    </style>
 </head>
 <body>
 
@@ -18,10 +23,14 @@
 <script src="../node_modules/mocha/mocha.js"></script>
 <script src="../node_modules/chai/chai.js"></script>
 
+<!-- Contrib !-->
+<script src="../src/contrib/messageformat.js"></script>
+<script src="../src/contrib/underscore.js"></script>
+<script src="../src/contrib/htmlparser.js"></script>
+
 <!-- Src !-->
-<script src="../build/contrib.build.js"></script>
-<script src="../build/ft.dev.js"></script>
-<script src="../build/ui/build.js"></script>
+<script src="../build/ft.js"></script>
+<script src="../build/ui.js"></script>
 
 <!-- Bdd !-->
 <script>mocha.setup('bdd')</script>

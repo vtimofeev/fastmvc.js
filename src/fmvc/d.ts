@@ -1,7 +1,4 @@
-///<reference path='../../../DefinitelyTyped/lodash/lodash.d.ts'/>
-///<reference path='../../../DefinitelyTyped/jquery/jquery.d.ts'/>
-///<reference path='../../../DefinitelyTyped/bluebird/bluebird.d.ts'/>
-
+///<reference path='../../typings/tsd.d.ts'/>
 
 ///<reference path='./event.ts'/>
 ///<reference path='./facade.ts'/>
@@ -10,7 +7,7 @@
 ///<reference path='./model.ts'/>
 
 ///<reference path='./source.model.ts'/>
-///<reference path='./repo.model.ts'/>
+///<reference path='./storage.model.ts'/>
 
 ///<reference path='./logger.ts'/>
 

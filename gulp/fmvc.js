@@ -22,7 +22,7 @@ var Env = {Prod: 'prod', Dev: 'dev'};
 var project = {
     name: 'fmvc',
     env: argv.e || 'prod',
-    version: '0.9.2',
+    version: '0.9.3',
     paths: {
         fmvcSrc: ['./src/fmvc/*.ts'],
         ftSrc: ['./src/ft/**/*.ts'] // fast templates
@@ -35,9 +35,11 @@ function buildTsSources(name, src) {
         .src(src)
         .pipe(debug({title: 'unicorn:'}))
         .pipe(tsc({
+            tscSearch: ['shell'],
             module: 'commonjs',
             target: 'es5',
             out: name + (project.env === Env.Prod ? '' : '.' + project.env) + '.js',
+            //noLib: true,
             emitError: false,
             declaration: true,
             sourceMap: false
@@ -65,9 +67,9 @@ gulp.task('build.ft.ui', function () {
     return null;
 });
 
-var buildTasks = ['build.fmvc', 'build.ft'];
+var buildTasks = [/*'build.fmvc',*/ 'build.ft'];
 gulp.task('watch', function () {
-    return gulp.watch('./src/fmvc/*.ts', {interval: 2000}, buildTasks);
+    return gulp.watch(['./src/fmvc/*.ts','./src/ft/*.ts'], {interval: 2000}, buildTasks);
 });
 
 

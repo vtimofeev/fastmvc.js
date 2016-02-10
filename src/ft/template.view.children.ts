@@ -6,8 +6,8 @@ module ft {
         private _children:TemplateView[]; // active children array
         protected childrenLocalParams:any;
 
-        constructor(name:string, params:TemplateViewParams) {
-            super(name, params);
+        constructor(name:string, params:TemplateViewParams, template:any) {
+            super(name, params, template);
         }
 
         private createChildren():void {
