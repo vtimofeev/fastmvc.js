@@ -54,5 +54,7 @@ module fmvc {
         protected getBaseModelInstance():T {
             return new (this.modelClass)(this.name + '_instance_' + this.count, this.modelData);
         }
+
+
     }
 }

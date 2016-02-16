@@ -1,37 +1,55 @@
-$inner-margin = 12px;
+@import '../core/base';
+
+
+$border-size = 1px;
+$progress-size = 4px;
+$base-size = 12px;
+
 .hslider {
   position: relative;
   box-sizing: border-box;
-  width: 200px;
-  height 24px;
-  padding $inner-margin
-  border: 1px solid black;
+
+  min-width: $base-size*12;
+  height: $base-size*2;
+  padding: $base-size;
+  padding-bottom: ($base-size - $progress-size/2);
+
+  border: 1px solid red;
 }
 
 .hslider-bg {
-  //absolute:  left $inner-margin top 0px right $inner-margin bottom 0px;
   position: relative;
-  margin-top: -2px;
-  height: 4px;
-  background-color: lightblue;
+  margin-top: - ($progress-size/2);
+  height: $progress-size;
+  background-color: $slider.bgColor;
 }
 
+
 .hslider-pg {
-  absolute: top 0px left 0px;
-  height: 4px;
+  absolute: top 0 left 0px;
+  height: $progress-size;
   width: 0;
-  background-color: blue;
+  background-color: $slider.pgColor;
 }
 
 
 .hslider-button {
-  absolute: top -10px right -12px;
-  width: 24px;
-  height: 24px;
-  background-color: red;
+  //@extends .core-action;
+  position: absolute;
+
+  top:  - $base-size;
+  right: - $base-size;
+
+  width: $base-size*2;
+  height: $base-size*2;
+  background-color: $slider.dragger.bgColor;
 
 }
 
+.hslider-button-hover {
+  background-color: $slider.dragger.bgColorHover;
+}
+
 .hslider-button-selected {
-  background-color: blue;
+  background-color: $slider.dragger.bgColorSelected;
 }

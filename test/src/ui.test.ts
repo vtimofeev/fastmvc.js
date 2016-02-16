@@ -4,22 +4,23 @@
 ///<reference path="../../src/ft/d.ts" />
 
 declare var ui;
-ft.load( _.values(ui.def).filter((v)=>!!v&&v.className) );
+ft.load(_.values(ui.def).filter((v)=>!!v && v.className));
 
 describe('ui', ()=> {
     var TestClassDef = {
         className: 'ui.Test',
         content: '<div>' +
-            '<h1>Button</h1>' +
-            '<ui.Button .data="The button text" ></ui.Button>' +
-            '<ui.Button .base="button-apply" .data="Apply button for {data.name}" ></ui.Button>' +
-            '<ui.ToggleButton .data="Toggle button" ></ui.ToggleButton>' +
-            '<h1>Slider</h1>' +
-            '<ui.HSlider></ui.HSlider>' +
-            '<h1>Input</h1>' +
-            '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
-            '<h1>Group</h1>' +
-            '<ui.Group .data="{data.age}"></ui.Group>' +
+        '<h1>Button</h1>' +
+        '<ui.Button .data="The button text" ></ui.Button>' +
+        '<ui.Button .type="apply" .data="Apply button for {data.name}" ></ui.Button>' +
+        '<ui.ToggleButton .type="apply" .data="Apply toggle button for {data.name}" ></ui.ToggleButton>' +
+        '<ui.ToggleButton .data="Toggle button" ></ui.ToggleButton>' +
+        '<h1>Slider</h1>' +
+        '<ui.HSlider></ui.HSlider>' +
+        '<h1>Input</h1>' +
+        '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
+        '<h1>Group</h1>' +
+        '<ui.Group .data="{data.age}"></ui.Group>' +
         '</div>',
     };
 

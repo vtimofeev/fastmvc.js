@@ -1,10 +1,7 @@
 @import '../core/base';
 
 .button  {
-  @extends .core;
-
-  cursor: pointer;
-  border-radius: $c.radius.element;
+  @extends .core, .core-action;
 
   text-align: center;
 
@@ -41,36 +38,30 @@
 }
 
 createButton($name, $bgColor, $color, $bgColorDisabled = $btn.bgColor.disabled, $colorDisabled = $btn.color.disabled) {
-  .button-{$name} {
-    @extends .button;
+  .button.button-{$name} {
     background-color: $bgColor;
     color: $color;
   }
-  .button-{$name}-active {
-    @extends .button-active;
+  .button-active.button-{$name} {
     background-color: $bgColor - $btn.const.active;
   }
-  .button-{$name}-hover {
-    @extends .button-hover;
+  .button-hover.button-{$name} {
     background-color: $bgColor + $btn.const.hover;
   }
-  .button-{$name}-selected {
-    @extends .button-selected;
+  .button-selected.button-{$name} {
     background-color: $bgColor - $btn.const.selected;
   }
-  .button-{$name}-selected-hover {
-    @extends .button-selected-hover;
+  .button-selected-hover.button-{$name} {
     background-color: $bgColor + $btn.const.selectedHover;
   }
-  .button-{$name}-disabled {
-    @extends .button-disabled;
+  .button-disabled.button-{$name} {
     background-color: $bgColorDisabled !important;
   }
 }
 
 
-createButton('apply', green, white);
-createButton('cancel', red, white);
+createButton('apply', $btn.bgColor.apply, $btn.color.apply);
+createButton('cancel', $btn.bgColor.cancel, $btn.color.cancel);
 
 
 
