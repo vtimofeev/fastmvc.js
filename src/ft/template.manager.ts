@@ -11,19 +11,31 @@ module ft {
      *
      */
     export class TemplateManager implements ITemplateManager {
-        private _templateMap:{[className:string]:ITemplate} = {};
+        private _classData:{[className:string]:{template: ITemplate, content: string, params:any, mixin: any}} = {};
         private _instanceFunc:{[className:string]:ITemplateConstructor} = {};
 
         constructor() {
-            _.bindAll(this, 'createClass', 'createInstance');
+            _.bindAll(this, 'createClass', 'createInstance', 'load');
         }
 
         public load(value):void {
             if (_.isArray(value)) {
-                value.forEach((v)=>this.createClass(v.className, v.content, v.params, v.mixin), this);
+                value.forEach((v)=>this.load(v), this);
             }
             else if (_.isObject(value)) {
-                this.createClass(value.className, value.content, value.params, value.mixin);
+                if(value.extendClassName) {
+                    console.log(this, this._classData);
+                    var baseClass = this._classData[value.extendClassName];
+                    if(!baseClass) throw 'Cant found base class to extend ' + value.extendClassName;
+
+                    this.createClass(value.className,
+                        value.content || baseClass.content,
+                        _.extend(baseClass.params || {}, value.params),
+                        _.extend(baseClass.mixin || {}, value.mixin)
+                    );
+                } else {
+                    this.createClass(value.className, value.content, value.params, value.mixin);
+                }
             }
             else {
                 throw 'TemplateManager:load unsupported argument ' + value;
@@ -43,11 +55,11 @@ module ft {
          */
         public createClass(className:string, content:string, params:any, mixin:any):ITemplateConstructor {
             var templateData:ITemplate = this.parse(content);
-            console.log('Add ', className, content);
+            console.log('Add ', className, params);
 
-            if (this._templateMap[className]) throw 'TemplateManager: cant add ITempalte object of ' + className + ' cause it exists.';
-            this._templateMap[className] = templateData;
+            if (this._classData[className]) throw 'TemplateManager: cant add ITempalte object of ' + className + ' cause it exists.';
 
+            this._classData[className] = {template: templateData, content: content, params: params, mixin: mixin};
             var result:ITemplateConstructor = this.createInstanceFunc(className, params, mixin);
             this.registerClass(className, result);
             return result;
@@ -67,7 +79,6 @@ module ft {
             return this._instanceFunc[className](name, params, mixin);
         }
 
-
         /* Регистрируем класс (функцию конструктор), в глобальном скоупе */
         private registerClass(className:string, value:ITemplateConstructor):void {
             _.reduce(className.split('.'), (g, v)=>(g[v] ? g[v] : (g[v] = {})), globalScope); // create constructor map at window
@@ -75,10 +86,10 @@ module ft {
 
         /* Создаем функцию конструктор, связанную с текущим именем класса и расширением - параметоров и методоа */
         private createInstanceFunc(className:string, baseParams:any, baseMixin:any):ITemplateConstructor {
-            var template = this._templateMap[className];
+            var template = this._classData[className].template;
             if (!this._instanceFunc[className]) {
                 this._instanceFunc[className] = function (name:string, params?:any, mixin?:any):ft.TemplateView {
-                    //console.log('CreateInstance  ', name, baseParams, baseMixin, params, mixin);
+                    console.log('CreateInstance  ', name, baseParams,params,  baseMixin,  mixin);
                     var instanceParams:any = _.extend({}, baseParams, params); // extend base parameters
                     var instanceMixin:any = _.extend({}, baseMixin, mixin); // extend methods
                     var instance = new ft.TemplateView(name, instanceParams, template);

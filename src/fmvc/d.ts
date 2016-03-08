@@ -16,6 +16,8 @@
 /////<reference path='./view.list.ts'/>
 ///<reference path='./mediator.ts'/>
 
+///<reference path='./app.ts'/>
+
 
 declare var MessageFormat:any;
 

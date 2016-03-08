@@ -17,7 +17,11 @@ module fmvc {
         }
 
         public get root():Element {
-            return this._root;
+            return this._root || this.facadeRoot;
+        }
+
+        public get facadeRoot():Element {
+            return this.facade ? this.facade.root : null;
         }
 
         public addView(...views:IView[]):Mediator

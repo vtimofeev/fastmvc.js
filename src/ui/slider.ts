@@ -13,10 +13,10 @@ module ui.def {
 
     export var HSliderDefinition = {
         className: 'ui.HSlider',
-        content: '<div .base="hslider" .value=".5" class="{state.base} {state.base}-{state.selected} {state.base}-{state.hover}" >' +
+        content: '<div .base="hslider" .value="0" class="{state.base} {state.base}-{state.selected} {state.base}-{state.hover}" >' +
         '<div ln="bg" class="{state.base}-bg">' +
         '<div ln="pg" class="{state.base}-pg" style="width: {state.value*100}%;">' +
-        '<ui.Button ln="dg" .base="{state.base}-button" .stateHandlers="hover" onpointerdown="{this.dragStart(e);}"/>' +
+        '<ui.ToggleButton ln="dg" .base="{state.base}-button" onpointerdown="{this.dragStart(e);}"/>' +
         '</div>' +
         '</div>' +
         '</div>',
@@ -34,7 +34,8 @@ module ui.def {
                     result = (newX - this.startX) / this.startSize,
                     preValue = ui.def.validateMaxMin(this.startValue + result, 0, 1); // auto invalidate
 
-                this.value = validateStep(preValue, 0.1);
+                var step = this.getState('step');
+                this.value = step?validateStep(preValue, step):preValue;
 
                 if (e.data.name === ft.CompositeEvent.PointerUp) {
                     this.globalPointer.unbind(this);

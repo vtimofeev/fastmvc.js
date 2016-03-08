@@ -25,7 +25,7 @@ var project = {
     version: '0.9.3',
     paths: {
         fmvcSrc: ['./src/fmvc/*.ts'],
-        ftSrc: ['./src/ft/**/*.ts'] // fast templates
+        ftSrc: ['./src/ft/**/*.ts' ] // fast templates
     }
 };
 
@@ -72,8 +72,6 @@ gulp.task('watch', function () {
     return gulp.watch(['./src/fmvc/*.ts','./src/ft/*.ts'], {interval: 2000}, buildTasks);
 });
 
-
-
 gulp.task('stylus', function() {
     var s = stylus({use: nib()});
     s.on('error',function(e){
@@ -84,8 +82,6 @@ gulp.task('stylus', function() {
     return gulp.src('./src/ui/stylus/default.styl')
         .pipe(s)
         .pipe(gulp.dest('./src/ui/stylus'));
-
-
 });
 
 gulp.task('build.contrib', function () {

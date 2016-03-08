@@ -20,8 +20,8 @@ module ui.def {
         content: '<input ' +
         ' .base="input" .value="" .state.placeholder="" .state.valid="" .state.type="text" ' +
         ' placeholder="{state.placeholder||state.title}" value="{state.value}" type="{state.type}" ' +
-        ' class="{state.base} {state.base}-{state.type} {state.base}-{state.valid}"' +
-        ' onkeydown="down" onkeyup="up" ' +
+        ' class="{state.base} {state.base}-{state.type} {state.base}-{state.valid} {state.base}-{state.enabled}"' +
+        ' onkeydown="down" onkeyup="up" onkeyleft="left" onkeyright="right" onkeyenter="enter" onkeyesc="esc" ' +
         '/>',
         mixin: {
             internalHandler(name:string, e:any) {
@@ -31,7 +31,8 @@ module ui.def {
                         break;
                     case 'down':
                         break;
-
+                    default:
+                        break;
                 }
             }
         }

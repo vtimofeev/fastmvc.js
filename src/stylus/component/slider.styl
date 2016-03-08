@@ -3,18 +3,16 @@
 
 $border-size = 1px;
 $progress-size = 4px;
-$base-size = 12px;
+$base-size = 1em;
 
 .hslider {
   position: relative;
   box-sizing: border-box;
 
-  min-width: $base-size*12;
+  min-width: 100px;
   height: $base-size*2;
   padding: $base-size;
   padding-bottom: ($base-size - $progress-size/2);
-
-  border: 1px solid red;
 }
 
 .hslider-bg {
@@ -26,17 +24,18 @@ $base-size = 12px;
 
 
 .hslider-pg {
-  absolute: top 0 left 0px;
+  absolute: top 0 left 0;
   height: $progress-size;
   width: 0;
-  background-color: $slider.pgColor;
+  background-color: $slider.fgColor;
 }
 
 
 .hslider-button {
-  //@extends .core-action;
+  @extends .core-action;
   position: absolute;
 
+  margin-top: ($progress-size/2);
   top:  - $base-size;
   right: - $base-size;
 

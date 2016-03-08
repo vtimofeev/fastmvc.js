@@ -6,6 +6,7 @@ module fmvc
         private _name:string;
         private _type:string;
         private _listeners:IListener[];
+        private _composed:string[];
         private _disposed:boolean = false;
 
         constructor(name:string, type:string = null)
@@ -57,6 +58,15 @@ module fmvc
         public setFacade(facade:fmvc.Facade):Notifier {
             this.facade = facade;
             return this;
+        }
+
+        public compose(value:INotifier) {
+            if(!(value && value.name)) throw 'Cant compose ' + value;
+            if(typeof this[value.name] !== 'undefined') throw 'Cant compose cause name "' + value.name + '" is used ';
+
+            this._composed = this._composed || [];
+            this._composed.push(value.name);
+            this[value.name] = value;
         }
 
         public bind(object:any, handler:any):Notifier
@@ -147,6 +157,10 @@ module fmvc
             this.removeAllListeners();
             this._facade = null;
             this._disposed = true;
+
+            if(this._composed) {
+                this._composed.forEach((v)=>(delete this[v]));
+            }
         }
     }
 

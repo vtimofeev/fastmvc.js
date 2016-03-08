@@ -101,6 +101,7 @@ module ft {
         // Properties map
         private _prevDynamicProperiesMap = {};
         private _dynamicPropertiesMap = {};
+        private _bindedModels:fmvc.Model<any>[];
 
         // Local handler
         private _localHandlers:any;
@@ -299,6 +300,7 @@ module ft {
         }
 
         applyParameters():void {
+            //console.log('Apply params ', this._resultParams, this.name);
             _.each(this._resultParams, this.applyParameter, this);
         }
 
@@ -348,7 +350,7 @@ module ft {
             }
         }
 
-        getParameterValue(value:IExpressionName|any, key:string):any {
+        getParameterValue( value:IExpressionName|any, key:string):any {
             var r = value instanceof ExpressionName ? this.getExpressionValue(value) : value;
             return r;
         }
@@ -435,6 +437,43 @@ module ft {
         }
 
         ////////////////////////////////////////////////////////////////
+        // App models listeners
+        ////////////////////////////////////////////////////////////////
+
+        bindAppModelsFromExpressions():void {
+            for (var name in this._template.expressionMap) {
+                var ex:IExpression = this._template.expressionMap[name];
+                if (ex.vars) ex.vars.forEach((v)=>(v.indexOf('app.') === 0 ? this.bindAppModelByVar(v) : null));
+            }
+        }
+
+        bindAppModelByVar(value:string) {
+            var varPath = value.replace('app.', 'this.facade.').split('.'),
+                modelPathResult = null;
+
+            if(varPath[varPath.length-2] === 'data') modelPathResult = varPath.splice(varPath.length-2,2);
+            else if(varPath[varPath.length-1] === 'data') modelPathResult = varPath.splice(varPath.length-1,1);
+            else if(varPath[varPath.length-1] === 'count') modelPathResult = varPath.splice(varPath.length-1,1);
+            else modelPathResult = varPath;
+
+
+            var getModelFncSrc = 'function() { return ' + modelPathResult.join('.') + '; }';
+            console.log('Binded model src: ' , getModelFncSrc);
+            var model = (new Function('function() { return ' + modelPathResult.join('.') + '; }')).apply(this);
+            if(model instanceof fmvc.Model) {
+                model.bind(this, this.invalidateData);
+                this._bindedModels = this._bindedModels || [];
+                this._bindedModels.push(model);
+            }
+        }
+
+        unbindAppModelsFromExpressions() {
+            this._bindedModels.forEach((v:fmvc.Model<any>)=>v.unbind(this), this);
+        }
+
+
+
+        ////////////////////////////////////////////////////////////////
         // Lifecycle: Create
         ////////////////////////////////////////////////////////////////
 
@@ -476,6 +515,7 @@ module ft {
             counters.enter++;
             //this.invalidate(fmvc.InvalidateType.Data | fmvc.InvalidateType.App | fmvc.InvalidateType.State);
             templateHelper.enterTree(this._template.domTree, this);
+            this.bindAppModelsFromExpressions();
             setTimeout(()=>this.life = LifeState.Active, 0);
         }
 
@@ -485,9 +525,12 @@ module ft {
 
         protected exitImpl():void {
             // console.log('Exit ', this.name);
+            this.unbindAppModelsFromExpressions();
+
             templateHelper.exitTree(this._template.domTree, this);
             super.exitImpl();
             this.cleanDelays();
+
         }
 
         ////////////////////////////////////////////////////////////////
@@ -527,8 +570,7 @@ module ft {
         public validate():void {
             // console.log('Validate try ', this.name);
             if (!this.inDocument) return;
-            console.log('Validate ', this.name, this);
-
+            //console.log('Validate ', this.name, this);
 
             var start = getTime();
 
@@ -765,3 +807,4 @@ module ft {
         }
     }
 }
+

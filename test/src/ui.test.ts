@@ -10,13 +10,18 @@ describe('ui', ()=> {
     var TestClassDef = {
         className: 'ui.Test',
         content: '<div>' +
-        '<h1>Button</h1>' +
-        '<ui.Button .data="The button text" ></ui.Button>' +
+        '<h1>Buttons</h1>' +
+        '<div class="round-hgroup"><ui.Button .data="The button text" ></ui.Button>' +
         '<ui.Button .type="apply" .data="Apply button for {data.name}" ></ui.Button>' +
         '<ui.ToggleButton .type="apply" .data="Apply toggle button for {data.name}" ></ui.ToggleButton>' +
-        '<ui.ToggleButton .data="Toggle button" ></ui.ToggleButton>' +
+        '<ui.Checkbox .type="apply" .data="Apply checkbox for {data.name}"></ui.Checkbox>' +
+        '<ui.Radio .type="apply" .data="Apply checkbox for {data.name}"></ui.Radio>' +
+        '<ui.Switch .type="apply" .data="Apply switch for {data.name}"></ui.Switch>' +
+        '<ui.ToggleButton .data="Toggle button" ></ui.ToggleButton></div>' +
+        '<h1>Progress</h1>' +
+        '<ui.Progress .value=".5"></ui.Progress>' +
         '<h1>Slider</h1>' +
-        '<ui.HSlider></ui.HSlider>' +
+        '<ui.HSlider  .value=".1" .state.step=".2"></ui.HSlider>' +
         '<h1>Input</h1>' +
         '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
         '<h1>Group</h1>' +
@@ -29,7 +34,6 @@ describe('ui', ()=> {
         name: 'Vasily',
         placeholder: 'Name',
         age: [1, 2, 3, 4, 5]
-
     };
 
     ft.load(TestClassDef);

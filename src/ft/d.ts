@@ -15,3 +15,5 @@
 ///<reference path="./template.view.ts" />
 ///<reference path="./template.view.children.ts" />
 
+///<reference path="./app/app.ts" />
+///<reference path="./helper/browser.ts" />

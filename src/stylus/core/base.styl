@@ -51,3 +51,41 @@ body {
   border-radius: $c.radius.element;
 }
 
+borderBox($borderColor, $borderRadius, $backgroundColor) {
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    background: $backgroundColor;
+    border: 1px solid $borderColor;
+    border-radius: $borderRadius;
+};
+
+absTopLeft($top, $left, $width, $height) {
+  position: absolute;
+  top: $top;
+  left: $left;
+
+  if width {
+    width: $width;
+  }
+
+  if height {
+    height: $height;
+  }
+}
+
+absTopRight($top, $right, $width, $height) {
+  position: absolute;
+  top: $top;
+  right: $right;
+
+  if width {
+    width: $width;
+  }
+
+  if height {
+    height: $height;
+  }
+}
+
+

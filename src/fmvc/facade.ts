@@ -17,6 +17,7 @@ module fmvc {
         private _events:any = {};
         private _root:any;
         private _mode:number;
+        private _composed:string[];
 
         public model:{[id:string]:Model<any>} = {};
         public mediator:{[id:string]:Mediator} = {};
@@ -45,8 +46,18 @@ module fmvc {
         }
 
         public get type():string {
-            return this._name;
+            return this._type;
         }
+
+        public compose(value:INotifier) {
+            if(!(value && value.name)) throw 'Cant compose ' + value;
+            if(typeof this[value.name] !== 'undefined') throw 'Cant compose cause name "' + value.name + '" is used ';
+
+            this._composed = this._composed || [];
+            this._composed.push(value.name);
+            this[value.name] = value;
+        }
+
 
         constructor(name:string, type?:string, root?:Element) {
             this._name = name; // Уникальное имя приложения

@@ -13,6 +13,15 @@
     },
     "lodash/lodash.d.ts": {
       "commit": "93bae1bb4c887c1375a4c1f0c3bb849ff06b8ac6"
+    },
+    "assert/assert.d.ts": {
+      "commit": "9f0f926a12026287b5a4a229e5672c01e7549313"
+    },
+    "async/async.d.ts": {
+      "commit": "9f0f926a12026287b5a4a229e5672c01e7549313"
+    },
+    "mocha/mocha.d.ts": {
+      "commit": "9f0f926a12026287b5a4a229e5672c01e7549313"
     }
   }
 }

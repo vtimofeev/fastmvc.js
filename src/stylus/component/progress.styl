@@ -1,0 +1,22 @@
+@import '../core/base';
+
+
+$border-size = 1px;
+$progress-size = 4px;
+$base-size = 1em;
+
+.progress {
+  position: relative;
+  box-sizing: border-box;
+
+  min-width: 100px;
+  height: $base-size*2;
+  padding-bottom: ($base-size - $progress-size/2);
+}
+
+.progress-bg {
+  absolute: left 0 top 0 right 0 bottom 0;
+  background-color: $slider.fgColor;
+  border-radius: $c.radius.element;
+}
+
