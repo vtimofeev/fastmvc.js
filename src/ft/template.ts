@@ -4,7 +4,7 @@ module ft {
     export class Template implements ITemplate {
         name:string;
         extend:string;
-        domTree:IDynamicTree;
+        domTree:IDomDef;
         i18n:any;
         dynamicTree:IDynamicTree;
         styleMapByTheme:{[name:string]:any};
@@ -13,7 +13,5 @@ module ft {
 
         constructor() {
         }
-
-
     }
 }

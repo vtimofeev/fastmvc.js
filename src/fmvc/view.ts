@@ -45,7 +45,7 @@ module fmvc {
 
 
     export class View extends Notifier implements IView {
-        private _parent:IView;
+        protected _parent:IView;
         private _mediator:Mediator;
 
         private _model:Model<any>;
@@ -58,7 +58,7 @@ module fmvc {
         private _inDocument:boolean = false;
         private _isDomCreated:boolean = false;
 
-        private _element:HTMLElement;
+        protected _element:HTMLElement;
         private _binds:INotifier[];
 
         constructor(name:string) {
@@ -85,6 +85,10 @@ module fmvc {
 
         public setMediator(value:Mediator):IView {
             this._mediator = value;
+
+            if(value) this.facade = value.facade;
+            else this.facade = null;
+
             return this;
         }
 
@@ -409,5 +413,4 @@ module fmvc {
         afterRender():void;
         beforeUnrender():void;
     }
-
 }

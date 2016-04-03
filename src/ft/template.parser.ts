@@ -3,7 +3,6 @@ declare var Tautologistics:any;
 ///<reference path='../../../DefinitelyTyped/lodash/lodash.d.ts'/>
 
 
-
 module ft {
     var htmlparser:any = Tautologistics.NodeHtmlParser;
     var expressionManager:IExpressionManager;
@@ -16,12 +15,12 @@ module ft {
 
         private _skipProperties:string[] = ['raw'];
         private _svgTagNames:string[] = ('circle clipPath defs ellipse g line linearGradient mask path pattern polygon polyline radialGradient rect stop svg text tspan').split(' ');
-        private _componentParams:string[] = _.values(TemplateParams);
+        private _componentParams:string[] = _.values<string>(TemplateParams);
         private _propAttribs:{[name:string]:any} = {
             style: {
                 delimiter: ';',
                 canGet: (v)=>(v.split(':').length>1),
-                getName: (v)=>( v.split(':')[0]  ).trim(),
+                getName: (v)=>( v.split(':')[0] ).trim(),
                 getValue: (v)=>(v.split(':')[1]).trim()
             },
             class: {
@@ -170,7 +169,7 @@ module ft {
         private getStatesByMap(map:IExpressionMap):number {
             var result:number = 0;
             _.each(map, function(ex:IExpression) {
-               _.each(ex.hosts, (v:IExpressionHost)=>{ if(v.key === 'states') result ++; })
+               _.each(ex.hosts, (v:IExpressionHost)=>{ if(v.key === 'if') result ++; })
             }, this);
             return result;
         }

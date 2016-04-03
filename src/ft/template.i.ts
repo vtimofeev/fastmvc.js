@@ -13,7 +13,7 @@ module ft {
 
         export var TemplateParams = {
         ln:'ln', // create public field in TemplateView that has name as value
-        states:'states', // state when object is created, '{state.selected}'
+        if:'if', // state when object is created, '{state.selected}'
         setStates:'setStates', // View, 'selected,focused,disabled,hover,draggable,counter' or 'selected=true,focused=false,disabled=true,counter={data.counter},modelCounter={app.counter.data}'
         setState:'setState', // View, 'selected=true'
         setStateSelected:'state.selected', // View, 'true' or '{(this.getCustomComponentSelected(child.data))}' (expression)
@@ -203,7 +203,7 @@ module ft {
         params?:any;
         data?:any;
 
-        states?:IExpressionName; //special system attribute
+        if?:IExpressionName; //special system attribute
         children?:IDomDef[]; // system IDomDef children
     }
 

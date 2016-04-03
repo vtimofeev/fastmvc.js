@@ -34,6 +34,7 @@ module fmvc {
 
 
     export class Model<T> extends Notifier {
+        private _count:number;
         private _data:T;
         private _changedData:T;
         private _invalid:{[name:string]:string[]}; // object only
@@ -83,10 +84,13 @@ module fmvc {
 
 
         /** data layer */
-        public get count():number {
-            return (this.data && this.data instanceof Array) ? (<any>this.data).length : -1;
+        public set count(value:number) {
+            this._count = value;
         }
 
+        public get count():number {
+            return this._count || (this.data && this.data instanceof Array) ? (<any>this.data).length : -1;
+        }
 
         public get length():number {
             return _.isArray(this.data) ? (<any>this.data).length : -1;
@@ -175,7 +179,6 @@ module fmvc {
 
         public save(opts?:IModelOptions):IPromise {
             if((this.opts.validate || opts.validate) && !this.validate()) return null;
-
             this.state = ModelState.Syncing;
             var p = this.saveImpl(opts);
             p.then(this.applyChanges).catch(this.remoteErrorHandler);

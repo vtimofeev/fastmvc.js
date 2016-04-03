@@ -35,10 +35,10 @@ module ft {
         childrenDot: 'children.',
         stateDot: 'state.',
         on: 'on',
-        states: 'states',
         createDelay: 'createDelay',
         class: 'class',
         ln: 'ln',
+        if: 'if',
         bindoutDot: 'bindout.'
     };
 
@@ -122,6 +122,8 @@ module ft {
             //this.setParameters(_.extend({}, template.domTree.params, params));
             this.life = LifeState.Init;
         }
+
+
 
         ////////////////////////////////////////////////////////////////
         // Internal
@@ -306,7 +308,7 @@ module ft {
 
         applyParameter(value:any, key:string):void {
             switch (key) {
-                case TmplDict.states: // internal "include" parameters, used at createTree and validateTree
+                case TmplDict.if: // internal "include" parameters, used at createTree and validateTree
                 case TmplDict.createDelay: // delay create dom
                 case TmplDict.class: // child class
                 case TmplDict.ln: // link
@@ -350,7 +352,7 @@ module ft {
             }
         }
 
-        getParameterValue( value:IExpressionName|any, key:string):any {
+        getParameterValue( value:IExpressionName|any):any {
             var r = value instanceof ExpressionName ? this.getExpressionValue(value) : value;
             return r;
         }
@@ -428,6 +430,10 @@ module ft {
             //console.log('Set dp ', name, this._dynamicPropertiesMap[name])
         }
 
+        getContextValueByString(v:string, context?:any):any {
+            return expression.getContextValue(v, context || this);
+        }
+
         isChangedDynamicProperty(name:string):boolean {
             var prevValue = this._prevDynamicProperiesMap[name];
             var value = expression.getContextValue(name, this);
@@ -443,27 +449,30 @@ module ft {
         bindAppModelsFromExpressions():void {
             for (var name in this._template.expressionMap) {
                 var ex:IExpression = this._template.expressionMap[name];
-                if (ex.vars) ex.vars.forEach((v)=>(v.indexOf('app.') === 0 ? this.bindAppModelByVar(v) : null));
+                if (ex.vars) ex.vars.forEach((v)=>( (v.indexOf('app.') === 0 || v.indexOf('facade.') === 0)? this.bindAppModelByVar(v) : null), this);
             }
         }
 
         bindAppModelByVar(value:string) {
-            var varPath = value.replace('app.', 'this.facade.').split('.'),
+            var varPath = value.replace('app.', 'facade.').split('.'),
                 modelPathResult = null;
 
-            if(varPath[varPath.length-2] === 'data') modelPathResult = varPath.splice(varPath.length-2,2);
-            else if(varPath[varPath.length-1] === 'data') modelPathResult = varPath.splice(varPath.length-1,1);
-            else if(varPath[varPath.length-1] === 'count') modelPathResult = varPath.splice(varPath.length-1,1);
-            else modelPathResult = varPath;
+            if(varPath[varPath.length-2] === 'data') varPath.splice(varPath.length-2,2);
+            else if(varPath[varPath.length-1] === 'data') varPath.splice(varPath.length-1,1);
+            else if(varPath[varPath.length-1] === 'count') varPath.splice(varPath.length-1,1);
+            else if(varPath[varPath.length-1] === 'state') varPath.splice(varPath.length-1,1);
+            else ;
 
+            modelPathResult = varPath;
 
-            var getModelFncSrc = 'function() { return ' + modelPathResult.join('.') + '; }';
-            console.log('Binded model src: ' , getModelFncSrc);
-            var model = (new Function('function() { return ' + modelPathResult.join('.') + '; }')).apply(this);
+            var getModelFncSrc = 'return this.' + modelPathResult.join('.') + ';';
+            console.log('Binded model src: ' , getModelFncSrc, this.facade);
+            var model = (new Function(getModelFncSrc)).apply(this);
+            this._bindedModels = this._bindedModels || [];
+
             if(model instanceof fmvc.Model) {
-                model.bind(this, this.invalidateData);
-                this._bindedModels = this._bindedModels || [];
-                this._bindedModels.push(model);
+                model.bind(this, this.invalidateApp);
+                if(this._bindedModels.indexOf(model) === -1) this._bindedModels.push(model);
             }
         }
 
@@ -727,10 +736,19 @@ module ft {
         }
 
         public getExpressionValue(ex:IExpressionName):any {
-            var exName = ex.name;
+            var exName = ex.name,
+                context = ex.context || this,
+                exObject,
+                result;
+
             if (this._dynamicPropertiesMap[exName]) return this._dynamicPropertiesMap[exName];
-            var exObj:IExpression = this.getExpressionByName(exName);
-            var result = expression.execute(exObj, ex.context || this);
+
+            exObject = context.getExpressionByName(exName);
+
+            console.log('getExpressionValue: ', ex);
+
+            result = expression.execute(exObject, context);
+
             return result;
         }
 

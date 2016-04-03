@@ -524,14 +524,14 @@ module ft {
         }
 
         isTreeObjectIncluded(data:IDomDef, root:TemplateView):boolean {
-            var states:any = data.params ? data.params[TemplateParams.states] : null;
+            var ifValue:any = data.params ? data.params[TemplateParams.if] : null;
             var hasDelay:Boolean = this.hasDelay(data, root, 'create');
 
             if (hasDelay) root.setDelay(data, 'create');
 
-            if (!states && !hasDelay) return true;
+            if (!ifValue && !hasDelay) return true;
 
-            return !hasDelay && !!this.getExpressionValue(states, root);
+            return !hasDelay && !!root.getExpressionValue(ifValue);
         }
 
 

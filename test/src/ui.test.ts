@@ -21,7 +21,7 @@ describe('ui', ()=> {
         '<h1>Progress</h1>' +
         '<ui.Progress .value=".5"></ui.Progress>' +
         '<h1>Slider</h1>' +
-        '<ui.HSlider  .value=".1" .state.step=".2"></ui.HSlider>' +
+        '<ui.HSlider .value=".1" .state.step=".2"></ui.HSlider>' +
         '<h1>Input</h1>' +
         '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
         '<h1>Group</h1>' +

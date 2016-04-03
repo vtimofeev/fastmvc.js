@@ -8,6 +8,7 @@ module ft {
         data: 'data',
         dataField: 'data.',
         appField: 'app.',
+        facadeField: 'facade.',
         stateField: 'state',
         openBracket: '(',
         thisDot: 'this.'
@@ -75,6 +76,10 @@ module ft {
         }
 
         private executeMultiExpression(ex:IExpression, context:TemplateView, classes:boolean):any {
+            console.log('[executeMultiExpression]', ex)
+            if(!ex) {
+                console.log('...', ex);
+            }
             var isSimpleExpression:Boolean = (ex.expressions.length === 1);
             var contextValue;
             return isSimpleExpression?
@@ -115,55 +120,64 @@ module ft {
             return <string> (_.isString(value)?value:null);
         }
 
+        public replaceUndefinedToNull(v):any {
+            return v === undefined?null:v;
+        }
+
         public getContextValue(v:string|IExpression, context:TemplateView):any {
-            var r, safeV;
-            if(typeof v === 'string' && (r = context.getDynamicProperty(v))) return r;
+            var r:any,
+                safeVs:string,
+                vs:string = typeof v === 'string'?v:null;
 
-            if(typeof v === 'string') {
+            if(vs) {
+                r = context.getDynamicProperty(vs);
+                if(r != undefined) return r;
+
                 counters.expressionCtx++;
-                if(v === GetContext.data || v === GetContext.model) {
-                    r = context[v];
-                    if(r === undefined) r = null;
-                    context.setDynamicProperty(v, r);
-                }
-                else if(v.indexOf(GetContext.dataField) === 0 || v.indexOf(GetContext.appField) === 0 || v.indexOf(GetContext.modelField) === 0) {
 
-                    if(!this.funcMap[v]) {
-                        //safeV = v.replace(/'/g, '"');
-                        this.funcMap[v] = new Function('var v=null; try {v=this.' + v + ';} catch(e) {v=\'{' + v + '}\';} return v;');
-                    }
-                    r = this.funcMap[v].apply(context);
-                    console.log('V is ', v , ' in internal exp ', r, this.funcMap[v]);
-                    r = r===undefined?null:r;
-                    context.setDynamicProperty(v, r);
+                if(vs === GetContext.data || v === GetContext.model) {
+                    r = context[vs];
                 }
-                else if(v.indexOf(GetContext.stateField) === 0) {
-                    if(!this.funcMap[v]) {
-                        var state = v.substring(6);
-                        this.funcMap[v] = new Function('return this.getState("' + state + '");');
+                else if(
+                    vs.indexOf(GetContext.dataField) === 0 ||
+                    vs.indexOf(GetContext.appField) === 0  ||
+                    vs.indexOf(GetContext.facadeField) === 0 ||
+                    vs.indexOf(GetContext.modelField) === 0) {
+
+                    if(!this.funcMap[vs]) {
+                        if(vs.indexOf(GetContext.appField) === 0) vs = vs.replace(GetContext.appField, GetContext.facadeField);
+                        console.log('?', vs, context, this.funcMap);
+                        this.funcMap[vs] = new Function('var v=null; try {v=this.' + vs + ';} catch(e) { v=\'{' + vs.replace(/'/g, '\\\'') + '}\';} return v;');
                     }
-                    r = this.funcMap[v].apply(context);
-                    if(r === undefined) r = null;
-                    context.setDynamicProperty(v, r);
+
+                    console.log('1:', vs);
+                    r = this.funcMap[vs].apply(context);
+                    console.log('2:', vs);
                 }
-                else if(v.indexOf(GetContext.openBracket) === 0 || v.indexOf(GetContext.thisDot) >= 0 ) {
-                    if(!this.funcMap[v]) {
-                        safeV = v.replace(/'/g, '"');
-                        this.funcMap[v] = new Function('var v=null; try {v=' + v + ';} catch(e) {v=\'{' + safeV + '}\';} return v;');
+                else if(vs.indexOf(GetContext.stateField) === 0) {
+                    if(!this.funcMap[vs]) {
+                        var state = vs.substring(6);
+                        this.funcMap[vs] = new Function('return this.getState("' + state + '");');
                     }
-                    r = this.funcMap[v].apply(context);
-                    if(r === undefined) r = null;
+                    r = this.funcMap[vs].apply(context);
+                }
+                else if(vs.indexOf(GetContext.openBracket) === 0 || vs.indexOf(GetContext.thisDot) >= 0 ) {
+                    if(!this.funcMap[vs]) {
+                        safeVs = vs.replace(/'/g, '"');
+                        this.funcMap[vs] = new Function('var v=null; try {v=' + vs + ';} catch(e) {v=\'{' + safeVs + '}\';} return v;');
+                    }
+                    r = this.funcMap[vs].apply(context);
                 }
 
-
-                if(r !== undefined) return r;
+                return this.replaceUndefinedToNull(r);
             }
             else if(_.isObject(v)) {
                 counters.expressionEx++;
                 return this.executeExpression(<IExpression> v, context);
             }
-
-            throw new Error('Not supported variable ' + v + ' in ' + context.name);
+            else {
+                throw new Error('Not supported variable ' + v + ' in ' + context.name);
+            }
         }
 
         private getContextArguments(ex:IExpression, context:TemplateView):any {
@@ -172,6 +186,11 @@ module ft {
 
         private executeExpression(ex:IExpression, context:TemplateView, classes?:boolean):any {
             counters.expression++;
+            console.log("Execute expression: ", ex);
+            if(!ex.expressions) {
+                console.log('Has no expressions at', ex);
+            }
+
             var r:any = ex.args?this.getContextArguments(ex,context):this.getParsedContextValue(ex.expressions[0],context,classes);
             if(!r && classes) return '';// empty class expression
             if(ex.filters) r = this.executeFilters(r, ex.filters, context);

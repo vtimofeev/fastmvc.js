@@ -14,7 +14,7 @@ module ft {
             var def:IDomDef = this.domDef;
             var className:string = def.params[TemplateParams.childrenClass];
             var prevChildren = this._children;
-            var data:any[] = this.getParameterValue(this.getParameters()['children.data']) || this.data;
+            var data:any = this.getParameterValue(this.getParameters()['children.data']) || this.data;
 
             var childrenViews:TemplateView[] = _.map(data, function (v:any, k:number) {
                 var child = prevChildren && prevChildren.length ? (prevChildren.splice(0, 1)[0]) : templateManager.createInstance(className, this.parent.name + ':' + className + '-' + k, this.childrenLocalParams);
