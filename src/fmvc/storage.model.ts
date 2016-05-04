@@ -24,7 +24,6 @@ module fmvc {
     }
 
 
-
     export class DictionaryModel<T extends Model<any>> extends StorageModel<T> {
 
        getById(id:string):T {
@@ -42,16 +41,14 @@ module fmvc {
 
     export class ArrayModel<T extends Model<any>> extends StorageModel<T> {
 
-        push(...values:any[]):any {
+        insert(...values:any[]):any {
         }
 
-        pop():T {
+        delete():T {
             return null;
         }
 
-        getBy(opts:any):IPromise {
 
-        }
 
     }
 }

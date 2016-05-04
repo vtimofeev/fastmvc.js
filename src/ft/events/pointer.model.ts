@@ -71,6 +71,21 @@ module ft {
             super(PointerModel.Name, data, opts);
         }
 
+        public enablePointerEventsByClassName(value:boolean, className:string = 'root'):void {
+            console.log('Enable ' + value + ' pointerEvents');
+
+            if(window) Array.prototype.slice.call(window.document.getElementsByClassName(className))
+                        .forEach(
+                        (el)=>{
+                            console.log('Has pointerEvents ', el, el.style.pointerEvents);
+                            \el.style.pointerEvents=(value?'auto':'none');
+                            el.style.msUserSelect=(value?'auto':'none');
+                            el.style.webkitUserSelect=(value?'auto':'none');
+                            el.style.cursor=(value?'auto':'pointer');
+                        }
+                    );
+        }
+
         public tryTransformToCompositeEvent(e:any):IPointerEvent|any {
             var transformName:string = EventTransform[e.type];
             var isTouch:boolean = e.type.indexOf('touch')===0;
@@ -111,11 +126,14 @@ module ft {
 
         protected analyzeSequence(e:IPointerEvent):IPointerEvent {
             if(e.name === CompositeEvent.PointerUp) {
+
                 var firstEvent:IPointerEvent = this.sequence[this.sequenceLastDownIndex] || this.sequence[0];
                 return this.getSequenceEvent(e.time - firstEvent.time, Math.abs(e.clientX - firstEvent.clientX), Math.abs(e.clientY - firstEvent.clientY), e);
             }
             return null;
         }
+
+
 
         protected getSequenceEvent(time:number, diffX:number, diffY:number, e:IPointerEvent):IPointerEvent {
             if(time < 1000 && diffX < 10 && diffY < 10 ) return {name: CompositeEvent.Action, sequence: 1, clientX: e.clientX, clientY: e.clientY };

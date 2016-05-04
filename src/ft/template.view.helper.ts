@@ -335,8 +335,12 @@ module ft {
                             return;
                         case 'class':
                             var previousClassValue = root.getPathClassValue(host.path, host.keyProperty);
-                            previousClassValue && previousClassValue !== value ? el.classList.toggle(previousClassValue, false) : null;
-                            value ? el.classList.toggle(value, true) : null;
+
+                            if (previousClassValue !== value) {
+                                previousClassValue && el.classList.toggle(previousClassValue, false);
+                                value && el.classList.toggle(value, true);
+                            }
+
                             root.setPathClassValue(host.path, host.keyProperty, value);
                             return;
                         default:

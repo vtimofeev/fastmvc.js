@@ -11,10 +11,11 @@ module fmvc {
     }
 
     export interface IPromise {
+        resolve(result?:any):IPromise;
+        reject(error:any):IPromise;
         then(onSuccess:Function, onReject?:Function):IPromise;
-        catch(onRejects:Function):IPromise;
+        catch?(onRejects:Function):IPromise;
     }
-
 
     export var ModelState = {
         None: 'none',
@@ -49,7 +50,6 @@ module fmvc {
             validate: false,
             remote: false
         };
-
 
         constructor(name:string, data:any = null, opts?:IModelOptions) {
             super(name, TYPE_MODEL);

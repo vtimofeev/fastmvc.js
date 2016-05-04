@@ -59,6 +59,14 @@ interface ITask {
 var baseUserApiUrl = 'http://localhost/api/user';
 var socket:any;
 
+
+
+interface IRemoteProvider  {
+    isActive:boolean;
+    execute():IPromise;
+}
+
+
 class Remote extends fmvc.Model<IPromise[]> {
     constructor(name:string, opts:fmvc.IModelOptions) {
         super(name, [], opts);
@@ -97,7 +105,8 @@ class Remote extends fmvc.Model<IPromise[]> {
 
         switch (task.type) {
             case 'select':
-                promise = $.ajax({url: baseUserApiUrl + '/' + task.model + '/select/' + task.data.id , type: 'GET'});                 break;
+                promise = $.ajax({url: baseUserApiUrl + '/' + task.model + '/select/' + task.data.id , type: 'GET'});
+                break;
 
             case 'multiByIds':
                 // {base}/user/ids?{ids|query}
@@ -188,6 +197,5 @@ describe('check advanced models', function () {
         })
 
     });
-
 
 });
