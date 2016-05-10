@@ -89,3 +89,11 @@ absTopRight($top, $right, $width, $height) {
 }
 
 
+/**
+Disable swipe left/right IE default behaivor prev/next page
+
+The solution is simple, you just need to add a CSS style that prevents scroll behavior from bubbling up from child elements that have reached their scroll limit, to parent elements (where the scroll eventually turns into a top-level history navigation).
+*/
+* {
+  -ms-scroll-chaining: none;
+}

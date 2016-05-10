@@ -1,6 +1,5 @@
 ///<reference path='./d.ts'/>
 
-
 module fmvc {
     export interface IModelOptions {
         type?:string // типы хранилища StorageModelType, например по ключу (key) или массив элементов (array)
@@ -10,11 +9,15 @@ module fmvc {
         remote?:boolean; // удаленная модель, требует сохранения
     }
 
+    export interface IModelData {
+        _id?:string;
+    }
+
     export interface IPromise {
-        resolve(result?:any):IPromise;
-        reject(error:any):IPromise;
-        then(onSuccess:Function, onReject?:Function):IPromise;
-        catch?(onRejects:Function):IPromise;
+        resolve(value:any):IPromise;
+        reject(value?:any):IPromise;
+        then(onSuccess:any, onError?:any):IPromise;
+        catch(onError:any):IPromise;
     }
 
     export var ModelState = {
@@ -34,17 +37,17 @@ module fmvc {
     };
 
 
-    export class Model<T> extends Notifier {
+
+    export class Model<T extends IModelData> extends Notifier {
         private _count:number;
         private _data:T;
         private _changedData:T;
-        private _invalid:{[name:string]:string[]}; // object only
 
         private _state:string;
         private _prevState:string;
 
         // model options
-        protected opts:IModelOptions = {
+        public opts:IModelOptions = {
             event: true,
             state: true,
             validate: false,
@@ -53,6 +56,7 @@ module fmvc {
 
         constructor(name:string, data:any = null, opts?:IModelOptions) {
             super(name, TYPE_MODEL);
+
             opts && _.extend(this.opts, opts);
             data && this.setData(data);
         }
@@ -97,11 +101,7 @@ module fmvc {
         }
 
         public get data():T {
-            return this.getData();
-        }
-
-        public get invalid():any {
-            return this._invalid;
+            return this._data;
         }
 
         public get schemas():any {
@@ -116,14 +116,11 @@ module fmvc {
             this.setData(value);
         }
 
-        public getData():T {
-            return this._data;
-        }
-
-        public setData(value:T):void {
+        public setData(value:T):Model<T> {
             if (this._data === value || this.disposed) return;
             this._data = value;
             this.sendEvent(Event.Model.Changed, this._data);
+            return this;
         }
 
         public get changes():T|any {
@@ -134,7 +131,7 @@ module fmvc {
             this.setChanges(<T>value);
         }
 
-        public setChanges(value:T|any):void {
+        public setChanges(value:T|any):Model<T> {
             if (this._data === value || this.disposed) return;
 
             if (!this.opts.remote) {
@@ -149,97 +146,120 @@ module fmvc {
 
                 this.state = ModelState.Changed;
             }
+
+            return this;
         }
 
-        protected applyChanges():void {
+        protected applyChanges(remoteData:any = null):void {
             var changes = this._changedData;
-
 
             if (_.isObject(changes) && _.isObject(this._data))
                 _.extend(this._data, changes);
-            else
+            else if(changes !== undefined)
                 this._data = changes; // was array, string, number, boolean
 
+            if(_.isObject(remoteData) && _.isObject(this._data))
+                _.extend(this._data, remoteData);
 
-            this._changedData = null;
+            this._changedData = undefined;
             this.state = ModelState.Synced;
             this.sendEvent(Event.Model.Changed, this._data, changes);
-        }
 
-        public get(opts?:any):IPromise {
-            this.state = ModelState.Syncing;
-            var p = this.getImpl(opts);
-            p.then(this.getHandler).catch(this.remoteErrorHandler);
-            return p;
+            return remoteData;
         }
 
         protected validate():boolean {
             return false;
         }
 
-        public save(opts?:IModelOptions):IPromise {
-            if((this.opts.validate || opts.validate) && !this.validate()) return null;
-            this.state = ModelState.Syncing;
-            var p = this.saveImpl(opts);
-            p.then(this.applyChanges).catch(this.remoteErrorHandler);
-            return p;
+        getById(id:string):IPromise {
+            return this.get({_id: id});
         }
 
-        public delete():IPromise {
+        get(getQuery:any, sort:any = null, limit:any = null ):IPromise {
             this.state = ModelState.Syncing;
-            var p = this.deleteImpl();
-            p.then(this.dispose).catch(this.remoteErrorHandler);
-            return p;
+            if(!this.remoteTaskManager) throw 'Cant perform method, remoteTaskManager is not set';
+
+            var p = this.remoteTaskManager.insert({
+                model: this.getRemoteModel(),
+                type: 'get',
+                data: { query: getQuery , sort: sort, limit: limit }
+            });
+
+            return p.then(this.getHandler.bind(this)).catch(this.remoteErrorHandler.bind(this));
         }
 
-        protected getHandler(data:any|T) {
+        save():IPromise {
+            if(this.opts.validate && !this.validate()) return null;
+
+            if(!this.remoteTaskManager) throw 'Cant perform method, remoteTaskManager is not set';
+
+            this.state = ModelState.Syncing;
+            var p:IPromise,
+                _id = this.data && (<T> this.data)._id;
+
+            if(this.changes)
+                p = this.remoteTaskManager.insert({
+                    model: this.getRemoteModel(),
+                    type: 'update',
+                    data: { query: { _id: _id }, set: this.changes }
+                });
+            else
+                p = this.remoteTaskManager.insert({
+                    model: this.getRemoteModel(),
+                    type: 'insert',
+                    data: this.data
+                });
+
+            return p.then(this.applyChanges.bind(this)).catch(this.remoteErrorHandler.bind(this));
+        }
+
+        delete():IPromise {
+            this.state = ModelState.Syncing;
+
+            if(!this.remoteTaskManager) throw 'Cant perform method, remoteTaskManager is not set';
+
+            var _id = this.data && (<T> this.data)._id,
+
+                p:IPromise = this.remoteTaskManager.insert({
+                model: this.getRemoteModel(),
+                type: 'delete',
+                data: { query: { _id: _id } }
+            });
+
+
+            return p.then(this.dispose.bind(this)).catch(this.remoteErrorHandler.bind(this));
+        }
+
+        protected getRemoteModel():string {
+            return 'getRemoteModelIsNotSet';
+        }
+
+        protected getHandler(data:any):any {
             this.state = ModelState.Synced;
-            this.setData(data);
+            this.data = data;
+            return data;
         }
 
         protected remoteErrorHandler() {
             this.state = ModelState.Error;
         }
 
-        protected deleteImpl():IPromise {
-            return null;
-        }
-
-        protected saveImpl(opts?:any):IPromise {
-            return null;
-        }
-
-        protected getImpl(opts:any):IPromise {
-            return null;
-        }
-
-        public sendEvent(name:string, data:any = null, changes:any = null, sub:string = null, error:any = null):void {
+        sendEvent(name:string, data:any = null, changes:any = null, sub:string = null, error:any = null):void {
             if (this.opts.event) super.sendEvent(name, data, changes, sub, error);
         }
 
-        public dispose():void {
+        dispose(data:any = null):void {
             this.sendEvent(Event.Model.Disposed);
             this._changedData = null;
             this._data = null;
             super.dispose();
+            return data;
         }
 
+        get remoteTaskManager():RemoteTaskManager {
+            return this.facade && this.facade.remoteTaskManager || window && window['remoteTaskManager'];
+        }
     }
 
-
-    /*
-     export class Validator {
-     name:string = null;
-     fnc:Function = null;
-
-     constructor(name:string, fnc:Function) {
-     this.name = name;
-     this.fnc = fnc;
-     }
-
-     execute(data:any):any {
-     this.fnc.call(data, data);
-     }
-     }
-     */
 }

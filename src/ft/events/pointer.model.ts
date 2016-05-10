@@ -72,16 +72,15 @@ module ft {
         }
 
         public enablePointerEventsByClassName(value:boolean, className:string = 'root'):void {
-            console.log('Enable ' + value + ' pointerEvents');
 
             if(window) Array.prototype.slice.call(window.document.getElementsByClassName(className))
                         .forEach(
                         (el)=>{
-                            console.log('Has pointerEvents ', el, el.style.pointerEvents);
-                            \el.style.pointerEvents=(value?'auto':'none');
+                            el.style.pointerEvents=(value?'auto':'none');
+                            el.style.cursor=(value?'auto':'pointer');
                             el.style.msUserSelect=(value?'auto':'none');
                             el.style.webkitUserSelect=(value?'auto':'none');
-                            el.style.cursor=(value?'auto':'pointer');
+
                         }
                     );
         }

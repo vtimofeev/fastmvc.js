@@ -52,7 +52,7 @@ module ft {
             if (isComment && included) {
                 newElement = this.createTree(data, root);
                 this.enterTree(data, root);
-                console.log('Replace child ', treeDomElement, newElement);
+                //console.log('Replace child ', treeDomElement, newElement);
                 treeDomElement.parentNode.replaceChild(this.getDomElement(newElement), treeDomElement);
 
 

@@ -24,7 +24,7 @@ module ft {
             }
             else if (_.isObject(value)) {
                 if(value.extendClassName) {
-                    console.log(this, this._classData);
+                    //console.log(this, this._classData);
                     var baseClass = this._classData[value.extendClassName];
                     if(!baseClass) throw 'Cant found base class to extend ' + value.extendClassName;
 
@@ -55,7 +55,7 @@ module ft {
          */
         public createClass(className:string, content:string, params:any, mixin:any):ITemplateConstructor {
             var templateData:ITemplate = this.parse(content);
-            console.log('Add ', className, params);
+            //console.log('Add ', className, params);
 
             if (this._classData[className]) throw 'TemplateManager: cant add ITempalte object of ' + className + ' cause it exists.';
 

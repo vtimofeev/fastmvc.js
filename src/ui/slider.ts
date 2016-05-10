@@ -25,7 +25,7 @@ module ui.def {
                 this.startX = e.pe.clientX;
                 this.startSize = this.bg.offsetWidth;
                 this.startValue = Number(this.value);
-                console.log('Drag start ', e, this.dg.getState('selected'));
+                //console.log('Drag start ', e, this.dg.getState('selected'));
                 this.dg.setState('selected', true);
 
                 this.globalPointer.bind(this, this.prepareChanges);
@@ -40,7 +40,7 @@ module ui.def {
                 var step = this.getState('step');
                 this.value = step?validateStep(preValue, step):preValue;
 
-                console.log('Drag changes ', e);
+                //console.log('Drag changes ', e);
                 if (e.data.name === ft.CompositeEvent.PointerUp) {
                     this.globalPointer.unbind(this);
                     this.globalPointer.enablePointerEventsByClassName(true);
@@ -48,7 +48,7 @@ module ui.def {
                     this.dg.validate();
 
                 }
-                console.log('Drag changes ', e, this.dg.getState('selected'));
+                //console.log('Drag changes ', e, this.dg.getState('selected'));
             },
 
             afterEnter: function () {

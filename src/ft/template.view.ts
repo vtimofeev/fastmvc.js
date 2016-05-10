@@ -466,7 +466,7 @@ module ft {
             modelPathResult = varPath;
 
             var getModelFncSrc = 'return this.' + modelPathResult.join('.') + ';';
-            console.log('Binded model src: ' , getModelFncSrc, this.facade);
+            //console.log('Binded model src: ' , getModelFncSrc, this.facade);
             var model = (new Function(getModelFncSrc)).apply(this);
             this._bindedModels = this._bindedModels || [];
 
@@ -745,7 +745,7 @@ module ft {
 
             exObject = context.getExpressionByName(exName);
 
-            console.log('getExpressionValue: ', ex);
+            //console.log('getExpressionValue: ', ex);
 
             result = expression.execute(exObject, context);
 

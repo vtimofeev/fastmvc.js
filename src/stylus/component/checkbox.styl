@@ -1,6 +1,35 @@
+@import '../core/base';
+@import '../icon/base';
 
 .checkbox {
   @extends .button;
+  padding-left: 2.5em;
+  background-color: transparent;
 }
 
+.checkbox:before {
+  @extends .icon-left:before, .icon-ok:before;
+  color: #efefef;
+}
+
+
+.checkbox-selected:before {
+  color: $btn.color.default;
+}
+
+
+.radio {
+  @extends .button;
+  padding-left: 2.5em;
+  background-color: transparent;
+}
+
+.radio:before {
+  @extends .icon-left:before, .icon-record:before;
+  color: #efefef;
+}
+
+.radio-selected:before {
+  color: $btn.color.default;
+}
 

@@ -67,7 +67,7 @@ gulp.task('build.ft.ui', function () {
     return null;
 });
 
-var buildTasks = [/*'build.fmvc',*/ 'build.ft'];
+var buildTasks = ['build.fmvc', 'build.ft'];
 gulp.task('watch', function () {
     return gulp.watch(['./src/fmvc/*.ts','./src/ft/*.ts'], {interval: 2000}, buildTasks);
 });

@@ -1,7 +1,7 @@
 ///<reference path='./d.ts'/>
 
 module fmvc {
-    export var VERSION:string = '0.8.2';
+    export var VERSION:string = '0.9.0';
     export var TYPE_MEDIATOR:string = 'mediator';
     export var TYPE_MODEL:string = 'model';
     export var TYPE_VIEW:string = 'view';
@@ -22,10 +22,11 @@ module fmvc {
         public model:{[id:string]:Model<any>} = {};
         public mediator:{[id:string]:Mediator} = {};
 
+        public remoteTaskManager:RemoteTaskManager = null;
 
         /*
             Mode - тип работы приложения, 0 - дебаг, 1 - продакшн
-         */
+        */
         public get mode():number {
             return this._mode;
         }
@@ -34,9 +35,6 @@ module fmvc {
             this._mode = value;
         }
 
-        /*
-            
-         */
         public get root():Element {
             return this._root;
         }
@@ -176,7 +174,6 @@ module fmvc {
 
         private static __facadesByName:{[key:string]:Facade} = {};
         private static __facadesByType:{[key:string]:Facade[]} = {};
-
 
         // Получение фасада приложения по имени
         public static registerInstance(facade:Facade) {

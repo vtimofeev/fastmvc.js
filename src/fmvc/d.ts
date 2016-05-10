@@ -10,6 +10,7 @@
 
 ///<reference path='./source.model.ts'/>
 ///<reference path='./storage.model.ts'/>
+///<reference path='./remote.model.ts'/>
 
 ///<reference path='./logger.ts'/>
 
@@ -21,5 +22,4 @@
 
 
 declare var MessageFormat:any;
-
 

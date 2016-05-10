@@ -3,14 +3,13 @@
 module fmvc {
 
     export class StorageModel<T extends fmvc.Model<any>> extends fmvc.Model<T> {
+
         protected modelClass:any;
         protected modelData:any;
-        protected throttleGet:any;
 
         constructor(name:string, data:any, opts?:IModelOptions) {
             super(name, data || {}, opts);
             this.state = ModelState.Synced;
-            this.throttleGet = _.throttle(_.bind(this.getImpl, this), 100, {leading:false});
         }
 
         setChildModel(modelClass:any, defaultData:any):void {
@@ -18,22 +17,48 @@ module fmvc {
             this.modelData = defaultData;
         }
 
-        protected getBaseModelInstance():T {
-            return new (this.modelClass)(this.name + '_instance_' + this.count, this.modelData);
+        protected getChildModelClass():any {
+            return this.modelClass;
         }
+
+        protected getChildModelData():any {
+            return this.modelData;
+        }
+
+        protected getBaseModelInstance():T {
+            return new (this.getChildModelClass())(this.name + '_instance_' + this.count, this.getChildModelData());
+        }
+
+
+
+        save():fmvc.IPromise {
+            throw 'Method can not be implemented';
+        }
+
+        delete():fmvc.IPromise {
+            throw 'Method can not be implemented';
+        }
+
+
+
     }
 
 
     export class DictionaryModel<T extends Model<any>> extends StorageModel<T> {
+        public getPromises:IPromise[] = [];
 
-       getById(id:string):T {
-           return this.data[id] || this.createById(id);
-       }
 
-       protected createById(id:string):T {
+        protected getBaseModelInstance():T {
+            this.count = this.count > -1?this.count + 1: 0;
+            return super.getBaseModelInstance();
+        }
+
+        public getInstanceById(id:string):T {
+            if(this.data[id]) return this.data[id];
+
            var instance:T = this.getBaseModelInstance();
+           this.getPromises.push( instance.getById(id) );
            this.data[id] = instance;
-           instance.get({id: id});
            return instance;
        }
 
@@ -41,14 +66,25 @@ module fmvc {
 
     export class ArrayModel<T extends Model<any>> extends StorageModel<T> {
 
-        insert(...values:any[]):any {
+        constructor(name:string, opts?:IModelOptions) {
+            super(name, [], opts);
+            this.state = ModelState.Synced;
         }
 
-        delete():T {
-            return null;
+        protected getHandler(data:any):any {
+            this.state = ModelState.Synced;
+
+            var models = data.map((item)=>{
+               var model = this.getBaseModelInstance();
+               model.data = item;
+               model.state = ModelState.Synced;
+               return model;
+            }, this);
+
+            this.data = <any> [].concat(this.data, models);
+            return data;
         }
-
-
 
     }
+
 }

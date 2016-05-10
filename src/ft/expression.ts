@@ -76,10 +76,7 @@ module ft {
         }
 
         private executeMultiExpression(ex:IExpression, context:TemplateView, classes:boolean):any {
-            console.log('[executeMultiExpression]', ex)
-            if(!ex) {
-                console.log('...', ex);
-            }
+            //console.log('[executeMultiExpression]', ex)
             var isSimpleExpression:Boolean = (ex.expressions.length === 1);
             var contextValue;
             return isSimpleExpression?
@@ -100,7 +97,7 @@ module ft {
         }
 
         private parseContextValue(value:any, ex:IExpression|string, classes:boolean):any {
-            console.log('Parse context value: ', value, ex, classes);
+            //console.log('Parse context value: ', value, ex, classes);
             if(classes) {
                     if(!!value) {
                         if(value === true) {
@@ -146,13 +143,10 @@ module ft {
 
                     if(!this.funcMap[vs]) {
                         if(vs.indexOf(GetContext.appField) === 0) vs = vs.replace(GetContext.appField, GetContext.facadeField);
-                        console.log('?', vs, context, this.funcMap);
                         this.funcMap[vs] = new Function('var v=null; try {v=this.' + vs + ';} catch(e) { v=\'{' + vs.replace(/'/g, '\\\'') + '}\';} return v;');
                     }
 
-                    console.log('1:', vs);
                     r = this.funcMap[vs].apply(context);
-                    console.log('2:', vs);
                 }
                 else if(vs.indexOf(GetContext.stateField) === 0) {
                     if(!this.funcMap[vs]) {
@@ -186,11 +180,6 @@ module ft {
 
         private executeExpression(ex:IExpression, context:TemplateView, classes?:boolean):any {
             counters.expression++;
-            console.log("Execute expression: ", ex);
-            if(!ex.expressions) {
-                console.log('Has no expressions at', ex);
-            }
-
             var r:any = ex.args?this.getContextArguments(ex,context):this.getParsedContextValue(ex.expressions[0],context,classes);
             if(!r && classes) return '';// empty class expression
             if(ex.filters) r = this.executeFilters(r, ex.filters, context);
