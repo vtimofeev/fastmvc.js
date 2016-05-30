@@ -23,11 +23,12 @@ module ui.def {
                         title: value.title,
                         value: this.model.data[value.field]
                     };
-                    var bindout = 'bindout.' + value.field;
+                    var bindout = 'out.' + value.field;
                     var params = {
                         model: this.model,
                         setStates: states
                     };
+
                     params[bindout] = value.field;
                     var instance = ft.templateManager.createInstance('ui.Input', this.name + '-field-' + value.field, params);
                     instance.render(this.getElement());

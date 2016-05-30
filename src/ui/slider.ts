@@ -1,7 +1,6 @@
 ///<reference path="../../src/fmvc/d.ts" />
 ///<reference path="../../src/ft/d.ts" />
 
-
 module ui.def {
     export function validateMaxMin(value:number, min:number, max:number) {
         return value < min ? min : value > max ? max : value;

@@ -1,4 +1,4 @@
-///<reference path="../../src/d.ts/mocha/mocha.d.ts" />
+//<reference path="../../src/d.ts/mocha/mocha.d.ts" />
 ///<reference path="../../../DefinitelyTyped/chai/chai.d.ts" />
 ///<reference path="../../src/fmvc/d.ts" />
 ///<reference path="../../src/ft/d.ts" />
@@ -20,10 +20,10 @@ describe('ui', ()=> {
         '<ui.ToggleButton .data="Toggle button" ></ui.ToggleButton></div>' +
         '<h1>Progress</h1>' +
         '<ui.Progress .value=".5"></ui.Progress>' +
-        '<h1>Slider</h1>' +
-        '<ui.HSlider .value=".1" .state.step=".2"></ui.HSlider>' +
+        '<h1>Slider {data.slider*10}</h1>' +
+        '<ui.HSlider .out.value="data.slider" .value="{data.slider}" .state.step=".2"></ui.HSlider>' +
         '<h1>Input</h1>' +
-        '<ui.Input .bindout.value="data.name" .value="{data.name}" .state.placeholder="{data.placeholder}"></ui.Input>' +
+        '<ui.Input .out.value="data.name|addRest" .value="{data.name|removeRest}" .state.placeholder="{data.placeholder}"></ui.Input>' +
         '<h1>Group</h1>' +
         '<ui.Group .data="{data.age}"></ui.Group>' +
         '</div>',
@@ -33,6 +33,7 @@ describe('ui', ()=> {
     model.data = {
         name: 'Vasily',
         placeholder: 'Name',
+        slider: .5,
         age: [1, 2, 3, 4, 5]
     };
 
@@ -40,6 +41,15 @@ describe('ui', ()=> {
 
     var instance:ft.TemplateView = ft.createInstance('ui.Test', 'ui.Test-1');
     instance.model = model;
+
+
+    instance.addRest = (value)=>{
+        return value.indexOf('...') === value.length - 3 ? value : value + '...';
+    };
+    instance.removeRest = (value)=>{
+        return value.indexOf('...') === value.length - 3 ? value.substring(0, value.length - 3) : value;
+    };
+
     instance.render(document.getElementById('container'));
 });
 

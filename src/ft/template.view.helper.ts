@@ -11,7 +11,6 @@ module ft {
         Comment: 'comment'
     };
 
-
     export class TemplateViewHelper {
         private idCounter:number = 0;
         public domElementPathIds:{[id:string]:TemplateView} = {};

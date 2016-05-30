@@ -39,7 +39,7 @@ module ft {
         class: 'class',
         ln: 'ln',
         if: 'if',
-        bindoutDot: 'bindout.'
+        outDot: 'out.'
     };
 
     export var FunctorType = {
@@ -85,7 +85,7 @@ module ft {
 
     export class TemplateView extends fmvc.View  {
         private _template:ITemplate;
-        private _i18n:any; // i18n store
+        private _i18n:any;
 
         private _domDef:IDomDef; // Definition view related parent
         private _constructorParams:any; // Params added at template constructor
@@ -120,6 +120,7 @@ module ft {
             this._template = template;
             this._constructorParams = params;
             //this.setParameters(_.extend({}, template.domTree.params, params));
+            this.getFilter.bind(this);
             this.life = LifeState.Init;
         }
 
@@ -169,13 +170,16 @@ module ft {
         // Для связывания внутреннего состояния с внешними данными, используется внешний биндинг состояния
         protected applyStateBinds(name:string, value:any):void {
             if (!(this._stateBinds && this._stateBinds[name])) return;
+
             //console.log('Apply bind ', name, value, this.parent.model, this.parent.data);
-            var dataRef:string[] = this._stateBinds[name];
+            var dataRef:string[] = this._stateBinds[name][0],
+                filtersRef:string[] = this._stateBinds[name][1];
 
             var hasParentModel:boolean = !!this.parent.model;
+
             if (hasParentModel) {
                 var changes = {};
-                changes[dataRef[1]] = value;
+                changes[dataRef[1]] = filtersRef?filtersRef.reduce((m,v)=>this.getFilter(v)(m), value):value;
                 this.parent.model.changes = changes;
                 this.parent.invalidateData();
 
@@ -321,10 +325,16 @@ module ft {
                     if (key.indexOf(TmplDict.childrenDot) === 0) { // children parameter, skip
                         return;
                     }
-                    else if (key.indexOf(TmplDict.bindoutDot) === 0) {
-                        var state = key.substr(8); //bind out state
+                    else if (key.indexOf(TmplDict.outDot) === 0) {
+                        var state = key.substr(4),
+
+                            outPath = value.split('|')[0],
+                            filters = value.split('|').splice(1); //bind out state
+
                         if (!this._stateBinds) this._stateBinds = {};
-                        this._stateBinds[state] = value.split('.');
+
+                        this._stateBinds[state] = [outPath.split('.')];
+                        if(filters.length) this._stateBinds[state][1] = filters;
                     }
                     else if (key.indexOf(TmplDict.stateDot) === 0) {
                         var state = key.substr(6);
@@ -752,9 +762,12 @@ module ft {
             return result;
         }
 
+
+
         public getFilter(filter:string) {
+            // filter can contain points 'i18n.common.text';
             var fnc = new Function('return this.' + filter + ';');
-            return fnc.call(this) || this.parent ? (<TemplateView>this.parent).getFilter(filter) : null;
+            return fnc.call(this) || (this.parent && this.parent.getFilter ? (<TemplateView>this.parent).getFilter(filter) : null);
         }
 
 
