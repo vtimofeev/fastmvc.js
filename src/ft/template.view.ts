@@ -2,14 +2,15 @@
 
 module ft {
     export var templateHelper:TemplateViewHelper = new TemplateViewHelper();
+    export var expression = new ft.Expression();
+    export var dispatcher = new ft.EventDispatcher(templateHelper);
 
     var localeFormatterCache = {};
     var templateFormatterChache = {};
-    export var expression = new ft.Expression();
-    var dispatcher = new ft.EventDispatcher(templateHelper);
+
     var timers = {createDom: 0, enter: 0, setData: 0, validate: 0};
 
-    var LifeState = {
+    export var LifeState = {
         Init: 'init',
         Create: 'create',
         Active: 'active',
@@ -18,7 +19,7 @@ module ft {
         Dispose: 'dispose'
     };
 
-    var State = {
+    export var State = {
         Selected: 'selected',
         Focused: 'focused',
         Hover: 'hover',
@@ -80,7 +81,7 @@ module ft {
     }
 
     function getTime():number {
-        return (new Date()).getTime();
+        return +new Date();
     }
 
     export class TemplateView extends fmvc.View  {
@@ -119,11 +120,9 @@ module ft {
             super(name);
             this._template = template;
             this._constructorParams = params;
-            //this.setParameters(_.extend({}, template.domTree.params, params));
             this.getFilter.bind(this);
             this.life = LifeState.Init;
         }
-
 
 
         ////////////////////////////////////////////////////////////////
@@ -171,7 +170,6 @@ module ft {
         protected applyStateBinds(name:string, value:any):void {
             if (!(this._stateBinds && this._stateBinds[name])) return;
 
-            //console.log('Apply bind ', name, value, this.parent.model, this.parent.data);
             var dataRef:string[] = this._stateBinds[name][0],
                 filtersRef:string[] = this._stateBinds[name][1];
 
@@ -306,7 +304,6 @@ module ft {
         }
 
         applyParameters():void {
-            //console.log('Apply params ', this._resultParams, this.name);
             _.each(this._resultParams, this.applyParameter, this);
         }
 
@@ -392,13 +389,8 @@ module ft {
             return this._dataChildren ? this._dataChildren[path] : null;
         }
 
-
         getDefaultChildrenView():TemplateChildrenView {
             return this._dataChildren ? _.values(this._dataChildren)[0] : null;
-        }
-
-        getChildrenViewByPathOrDefault(path:string) {
-            return this.getChildrenViewByPath(path) || this.getDefaultChildrenView();
         }
 
         setChildrenViewPath(path, childrenView:TemplateChildrenView) {
@@ -414,16 +406,6 @@ module ft {
             return this._template;
         }
 
-        setTreeElementLink(name:string, value:TreeElement):void {
-            if (!this[name]) {
-                this[name] = value;
-                if (!value) {
-                    delete this[name];
-                }
-            } else {
-                throw Error('Can not set name:' + name + ' property, cause it exists ' + this[name]);
-            }
-        }
 
         ////////////////////////////////////////////////////////////////
         // Dynamic properties
@@ -434,21 +416,10 @@ module ft {
             return this._dynamicPropertiesMap[name];
         }
 
-        setDynamicProperty(name:string, value:string):void {
-            // if(this.inDocument) todo check
-            this._dynamicPropertiesMap[name] = value;
-            //console.log('Set dp ', name, this._dynamicPropertiesMap[name])
-        }
-
-        getContextValueByString(v:string, context?:any):any {
-            return expression.getContextValue(v, context || this);
-        }
-
         isChangedDynamicProperty(name:string):boolean {
             var prevValue = this._prevDynamicProperiesMap[name];
             var value = expression.getContextValue(name, this);
             var r = !(prevValue === value);
-            // console.log('Is changed ', name, r, value, this._prevDynamicProperiesMap[name]);
             return r;
         }
 
@@ -464,8 +435,7 @@ module ft {
         }
 
         bindAppModelByVar(value:string) {
-            var varPath = value.replace('app.', 'facade.').split('.'),
-                modelPathResult = null;
+            var varPath = value.replace('app.', 'facade.').split('.');
 
             if(varPath[varPath.length-2] === 'data') varPath.splice(varPath.length-2,2);
             else if(varPath[varPath.length-1] === 'data') varPath.splice(varPath.length-1,1);
@@ -476,7 +446,6 @@ module ft {
             modelPathResult = varPath;
 
             var getModelFncSrc = 'return this.' + modelPathResult.join('.') + ';';
-            //console.log('Binded model src: ' , getModelFncSrc, this.facade);
             var model = (new Function(getModelFncSrc)).apply(this);
             this._bindedModels = this._bindedModels || [];
 
@@ -490,8 +459,6 @@ module ft {
             this._bindedModels.forEach((v:fmvc.Model<any>)=>v.unbind(this), this);
         }
 
-
-
         ////////////////////////////////////////////////////////////////
         // Lifecycle: Create
         ////////////////////////////////////////////////////////////////
@@ -504,7 +471,6 @@ module ft {
         }
 
         protected createDomImpl():void {
-            //console.log('Create ', this.name);
             if (this._element) return;
             var e = <TreeElement> templateHelper.createTree(this._template.domTree, this);
             var element:HTMLElement = e instanceof TemplateView ? (<TemplateView>e).getElement() : <HTMLElement>e;
@@ -527,12 +493,10 @@ module ft {
         // Lifecycle: Enter
         ////////////////////////////////////////////////////////////////
         protected enterImpl():void {
-            //console.log('Enter ', this.name);
             super.enterImpl();
             this.setState(State.CreateTime, (new Date()).getTime());
             this.life = LifeState.Enter;
             counters.enter++;
-            //this.invalidate(fmvc.InvalidateType.Data | fmvc.InvalidateType.App | fmvc.InvalidateType.State);
             templateHelper.enterTree(this._template.domTree, this);
             this.bindAppModelsFromExpressions();
             setTimeout(()=>this.life = LifeState.Active, 0);
@@ -543,13 +507,10 @@ module ft {
         ////////////////////////////////////////////////////////////////
 
         protected exitImpl():void {
-            // console.log('Exit ', this.name);
             this.unbindAppModelsFromExpressions();
-
             templateHelper.exitTree(this._template.domTree, this);
             super.exitImpl();
             this.cleanDelays();
-
         }
 
         ////////////////////////////////////////////////////////////////
@@ -587,22 +548,18 @@ module ft {
         }
 
         public validate():void {
-            // console.log('Validate try ', this.name);
             if (!this.inDocument) return;
-            //console.log('Validate ', this.name, this);
 
             var start = getTime();
 
             if (!_.isEmpty(this._dynamicPropertiesMap)) _.extend(this._prevDynamicProperiesMap, this._dynamicPropertiesMap);
             this._dynamicPropertiesMap = {};
             if (this._template && this._template.hasStates) templateHelper.validateTree(this._template.domTree, this);// templateHelper.createTreeObject(this._template.domTree, this);
-            //console.log('Validate ...', this.name, this._invalidate);
             super.validate();
 
             var result = getTime() - start;
             counters.validate++;
             timers.validate += result;
-
         }
 
         protected validateApp():void {
@@ -624,12 +581,6 @@ module ft {
                 counters.validateState++;
                 templateHelper.updateDynamicTree(this, DynamicTreeGroup.State);
             }
-        }
-
-        protected validateParent() {
-        }
-
-        protected validateChildren() {
         }
 
         ////////////////////////////////////////////////////////////////
@@ -683,6 +634,7 @@ module ft {
         ////////////////////////////////////////////////////////////////
         // Events
         ////////////////////////////////////////////////////////////////
+
         public handleTreeEvent(e:ITreeEvent):void {
             e.currentTarget = this;// previous dispatch
             e.depth--;
@@ -697,7 +649,6 @@ module ft {
             var h = this._localHandlers ? this._localHandlers[path] : null;
             if (h && h[e.name]) {
                 var handlers = h[e.name];
-                //console.log('Has component triggers ', e.name, this.name);
                 _.each(handlers, (v)=> {
                     v.call(this, e);
                     e.executionHandlersCount++;
@@ -730,8 +681,7 @@ module ft {
         }
 
         protected internalHandler(type, e:any):void {
-            //console.log('Internal handler ... ', type, e);
-            if (this.parent) this.parent.internalHandler(type, e);
+            if (this.parent && this.parent.internalHandler) this.parent.internalHandler(type, e);
         }
 
         ////////////////////////////////////////////////////////////////
@@ -754,9 +704,6 @@ module ft {
             if (this._dynamicPropertiesMap[exName]) return this._dynamicPropertiesMap[exName];
 
             exObject = context.getExpressionByName(exName);
-
-            //console.log('getExpressionValue: ', ex);
-
             result = expression.execute(exObject, context);
 
             return result;

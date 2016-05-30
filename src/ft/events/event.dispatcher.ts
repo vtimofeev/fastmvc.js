@@ -15,15 +15,6 @@ module ft {
     };
 
 
-    /*
-    export interface IEventEmitter3 {
-        on(event, handler, context):void;
-        once(event, handler, context):void;
-        off(event, handler, context):void;
-        emit(event, ...args:any[]):any;
-    }
-    */
-
     export class EventDispatcher  {
         private eventMap:{[event:string]:boolean} = {};
         private viewHelper:TemplateViewHelper;
@@ -47,7 +38,6 @@ module ft {
 
             var pointerEvent:IPointerEvent = this.pointer.tryTransformToCompositeEvent(e);
             if(pointerEvent.isComposite) { // set global pointer data
-                //console.log('New pointer event: ', pointerEvent.name);
                 this.pointer.setData(pointerEvent);
                 //e.preventDefault();
             }
@@ -55,12 +45,10 @@ module ft {
             if (pathDefinition){
                 var sequenceEvent:IPointerEvent = this.pointer.addSequenceEvent(pointerEvent, target);
                 var event:ITreeEvent = this.getTreeEventByBrowserEvent(pointerEvent.name || e.type, pathDefinition.data, pathDefinition.root, e, pointerEvent);
-                //console.log('dispatch composite event', pathDefinition.data.path, pointerEvent);
                 this.viewHelper.dispatchTreeEventDown(event);
 
                 if(sequenceEvent) {
                     var sequenceTreeEvent = this.getTreeEventByBrowserEvent(sequenceEvent.name, pathDefinition.data, pathDefinition.root, e, sequenceEvent);
-                    //console.log('dispatch sequence event',  pathDefinition.data.path, sequenceEvent);
                     this.viewHelper.dispatchTreeEventDown(sequenceTreeEvent);
                 }
             }

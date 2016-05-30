@@ -1,6 +1,4 @@
-///<reference path="../../src/d.ts/mocha/mocha.d.ts" />
-///<reference path="../../../DefinitelyTyped/chai/chai.d.ts" />
-///<reference path="../../src/fmvc/d.ts" />
+///<reference path="d.ts" />
 
 var expect = chai.expect;
 var assert = chai.assert;

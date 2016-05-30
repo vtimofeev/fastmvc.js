@@ -1,6 +1,4 @@
-////<reference path="../../src/d.ts/mocha/mocha.d.ts" />
-///<reference path="../../../DefinitelyTyped/chai/chai.d.ts" />
-///<reference path="../../src/ft/d.ts" />
+///<reference path="d.ts" />
 
 
 import ModelState = fmvc.ModelState;

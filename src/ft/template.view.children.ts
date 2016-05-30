@@ -33,16 +33,10 @@ module ft {
                 if (!child.inDocument) {
                     child.isChildren = true;
                     child.createDom();
-                    //child.enter();
-                    //console.log(this.name, ' create children ', child.getElement().outerHTML);
                     this.getElement().appendChild(child.getElement());
                 }
 
-                //child.invalidateData();
-                //child.invalidateApp();
             }, this);
-
-            //console.log('Created children is ', this._children);
         }
 
 
@@ -80,11 +74,9 @@ module ft {
 
         protected applyChildrenParameters():void {
             var params:any = this.getChildrenExpressionParams(this.getParameters());
-            //console.log('Apply children params ', this.name, params);
             var length = this._children ? this._children.length : 0;
             _.each(this._children, (child:TemplateView, index:number)=> {
                 if (child.disposed) return;
-                //child.invalidateData();
                 _.each(params, (value:IExpressionName, key:string)=> {
                     this.setCurrentChildToExecutionContext(child, index, length, value.context || this.parent);
                     var childParamName:string = this.getChildrenParamName(key);
@@ -98,14 +90,12 @@ module ft {
         public applyChildrenParameter(value:IExpressionName|any, key:string):void { // Executes when applyValueToHost
             var value:any = this._resultParams[key];
             var length = this._children ? this._children.length : 0;
-            //console.log('Apply children parameter ', value, key);
 
             _.each(this._children, function (child:TemplateView, index:number) {
                 if (child.disposed) return;
                 this.setCurrentChildToExecutionContext(child, index, length, value.context || this.parent);
                 var childValue:any = _.isObject(value) ? this.getExpressionValue(value) : value;
                 var childParamName:string = this.getChildrenParamName(key);
-                //console.log('Apply each parameter value ', childParamName, childValue);
                 child.applyParameter(childValue, childParamName);
             }, this);
         }
@@ -123,7 +113,6 @@ module ft {
         }
 
         enterImpl() {
-            //console.log('Enter children view ', this._children);
             _.each(this._children, function (child:TemplateView) {
                 child.enter();
             }, this);
@@ -136,7 +125,6 @@ module ft {
         }
 
         validateData() {
-            //this.createChildren();
         }
 
         validateState() {

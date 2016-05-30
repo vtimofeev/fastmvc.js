@@ -132,8 +132,6 @@ module ft {
             return null;
         }
 
-
-
         protected getSequenceEvent(time:number, diffX:number, diffY:number, e:IPointerEvent):IPointerEvent {
             if(time < 1000 && diffX < 10 && diffY < 10 ) return {name: CompositeEvent.Action, sequence: 1, clientX: e.clientX, clientY: e.clientY };
             return null;

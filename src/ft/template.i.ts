@@ -6,9 +6,6 @@ module ft {
     export type ExpressionNameValue = string|IExpressionName;
     export type TemplateViewParams = any[];
 
-
-
-
     // Params of dom element or component
 
         export var TemplateParams = {
@@ -47,18 +44,6 @@ module ft {
         createInstance(className:string, name:string, params?:any, mixin?:any):any;
     }
 
-    /*
-    export interface TemplateViewHelper {
-        //getIdMap():{[id:string]:TemplateView}
-        createTreeObject:IGetTreeObjectFunctor;
-        enterTreeObject:IGetTreeObjectFunctor;
-        exitTreeObject:IGetTreeObjectFunctor;
-        setDataTreeObject:IGetTreeObjectFunctor;
-        updateDynamicTree(view:TemplateView, group?:string):void;
-        dispatchTreeEventDown(e:ITreeEvent):void;
-    }
-    */
-
     export interface IHtmlObject {
         type:string; // 'tag', 'text', 'comment'
         name:string;
@@ -67,12 +52,6 @@ module ft {
         attribs?:{[name:string]:any}[];
         attributes?:{[name:string]:any}[];
         children?:IHtmlObject[];
-    }
-
-    export interface IExpressionManager {
-        parse(value:string):IExpression;
-        getExpressionName(value:IExpression):IExpressionName;
-        execute(value:IExpression, root:TemplateView):any;
     }
 
     export interface ITemplate {
@@ -107,12 +86,6 @@ module ft {
         [propertyPathName:string]:string[] /* expression name string */
     }
 
-    /*
-    export interface IExpressionDomPathMap {
-        [path:string]:string|IExpressionName;
-    }
-    */
-
     export interface IExpressionName {
         name:string;
         context?:TemplateView;
@@ -140,51 +113,11 @@ module ft {
         vars:string[];
         hosts?:IExpressionHost[];
 
-
-        //values:any;
         args?:any;
 
         filters?:string[];
         expressions?:(IExpression|string)[];
     }
-
-
-    /*
-    export interface TemplateView extends fmvc.IView {
-        domDef:IDomDef;
-        localDomDef:IDomDef;
-
-        eval(value:string):any;
-
-        //getValue(value:any):any;
-        getTemplate():ITemplate;
-        getTreeElementByPath(value:string):TreeElement;
-        setTreeElementPath(path:string, value:TreeElement):void;
-
-        getFormattedMessage(name:string,arguments:any[]):string;
-        getExpressionValue(ex:IExpressionName);
-        getCssClassExpressionValue(ex:IExpressionName);
-
-        getDomDefinitionByPath(path:string):IDomDef;
-        isChangedDynamicProperty(value:string);
-
-        setChildrenViewPath(path:string, value:TemplateChildrenView):void;
-        getChildrenViewByPath(path:string):TemplateChildrenView;
-
-        setDynamicProperty(name:string, value:any);
-
-        getPathClassValue(path:string, name:string):string;
-        setPathClassValue(path:string, name:string, value:string);
-
-        applyParameter(value:any, key:string):void;
-
-
-        on(event, handler, path?:string);
-        off(event, handler?, path?:string);
-        handleTreeEvent(e:ITreeEvent);
-        dispatchTreeEvent(e:ITreeEvent);
-    }
-    */
 
     export  interface IAttrPropertyMap {
         [propName:string]:ExpressionValue;
@@ -218,26 +151,10 @@ module ft {
         [name:string]:string|number|boolean;
     }
 
-    export interface ITreeObjectFunctor {
-        (object:TreeElement, data:IDomDef, root:TemplateView):any
-    }
-
-    export interface IChildrenTreeObjectFunctor {
-        (object:TreeElement, parent:TreeElement, data:IDomDef, root:TemplateView):any
-    }
-
-    export interface IGetTreeObjectFunctor {
-        (data:IDomDef, root:TemplateView):TreeElement
-    }
-
-    export  interface IGetElementFunctor {
-        (value:TreeElement):Element
-    }
 
     export interface ITreeEvent extends fmvc.IEvent {
         e?:any; /* browser event */
         pe?:IPointerEvent;
-        //target:fmvc.Notifier; fmvc.IEvent
 
         def:IDomDef; // from which node we start dispatch event
         currentDef?:IDomDef; // On tree

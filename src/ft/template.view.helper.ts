@@ -32,7 +32,6 @@ module ft {
             else {
                 for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
                     var childrenTreeElement:TreeElement = this.createTree(data.children[i], root);
-                    //console.log('CreateDom Append child', childrenTreeElement);
                     treeDomElement.appendChild(childrenTreeElement instanceof TemplateView ? childrenTreeElement.getElement() : childrenTreeElement);
                 }
                 return treeElement;
@@ -51,10 +50,7 @@ module ft {
             if (isComment && included) {
                 newElement = this.createTree(data, root);
                 this.enterTree(data, root);
-                //console.log('Replace child ', treeDomElement, newElement);
                 treeDomElement.parentNode.replaceChild(this.getDomElement(newElement), treeDomElement);
-
-
             }
             else if (!isComment && !included) {
                 this.exitTree(data, root);
@@ -93,13 +89,12 @@ module ft {
 
         public exitTree(data:IDomDef, root:TemplateView):void {
 
-            var treeElement:TreeElement = this.getTreeElement(data, root);
-            //console.log('Exit ', treeElement, data, root);
+            var treeElement:TreeElement = this.getTreeElement(data, root),
+                i:number,
+                childrenLength:number,
+                domElement:HTMLElement = this.getDomElement(treeElement),
+                isComment:boolean = this.isCommentElement(domElement);
 
-            var i:number;
-            var childrenLength:number;
-            var domElement:HTMLElement = this.getDomElement(treeElement);
-            var isComment:boolean = this.isCommentElement(domElement);
             if (!isComment) {
                 this.exitChildrenView(data,root);
                 for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
@@ -136,12 +131,9 @@ module ft {
             var exNames:string[] = this.composeNames_updateDynamicTree(expressionArrays);
             var tmpl = root.getTemplate();
 
-            // console.log('Update dynamic tree ', root.name, exNames);
             var exObjArrays:IExpression[] = _.map(exNames, (v:string)=>(tmpl.expressionMap[v]));
             _.each(exObjArrays, (v, k)=>this.applyExpressionToHosts(v, root), this);
         }
-
-
 
 
         // -----------------------------------------------------------------------------------------------------------
@@ -177,7 +169,6 @@ module ft {
         createComponentElement(data:IDomDef, root:TemplateView):TemplateView {
             var dataParams:any = this.applyFirstContextToExpressionParameters(data.params, root);
             var result = templateManager.createInstance(data.name, 'view-' + data.name + '-' + this.getNextId(), dataParams);
-            //console.log('CreateComponent ', data.name, result !== root, dataParams, result);
             result.parent = root;
             result.domDef = data;
             if (result !== root) result.createDom();
@@ -186,14 +177,14 @@ module ft {
 
 
         createDomElement(type:string, data:IDomDef, root:TemplateView):HTMLElement|Comment|Text {
-            var result:HTMLElement|Text;
+            var result:HTMLElement|Comment|Text;
             switch (type) {
                 case DomDefType.Tag:
-                    var result = document.createElement(data.name);
+                    result = document.createElement(data.name);
                     this.initDomElement(result, data, root);
                     return result;
                 case DomDefType.Text:
-                    var result = document.createTextNode('');
+                    result = document.createTextNode('');
                     this.initTextElement(result, data, root);
                     return result;
                 case DomDefType.Comment:
@@ -204,7 +195,6 @@ module ft {
                     return result;
                 default:
                     throw 'Cant create dom element ' + type + ' of ' + data.path + ', ' + root.name;
-                    return null;
             }
         }
 
@@ -215,20 +205,15 @@ module ft {
                 childrenView.parent = root;
                 childrenView.setElement(this.getDomElement(object));
                 childrenView.createDom();
-                //childrenView.enter();
                 root.setChildrenViewPath(data.path, childrenView);
             }
         }
 
         private initDomElement(object:TreeElement, data:IDomDef, root:TemplateView) {
-            //console.log('Init dom element ', object, data, root);
             var domElement = <HTMLElement> this.getDomElement(object);
-            //console.log(root.name, data.path, ' SetData');
-
 
             /* Процесс установки аттрибутов, в том числе с расчетом выражений, для конкретного узла Dom */
             if (this.isTagElement(domElement) && !domElement.getAttribute(AttributePathId)) {
-                //console.log(root.name, data.path, ' ApplyData');
 
                 // Вычисление аттрибутов
                 var domElementPathId:string = this.getNextId();
@@ -305,15 +290,9 @@ module ft {
             for (i = 0; i < l; i++) {
                 host = exObj.hosts[i];
 
-                /*
-                 performance bench
-                 if(host.group === 'data') result = Math.round(Math.random()*100);
-                 */
                 result = result || (host.key === 'class' ? root.getCssClassExpressionValue(exObj) : root.getExpressionValue(exObj));
 
-
                 el = this.getDomElement(root.getTreeElementByPath(host.path));
-                //console.log('Apply ', root.name, host.path, host.key, result);
                 if (el && el.nodeType != 8) this.applyValueToHost(result, el, host, root);
             }
         }
@@ -321,7 +300,6 @@ module ft {
         applyValueToHost(value:any, el:HTMLElement, host:IExpressionHost, root:TemplateView):any {
             var key:string = host.key;
 
-            //console.log('Apply to ', host.path, host.key, value);
             switch (host.group) {
                 case 'data':
                     el.textContent = value;
@@ -588,11 +566,8 @@ module ft {
         private triggerDefEvent(e:ITreeEvent):void {
             var def:IDomDef = <IDomDef> (e.currentDef || e.def);
             var view = <TemplateView> (e.currentTarget || e.target);
-            //console.log('Trigger def event, ', e.name, ' path ', def.path);
-
 
             if (!view.disabled && def.handlers && def.handlers[e.name]) {
-                //console.log('Has trigger event, ', e.name, ' path ', def.path);
                 view.evalHandler(def.handlers[e.name], e);
                 e.executionHandlersCount++;
             }

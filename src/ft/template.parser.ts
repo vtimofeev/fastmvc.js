@@ -1,21 +1,16 @@
 ///<reference path="./d.ts" />
 declare var Tautologistics:any;
-///<reference path='../../../DefinitelyTyped/lodash/lodash.d.ts'/>
-
 
 module ft {
     var htmlparser:any = Tautologistics.NodeHtmlParser;
-    var expressionManager:IExpressionManager;
     var expression = new Expression();
 
     export class TemplateParser implements ITemplateParser {
         private _htmlparserHandler:any;
         private _htmlParser:any;
-
-
-        private _skipProperties:string[] = ['raw'];
-        private _svgTagNames:string[] = ('circle clipPath defs ellipse g line linearGradient mask path pattern polygon polyline radialGradient rect stop svg text tspan').split(' ');
+        private _svgTagNames:string[] = 'circle clipPath defs ellipse g line linearGradient mask path pattern polygon polyline radialGradient rect stop svg text tspan'.split(' ');
         private _componentParams:string[] = _.values<string>(TemplateParams);
+
         private _propAttribs:{[name:string]:any} = {
             style: {
                 delimiter: ';',
@@ -55,13 +50,11 @@ module ft {
         }
 
         htmlObjectToTemplate(objs:IHtmlObject[]):ITemplate {
-            //console.log('Result parser: ' , objs);
             var result = <ITemplate> {};// new Template();
 
             _.each(objs, function(obj:IHtmlObject, index:number) {
                 if(obj.name.indexOf('f.') < 0) {
                     result.expressionMap = <IExpressionMap> {};
-                    //(obj.attribs?result.extend=obj.attribs.extend:null);
                     result.name = obj.name;
                     result.pathMap = {};
                     // side effect, creates expression map to result, create pathMap
@@ -93,8 +86,6 @@ module ft {
                var group = this.getAttribGroup(key);
                var groupKey = this.getGroupKey(key, group);
                def[group][groupKey] = this.parseExpressionAttrib(value, key, r.expressionMap, path, group);
-               //console.log('Group, key: ', group, groupKey, key);
-
             }, this);
 
             def.children = _.map(o.children, (v:IHtmlObject, index:number)=>(this.htmlObjectToDomTree(v,r, def.path +','+index)), this);

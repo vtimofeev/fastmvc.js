@@ -24,7 +24,6 @@ module ft {
             }
             else if (_.isObject(value)) {
                 if(value.extendClassName) {
-                    //console.log(this, this._classData);
                     var baseClass = this._classData[value.extendClassName];
                     if(!baseClass) throw 'Cant found base class to extend ' + value.extendClassName;
 
@@ -55,7 +54,6 @@ module ft {
          */
         public createClass(className:string, content:string, params:any, mixin:any):ITemplateConstructor {
             var templateData:ITemplate = this.parse(content);
-            //console.log('Add ', className, params);
 
             if (this._classData[className]) throw 'TemplateManager: cant add ITempalte object of ' + className + ' cause it exists.';
 
@@ -93,9 +91,7 @@ module ft {
                     var instanceParams:any = _.extend({}, baseParams, params); // extend base parameters
                     var instanceMixin:any = _.extend({}, baseMixin, mixin); // extend methods
                     var instance = new ft.TemplateView(name, instanceParams, template);
-                    //console.log('CreateInstance base (p),(m) local (p),(m) instance p,m ', name, baseParams, baseMixin, params, mixin, instanceParams, instanceMixin);
                     _.each(instanceMixin, (v, k)=>instance[k] = v);
-
                     return instance;
                 };
             }

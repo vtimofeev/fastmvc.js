@@ -1,7 +1,4 @@
-//<reference path="../../src/d.ts/mocha/mocha.d.ts" />
-///<reference path="../../../DefinitelyTyped/chai/chai.d.ts" />
-///<reference path="../../src/fmvc/d.ts" />
-///<reference path="../../src/ft/d.ts" />
+///<reference path="d.ts" />
 
 declare var ui;
 ft.load(_.values(ui.def).filter((v)=>!!v && v.className));
@@ -43,10 +40,10 @@ describe('ui', ()=> {
     instance.model = model;
 
 
-    instance.addRest = (value)=>{
+    instance['addRest'] = (value)=>{
         return value.indexOf('...') === value.length - 3 ? value : value + '...';
     };
-    instance.removeRest = (value)=>{
+    instance['removeRest'] = (value)=>{
         return value.indexOf('...') === value.length - 3 ? value.substring(0, value.length - 3) : value;
     };
 

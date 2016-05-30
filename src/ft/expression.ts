@@ -14,7 +14,6 @@ module ft {
         thisDot: 'this.'
     };
 
-
     export class ExpressionName implements IExpressionName {
 
         public name:string;
@@ -76,7 +75,6 @@ module ft {
         }
 
         private executeMultiExpression(ex:IExpression, context:TemplateView, classes:boolean):any {
-            //console.log('[executeMultiExpression]', ex)
             var isSimpleExpression:Boolean = (ex.expressions.length === 1);
             var contextValue;
             return isSimpleExpression?
@@ -97,7 +95,6 @@ module ft {
         }
 
         private parseContextValue(value:any, ex:IExpression|string, classes:boolean):any {
-            //console.log('Parse context value: ', value, ex, classes);
             if(classes) {
                     if(!!value) {
                         if(value === true) {
@@ -111,10 +108,6 @@ module ft {
                     }
             }
             return value;
-        }
-
-        private ifString(value:any):string {
-            return <string> (_.isString(value)?value:null);
         }
 
         public replaceUndefinedToNull(v):any {
@@ -280,17 +273,10 @@ module ft {
         }
 
         private tryParseRoundBracketExpression(expression:string, index:number = 0):ISimpleExpression|string {
-            //var expressions:string = value;
-            //if(!expressions) return value; // @todo review this fix (replace ! sign)
-
-            //var expression = _.isArray(expressions)?expressions[0]:expressions ;
-
-            // skip direct execution (at handlers);
             var variableMatches:string[] = expression.match(this.VariableMatchRe);
             var hasOneMatch:boolean = variableMatches && variableMatches.length === 1;
+
             if(expression.indexOf('this') > -1 || hasOneMatch) return expression;
-
-
 
             var variables = _.compact(
                 _.filter(
@@ -333,25 +319,6 @@ module ft {
                 object[result[1].trim()] = result[0].trim();
                 return object;
             }
-        }
-
-        private getExpressionFromString(value:string):string[] {
-            var brackets = [];
-            var open = 0;
-            var r = [];
-            _.each(value, function (v, i) {
-                if (v === '(') {
-                    if (open === 0) brackets.push([i]);
-                    open++;
-                } else if (v === ')') {
-                    if (open === 1) brackets[brackets.length - 1].push(i);
-                    open--;
-                }
-            });
-            _.each(brackets, function (v) {
-                r.push(value.substring(v[0], v[1] + 1));
-            });
-            return r.length ? r : null;
         }
     }
 }
