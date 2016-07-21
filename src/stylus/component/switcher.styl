@@ -1,0 +1,105 @@
+.switcher {
+  @extends .button;
+  background-color: transparent;
+  padding-left: 3rem;
+}
+
+.switcher:before {
+  content: ' ';
+  position: absolute;
+  box-sizing: border-box;
+  height: 1.3rem;
+  width: 2rem;
+  top: 0.65rem;
+  left: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: $c.radius.element;
+}
+
+.switcher:after {
+  content: ' ';
+  position: absolute;
+  box-sizing: border-box;
+  height: 1.3rem;
+  width: 1rem;
+  top: 0.65rem;
+  left: 0.5rem;
+  background-color: red;
+  transition: all 0.2s;
+  border-radius: $c.radius.element;
+}
+
+.switcher-selected:before {
+  color: $btn.color.default;
+}
+
+.switcher-selected:after {
+  left: 1.5rem;
+  background-color: blue;
+}
+
+/*
+.switcher {
+  position: relative;
+}
+
+.switcher-control {
+  height: 16px;
+  position: absolute;
+  width: 30px;
+}
+
+.switcher-control-back {
+  background: #d1d1d1;
+  border-radius: 8px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 #fff;
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.switcher-control-runner {
+  background: #f4f4f4 linear-gradient(top, #f8f8f8, #e6e6e6);
+  border-radius: 7px;
+  box-shadow: inset 0 1px 0 1px #fff, 0 1px 2px rgba(0, 0, 0, 0.5);
+  height: 14px;
+  left: 1px;
+  position: absolute;
+  top: 1px;
+  transition: left 0.2s;
+  width: 14px;
+}
+
+
+// [Green-Red] position
+
+.switcher-right {
+  .switcher-control-runner {
+    left: 15px;
+  }
+}
+
+.switcher-control {
+  cursor: pointer;
+
+  &:hover {
+    .switcher-control-runner {
+      background: linear-gradient(top, #fdfdfd, #fafafa);
+    }
+  }
+}
+
+.switcher-control-back {
+  background: $bg-color-red;
+
+}
+
+&.switcher-right {
+  .switcher-control-back {
+    background: $bg-switcher-color-green;
+  }
+}
+
+  */

@@ -6,7 +6,6 @@ module fmvc {
         state?:boolean;
         event?:boolean;
         validate?:boolean;
-        remote?:boolean; // удаленная модель, требует сохранения
     }
 
     export interface IModelData {
@@ -37,7 +36,6 @@ module fmvc {
     };
 
 
-
     export class Model<T extends IModelData> extends Notifier {
         private _count:number;
         private _data:T;
@@ -46,12 +44,13 @@ module fmvc {
         private _state:string;
         private _prevState:string;
 
+        public schemas:any;
+
         // model options
         public opts:IModelOptions = {
             event: true,
             state: true,
-            validate: false,
-            remote: false
+            validate: false
         };
 
         constructor(name:string, data:any = null, opts?:IModelOptions) {
@@ -59,6 +58,12 @@ module fmvc {
 
             opts && _.extend(this.opts, opts);
             data && this.setData(data);
+
+            this.schemas = this.getSchemas();
+        }
+
+        protected getSchemas():any {
+            return {};
         }
 
         public reset():Model<T> {
@@ -104,14 +109,6 @@ module fmvc {
             return this._data;
         }
 
-        public get schemas():any {
-            return this.getSchemas();
-        }
-
-        public getSchemas():any {
-            return null;
-        }
-
         public set data(value:T) {
             this.setData(value);
         }
@@ -134,7 +131,7 @@ module fmvc {
         public setChanges(value:T|any):Model<T> {
             if (this._data === value || this.disposed) return;
 
-            if (!this.opts.remote) {
+            if (!this.getRemoteModel()) {
                 this._changedData = value;
                 this.applyChanges();
             }
@@ -150,7 +147,7 @@ module fmvc {
             return this;
         }
 
-        protected applyChanges(remoteData:any = null):void {
+        public applyChanges(remoteData:any = null):void {
             var changes = this._changedData;
 
             if (_.isObject(changes) && _.isObject(this._data))
@@ -165,7 +162,6 @@ module fmvc {
             this.state = ModelState.Synced;
             this.sendEvent(Event.Model.Changed, this._data, changes);
 
-            return remoteData;
         }
 
         protected validate():boolean {
@@ -173,7 +169,7 @@ module fmvc {
         }
 
         getById(id:string):IPromise {
-            return this.get({_id: id});
+            return this.get({_ids: [id]});
         }
 
         get(getQuery:any, sort:any = null, limit:any = null ):IPromise {
@@ -232,7 +228,7 @@ module fmvc {
         }
 
         protected getRemoteModel():string {
-            return 'getRemoteModelIsNotSet';
+            return null;
         }
 
         protected getHandler(data:any):any {

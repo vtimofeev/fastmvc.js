@@ -1,10 +1,14 @@
 ///<reference path='../d.ts'/>
 
 module ft {
+    import IBowser = ft.helper.IBowser;
+
     export var ModelName = {
         locale: 'locale',
         i18n: 'i18n',
         theme:'theme',
+        router:'router',
+        bowser: 'info',
         log:'log'
     };
 
@@ -19,8 +23,12 @@ module ft {
             // Объект содержащий глобальные данные i18n
             var i18nModel:fmvc.Model<any> = new fmvc.Model<any>(ModelName.i18n, i18nDict);
 
+            var bowser:fmvc.Model<IBowser> = new fmvc.Model<IBowser>(ModelName.bowser, bowser);
+
+            var router:ft.Router<IRouter> = new ft.Router<IRouter>(ModelName.router);
+
             // Добавляем модели по умолчанию в фасад
-            this.register(localeModel, i18nModel, themeModel);
+            this.register(localeModel, i18nModel, themeModel, bowser, router);
         }
 
         init() {
@@ -40,9 +48,14 @@ module ft {
             return this.model[ModelName.i18n].data; // i18n
         }
 
-        public get browser():ft.helper.IBowser {
+        public get info():ft.helper.IBowser {
             return ft.helper.browser;
         }
+
+        public get router():ft.Router<IRouter> {
+            return <ft.Router<IRouter>> this.model[ModelName.router];
+        }
+
 
     }
 }

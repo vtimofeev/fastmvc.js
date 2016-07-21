@@ -14,17 +14,17 @@ module ui.def {
         className: 'ui.HSlider',
         content: '<div .base="hslider" .value="0" class="{state.base} {state.base}-{state.selected} {state.base}-{state.hover}" >' +
         '<div ln="bg" class="{state.base}-bg">' +
-        '<div ln="pg" class="{state.base}-pg" style="width: {state.value*100}%;">' +
-        '<ui.ToggleButton ln="dg" .base="{state.base}-button" .stateHandlers="hover" onpointerdown="{this.dragStart(e);}"/>' +
-        '</div>' +
+            '<div ln="pg" class="{state.base}-pg" style="width: {state.value*100}%;">' +
+                '<ui.ToggleButton ln="dg" .base="{state.base}-button" .stateHandlers="hover" onpointerdown="{this.dragStart(e);}"/>' +
+            '</div>' +
         '</div>' +
         '</div>',
+
         mixin: {
             dragStart: function dragStart(e:ft.ITreeEvent) {
                 this.startX = e.pe.clientX;
                 this.startSize = this.bg.offsetWidth;
                 this.startValue = Number(this.value);
-                //console.log('Drag start ', e, this.dg.getState('selected'));
                 this.dg.setState('selected', true);
 
                 this.globalPointer.bind(this, this.prepareChanges);
@@ -39,18 +39,12 @@ module ui.def {
                 var step = this.getState('step');
                 this.value = step?validateStep(preValue, step):preValue;
 
-                //console.log('Drag changes ', e);
                 if (e.data.name === ft.CompositeEvent.PointerUp) {
                     this.globalPointer.unbind(this);
                     this.globalPointer.enablePointerEventsByClassName(true);
                     this.dg.setState('selected', false);
                     this.dg.validate();
-
                 }
-                //console.log('Drag changes ', e, this.dg.getState('selected'));
-            },
-
-            afterEnter: function () {
             },
 
             disposeImpl: function() {
@@ -58,6 +52,51 @@ module ui.def {
             }
         }
     };
+
+    // {state.base}-{state.selected} {state.base}-{state.hover}
+    export var HSliderDefinition = {
+        className: 'ui.HSlider',
+        content: '<div .base="hslider" .value="0" class="{state.base}">' +
+        '<div ln="bg" class="{state.base}-bg">' +
+        '<div ln="pg" class="{state.base}-pg" style="width: {state.value*100}%;">' +
+        '<ui.ToggleButton ln="dg" .base="{state.base}-button" .stateHandlers="hover" onpointerdown="{this.dragStart(e);}"/>' +
+        '</div>' +
+        '</div>' +
+        '</div>',
+
+        mixin: {
+            dragStart: function dragStart(e:ft.ITreeEvent) {
+                this.startX = e.pe.clientX;
+                this.startSize = this.bg.offsetWidth;
+                this.startValue = Number(this.value);
+                this.dg.setState('selected', true);
+                this.globalPointer.bind(this, this.prepareChanges);
+                this.globalPointer.enablePointerEventsByClassName(false);
+            },
+
+            prepareChanges: function prepareChanges(e:fmvc.IEvent) {
+                var newX = e.data.clientX,
+                    result = (newX - this.startX) / this.startSize,
+                    preValue = ui.def.validateMaxMin(this.startValue + result, 0, 1); // auto invalidate
+
+                var step = this.getState('step');
+                this.value = step?validateStep(preValue, step):preValue;
+
+                if (e.data.name === ft.CompositeEvent.PointerUp) {
+                    this.globalPointer.unbind(this);
+                    this.globalPointer.enablePointerEventsByClassName(true);
+                    this.dg.setState('selected', false);
+                    this.dg.validate();
+                }
+            },
+
+            disposeImpl: function() {
+                this.super.disposeImpl();
+                this.bg = this.pg = this.dg = null;
+            }
+        }
+    };
+
 
 
 }

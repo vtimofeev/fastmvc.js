@@ -38,7 +38,6 @@ import ArrayModel = fmvc.ArrayModel;
 var expect = chai.expect;
 var assert = chai.assert;
 
-
 interface IUser extends fmvc.IModelData {
     name:string;
     email: string;
@@ -48,10 +47,7 @@ interface IUser extends fmvc.IModelData {
 var baseUserApiUrl = 'http://localhost/api/user';
 var socket:any;
 
-
 class User extends fmvc.Model<IUser> {
-
-
 
     protected getRemoteModel():string {
         return 'user';

@@ -27,8 +27,8 @@ module ft {
 
     export class Expression {
         private counter:number = 0;
-        private ExpressionMatchRe:RegExp = /\{[\(\)\\\.,\|\?:;'"!@A-Za-z<>=\[\]& \+\-\/\*%0-9]+\}/g;
-        private VariableMatchRe:RegExp = /([A-Za-z0-9 _\-"'\.]+)/gi;
+        private ExpressionMatchRe:RegExp = /\{[\(\)\\\.,\|\?:;'"!@A-Za-z_<>=\[\]& \+\-\/\*%0-9]+\}/g;
+        private VariableMatchRe:RegExp = /([A-Za-z0-9_\-"'\.]+)/gi;
         private ExResult:string = '{$0}';
         private funcMap:{[id:string]:Function} = {};
 
@@ -115,12 +115,15 @@ module ft {
         }
 
         public getContextValue(v:string|IExpression, context:TemplateView):any {
+            //console.log('getContextValue', v, context);
             var r:any,
+                rstr:string,
                 safeVs:string,
                 vs:string = typeof v === 'string'?v:null;
 
             if(vs) {
                 r = context.getDynamicProperty(vs);
+
                 if(r != undefined) return r;
 
                 counters.expressionCtx++;
@@ -135,7 +138,7 @@ module ft {
                     vs.indexOf(GetContext.modelField) === 0) {
 
                     if(!this.funcMap[vs]) {
-                        if(vs.indexOf(GetContext.appField) === 0) vs = vs.replace(GetContext.appField, GetContext.facadeField);
+                        //if(vs.indexOf(GetContext.appField) === 0) vs = vs.replace(GetContext.appField, GetContext.facadeField);
                         this.funcMap[vs] = new Function('var v=null; try {v=this.' + vs + ';} catch(e) { v=\'{' + vs.replace(/'/g, '\\\'') + '}\';} return v;');
                     }
 
@@ -151,7 +154,7 @@ module ft {
                 else if(vs.indexOf(GetContext.openBracket) === 0 || vs.indexOf(GetContext.thisDot) >= 0 ) {
                     if(!this.funcMap[vs]) {
                         safeVs = vs.replace(/'/g, '"');
-                        this.funcMap[vs] = new Function('var v=null; try {v=' + vs + ';} catch(e) {v=\'{' + safeVs + '}\';} return v;');
+                        this.funcMap[vs] = new Function('var v=null; try {v=' + vs + ';} catch(e) { v=\'{' + safeVs + '}\';} return v;');
                     }
                     r = this.funcMap[vs].apply(context);
                 }
@@ -256,11 +259,13 @@ module ft {
             var vars:(string|ISimpleExpression)[];
             var e;
 
+
             if (_.isObject(args)) {
                 vars = _.map(<any>args, (v:string,k:string)=>(e=this.tryParseRoundBracketExpression(v),(_.isObject(e)?args[k]=e.expression:null),e),this);
                 result.args = args;
             } else {
                 vars = [this.tryParseRoundBracketExpression(<string>args)];
+
                 var firstExpression:ISimpleExpression = this.ifSimpleExpression(vars[0]);
                 result.args = firstExpression?firstExpression.expression:vars[0];
             }
@@ -275,8 +280,9 @@ module ft {
         private tryParseRoundBracketExpression(expression:string, index:number = 0):ISimpleExpression|string {
             var variableMatches:string[] = expression.match(this.VariableMatchRe);
             var hasOneMatch:boolean = variableMatches && variableMatches.length === 1;
+            var hasNoConditions = expression.indexOf('!') === -1;
 
-            if(expression.indexOf('this') > -1 || hasOneMatch) return expression;
+            if(expression.indexOf('this') > -1 || (hasOneMatch && hasNoConditions) ) return expression;
 
             var variables = _.compact(
                 _.filter(

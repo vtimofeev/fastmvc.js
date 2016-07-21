@@ -66,8 +66,8 @@ module fmvc {
 
     export class ArrayModel<T extends Model<any>> extends StorageModel<T> {
 
-        constructor(name:string, opts?:IModelOptions) {
-            super(name, [], opts);
+        constructor(name:string, data:T[], opts?:IModelOptions) {
+            super(name, data || [], opts);
             this.state = ModelState.Synced;
         }
 

@@ -18,6 +18,14 @@ module ft {
             _.bindAll(this, 'createClass', 'createInstance', 'load');
         }
 
+        public loadAsync(url:string, base:string):fmvc.IPromise {
+            var className = url.replace('.ft', '').replace(/\//g, '.'),
+                t = this;
+            return $.get(base + url)
+                .then( (v)=>({ className: className, content: v}) )
+                .then( t.load );
+        }
+
         public load(value):void {
             if (_.isArray(value)) {
                 value.forEach((v)=>this.load(v), this);

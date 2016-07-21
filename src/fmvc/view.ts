@@ -97,7 +97,7 @@ module fmvc {
         }
 
         public get mediator():Mediator {
-            return this._mediator;
+            return this._mediator || (this.parent && this.parent.mediator);
         }
 
         public setStates(value:any):IView {
@@ -133,6 +133,10 @@ module fmvc {
             return this._states[name];
         }
 
+        public get state():any {
+            return this._states;
+        }
+
         public get model():Model<any> {
             return this._model;
         }
@@ -164,12 +168,13 @@ module fmvc {
                 if (value && value instanceof Model) value.bind(this, this.modelChangeHandler);
                 this.setData(value ? value.data : null);
                 this._model = value;
+                this.invalidate(InvalidateType.Data);
             }
             return this;
         }
 
         public get app():any {
-            return (this._mediator && this._mediator.facade) ? this._mediator.facade.model : (this.parent ? this.parent.app : null);
+            return (this._mediator && this._mediator.facade) ? this._mediator.facade : (this.parent ? this.parent.app : null);
         }
 
         public get inDocument():boolean {
@@ -289,6 +294,10 @@ module fmvc {
              */
             this._invalidate = 0;
             this._isWaitingForValidate = false;
+            this.afterValidate();
+        }
+
+        public afterValidate():void {
         }
 
         protected validateData():void {
@@ -313,6 +322,7 @@ module fmvc {
                 parent.appendChild(this.getElement());
             }
 
+                        
             this.afterRender();
             return this;
         }
@@ -399,6 +409,7 @@ module fmvc {
         invalidateAll():void;
 
         validate():void;
+        afterValidate():void;
 
         getElement():HTMLElement;
         setElement(value:HTMLElement):void;

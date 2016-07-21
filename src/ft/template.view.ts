@@ -39,6 +39,7 @@ module ft {
         createDelay: 'createDelay',
         class: 'class',
         ln: 'ln',
+        mlink: 'mlink',
         if: 'if',
         outDot: 'out.'
     };
@@ -166,30 +167,31 @@ module ft {
         // States
         ////////////////////////////////////////////////////////////////
 
+        protected getApplyValueFunctionOf(value:string) {
+            var isModel = value.indexOf('.data') > -1,
+                dataStartIndex = value.lastIndexOf('data.'),
+                field = value.substring(dataStartIndex + 5),
+                modelPath = value.substring(0, dataStartIndex - 1);
+
+            if(isModel) {
+                return new Function('v', ' this.' + modelPath + '.changes = { ' + field + ': v}; ');
+            }
+            else {
+                return new Function('v', ' this.' + value + '= v; this.invalidateData(); ');
+            }
+        }
+
         // Для связывания внутреннего состояния с внешними данными, используется внешний биндинг состояния
         protected applyStateBinds(name:string, value:any):void {
+            //console.log('Apply state binds ', name, value, this._stateBinds , (this._stateBinds && this._stateBinds[name]) );
             if (!(this._stateBinds && this._stateBinds[name])) return;
 
-            var dataRef:string[] = this._stateBinds[name][0],
-                filtersRef:string[] = this._stateBinds[name][1];
+                var bind = this._stateBinds[name],
+                resultValue = bind.filters ? bind.filters.reduce( (m,v)=>(this.getFilter(v)(m)), value ) : value;
 
-            var hasParentModel:boolean = !!this.parent.model;
-
-            if (hasParentModel) {
-                var changes = {};
-                changes[dataRef[1]] = filtersRef?filtersRef.reduce((m,v)=>this.getFilter(v)(m), value):value;
-                this.parent.model.changes = changes;
-                this.parent.invalidateData();
-
-            } else {
-                if (this.parent.data) {
-                    this.parent.data[dataRef[1]] = value;
-                    this.parent.invalidateData();
-                }
-                else {
-                    throw 'Cant apply state bind ' + name + ' at ' + this.name;
-                }
-            }
+            bind.applyValue = bind.applyValue || this.getApplyValueFunctionOf(bind.model);
+            //console.log('Prepare execution apply state value function ', bind.applyValue);
+            bind.applyValue.call(this, resultValue);
         }
 
         // Проверяем типы данных приходящие в значении, если есть функция
@@ -316,22 +318,19 @@ module ft {
                     break;
 
                 case TemplateParams.stateHandlers:
-                    this.stateHandlers(_.isString(value) ? (value.split(',')) : value); //@todo move to parser
+                    this.stateHandlers(_.isString(value) ? (value.split(',')) : value); //@todo move to parser+
                     break;
                 default:
                     if (key.indexOf(TmplDict.childrenDot) === 0) { // children parameter, skip
                         return;
                     }
                     else if (key.indexOf(TmplDict.outDot) === 0) {
-                        var state = key.substr(4),
+                        var binds = this._stateBinds || {},
+                            state = key.substr(4),
+                            valuePaths = value.split('|');
 
-                            outPath = value.split('|')[0],
-                            filters = value.split('|').splice(1); //bind out state
-
-                        if (!this._stateBinds) this._stateBinds = {};
-
-                        this._stateBinds[state] = [outPath.split('.')];
-                        if(filters.length) this._stateBinds[state][1] = filters;
+                        binds[state] = { model: valuePaths.shift(), filters: valuePaths };
+                        this._stateBinds = binds;
                     }
                     else if (key.indexOf(TmplDict.stateDot) === 0) {
                         var state = key.substr(6);
@@ -435,7 +434,7 @@ module ft {
         }
 
         bindAppModelByVar(value:string) {
-            var varPath = value.replace('app.', 'facade.').split('.');
+            var varPath = value.replace('facade.', 'app.').split('.');
 
             if(varPath[varPath.length-2] === 'data') varPath.splice(varPath.length-2,2);
             else if(varPath[varPath.length-1] === 'data') varPath.splice(varPath.length-1,1);
@@ -443,7 +442,7 @@ module ft {
             else if(varPath[varPath.length-1] === 'state') varPath.splice(varPath.length-1,1);
             else ;
 
-            modelPathResult = varPath;
+            var modelPathResult = varPath;
 
             var getModelFncSrc = 'return this.' + modelPathResult.join('.') + ';';
             var model = (new Function(getModelFncSrc)).apply(this);
@@ -456,7 +455,7 @@ module ft {
         }
 
         unbindAppModelsFromExpressions() {
-            this._bindedModels.forEach((v:fmvc.Model<any>)=>v.unbind(this), this);
+            this._bindedModels && this._bindedModels.forEach((v:fmvc.Model<any>)=>v.unbind(this), this);
         }
 
         ////////////////////////////////////////////////////////////////
@@ -705,7 +704,6 @@ module ft {
 
             exObject = context.getExpressionByName(exName);
             result = expression.execute(exObject, context);
-
             return result;
         }
 

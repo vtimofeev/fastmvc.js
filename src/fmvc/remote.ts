@@ -86,6 +86,7 @@ module fmvc {
         insert(value:IRemoteTaskRequest):IPromise {
             if(value.id) throw 'Cant insert task, that has id';
 
+            console.log('Inserted task ', value);
             value.id = this.uid + '.' + this.random();
 
             var task:IRemoteTask = {

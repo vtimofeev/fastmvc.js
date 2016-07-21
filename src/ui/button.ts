@@ -29,10 +29,10 @@ module ui.def {
         params: {base: 'radio'}
     };
 
-    export var Switch = {
-        className: 'ui.Switch',
+    export var Switcher = {
+        className: 'ui.Switcher',
         extendClassName: 'ui.ToggleButton',
-        params: {base: 'switch'}
+        params: {base: 'switcher'}
     };
 
 

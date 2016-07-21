@@ -3,7 +3,7 @@
 
 import ModelState = fmvc.ModelState;
 declare var ui:any; // UI компоненты
-ft.load(_.values(ui.def).filter((v)=>!!v && v.className));
+ft.load(_.values(ui.def).filter((v:any)=>!!v && v.className));
 
 var expect = chai.expect,
     assert = <chai.Assert> chai.assert;
@@ -82,7 +82,7 @@ describe('app', function () {
         console.log('User ', user);
         settings = new fmvc.Model('settings', data.settings);
 
-        messages = new fmvc.ArrayStorageModel<any>('messages', data.messages);
+        messages = new fmvc.ArrayModel<any>('messages', data.messages);
         messages.state = fmvc.ModelState.Synced;
 
         user.compose(settings);
@@ -107,7 +107,6 @@ describe('app', function () {
         assert(mediator.getView('test'), 'View should exists');
 
     });
-
 
 
     it('Check view ', function() {

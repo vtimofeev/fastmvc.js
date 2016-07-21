@@ -162,6 +162,11 @@ module ft {
             if (data.params && data.params.ln) {
                 root[data.params.ln] = result; // Установка ссылки на рутовый элемент
             }
+
+            if (data.params && data.params.mlink) {
+                root.mediator[data.params.mlink] = result;
+            }
+
             return result;
         }
 
@@ -546,7 +551,7 @@ module ft {
 
             view.handleTreeEvent(e);
 
-            if (view.parent) {
+             if (view.parent && view.domDef) {
                 // exec event on parent
                 def = view.domDef;
                 e.currentTarget = view.parent;
@@ -558,7 +563,7 @@ module ft {
                 e.cancelled = !!e.executionHandlersCount && e.name === 'click';
 
                 // exec parent next domDef to root
-                e.currentDef = def.parentPath ? (<TemplateView>view.parent).getTemplate().pathMap[def.parentPath] : null;
+                e.currentDef = def && def.parentPath ? (<TemplateView>view.parent).getTemplate().pathMap[def.parentPath] : null;
                 if (!e.cancelled && e.currentDef) this.dispatchTreeEventDown(e);
             }
         }

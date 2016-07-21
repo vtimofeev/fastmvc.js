@@ -13,16 +13,19 @@ describe('ui', ()=> {
         '<ui.ToggleButton .type="apply" .data="Apply toggle button for {data.name}" ></ui.ToggleButton>' +
         '<ui.Checkbox .type="apply" .data="Apply checkbox for {data.name}"></ui.Checkbox>' +
         '<ui.Radio .type="apply" .data="Apply checkbox for {data.name}"></ui.Radio>' +
-        '<ui.Switch .type="apply" .data="Apply switch for {data.name}"></ui.Switch>' +
         '<ui.ToggleButton .data="Toggle button" ></ui.ToggleButton></div>' +
+        '<h1>Switcher</h1>' +
+        '<ui.Switcher .type="apply" .data="Apply switch for {data.name}"></ui.Switcher>' +
         '<h1>Progress</h1>' +
         '<ui.Progress .value=".5"></ui.Progress>' +
-        '<h1>Slider {data.slider*10}</h1>' +
-        '<ui.HSlider .out.value="data.slider" .value="{data.slider}" .state.step=".2"></ui.HSlider>' +
+        '<h1>Slider {data.slider|sliderValue}</h1>' +
+        '<ui.HSlider .out.value="data.slider" .value="{data.slider}" .state.step=".01"></ui.HSlider>' +
         '<h1>Input</h1>' +
         '<ui.Input .out.value="data.name|addRest" .value="{data.name|removeRest}" .state.placeholder="{data.placeholder}"></ui.Input>' +
-        '<h1>Group</h1>' +
-        '<ui.Group .data="{data.age}"></ui.Group>' +
+        '<h1>Group {data.selectedAge}</h1>' +
+        '<ui.Group .state.multiple="true" .data="{data.age}" .out.value="data.selectedAge" .value="{data.selectedAge}" ></ui.Group>' +
+        '<ui.Group  .data="{data.age}" ></ui.Group>' +
+
         '</div>',
     };
 
@@ -31,7 +34,9 @@ describe('ui', ()=> {
         name: 'Vasily',
         placeholder: 'Name',
         slider: .5,
-        age: [1, 2, 3, 4, 5]
+        age: [1, 2, 3, 4, 5],
+        selectedAge: [1, 3, 5],
+        selectedAges: []
     };
 
     ft.load(TestClassDef);
@@ -46,6 +51,11 @@ describe('ui', ()=> {
     instance['removeRest'] = (value)=>{
         return value.indexOf('...') === value.length - 3 ? value.substring(0, value.length - 3) : value;
     };
+
+    instance['sliderValue'] = (value)=>{
+        return 20 + Math.round(value*50);
+    };
+
 
     instance.render(document.getElementById('container'));
 });

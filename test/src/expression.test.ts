@@ -97,7 +97,11 @@ addSection('Comparison operations ', [
     getExpressionTest('{data.age>=34?"ok":"no"}', expressionContext, "ok"),
     getExpressionTest('{data.age<=34?"ok":"no"}', expressionContext, "ok"),
     getExpressionTest('{data.age<34?"ok":"no"}', expressionContext, "no"),
-    getExpressionTest('{data.age>34?"ok":"no"}', expressionContext, "no")
+    getExpressionTest('{data.age>34?"ok":"no"}', expressionContext, "no"),
+    getExpressionTest('{!data.online}', expressionContext, false),
+    getExpressionTest('{!!!data.online}', expressionContext, false),
+    getExpressionTest('{data.online}', expressionContext, true),
+
 ]);
 
 // combination

@@ -69,30 +69,47 @@ namespace fmvc {
 
     export class SocketRemoteConnectionModel extends RemoteConnectionModel {
         protected connection:any;
+        public status:fmvc.Model<any>;
 
         constructor(name:string, url:string) {
             super(name, null);
             if(typeof SockJS === 'undefined') throw 'SocketRemoteConnectionModel: SockJS client library required';
 
-            this.connection = new SockJS(url);
-            this.connection.onopen = this.openHandler;
-            this.connection.onmessage = this.messageHandler;
-            this.connection.onclose = this.closeHandler;
+            var internalStateModel = new Model('status', {active: false, sended: 0, received: 0, errors: 0});
+            this.compose(internalStateModel);
 
-            this.connection = new SockJS();
+            this.createConnection.bind(this);
+            this.createConnection(url);
+        }
+
+        protected createConnection(url) {
+            var t = this;
+
+            try {
+                this.connection = new SockJS(url);
+                this.connection.onopen = this.openHandler.bind(this);
+                this.connection.onmessage = this.messageHandler.bind(this);
+                this.connection.onclose = this.closeHandler.bind(this);
+            } catch (e) {
+                this.status.changes = { errors: this.status.data.errors++ };
+                setTimeout( ()=>t.createConnection(url) , 1000 );
+            }
+
         }
 
         protected openHandler():void {
+            this.status.changes = { active: true };
             this.isActive = true;
         }
 
         protected closeHandler():void {
+            this.status.changes = { active: false , errors: this.status.data.errors++ };
             this.isActive = false;
         }
 
         protected messageHandler(data) {
-            this.data = JSON.parse(data);
-
+            this.status.changes = { received: this.status.data.received++};
+            this.data = JSON.parse(data.data);
         }
 
         public execute(data:IRemoteTaskRequest):boolean {
@@ -101,6 +118,7 @@ namespace fmvc {
         }
 
         public send(data:any):void {
+            this.status.changes = { sended: this.status.data.sended++};
             this.connection.send(JSON.stringify(data));
         }
 

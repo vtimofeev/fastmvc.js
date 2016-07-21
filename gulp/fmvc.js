@@ -53,12 +53,6 @@ function buildTsSources(name, src) {
 }
 
 
-gulp.task('build.fmvc', function () {
-    //var srcFilter = filter(['*', '!src/d.ts', '!src/compiler', '!src/test-out']);
-    return buildTsSources('fmvc', project.paths.fmvcSrc);
-});
-
-
 gulp.task('build.ft', function () {
     return buildTsSources('ft', project.paths.ftSrc);
 });
@@ -67,12 +61,13 @@ gulp.task('build.ft.ui', function () {
     return null;
 });
 
-var buildTasks = ['build.fmvc', 'build.ft'];
 gulp.task('watch', function () {
-    return gulp.watch(['./src/fmvc/*.ts','./src/ft/*.ts'], {interval: 2000}, buildTasks);
+    return gulp
+        .watch(['./src/fmvc/*.ts','./src/ft/*.ts'], {interval: 2000}, ['build.ft'])
+        .watch('./src/ui/stylus/**/*.styl', ['stylus']);
 });
 
-gulp.task('stylus', function() {
+gulp.task('build.stylus', function() {
     var s = stylus({use: nib()});
     s.on('error',function(e){
         console.log(e);
@@ -87,13 +82,9 @@ gulp.task('stylus', function() {
 gulp.task('build.contrib', function () {
     return gulp.src('./src/contrib/*.js')
         .pipe(concat('contrib.build.js'))
+        .pipe(uglify())
         .pipe(gulp.dest('./build'));
 });
 
-
-gulp.task('swatch', function() {
-    return gulp.watch('./src/ui/stylus/**/*.styl', ['stylus']);
-});
-
-gulp.task('default', [].concat(buildTasks, ['watch']));
+gulp.task('default', [ 'build.contrib', 'build.ft', 'build.stylus', 'watch'] );
 
