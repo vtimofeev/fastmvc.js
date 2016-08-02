@@ -187,7 +187,7 @@ module ft {
             if (!(this._stateBinds && this._stateBinds[name])) return;
 
                 var bind = this._stateBinds[name],
-                resultValue = bind.filters ? bind.filters.reduce( (m,v)=>(this.getFilter(v)(m)), value ) : value;
+                resultValue = bind.filters && bind.filters.length ? bind.filters.reduce( (m,v)=>(this.getFilter(v)(m)), value ) : value;
 
             bind.applyValue = bind.applyValue || this.getApplyValueFunctionOf(bind.model);
             //console.log('Prepare execution apply state value function ', bind.applyValue);

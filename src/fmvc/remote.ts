@@ -55,6 +55,7 @@ module fmvc {
         private uid:string;
         protected interval:number;
         protected intervalTime:number = 100;
+        protected waitingTimeout:number = 1500;
         protected remoteConnection:IRemoteConnection = null;
         private tasks:IRemoteTask[] = [];
 
@@ -128,9 +129,15 @@ module fmvc {
         }
 
         protected execute():void {
+            var currentTime = +new Date();
+
             this.remoteConnection
                 && this.remoteConnection.isActive
                 && this.tasks.forEach(function(task:IRemoteTask) {
+
+                    if(task.state === TaskState.Executing && (currentTime - task.created) > this.waitingTimeout) {
+                        this.manualFinish('waiting timeout', null, task, TaskState.Error);
+                    }
 
                     if(task.state !== TaskState.Waiting) return;
 
@@ -176,6 +183,7 @@ module fmvc {
         }
 
         protected resolve(task:IRemoteTask):void {
+            console.log('RCM: Resolve task ', task );
             task.response.error ? task.promise.reject(task.response.error) : task.promise.resolve(task.response.data);
         }
 

@@ -82,7 +82,17 @@ module ft {
          * @returns {any}
          */
         public createInstance(className:string, name:string, params?:any, mixin?:any):ft.TemplateView {
-            return this._instanceFunc[className](name, params, mixin);
+            var instance;
+
+            try {
+                instance = this._instanceFunc[className](name, params, mixin);
+            }
+            catch (e) {
+                console.error('Cant create instance of ' , className, ' with name, params, mixin ', name, params, mixin );
+                throw e;
+            }
+
+            return instance;
         }
 
         /* Регистрируем класс (функцию конструктор), в глобальном скоупе */

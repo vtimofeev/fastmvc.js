@@ -6,6 +6,7 @@ module fmvc {
         state?:boolean;
         event?:boolean;
         validate?:boolean;
+        forceApplyChanges?:boolean;
     }
 
     export interface IModelData {
@@ -131,7 +132,7 @@ module fmvc {
         public setChanges(value:T|any):Model<T> {
             if (this._data === value || this.disposed) return;
 
-            if (!this.getRemoteModel()) {
+            if (!this.getRemoteModel()  || this.opts.forceApplyChanges) {
                 this._changedData = value;
                 this.applyChanges();
             }

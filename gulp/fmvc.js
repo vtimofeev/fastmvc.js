@@ -1,5 +1,4 @@
 var
-//fmvc = require('./src/compiler/xml2ts'),
     gulp = require('gulp'), // Сообственно Gulp JS
     debug = require('gulp-debug'),
     stylus = require('gulp-stylus'), // Плагин для Stylus
@@ -13,25 +12,25 @@ var
     concat = require('gulp-concat'), // Склейка файлов
     mocha = require('gulp-mocha'); // Тесты
 
-
 var argv = require('optimist').
     usage('Gulp tasks \nUsage: $0 -e [string]').
     describe('e', 'String, environment "dev" or "prod"').argv;
 
 var Env = {Prod: 'prod', Dev: 'dev'};
+
 var project = {
     name: 'fmvc',
     env: argv.e || 'prod',
-    version: '0.9.3',
+    version: '0.9.5',
+    date: new Date().toISOString(),
     paths: {
-        fmvcSrc: ['./src/fmvc/*.ts'],
-        ftSrc: ['./src/ft/**/*.ts' ] // fast templates
+        fmvcSrc: ['./src/fmvc/**/*.ts'],
+        ftSrc: ['./src/ft/**/*.ts' ]
     }
 };
 
 function buildTsSources(name, src) {
     var result = gulp
-
         .src(src)
         .pipe(debug({title: 'unicorn:'}))
         .pipe(tsc({
@@ -45,46 +44,35 @@ function buildTsSources(name, src) {
             sourceMap: false
         }));
 
-    if (project.env === Env.Prod) {
-        //result.pipe(uglify());
-    }
-
     return result.pipe(gulp.dest('build'));
 }
-
 
 gulp.task('build.ft', function () {
     return buildTsSources('ft', project.paths.ftSrc);
 });
 
-gulp.task('build.ft.ui', function () {
-    return null;
-});
-
-gulp.task('watch', function () {
-    return gulp
-        .watch(['./src/fmvc/*.ts','./src/ft/*.ts'], {interval: 2000}, ['build.ft'])
-        .watch('./src/ui/stylus/**/*.styl', ['stylus']);
-});
-
-gulp.task('build.stylus', function() {
-    var s = stylus({use: nib()});
-    s.on('error',function(e){
-        console.log(e);
-        s.end();
-    });
-
-    return gulp.src('./src/ui/stylus/default.styl')
-        .pipe(s)
-        .pipe(gulp.dest('./src/ui/stylus'));
+gulp.task('watch.ft', function () {
+    return gulp.watch(['./src/fmvc/*.ts','./src/ft/*.ts'], {interval: 2000}, ['build.ft'])
 });
 
 gulp.task('build.contrib', function () {
     return gulp.src('./src/contrib/*.js')
         .pipe(concat('contrib.build.js'))
-        .pipe(uglify())
+        //.pipe(uglify())
         .pipe(gulp.dest('./build'));
 });
 
-gulp.task('default', [ 'build.contrib', 'build.ft', 'build.stylus', 'watch'] );
+gulp.task('clear', function () {
+    return gulp.src([
+        './src/app/**/*.js*',
+        './src/ui/**/*.js*',
+        './src/fmvc/**/*.js*',
+        './src/ft/**/*.js*',
+        './src/stylus/**/*.css',
+        './test/src/**/*.js*'
+    ], {read: false})
+        .pipe(clean());
+});
+
+gulp.task('build', [ 'build.contrib', 'build.ft', 'build.ui', 'watch.ft'] );
 

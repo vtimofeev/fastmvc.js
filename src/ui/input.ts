@@ -19,15 +19,24 @@ module ui.def {
         className: 'ui.Input',
         content: '<input ' +
         ' .base="input" .value="" .state.placeholder="" .state.valid="" .state.type="text" ' +
-        ' placeholder="{state.placeholder||state.title}" value="{state.value}" type="{state.type}" ' +
+        ' name="{name}" placeholder="{state.placeholder||state.title}" value="{state.value}" type="{state.type}" ' +
         ' class="{state.base} {state.base}-{state.type} {state.base}-{state.valid} {state.base}-{state.enabled}"' +
-        ' onkeydown="down" onkeyup="up" onkeyleft="left" onkeyright="right" onkeyenter="enter" onkeyesc="esc" ' +
+        ' onkeydown="down" onkeyup="up" onblur="blur" onkeyleft="left" onkeyright="right" onkeyenter="enter" onkeyesc="esc" ' +
         '/>',
         mixin: {
+            syncElementValue: function() {
+                this.value = this.getElement().value;
+            },
+
+            afterEnter: function() {
+                // Загружаем значения сохраненные браузером
+                setTimeout( ()=>this.syncElementValue() , 100 );
+            },
             internalHandler(name:string, e:any) {
                 switch (name) {
+                    case 'blur':
                     case 'up':
-                        this.value = this.getElement().value;
+                        this.syncElementValue();
                         break;
                     case 'down':
                         break;

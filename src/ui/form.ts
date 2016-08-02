@@ -57,8 +57,11 @@ module ui.def {
                         setStates: states,
                     };
 
-                    params[bindout] = modelProperty;
+                    params[bindout] = 'model.data.' + modelProperty;
+
                     var instance = ft.templateManager.createInstance('ui.Input', this.name + '-field-' + modelProperty, params);
+                    //console.log('Create field ', modelProperty, bindout, this.model, instance);
+
                     instance.render(this.getElement());
                     instance.parent = this;
                     this.fields.push(instance);
@@ -80,9 +83,14 @@ module ui.def {
 
                 if(type==='apply') {
                     var schemaType = this.getState('schemaType');
-                    console.log('Methoid to apply ', this.model[schemaType], this.model.data);
-                    this.model.applyChanges();
-                    this.model[schemaType](this.model.data);
+                    console.log('Method to apply ', this.model[schemaType], this.model.changes, this.model.data, this.model);
+                    this.model[schemaType](this.model.changes || this.model.data)
+                        .then(
+                            (v)=>( this.model.changes = v && v[0],this.model.applyChanges(), console.log('On form success apply ', v, this.model))
+                        ).catch(
+                            (e)=>(this.model.state = fmvc.ModelState.Error, console.log('On form error apply ', e))
+                        );
+
 
                 }
             },

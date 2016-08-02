@@ -12,19 +12,6 @@ var gulp = require('gulp'), // Сообственно Gulp JS
     concat = require('gulp-concat'), // Склейка файлов
     mocha = require('gulp-mocha'); // Тесты
 
-
-gulp.task('clean.ui', function () {
-    return gulp.src([
-            './src/app/**/*.js*',
-            './src/ui/**/*.js*',
-            './src/fmvc/**/*.js*',
-            './src/ft/**/*.js*',
-            './src/stylus/**/*.css',
-            './test/src/**/*.js*'
-            ], {read: false})
-                .pipe(clean());
-});
-
 gulp.task('build.ui.js', function () {
     return gulp.src(['./src/ui/**/*.js', '!./src/ui/build.js'])
         .pipe(concat('ui.js'))
@@ -38,12 +25,12 @@ gulp.task('build.ui.stylus', function () {
         .pipe(gulp.dest('./build'));
 });
 
-gulp.task('watch.ui.stylus', function() {
-    return gulp.watch('./src/stylus/**/*.styl', {interval: 1000}, ['build.ui.stylus']);
-});
-
 gulp.task('watch.ui.js', function() {
     return gulp.watch('./src/ui/**/*.js', {interval: 1000}, ['build.ui.js']);
+});
+
+gulp.task('watch.ui.stylus', function() {
+    return gulp.watch('./src/stylus/**/*.styl', {interval: 1000}, ['build.ui.stylus']);
 });
 
 gulp.task('build.ui', ['build.ui.js', 'build.ui.stylus', 'watch.ui.stylus', 'watch.ui.js']);
