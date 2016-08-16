@@ -81,7 +81,7 @@ module fmvc {
                return model;
             }, this);
 
-            this.data = <any> [].concat(this.data, models);
+            this.data = <any> [].concat(this.data?this.data:[], models);
             return data;
         }
 

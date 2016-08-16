@@ -8,7 +8,6 @@ module ui.def {
         '</div>'
     };
 
-
     export var ToggleButton = {
         className: 'ui.ToggleButton',
         content: '<div .base="button" .stateHandlers="hover,selected" .onaction="action" ' +
@@ -34,6 +33,5 @@ module ui.def {
         extendClassName: 'ui.ToggleButton',
         params: {base: 'switcher'}
     };
-
 
 }

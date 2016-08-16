@@ -12,9 +12,11 @@ module ft {
 
         private createChildren():void {
             var def:IDomDef = this.domDef;
-            var className:string = def.params[TemplateParams.childrenClass];
+            var parentDef:IDomDef = this.parent && this.parent.domDef;
+            var className:string = (parentDef ? parentDef.params[TemplateParams.childrenClass] : null) || def.params[TemplateParams.childrenClass];
             var prevChildren = this._children;
-            var data:any = this.getParameterValue(this.getParameters()['children.data']) || this.data;
+            var data:any = this.getParameterValue(this.getParameters()['children.data']) || this.data || this.parent.data;
+            console.log('CreateChildren', this.data, this.parent);
 
             var childrenViews:TemplateView[] = _.map(data, function (v:any, k:number) {
                 var child = prevChildren && prevChildren.length ? (prevChildren.splice(0, 1)[0]) : templateManager.createInstance(className, this.parent.name + ':' + className + '-' + k, this.childrenLocalParams);
@@ -30,13 +32,18 @@ module ft {
             _.each(this._children, function (child:TemplateView) {
                 child.parent = this.parent;
                 child.domDef = def;
+
                 if (!child.inDocument) {
                     child.isChildren = true;
                     child.createDom();
                     this.getElement().appendChild(child.getElement());
                 }
 
+                if(this.inDocument && !child.inDocument) child.enter();
+
             }, this);
+
+
         }
 
 
@@ -125,6 +132,8 @@ module ft {
         }
 
         validateData() {
+            console.log('CreateChildren:validateData', this.data, this.parent);
+            this.createChildren();
         }
 
         validateState() {

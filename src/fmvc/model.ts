@@ -44,6 +44,7 @@ module fmvc {
 
         private _state:string;
         private _prevState:string;
+        private _remoteModel:string;
 
         public schemas:any;
 
@@ -228,8 +229,13 @@ module fmvc {
             return p.then(this.dispose.bind(this)).catch(this.remoteErrorHandler.bind(this));
         }
 
-        protected getRemoteModel():string {
-            return null;
+
+        public setRemoteModel(value:string) {
+            this._remoteModel = value;
+        }
+
+        public getRemoteModel():string {
+            return this._remoteModel;
         }
 
         protected getHandler(data:any):any {

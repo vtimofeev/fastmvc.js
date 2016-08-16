@@ -53,7 +53,7 @@ module ft {
             var result = <ITemplate> {};// new Template();
 
             _.each(objs, function(obj:IHtmlObject, index:number) {
-                if(obj.name.indexOf('f.') < 0) {
+                if(obj.name && obj.name.indexOf('f.') < 0) {
                     result.expressionMap = <IExpressionMap> {};
                     result.name = obj.name;
                     result.pathMap = {};

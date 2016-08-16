@@ -24,19 +24,19 @@ module ui.def {
         ' onkeydown="down" onkeyup="up" onblur="blur" onkeyleft="left" onkeyright="right" onkeyenter="enter" onkeyesc="esc" ' +
         '/>',
         mixin: {
-            syncElementValue: function() {
+            syncValue: function() {
                 this.value = this.getElement().value;
             },
 
             afterEnter: function() {
                 // Загружаем значения сохраненные браузером
-                setTimeout( ()=>this.syncElementValue() , 100 );
+                setTimeout( ()=>this.syncValue() , 100 );
             },
             internalHandler(name:string, e:any) {
                 switch (name) {
                     case 'blur':
                     case 'up':
-                        this.syncElementValue();
+                        this.syncValue();
                         break;
                     case 'down':
                         break;

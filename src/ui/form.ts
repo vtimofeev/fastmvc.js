@@ -22,10 +22,16 @@ module ui.def {
                 this.fields = [];
                 this.submitButton = null;
                 this.cancelButton = null;
+                
             },
 
             afterValidate: function () {
-                console.log('AfterValidate: Create form ', this.model.schemas, this.getState('schemaType') );
+                console.log('AfterValidate: Create form ',
+                    this.model.data,
+                    this.model.schemas,
+                    this.getState('schemaType'),
+                    this
+                );
 
                 if(!this.model || !this.model.schemas || !this.model.schemas[this.getState('schemaType')]) return;
 
@@ -82,7 +88,10 @@ module ui.def {
                 console.log('Handler ', type, e);
 
                 if(type==='apply') {
+                    this.fields.forEach( (v)=>v.syncValue && v.syncValue() );
+
                     var schemaType = this.getState('schemaType');
+
                     console.log('Method to apply ', this.model[schemaType], this.model.changes, this.model.data, this.model);
                     this.model[schemaType](this.model.changes || this.model.data)
                         .then(

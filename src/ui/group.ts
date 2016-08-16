@@ -12,7 +12,7 @@ module ui.def {
                 var data = child.model || child.data,
                     result = this.value && (this.state.multiple ? this.value.indexOf(data) > -1 : this.value === data);
 
-                console.log('IsSelected ? ', data, result);
+                console.log('IsSelected ? ', data, result, 'Child is ', child);
                 return result;
             },
             internalHandler: function (name, e) {

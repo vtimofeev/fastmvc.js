@@ -19,9 +19,9 @@ describe('ui', ()=> {
         '<h1>Progress</h1>' +
         '<ui.Progress .value=".5"></ui.Progress>' +
         '<h1>Slider {data.slider|sliderValue}</h1>' +
-        '<ui.HSlider .out.value="data.slider" .value="{data.slider}" .state.step=".01"></ui.HSlider>' +
+        '<ui.HSlider .model="{model}" .out.value="model.data.slider" .value="{model.data.slider}" .state.step=".01"></ui.HSlider>' +
         '<h1>Input</h1>' +
-        '<ui.Input .out.value="data.name|addRest" .value="{data.name|removeRest}" .state.placeholder="{data.placeholder}"></ui.Input>' +
+        '<ui.Input .model="{model}" .out.value="model.data.name|addRest" .value="{model.data.name|removeRest}" .state.placeholder="{data.placeholder}"></ui.Input>' +
         '<h1>Group {data.selectedAge}</h1>' +
         '<ui.Group .state.multiple="true" .data="{data.age}" .out.value="data.selectedAge" .value="{data.selectedAge}" ></ui.Group>' +
         '<ui.Group  .data="{data.age}" ></ui.Group>' +

@@ -427,8 +427,12 @@ module ft {
         ////////////////////////////////////////////////////////////////
 
         bindAppModelsFromExpressions():void {
-            for (var name in this._template.expressionMap) {
+            var name;
+
+            for (name in this._template.expressionMap) {
+                //@todo get params from Instance Params ( they are saved as default params )
                 var ex:IExpression = this._template.expressionMap[name];
+
                 if (ex.vars) ex.vars.forEach((v)=>( (v.indexOf('app.') === 0 || v.indexOf('facade.') === 0)? this.bindAppModelByVar(v) : null), this);
             }
         }
@@ -445,6 +449,7 @@ module ft {
             var modelPathResult = varPath;
 
             var getModelFncSrc = 'return this.' + modelPathResult.join('.') + ';';
+            console.log('Bind models to ', modelPathResult.join('.'), this);
             var model = (new Function(getModelFncSrc)).apply(this);
             this._bindedModels = this._bindedModels || [];
 
@@ -492,6 +497,7 @@ module ft {
         // Lifecycle: Enter
         ////////////////////////////////////////////////////////////////
         protected enterImpl():void {
+            console.log('Enter implementation for ', this.name);
             super.enterImpl();
             this.setState(State.CreateTime, (new Date()).getTime());
             this.life = LifeState.Enter;
@@ -635,6 +641,7 @@ module ft {
         ////////////////////////////////////////////////////////////////
 
         public handleTreeEvent(e:ITreeEvent):void {
+
             e.currentTarget = this;// previous dispatch
             e.depth--;
 

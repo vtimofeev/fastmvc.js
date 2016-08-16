@@ -522,7 +522,7 @@ module ft {
 
 
         hasChildrenDef(data:IDomDef):boolean {
-            return !!(data.params && data.params[TemplateParams.childrenClass]);
+            return !!(data.params && data.params[TemplateParams.childrenClass] && data.name !== 'ui.Group');
         }
 
         hasChildrenView(data:IDomDef, root:TemplateView) {
