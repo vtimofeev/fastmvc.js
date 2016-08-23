@@ -53,13 +53,17 @@ module fmvc {
             return null;
         }
 
-        public internalHandler(e:any):void {
+        public internalHandler(type: string, e:any):void {
+            console.log('Mediator handler: ', type, e);
+
             if (e && e.globalScope) {
                 this.facade.eventHandler(e);
             }
             else {
                 this.eventHandler(e);
             }
+
+
         }
 
         public eventHandler(e:IEvent):void {

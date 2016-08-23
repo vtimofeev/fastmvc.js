@@ -23,7 +23,11 @@ describe('ui', ()=> {
         '<h1>Input</h1>' +
         '<ui.Input .model="{model}" .out.value="model.data.name|addRest" .value="{model.data.name|removeRest}" .state.placeholder="{data.placeholder}"></ui.Input>' +
         '<h1>Group {data.selectedAge}</h1>' +
-        '<ui.Group .state.multiple="true" .data="{data.age}" .out.value="data.selectedAge" .value="{data.selectedAge}" ></ui.Group>' +
+        '<h1>Group {model.data.selectedAge}</h1>' +
+        '<ui.Group .state.multiple="true"  ' +
+        ' .data="{model.data.age}" ' +
+        ' .out.value="data.selectedAge" ' +
+        ' .value="{model.data.selectedAge}" ></ui.Group>' +
         '<ui.Group  .data="{data.age}" ></ui.Group>' +
 
         '</div>',
@@ -38,6 +42,10 @@ describe('ui', ()=> {
         selectedAge: [1, 3, 5],
         selectedAges: []
     };
+
+    setTimeout(function() {
+        model.changes = { selectedAge: [1,2,3]};
+    }, 1000);
 
     ft.load(TestClassDef);
 

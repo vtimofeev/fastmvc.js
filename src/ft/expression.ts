@@ -138,7 +138,6 @@ module ft {
                     vs.indexOf(GetContext.modelField) === 0) {
 
                     if(!this.funcMap[vs]) {
-                        //if(vs.indexOf(GetContext.appField) === 0) vs = vs.replace(GetContext.appField, GetContext.facadeField);
                         this.funcMap[vs] = new Function('var v=null; try {v=this.' + vs + ';} catch(e) { v=\'{' + vs.replace(/'/g, '\\\'') + '}\';} return v;');
                     }
 

@@ -260,6 +260,10 @@ module fmvc {
             return data;
         }
 
+        toString():string {
+            return 'model[' + this.name + '] data: ' + JSON.stringify(this.data);
+        };
+
         get remoteTaskManager():RemoteTaskManager {
             return this.facade && this.facade.remoteTaskManager || window && window['remoteTaskManager'];
         }

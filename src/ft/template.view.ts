@@ -174,7 +174,7 @@ module ft {
                 modelPath = value.substring(0, dataStartIndex - 1);
 
             if(isModel) {
-                return new Function('v', ' this.' + modelPath + '.changes = { ' + field + ': v}; ');
+                return new Function('v', ' (this.' + modelPath + ').changes = { ' + field + ': v}; ');
             }
             else {
                 return new Function('v', ' this.' + value + '= v; this.invalidateData(); ');
@@ -190,7 +190,7 @@ module ft {
                 resultValue = bind.filters && bind.filters.length ? bind.filters.reduce( (m,v)=>(this.getFilter(v)(m)), value ) : value;
 
             bind.applyValue = bind.applyValue || this.getApplyValueFunctionOf(bind.model);
-            //console.log('Prepare execution apply state value function ', bind.applyValue);
+            //console.log('Prepare execution apply state value function ', bind.applyValue, this);
             bind.applyValue.call(this, resultValue);
         }
 
@@ -334,6 +334,7 @@ module ft {
                     }
                     else if (key.indexOf(TmplDict.stateDot) === 0) {
                         var state = key.substr(6);
+                        this.bindParamStateExpression(value, state);
                         this.setState(state, this.getParameterValue(value, state));
                     }
                     else if (key.indexOf(TmplDict.on) === 0) { // handlers, set handler
@@ -348,13 +349,37 @@ module ft {
                             this[key](value);
                         }
                         else {
-                            this[key] = this.getParameterValue(value, key); //@todo check value type of states (boolean,number,...etc)
+                            this.bindParamStateExpression(value, key);
+                            this[key] = this.getParameterValue(value, key); //@todo check value type of states (boolean,number,..etc)
                         }
                     }
                     else {
                         console.warn(this.name + '.applyParameter: Cant set template view parameter, not found ', key);
                     }
                     break;
+            }
+        }
+
+        bindParamStateExpression(value:IExpressionName|any, key:string ):any {
+            if( value instanceof ExpressionName ) {
+                var name = value.name,
+                    context = value.context,
+                    ex:IExpression = context.getExpressionByName(name),
+                    model:fmvc.Model<any>;
+
+                if(context !== this && ex.vars && ex.vars[0].indexOf('model') > -1) {
+
+                    model = this.getModelByPath(ex.vars[0], context);
+
+                    if(!model) return console.warn('Model ', ex.vars[0] , ' not found ');
+                    model.bind(this, ()=>this.setState(key, this.getParameterValue(value, key)) );
+
+                    //console.log('add-state binding of ', this.name, ' of ', key, ex);
+                    this._bindedModels = this._bindedModels || [];
+                    this._bindedModels.push(model);
+                }
+
+
             }
         }
 
@@ -426,35 +451,42 @@ module ft {
         // App models listeners
         ////////////////////////////////////////////////////////////////
 
+
+
         bindAppModelsFromExpressions():void {
-            var name;
+            var name:string;
 
             for (name in this._template.expressionMap) {
-                //@todo get params from Instance Params ( they are saved as default params )
                 var ex:IExpression = this._template.expressionMap[name];
-
                 if (ex.vars) ex.vars.forEach((v)=>( (v.indexOf('app.') === 0 || v.indexOf('facade.') === 0)? this.bindAppModelByVar(v) : null), this);
             }
         }
 
-        bindAppModelByVar(value:string) {
-            var varPath = value.replace('facade.', 'app.').split('.');
+        getModelPath(value) {
+            var modelPath = value.replace('facade.', 'app.').split('.');
 
-            if(varPath[varPath.length-2] === 'data') varPath.splice(varPath.length-2,2);
-            else if(varPath[varPath.length-1] === 'data') varPath.splice(varPath.length-1,1);
-            else if(varPath[varPath.length-1] === 'count') varPath.splice(varPath.length-1,1);
-            else if(varPath[varPath.length-1] === 'state') varPath.splice(varPath.length-1,1);
+            if(modelPath[modelPath.length-2] === 'data') modelPath.splice(modelPath.length-2,2);
+            else if(modelPath[modelPath.length-1] === 'data') modelPath.splice(modelPath.length-1,1);
+            else if(modelPath[modelPath.length-1] === 'count') modelPath.splice(modelPath.length-1,1);
+            else if(modelPath[modelPath.length-1] === 'state') modelPath.splice(modelPath.length-1,1);
             else ;
 
-            var modelPathResult = varPath;
+            return modelPath.join('.')
+        }
 
-            var getModelFncSrc = 'return this.' + modelPathResult.join('.') + ';';
-            console.log('Bind models to ', modelPathResult.join('.'), this);
-            var model = (new Function(getModelFncSrc)).apply(this);
-            this._bindedModels = this._bindedModels || [];
+        getModelByPath(value, context?:any):fmvc.Model<any> {
+            var getModelFncSrc = 'return this.' + this.getModelPath(value) + ';',
+                model = (new Function(getModelFncSrc)).apply(context || this);
+
+            return model;
+        }
+
+        bindAppModelByVar(value:string) {
+            var model = this.getModelByPath(value);
 
             if(model instanceof fmvc.Model) {
                 model.bind(this, this.invalidateApp);
+                this._bindedModels = this._bindedModels || [];
                 if(this._bindedModels.indexOf(model) === -1) this._bindedModels.push(model);
             }
         }
@@ -497,7 +529,7 @@ module ft {
         // Lifecycle: Enter
         ////////////////////////////////////////////////////////////////
         protected enterImpl():void {
-            console.log('Enter implementation for ', this.name);
+            //console.log('Enter implementation for ', this.name);
             super.enterImpl();
             this.setState(State.CreateTime, (new Date()).getTime());
             this.life = LifeState.Enter;
@@ -686,8 +718,21 @@ module ft {
             return dispatcher.getCustomTreeEvent(name, data, this, depth);
         }
 
-        protected internalHandler(type, e:any):void {
-            if (this.parent && this.parent.internalHandler) this.parent.internalHandler(type, e);
+        protected internalHandlerImpl(type:string, e:any):void {
+        }
+
+        protected internalHandler(type:string, e:any):void {
+            var parentMediator = this.parent && this.parent.mediator;
+
+            this.internalHandlerImpl(type, e);
+
+            if (this.mediator && this.mediator !== parentMediator) {
+                this.mediator.internalHandler(type, e);
+            }
+
+            if (this.parent && this.parent.internalHandler) {
+                this.parent.internalHandler(type, e);
+            }
         }
 
         ////////////////////////////////////////////////////////////////
@@ -711,6 +756,7 @@ module ft {
 
             exObject = context.getExpressionByName(exName);
             result = expression.execute(exObject, context);
+            //if( ex.context ) console.log('Get expression value: ', context.name, this.name, exObject.vars, ex);
             return result;
         }
 

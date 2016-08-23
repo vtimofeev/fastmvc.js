@@ -32,7 +32,7 @@ module ui.def {
                 // Загружаем значения сохраненные браузером
                 setTimeout( ()=>this.syncValue() , 100 );
             },
-            internalHandler(name:string, e:any) {
+            internalHandlerImpl(name:string, e:any) {
                 switch (name) {
                     case 'blur':
                     case 'up':

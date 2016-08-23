@@ -416,7 +416,7 @@ module ft {
             //console.log('Register dom', id, data.path);
             //@todo fix fast fix
             if(!this.domElementPathIds[id]) this.domElementPathIds[id] = {data: data, root: root};
-            else console.log('Yet registred at dom ', id, data.path)
+            else console.warn('Yet registred at dom ', id, data.path)
         }
 
         unregisterDomElementId(id:string):void {

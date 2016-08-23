@@ -136,7 +136,7 @@ module ft {
                     <IExpressionMap>{},
                     this);
             }   else if(group === 'handlers') {
-                console.log('Parse handler ', this.parseJsValue(value));
+                //console.log('Parse handler ', this.parseJsValue(value));
                 return this.parseJsValue(value);
             }
                 else {

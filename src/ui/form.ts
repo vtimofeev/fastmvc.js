@@ -10,7 +10,7 @@ module ui.def {
     export var FormDefinition = {
         className: 'ui.Form',
         content: '<div .base="form" .state.schemaType="insert" class="{state.base}">' +
-        '<h1>Form {model.name}</h1>' +
+        '<h1>Form {model.name} : state-{model.state} : {state.schemaType}</h1>' +
         '</div>',
         mixin: {
             cleanForm: function () {
@@ -26,14 +26,15 @@ module ui.def {
             },
 
             afterValidate: function () {
+                /*
                 console.log('AfterValidate: Create form ',
                     this.model.data,
                     this.model.schemas,
                     this.getState('schemaType'),
                     this
-                );
+                );*/
 
-                if(!this.model || !this.model.schemas || !this.model.schemas[this.getState('schemaType')]) return;
+                if(!this.model || !this.model.schemas || !this.model.schemas[this.getState('schemaType')] || this.model.disposed) return\d;
 
                 if(this.bindedInstance === this.model && this.bindedSchema === this.getState('schema')) return;
                 console.log('Render form ', this.model.schemas, this.getState('schemaType') );
@@ -79,22 +80,22 @@ module ui.def {
                 this.cancelButton = ft.templateManager.createInstance('ui.Button', this.name + '-field-cancel' , {data:'Cancel', onaction: (e)=>this.internalHandler('cancel',e) });
                 this.cancelButton.render(this.getElement());
 
-                console.log('Form submit button created ', this.submitButton);
-                console.log('Form cancel created ', this.cancelButton);
+                //console.log('Form submit button created ', this.submitButton);
+                //console.log('Form cancel created ', this.cancelButton);
 
             },
 
-            internalHandler: function (type, e) {
-                console.log('Handler ', type, e);
+            internalHandlerImpl: function (type, e) {
+                //console.log('Handler ', type, e);
 
                 if(type==='apply') {
                     this.fields.forEach( (v)=>v.syncValue && v.syncValue() );
-
                     var schemaType = this.getState('schemaType');
 
-                    console.log('Method to apply ', this.model[schemaType], this.model.changes, this.model.data, this.model);
-                    this.model[schemaType](this.model.changes || this.model.data)
-                        .then(
+                    //console.log('Method to apply ', this.model[schemaType], this.model.changes, this.model.data, this.model);
+                    var operationPromise = ((schemaType === 'update')?this.model.save():this.model[schemaType](this.model.changes || this.model.data));
+
+                    operationPromise.then(
                             (v)=>( this.model.changes = v && v[0],this.model.applyChanges(), console.log('On form success apply ', v, this.model))
                         ).catch(
                             (e)=>(this.model.state = fmvc.ModelState.Error, console.log('On form error apply ', e))

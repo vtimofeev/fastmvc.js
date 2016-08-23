@@ -16,7 +16,7 @@ module ft {
             var className:string = (parentDef ? parentDef.params[TemplateParams.childrenClass] : null) || def.params[TemplateParams.childrenClass];
             var prevChildren = this._children;
             var data:any = this.getParameterValue(this.getParameters()['children.data']) || this.data || this.parent.data;
-            console.log('CreateChildren', this.data, this.parent);
+            //console.log('CreateChildren', this.data, this.parent);
 
             var childrenViews:TemplateView[] = _.map(data, function (v:any, k:number) {
                 var child = prevChildren && prevChildren.length ? (prevChildren.splice(0, 1)[0]) : templateManager.createInstance(className, this.parent.name + ':' + className + '-' + k, this.childrenLocalParams);
@@ -132,7 +132,7 @@ module ft {
         }
 
         validateData() {
-            console.log('CreateChildren:validateData', this.data, this.parent);
+            //console.log('CreateChildren:validateData', this.data, this.parent);
             this.createChildren();
         }
 
