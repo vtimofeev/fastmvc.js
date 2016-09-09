@@ -23,6 +23,7 @@ module ft {
         Selected: 'selected',
         Focused: 'focused',
         Hover: 'hover',
+        HoverIndex: 'hoverIndex',
         Disabled: 'disabled',
         Value: 'value',
         Custom: 'custom',

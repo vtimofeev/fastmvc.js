@@ -54,7 +54,6 @@ module fmvc {
         }
 
         public internalHandler(type: string, e:any):void {
-            console.log('Mediator handler: ', type, e);
 
             if (e && e.globalScope) {
                 this.facade.eventHandler(e);
@@ -62,7 +61,6 @@ module fmvc {
             else {
                 this.eventHandler(e);
             }
-
 
         }
 
@@ -96,6 +94,7 @@ module fmvc {
         eventHandler(e:any):void;
         getView(name:string):IView;
     }
+
 }
 
 

@@ -30,17 +30,29 @@ describe('ui', ()=> {
         ' .value="{model.data.selectedAge}" ></ui.Group>' +
         '<ui.Group  .data="{data.age}" ></ui.Group>' +
 
+        '<h1>Select {model.data.select.data.item}</h1>' +
+        '<ui.Select  .model="{data.select}" ></ui.Select>' +
+
         '</div>',
     };
 
-    var model = new fmvc.Model<any>('model');
+    var model = new fmvc.Model<any>('model'),
+        select = new fmvc.Model<any>('select');
+
+
     model.data = {
+        select: select,
         name: 'Vasily',
         placeholder: 'Name',
         slider: .5,
         age: [1, 2, 3, 4, 5],
         selectedAge: [1, 3, 5],
         selectedAges: []
+    };
+
+    select.data = {
+        item: 1,
+        items: model.data.age
     };
 
     setTimeout(function() {

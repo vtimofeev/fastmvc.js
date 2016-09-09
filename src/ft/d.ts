@@ -1,7 +1,5 @@
 ///<reference path="../fmvc/d.ts" />
 
-///<reference path="./template.state.ts" />
-
 ///<reference path="./expression.ts" />
 ///<reference path="./events/pointer.model.ts" />
 ///<reference path="./events/keyboard.model.ts" />

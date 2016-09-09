@@ -34,7 +34,7 @@ module ui.def {
                     this
                 );*/
 
-                if(!this.model || !this.model.schemas || !this.model.schemas[this.getState('schemaType')] || this.model.disposed) return\d;
+                if(!this.model || !this.model.schemas || !this.model.schemas[this.getState('schemaType')] || this.model.disposed) return;
 
                 if(this.bindedInstance === this.model && this.bindedSchema === this.getState('schema')) return;
                 console.log('Render form ', this.model.schemas, this.getState('schemaType') );

@@ -1,5 +1,6 @@
 ///<reference path='./d.ts'/>
 module fmvc {
+
     export var InvalidateType = {
         Data: 1,
         App: 2,
@@ -358,7 +359,7 @@ module fmvc {
 
         public sendEvent(name:string, data:any = null, sub:string = null, error:any = null, global:boolean = false):void {
             var e:IEvent = {name: name, data: data, global: global, target: this};
-            if (this.mediator) this.mediator.internalHandler(e);
+            if (this.mediator) this.mediator.internalHandler(name, e);
         }
 
         public log(...messages:any[]):View {
