@@ -48,6 +48,14 @@ module ft {
 
 
         protected setCurrentChildToExecutionContext(child:TemplateView, index:number, length:number, context:any):void {
+
+
+            !context.cc && (context.cc = {});
+
+            context.cc.child = child;
+            context.cc.childIndex = index;
+            context.cc.childrenLength = length;
+
             context.child = child;
             context.childIndex = index;
             context.childrenLength = length;
@@ -99,10 +107,12 @@ module ft {
             var length = this._children ? this._children.length : 0;
 
             _.each(this._children, function (child:TemplateView, index:number) {
+                console.log('Apply children param ... ', value, key );
                 if (child.disposed) return;
                 this.setCurrentChildToExecutionContext(child, index, length, value.context || this.parent);
                 var childValue:any = _.isObject(value) ? this.getExpressionValue(value) : value;
                 var childParamName:string = this.getChildrenParamName(key);
+                console.log('Result children param ... ', childValue, childParamName );
                 child.applyParameter(childValue, childParamName);
             }, this);
         }

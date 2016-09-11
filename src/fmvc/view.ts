@@ -221,6 +221,7 @@ module fmvc {
 
         protected modelChangeHandler(e:IEvent) {
             this.setData(this.model.data);
+            console.log('Model changed ... ', this.model.data, this);
             this.invalidateData(); //@todo check
             if (e && e.name === Event.Model.Disposed) this.dispose(); //@todo analyze
         }

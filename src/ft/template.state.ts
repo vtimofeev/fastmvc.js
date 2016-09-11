@@ -7,15 +7,27 @@ module ft {
         Object: 'object',
     };
 
-    export function applyBooleanStateValue(value:any):boolean {
+    export const TemplateApplyValueFunc = {
+        base: applyStringValue,
+        life: applyStringValue,
+        custom: applyStringValue,
+        hover: applyBooleanValue,
+        selected: applyBooleanValue,
+        disable: applyBooleanValue,
+        focus: applyBooleanValue,
+    };
+
+    export function applyBooleanValue(value:any):boolean {
         if(!value) return false; // undefined, null, 0, false
+
         var type:string = typeof value;
         if(type === DataType.Boolean) return value;
-        else if(type === DataType.String) return (value==='false'||value==='0'||value==='null')?false:true;
+        if(type === DataType.String) return (value==='false'||value==='0'||value==='null')?false:true;
+
         return true;
     }
 
-    export function applyStringStateValue(value:any):string {
+    export function applyStringValue(value:any):string {
         if(!value) return ''; // undefined, null, 0, false
 
         var type:string = typeof value;
@@ -29,17 +41,6 @@ module ft {
         else return Number(value);
     }
 
-
-    export var TemplateStateValueFunc = {
-        base: applyStringStateValue,
-        life: applyStringStateValue,
-        custom: applyStringStateValue,
-
-        hover: applyBooleanStateValue,
-        selected: applyBooleanStateValue,
-        disable: applyBooleanStateValue,
-        focus: applyBooleanStateValue,
-    }
 
 
 }

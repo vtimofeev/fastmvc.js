@@ -80,7 +80,6 @@ module ft {
                             el.style.cursor=(value?'auto':'pointer');
                             el.style.msUserSelect=(value?'auto':'none');
                             el.style.webkitUserSelect=(value?'auto':'none');
-
                         }
                     );
         }

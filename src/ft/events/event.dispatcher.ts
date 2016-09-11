@@ -24,6 +24,7 @@ module ft {
         constructor(viewHelper:TemplateViewHelper) {
             this.viewHelper = viewHelper;
             this.pointer = new ft.PointerModel(null, null);
+            this.keyboard = new ft.KeyboardModel(null, null);
 
             _.bindAll(this, 'browserHandler');
             var listenEvents:string[] = [].concat(_.values(ft.BrowserEvent), _.values(ft.PointerEvent), _.values(ft.KeyboardEvent),  _.values(ft.TouchEvent));
@@ -31,12 +32,20 @@ module ft {
         }
 
         protected browserHandler(e:any):void {
+
+            if(e.type === KeyboardEvent.KeyDown || e.type === KeyboardEvent.KeyUp) {
+                this.keyboard.reset();
+                this.keyboard.data = e;
+                return;
+            }
+
             var target:HTMLElement = e.target || e.currentTarget;
 
             var pathId:string = target.getAttribute?target.getAttribute(AttributePathId):null;
             var pathDefinition = this.viewHelper.getPathDefinitionByPathId(pathId);
 
             var pointerEvent:IPointerEvent = this.pointer.tryTransformToCompositeEvent(e);
+
             if(pointerEvent.isComposite) { // set global pointer data
                 this.pointer.setData(pointerEvent);
                 //e.preventDefault();
@@ -66,6 +75,11 @@ module ft {
             return this.pointer;
         }
 
+        public getKeyboard():KeyboardModel {
+            return this.keyboard;
+        }
+
+
         public on(type:string):void {
             if(this.eventMap[type]) return;
             window.addEventListener(type, this.browserHandler, true);
@@ -79,7 +93,7 @@ module ft {
         }
 
         public disposeEvent(e:ITreeEvent):void {
-            return; e.target = e.previousTarget = e.currentTarget = e.e = null;
+            e.target = e.previousTarget = e.currentTarget = e.e = null;
         }
     }
 }

@@ -135,6 +135,11 @@ module ft {
             return dispatcher.getPointer();
         }
 
+
+        get globalKeyboard():KeyboardModel {
+            return dispatcher.getKeyboard();
+        }
+
         get domDef():IDomDef {
             return this._domDef;
         }
@@ -184,21 +189,22 @@ module ft {
 
         // Для связывания внутреннего состояния с внешними данными, используется внешний биндинг состояния
         protected applyStateBinds(name:string, value:any):void {
-            //console.log('Apply state binds ', name, value, this._stateBinds , (this._stateBinds && this._stateBinds[name]) );
+            console.log('Apply state binds ', name, value, this._stateBinds , (this._stateBinds && this._stateBinds[name]) );
             if (!(this._stateBinds && this._stateBinds[name])) return;
 
                 var bind = this._stateBinds[name],
                 resultValue = bind.filters && bind.filters.length ? bind.filters.reduce( (m,v)=>(this.getFilter(v)(m)), value ) : value;
 
+
             bind.applyValue = bind.applyValue || this.getApplyValueFunctionOf(bind.model);
-            //console.log('Prepare execution apply state value function ', bind.applyValue, this);
+            console.log('Prepare execution apply state value function ', bind.applyValue, this);
             bind.applyValue.call(this, resultValue);
         }
 
         // Проверяем типы данных приходящие в значении, если есть функция
         protected getStateValue(name:string, value:any):any {
-            if (ft.TemplateStateValueFunc[name]) {
-                return ft.TemplateStateValueFunc[name](value);
+            if (ft.TemplateApplyValueFunc[name]) {
+                return ft.TemplateApplyValueFunc[name](value);
             } else {
                 return value;
             }

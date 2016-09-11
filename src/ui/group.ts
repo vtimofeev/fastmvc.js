@@ -6,6 +6,7 @@ module ui.def {
         ' .children.selected="{this.isSelected(this.child)}" ' +
         ' .children.base="button" ' +
         ' .children.class="ui.ToggleButton" ' +
+        ' .children.hover="{cc.childIndex===state.hoverIndex}" ' +
         ' .children.onaction="item"></div>', //' .children.stateHandlers="hover,selected" ' +
         mixin: {
             isSelected(child, parent) {

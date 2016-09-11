@@ -79,12 +79,15 @@ module fmvc {
         public get state():string {
             return this._state;
         }
+
         public get prevState():string {
             return this._prevState;
         }
+
         public set state(value:string) {
             this.setState(value);
         }
+
         public setState(value:string):Model<T> {
             if (!this.opts.state || this._state === value) return this;
             this._prevState = value;
