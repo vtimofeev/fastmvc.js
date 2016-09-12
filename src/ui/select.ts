@@ -6,7 +6,8 @@ module ui.def {
         className: 'ui.Select',
         content: '<div .base="button" .stateHandlers="hover,selected,focused" .onaction="action" .onkeydown="{this.keydownHandler(e)}" ' +
         'class="{state.base} {state.icon} {state.base}-{state.type} {state-base}-{state.selected} {state.base}-{state.hover} {state.base}-{state.disabled}">' +
-        '<div>{(model.data.item&&model.data.item?model.data.item.title:"")} item: {model.data.item}</div>' +
+        '<div>item: {model.data.item}</div>' +
+        '<div>title: {(model.data.item&&model.data.item?model.data.item.title:"")}</div>' +
         '<ui.Group .ln="group" .if="{state.selected}" ' +
         '.model="{model}" ' +
         '.value="{model.data.item}" ' +

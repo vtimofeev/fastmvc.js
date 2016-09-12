@@ -1,7 +1,7 @@
 ///<reference path="d.ts" />
 
 declare var ui;
-ft.load(_.values(ui.def).filter((v)=>!!v && v.className));
+ft.load( _.values( ui && ui.def ).filter( (v:any)=>v&&v.className) );
 
 describe('ui', ()=> {
     var TestClassDef = {
@@ -29,10 +29,8 @@ describe('ui', ()=> {
         ' .out.value="data.selectedAge" ' +
         ' .value="{model.data.selectedAge}" ></ui.Group>' +
         '<ui.Group  .data="{data.age}" ></ui.Group>' +
-
         '<h1>Select {model.data.select.data.item}</h1>' +
         '<ui.Select  .model="{data.select}" ></ui.Select>' +
-
         '</div>',
     };
 
@@ -56,7 +54,7 @@ describe('ui', ()=> {
     };
 
     setTimeout(function() {
-        model.changes = { selectedAge: [1,2,3]};
+        model.changes = { selectedAge: [1,3]};
     }, 1000);
 
     ft.load(TestClassDef);
