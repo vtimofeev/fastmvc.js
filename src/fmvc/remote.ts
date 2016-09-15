@@ -52,6 +52,8 @@ module fmvc {
     }
 
     export class RemoteTaskManager {
+        static Name:String = 'RemoteTaskManager';
+
         private uid:string;
         protected interval:number;
         protected intervalTime:number = 100;
@@ -87,7 +89,7 @@ module fmvc {
         insert(value:IRemoteTaskRequest):IPromise {
             if(value.id) throw 'Cant insert task, that has id';
 
-            console.log('Inserted task ', value);
+            console.log(RemoteTaskManager.Name, ': Add task ', value);
             value.id = this.uid + '.' + this.random();
 
             var task:IRemoteTask = {
@@ -183,7 +185,7 @@ module fmvc {
         }
 
         protected resolve(task:IRemoteTask):void {
-            console.log('RCM: Resolve task ', task );
+            console.log(RemoteTaskManager.Name, ': Resolve task ', task );
             task.response.error ? task.promise.reject(task.response.error) : task.promise.resolve(task.response.data);
         }
 

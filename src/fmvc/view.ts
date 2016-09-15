@@ -85,11 +85,17 @@ module fmvc {
         }
 
         public setMediator(value:Mediator):IView {
+
+            if(value) {
+                this.facade = value.facade;
+                this.bind(value, value.internalHandler);
+            }
+            else {
+                this.facade = null;
+                if(this.mediator) this.unbind(this.mediator);
+            }
+
             this._mediator = value;
-
-            if(value) this.facade = value.facade;
-            else this.facade = null;
-
             return this;
         }
 
@@ -221,9 +227,8 @@ module fmvc {
 
         protected modelChangeHandler(e:IEvent) {
             this.setData(this.model.data);
-            console.log('Model changed ... ', this.model.data, this);
             this.invalidateData(); //@todo check
-            if (e && e.name === Event.Model.Disposed) this.dispose(); //@todo analyze
+            if (e && e.type === Event.Model.Disposed) this.dispose(); //@todo analyze
         }
 
         protected exitImpl():void {
@@ -350,18 +355,23 @@ module fmvc {
             super.dispose();
 
             // Clean refs
+            this._mediator = null;
             this._states = null;
             this._parent = null;
-            this._mediator = null;
             this._model = null;
             this._data = null;
             this._binds = null;
         }
 
-        public sendEvent(name:string, data:any = null, sub:string = null, error:any = null, global:boolean = false):void {
-            var e:IEvent = {name: name, data: data, global: global, target: this};
-            if (this.mediator) this.mediator.internalHandler(name, e);
+        /*
+        public dispatchEvent(e:IEvent|string):void {
+            const event:IEvent = <IEvent> (typeof e === 'string'? {type: e} : e);
+            event.target = this;
+
+            //var e:IEvent = {name: name, data: data, global: global, target: this};
+            if (this.mediator) this.mediator.internalHandler(event);
         }
+        */
 
         public log(...messages:any[]):View {
             if (this.mediator && this.mediator.facade) this.mediator.facade.logger.add(this.name, messages);

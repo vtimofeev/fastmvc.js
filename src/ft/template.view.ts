@@ -189,7 +189,7 @@ module ft {
 
         // Для связывания внутреннего состояния с внешними данными, используется внешний биндинг состояния
         protected applyStateBinds(name:string, value:any):void {
-            console.log('Apply state binds ', name, value, this._stateBinds , (this._stateBinds && this._stateBinds[name]) );
+            //console.log('Apply state binds ', name, value, this._stateBinds , (this._stateBinds && this._stateBinds[name]) );
             if (!(this._stateBinds && this._stateBinds[name])) return;
 
                 var bind = this._stateBinds[name],
@@ -197,7 +197,7 @@ module ft {
 
 
             bind.applyValue = bind.applyValue || this.getApplyValueFunctionOf(bind.model);
-            console.log('Prepare execution apply state value function ', bind.applyValue, this);
+            //console.log('Prepare execution apply state value function ', bind.applyValue, this);
             bind.applyValue.call(this, resultValue);
         }
 
@@ -346,8 +346,9 @@ module ft {
                     }
                     else if (key.indexOf(TmplDict.on) === 0) { // handlers, set handler
                         var t = this;
+                        //console.log('OnDot, ' , key, value);
                         this.on(key.substring(2), (_.isString(value) ? (e)=> {
-                            t.internalHandler(value, e);
+                            t.internalHandler({type: value, data: e});
                         } : value));
                     }
                     else if (key in this) {
@@ -448,8 +449,11 @@ module ft {
         }
 
         isChangedDynamicProperty(name:string):boolean {
-            var prevValue = this._prevDynamicProperiesMap[name];
-            var value = expression.getContextValue(name, this);
+
+            var prevValue = this._prevDynamicProperiesMap[name],
+                value = expression.getContextValue(name, this);
+
+            //console.log('IsChanged ... ', name, value, prevValue);
             var r = !(prevValue === value);
             return r;
         }
@@ -617,6 +621,7 @@ module ft {
             if (this.canValidate(fmvc.InvalidateType.Data)) {
                 counters.validateData++;
                 templateHelper.updateDynamicTree(this, DynamicTreeGroup.Data);
+                templateHelper.updateDynamicTree(this, 'model');
             }
         }
 
@@ -680,6 +685,7 @@ module ft {
         ////////////////////////////////////////////////////////////////
 
         public handleTreeEvent(e:ITreeEvent):void {
+            //console.log('Handle tree event ... ', e);
 
             e.currentTarget = this;// previous dispatch
             e.depth--;
@@ -691,9 +697,10 @@ module ft {
         }
 
         protected trigger(e:ITreeEvent, path = '0'):void {
+            //console.log('Trigger: ', e.type, this._localHandlers);
             var h = this._localHandlers ? this._localHandlers[path] : null;
-            if (h && h[e.name]) {
-                var handlers = h[e.name];
+            if (h && h[e.type]) {
+                var handlers = h[e.type];
                 _.each(handlers, (v)=> {
                     v.call(this, e);
                     e.executionHandlersCount++;
@@ -714,31 +721,38 @@ module ft {
             delete this._localHandlers[path][event];
         }
 
+        /*
         // custom event this.send(name, data), send stateChange event
         public dispatchTreeEvent(e:ITreeEvent):void {
             e.target = this;
             e.def = e.def || this.localDomDef;
             templateHelper.dispatchTreeEventDown(e);
         }
+        */
 
+
+        /*
         public getCustomTreeEvent(name:string, data:any = null, depth:number = 1):ITreeEvent {
             return dispatcher.getCustomTreeEvent(name, data, this, depth);
         }
 
-        protected internalHandlerImpl(type:string, e:any):void {
+        */
+
+        protected internalHandlerImpl(e:fmvc.IEvent):void {
         }
 
-        protected internalHandler(type:string, e:any):void {
-            var parentMediator = this.parent && this.parent.mediator;
+        protected internalHandler(e:fmvc.IEvent|string):void {
+            var event:fmvc.IEvent = <fmvc.IEvent> (typeof e === 'string'? {type: e} : e);
+            !event.target && (event.target = this);
 
-            this.internalHandlerImpl(type, e);
+            this.internalHandlerImpl(event);
 
-            if (this.mediator && this.mediator !== parentMediator) {
-                this.mediator.internalHandler(type, e);
+            if (this.mediator && this.mediator !== (this.parent && !!this.parent.mediator && this.parent.mediator) ) {
+                this.mediator.internalHandler(event);
             }
 
             if (this.parent && this.parent.internalHandler) {
-                this.parent.internalHandler(type, e);
+                this.parent.internalHandler(event);
             }
         }
 

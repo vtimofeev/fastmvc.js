@@ -2,9 +2,9 @@
 
 module ft {
     export var AttributePathId:string = 'data-path-id';
-    var svgNs:string = "http://www.w3.org/2000/svg";
-    var ComplexDomElementAttributes:string[] = ['style', 'class'];
-    var DomDefType:any = {
+    const SvgNs:string = "http://www.w3.org/2000/svg",
+        ComplexDomElementAttributes:string[] = ['style', 'class'],
+        DomDefType:any = {
         Tag: 'tag',
         Svg: 'svg',
         Text: 'text',
@@ -32,7 +32,7 @@ module ft {
             else {
                 for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
                     var childrenTreeElement:TreeElement = this.createTree(data.children[i], root);
-                    treeDomElement.appendChild(childrenTreeElement instanceof TemplateView ? childrenTreeElement.getElement() : childrenTreeElement);
+                    treeDomElement.appendChild(childrenTreeElement instanceof TemplateView ? childrenTreeElement.getElement() : <HTMLElement> childrenTreeElement);
                 }
                 return treeElement;
             }
@@ -113,6 +113,7 @@ module ft {
         private composeNames_updateDynamicTree = _.compose(_.union, _.compact, _.flatten);
         updateDynamicTree(root:TemplateView, group?:string, propertyName?:string):void {
             var dynamicTree:any = root.getTemplate().dynamicTree;
+            //console.log('Update dynamic tree', group, dynamicTree);
             if (!dynamicTree) return;
 
             var expressionArrays:any[];
@@ -190,12 +191,12 @@ module ft {
                     return result;
                 case DomDefType.Text:
                     result = document.createTextNode('');
-                    this.initTextElement(result, data, root);
+                    this.initTextElement(<Text> result, data, root);
                     return result;
                 case DomDefType.Comment:
                     return document.createComment(data.path);
                 case DomDefType.Svg:
-                    result = document.createElementNS(svgNs, data.name);
+                    result = document.createElementNS(SvgNs, data.name);
                     this.initDomElement(result, data, root);
                     return result;
                 default:
@@ -254,7 +255,7 @@ module ft {
         }
 
         /* Установка контента текстового элемента */
-        private initTextElement(object:TreeElement, data:IDomDef, root:TemplateView) {
+        private initTextElement(object:Text, data:IDomDef, root:TemplateView) {
             if (data.data) {
                 object.textContent = this.getSimpleOrExpressionValue(data.data, root);
             }
@@ -431,10 +432,10 @@ module ft {
         // Utilites
         // ------------------------------------------------------------------------------------------------------------
 
-        public applyFirstContextToExpressionParameters(params:any, context:TemplateView):IExpressionName {
+        public applyFirstContextToExpressionParameters(params:any, context:TemplateView):[{id:IExpressionName}] {
             if (!context) return params;
 
-            var r = {};
+            var r:[{id:IExpressionName}] = {};
             _.each(params, (v:IExpressionName|any, k)=> {
                 var isExpression = v instanceof ExpressionName;
 
@@ -451,11 +452,11 @@ module ft {
             return data.params && data.params[functorName + 'Delay'] && root.isDelay(data, functorName);
         }
 
-        private isTagElement(e:Element):Boolean {
+        private isTagElement(e:Element|Comment):Boolean {
             return e && e.nodeType === 1;
         }
 
-        private isCommentElement(e:Element):Boolean {
+        private isCommentElement(e:Element|Comment):Boolean {
             return e && e.nodeType === 8;
         }
 
@@ -487,7 +488,7 @@ module ft {
         setDomElementAttributes(attrs:IObj, object:HTMLElement) {
             for (name in attrs) {
                 var value = attrs[name];
-                var method = value ? object.setAttribute : object.removeAttribute;
+                var method:Function = value ? object.setAttribute : object.removeAttribute;
                 method.call(object, name, value);
             }
         }
@@ -495,7 +496,7 @@ module ft {
         setSvgElementAttributes(attrs:IObj, object:HTMLElement) {
             for (name in attrs) {
                 var value = attrs[name];
-                var method = value ? object.setAttributeNS : object.removeAttributeNS;
+                var method:Function = value ? object.setAttributeNS : object.removeAttributeNS;
                 method.call(object, null, name, value);
             }
         }
@@ -560,7 +561,7 @@ module ft {
                 this.triggerDefEvent(e);
 
                 // check canceled
-                e.cancelled = !!e.executionHandlersCount && e.name === 'click';
+                e.cancelled = !!e.executionHandlersCount && e.type === 'click';
 
                 // exec parent next domDef to root
                 e.currentDef = def && def.parentPath ? (<TemplateView>view.parent).getTemplate().pathMap[def.parentPath] : null;
@@ -572,8 +573,8 @@ module ft {
             var def:IDomDef = <IDomDef> (e.currentDef || e.def);
             var view = <TemplateView> (e.currentTarget || e.target);
 
-            if (!view.disabled && def.handlers && def.handlers[e.name]) {
-                view.evalHandler(def.handlers[e.name], e);
+            if (!view.disabled && def.handlers && def.handlers[e.type]) {
+                view.evalHandler(def.handlers[e.type], e);
                 e.executionHandlersCount++;
             }
         }

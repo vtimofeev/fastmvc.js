@@ -15,13 +15,17 @@ module ui.def {
         content: '<div .base="hslider" .value="0" class="{state.base} {state.base}-{state.selected} {state.base}-{state.hover}" >' +
         '<div ln="bg" class="{state.base}-bg">' +
             '<div ln="pg" class="{state.base}-pg" style="width: {state.value*100}%;">' +
-                '<ui.ToggleButton ln="dg" .base="{state.base}-button" .stateHandlers="hover" onpointerdown="{this.dragStart(e);}"/>' +
+                '<ui.ToggleButton ln="dg" .base="{state.base}-button" .stateHandlers="hover"' +
+                ' .onpointerdown="{this.dragStart(e);}" .onaction="draggerClick" ' +
+                '/>' +
             '</div>' +
         '</div>' +
         '</div>',
 
         mixin: {
             dragStart: function dragStart(e:ft.ITreeEvent) {
+                console.log('Drag Start', e);
+
                 this.startX = e.pe.clientX;
                 this.startSize = this.bg.offsetWidth;
                 this.startValue = Number(this.value);

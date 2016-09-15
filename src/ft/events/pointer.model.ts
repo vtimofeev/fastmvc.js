@@ -2,7 +2,7 @@
 
 module ft {
     export interface IPointerEvent {
-        name:string;
+        type:string;
         sequence?:number;
         clientX:number;
         clientY:number;
@@ -96,13 +96,13 @@ module ft {
                 eventData = e;
             }
 
-            var result:IPointerEvent = {name: transformName, clientX: eventData.clientX, clientY: eventData.clientY, time: e.timeStamp, isComposite: true};
+            var result:IPointerEvent = {type: transformName, clientX: eventData.clientX, clientY: eventData.clientY, time: e.timeStamp, isComposite: true};
             return transformName?result:e;
         }
 
 
         public addSequenceEvent(e:IPointerEvent, target:HTMLElement):IPointerEvent {
-            if(!this.isSequenceEvent(e.name)) return null;
+            if(!this.isSequenceEvent(e.type)) return null;
 
             if(this.target !== target ) {
                 this.target = target;
@@ -112,7 +112,7 @@ module ft {
             }
 
 
-            if(e.name === CompositeEvent.PointerDown) this.sequenceLastDownIndex = this.sequence.length;
+            if(e.type === CompositeEvent.PointerDown) this.sequenceLastDownIndex = this.sequence.length;
             this.sequence.push(e);
 
             return this.analyzeSequence(e);
@@ -123,7 +123,7 @@ module ft {
         }
 
         protected analyzeSequence(e:IPointerEvent):IPointerEvent {
-            if(e.name === CompositeEvent.PointerUp) {
+            if(e.type === CompositeEvent.PointerUp) {
 
                 var firstEvent:IPointerEvent = this.sequence[this.sequenceLastDownIndex] || this.sequence[0];
                 return this.getSequenceEvent(e.time - firstEvent.time, Math.abs(e.clientX - firstEvent.clientX), Math.abs(e.clientY - firstEvent.clientY), e);
@@ -132,7 +132,7 @@ module ft {
         }
 
         protected getSequenceEvent(time:number, diffX:number, diffY:number, e:IPointerEvent):IPointerEvent {
-            if(time < 1000 && diffX < 10 && diffY < 10 ) return {name: CompositeEvent.Action, sequence: 1, clientX: e.clientX, clientY: e.clientY };
+            if(time < 1000 && diffX < 10 && diffY < 10 ) return {type: CompositeEvent.Action, sequence: 1, clientX: e.clientX, clientY: e.clientY };
             return null;
         }
 

@@ -88,6 +88,7 @@ module ft {
                def[group][groupKey] = this.parseExpressionAttrib(value, key, r.expressionMap, path, group);
             }, this);
 
+
             def.children = _.map(o.children, (v:IHtmlObject, index:number)=>(this.htmlObjectToDomTree(v,r, def.path +','+index)), this);
             _.each(_.keys(def), (key)=>(_.isEmpty(def[key]) ? delete def[key] : null));
 

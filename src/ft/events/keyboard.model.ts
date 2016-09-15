@@ -73,8 +73,8 @@ module ft {
     export class KeyboardModel extends fmvc.Model<any> {
         public static Name:string = 'KeyboardModel';
 
-        constructor() {
-            super(KeyboardModel.Name, null);
+        constructor(data?:any, opts?:fmvc.IModelOptions) {
+            super(KeyboardModel.Name, data, opts);
         }
     }
 

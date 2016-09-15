@@ -16,10 +16,10 @@ module ui.def {
                 console.log('IsSelected ? ', data, result, 'Child is ', child, parent);
                 return result;
             },
-            internalHandlerImpl: function (name, e) {
+            internalHandlerImpl: function (e:ft.IEvent) {
                 var data = e && e.target && (e.target.model || e.target.data);
 
-                switch (name) {
+                switch (e.type) {
                     case 'item': {
                         if(e.target.selected) {
 

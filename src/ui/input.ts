@@ -15,24 +15,39 @@ module ui.def {
      valid
      */
 
+    import IEvent = fmvc.IEvent;
     export var Input = {
         className: 'ui.Input',
         content: '<input ' +
-        ' .base="input" .value="" .state.placeholder="" .state.valid="" .state.type="text" ' +
+        ' .base="input" ' +
+        ' .stateHandlers="focused" ' +
+        '.value="" .state.placeholder="" .state.valid="" .state.type="text" ' +
         ' name="{name}" placeholder="{state.placeholder||state.title}" value="{state.value}" type="{state.type}" ' +
         ' class="{state.base} {state.base}-{state.type} {state.base}-{state.valid} {state.base}-{state.enabled}"' +
         ' onkeydown="down" onkeyup="up" onblur="blur" onkeyleft="left" onkeyright="right" onkeyenter="enter" onkeyesc="esc" ' +
         '/>',
         mixin: {
+
             syncValue: function() {
+                console.log('Sync ...' , this.name,  this.getElement(), this.getElement().value);
+
                 this.value = this.getElement().value;
             },
 
             afterEnter: function() {
+                this.globalKeyboard.bind(this, this.keyboardHandler);
                 // Загружаем значения сохраненные браузером
-                setTimeout( ()=>this.syncValue() , 100 );
+                setTimeout( ()=>this.syncValue() , 500 );
             },
-            internalHandlerImpl(name:string, e:any) {
+
+            keyboardHandler: function(e:IEvent) {
+
+                if(!this.focused || !e.data) return;
+                console.log('Internal input handler....', name, e);
+
+                if(e.data.type === 'keyup') this.syncValue();
+                return;
+
                 switch (name) {
                     case 'blur':
                     case 'up':

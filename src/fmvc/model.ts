@@ -71,7 +71,7 @@ module fmvc {
         public reset():Model<T> {
             this._data = null;
             this._state = ModelState.None;
-            this.sendEvent(Event.Model.Changed);
+            this.dispatchEvent({type: Event.Model.Changed});
             return this;
         }
 
@@ -90,9 +90,9 @@ module fmvc {
 
         public setState(value:string):Model<T> {
             if (!this.opts.state || this._state === value) return this;
-            this._prevState = value;
+            this._prevState = this._stsate;
             this._state = value;
-            this.sendEvent(Event.Model.StateChanged, this._state);
+            this.dispatchEvent({type: Event.Model.StateChanged, data: this._state});
             return this;
         }
 
@@ -121,7 +121,7 @@ module fmvc {
         public setData(value:T):Model<T> {
             if (this._data === value || this.disposed) return;
             this._data = value;
-            this.sendEvent(Event.Model.Changed, this._data);
+            this.dispatchEvent({type: Event.Model.Changed, data: this._data});
             return this;
         }
 
@@ -146,7 +146,8 @@ module fmvc {
                 else
                     this._changedData = value;
 
-                this.state = ModelState.Changed;
+                var hasChanges = !(this._changedData === null && this._changedData === undefined);
+                this.state = hasChanges?ModelState.Changed:this._prevState;
             }
 
             return this;
@@ -165,7 +166,7 @@ module fmvc {
 
             this._changedData = undefined;
             this.state = ModelState.Synced;
-            this.sendEvent(Event.Model.Changed, this._data, changes);
+            this.dispatchEvent({type: Event.Model.Changed, data: this._data, changes: changes});
 
         }
 
@@ -251,12 +252,12 @@ module fmvc {
             this.state = ModelState.Error;
         }
 
-        sendEvent(name:string, data:any = null, changes:any = null, sub:string = null, error:any = null):void {
-            if (this.opts.event) super.sendEvent(name, data, changes, sub, error);
+        dispatchEvent(e:IEvent):void {
+            if (this.opts.event) super.dispatchEvent(e);
         }
 
         dispose(data:any = null):void {
-            this.sendEvent(Event.Model.Disposed);
+            this.dispatchEvent({type: Event.Model.Disposed});
             this._changedData = null;
             this._data = null;
             super.dispose();

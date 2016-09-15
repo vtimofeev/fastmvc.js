@@ -48,10 +48,10 @@ describe('fmvc', function() {
             n0.bind(this, (e:fmvc.IEvent)=>(event=e));
             assert(n0.listenerCount === 1, 'has one listener: ' + n0.listenerCount);
 
-            n0.sendEvent(eventName, eventData);
+            n0.dispatchEvent({type: eventName, data: eventData});
             console.log(event);
             assert(event.target === n0, 'target is');
-            assert(event.name === eventName, 'name is');
+            assert(event.type === eventName, 'name is');
             assert(event.data === eventData, 'data is');
 
             n0.unbind(this);
@@ -195,9 +195,9 @@ describe('fmvc', function() {
         it('can receive view events', function() {
            var event:fmvc.IEvent = null;
            m.viewEventHandler = (e)=>(event=e);
-           view1.sendEvent(eventName, eventData);
+           view1.dispatchEvent({type: eventName, data: eventData});
            assert(event.target === view1, 'target is');
-           assert(event.name === eventName, 'name is');
+           assert(event.type === eventName, 'name is');
            assert(event.data === eventData, 'data is');
        });
     });

@@ -85,15 +85,15 @@ module ui.def {
 
             },
 
-            internalHandlerImpl: function (type, e) {
+            internalHandlerImpl: function (e:IEvent) {
                 //console.log('Handler ', type, e);
 
-                if(type==='cancel') {
+                if(e.type==='cancel') {
                     if(this.model) this.model.changes = null;
                     return;
                 }
 
-                if(type==='apply') {
+                if(e.type==='apply') {
                     this.fields.forEach( (v)=>v.syncValue && v.syncValue() );
                     var schemaType = this.getState('schemaType');
 

@@ -71,25 +71,36 @@ module fmvc
 
         public bind(object:any, handler:any):Notifier
         {
-            this.addListener(object, handler);
+            var hasBind:boolean = this.hasBind(object, handler);
+            if(!this._listeners) this._listeners = [];
+
+            if(!hasBind) {
+                this._listeners.push({target: object, handler: handler});
+            }
             return this;
         }
 
         public unbind(object:any, handler?:any):Notifier
         {
-            this.removeListener(object, handler);
+            var deletedOffset:number = 0;
+            this._listeners.forEach(function(lo:IListener, i:number) {
+                if(lo.target === object && (!handler || handler === lo.handler)) { this.splice(i - deletedOffset, 1); deletedOffset++; }
+            }, this._listeners);
+
             return this;
         }
 
         // Послаем сообщение сначала в фасад, потом частным слушателям (для моделей)
-        public sendEvent(name:string, data:any = null, changes:any = null, sub:string = null, error:any = null):void
+        public dispatchEvent(e:IEvent|string):void //name:string, data:any = null, changes:any = null, sub:string = null, error:any = null
         {
-            if(this._disposed) throw Error('Model ' + this.name + ' is disposed and cant send event');
+            var event:IEvent = <IEvent> (typeof e === 'string'? {type: e} : e);
+
+            if(this._disposed) throw Error('Notifier(Model/View) ' + this.name + ' is disposed and cant send event');
             if(!this._listeners) return;
 
             // facade, mediators, other is optional
-            var e:IEvent = {name: name, sub:sub, data: data, changes:changes, error: error, target: this};
-            this.sendToListeners(e);
+            event.target = this;
+            this.sendToListeners(event);
         }
 
         public log(...args:string[]):Notifier
@@ -107,15 +118,6 @@ module fmvc
         {
         }
 
-        private addListener(object:INotifier, handler:Function):void
-        {
-            var hasBind:boolean = this.hasBind(object, handler);
-            if(!this._listeners) this._listeners = [];
-
-            if(!hasBind) {
-                this._listeners.push({target: object, handler: handler});
-            }
-        }
 
         public hasBind(object:INotifier, handler:Function):boolean {
             var l:number,i:number, ol:IListener;
@@ -127,14 +129,6 @@ module fmvc
             }
 
             return false;
-        }
-
-        private removeListener(object:INotifier, handler?:any):void
-        {
-            var deletedOffset:number = 0;
-            this._listeners.forEach(function(lo:IListener, i:number) {
-                if(lo.target === object && (!handler || handler === lo.handler)) { this.splice(i - deletedOffset, 1); deletedOffset++; }
-            }, this._listeners);
         }
 
         private removeAllListeners():void
@@ -175,15 +169,15 @@ module fmvc
         type:string;
         disposed:boolean;
         facade:fmvc.Facade;
-        sendEvent(name:string, data:any, ...rest):void;
+        dispatchEvent(e:IEvent|string):void;
         bind(context:INotifier, handler:Function):INotifier;
         unbind(context:INotifier, handler?:Function):INotifier;
         dispose():void;
     }
 
     export interface IEvent {
-        target:INotifier;
-        name:string;
+        target?:INotifier;
+        type:string;
         data?:any;
         changes?:any;
 
@@ -192,8 +186,5 @@ module fmvc
         global?:any;
     }
 
-    export interface IViewEvent extends IEvent{
-        source?:any; // source browser event, if exist
-    }
 
 }

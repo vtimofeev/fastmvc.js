@@ -107,12 +107,12 @@ module ft {
             var length = this._children ? this._children.length : 0;
 
             _.each(this._children, function (child:TemplateView, index:number) {
-                console.log('Apply children param ... ', value, key );
+                //console.log('Apply children param ... ', value, key );
                 if (child.disposed) return;
                 this.setCurrentChildToExecutionContext(child, index, length, value.context || this.parent);
                 var childValue:any = _.isObject(value) ? this.getExpressionValue(value) : value;
                 var childParamName:string = this.getChildrenParamName(key);
-                console.log('Result children param ... ', childValue, childParamName );
+                //console.log('Result children param ... ', childValue, childParamName );
                 child.applyParameter(childValue, childParamName);
             }, this);
         }
