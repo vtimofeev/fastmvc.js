@@ -5,6 +5,7 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "gulp-clean": "^0.3.2",
     "optimist": "^0.6.1",
     "underscore": "*"
   },

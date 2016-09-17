@@ -1,6 +1,7 @@
 var
     gulp = require('gulp'), // Сообственно Gulp JS
     debug = require('gulp-debug'),
+    clean = require('gulp-clean'),
     stylus = require('gulp-stylus'), // Плагин для Stylus
     nib = require('nib'), // stylus nib library
     ts = require('gulp-typescript'), // Typescript для Gulp
@@ -24,8 +25,8 @@ var project = {
     version: '0.9.5',
     date: new Date().toISOString(),
     paths: {
-        fmvcSrc: ['./src/fmvc/**/*.ts'],
-        ftSrc: ['./src/ft/**/*.ts' ]
+        fmvcSrc: ['./test/fmvc/**/*.ts'],
+        ftSrc: ['./test/ft/**/*.ts' ]
     }
 };
 
@@ -52,11 +53,11 @@ gulp.task('build.ft', function () {
 });
 
 gulp.task('watch.ft', function () {
-    return gulp.watch(['./src/fmvc/*.ts','./src/ft/*.ts'], {interval: 2000}, ['build.ft'])
+    return gulp.watch(['./test/fmvc/*.ts','./test/ft/*.ts'], {interval: 2000}, ['build.ft'])
 });
 
 gulp.task('build.contrib', function () {
-    return gulp.src('./src/contrib/*.js')
+    return gulp.src('./test/contrib/*.js')
         .pipe(concat('contrib.build.js'))
         //.pipe(uglify())
         .pipe(gulp.dest('./build'));
@@ -64,12 +65,12 @@ gulp.task('build.contrib', function () {
 
 gulp.task('clear', function () {
     return gulp.src([
-        './src/app/**/*.js*',
-        './src/ui/**/*.js*',
-        './src/fmvc/**/*.js*',
-        './src/ft/**/*.js*',
-        './src/stylus/**/*.css',
-        './test/src/**/*.js*'
+        './test/app/**/*.js*',
+        './test/ui/**/*.js*',
+        './test/fmvc/**/*.js*',
+        './test/ft/**/*.js*',
+        './test/stylus/**/*.css',
+        './test/test/**/*.js*'
     ], {read: false})
         .pipe(clean());
 });

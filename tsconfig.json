@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "noImplicitAny": true,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "outFile": "./build/all.js",
+    "sourceMap": true
+  },
+  "filesGlob": [
+
+      "./src/fmvc/**/*.ts",
+      "./src/ft/**/*.ts",
+      "./src/ui/**/*.ts"
+
+  ]
+}

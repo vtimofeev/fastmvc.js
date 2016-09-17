@@ -13,24 +13,24 @@ var gulp = require('gulp'), // Сообственно Gulp JS
     mocha = require('gulp-mocha'); // Тесты
 
 gulp.task('build.ui.js', function () {
-    return gulp.src(['./src/ui/**/*.js', '!./src/ui/build.js'])
+    return gulp.src(['./test/ui/**/*.js', '!./test/ui/build.js'])
         .pipe(concat('ui.js'))
         .pipe(gulp.dest('./build'));
 });
 
 gulp.task('build.ui.stylus', function () {
-    return gulp.src('./src/stylus/default.styl')
+    return gulp.src('./test/stylus/default.styl')
         .pipe(stylus({use: nib()}))
         .pipe(rename('styles.css'))
         .pipe(gulp.dest('./build'));
 });
 
 gulp.task('watch.ui.js', function() {
-    return gulp.watch('./src/ui/**/*.js', {interval: 1000}, ['build.ui.js']);
+    return gulp.watch('./test/ui/**/*.js', {interval: 1000}, ['build.ui.js']);
 });
 
 gulp.task('watch.ui.stylus', function() {
-    return gulp.watch('./src/stylus/**/*.styl', {interval: 1000}, ['build.ui.stylus']);
+    return gulp.watch('./test/stylus/**/*.styl', {interval: 1000}, ['build.ui.stylus']);
 });
 
 gulp.task('build.ui', ['build.ui.js', 'build.ui.stylus', 'watch.ui.stylus', 'watch.ui.js']);

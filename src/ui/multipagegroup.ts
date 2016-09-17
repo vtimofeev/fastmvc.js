@@ -1,13 +1,20 @@
+/**
+ * Created by Vasily on 16.09.2016.
+ */
 module ui.def {
-    export var Group = {
-        className: 'ui.Group',
-        content: '<div .base="group" ' +
-        ' class="{state.base}" ' +
-        ' .children.selected="{this.isSelected(this.child)}" ' +
-        ' .children.base="button" ' +
-        ' .children.class="ui.ToggleButton" ' +
-        ' .children.hover="{cc.childIndex===state.hoverIndex}" ' +
-        ' .children.onaction="item"></div>', //' .children.stateHandlers="hover,selected" ' +
+    export var MultiPageGroup = {
+        className: 'ui.MultiPageGroup',
+        content: `
+
+        <div .base="multi-page-group" class="{state.base}>" 
+            <h3>Items-5</h3> 
+            
+            <ui.Group .model="{model.items}"></ui.Group>  
+            <h4>Pages-3</h4> 
+            <ui.Group .base="pages" .model="{model.pages}" .value="{model.seletedPage}" .out.value="model.seletedPage"></ui.Group> 
+        </div>
+
+`,
         mixin: {
             isSelected(child, parent) {
                 var data = child.model || child.data,
@@ -41,9 +48,9 @@ module ui.def {
 
                 switch (e.type) {
                     case 'item': {
-                        (e.target.selected?this.setGroupItem:this.removeGroupItem).call(this, data);
+                        (e.target.selected?this.setGroupItem:this.removeGroupItem)(data);
                         break;
-                   }
+                    }
                 }
 
             }
