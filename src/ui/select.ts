@@ -34,7 +34,7 @@ module ui.def {
 
 
                 if (keyCode === ft.KeyCode.Enter) {
-                  console.log('Select: Hover index is ...', hoverIndex, ' ENTER ', data, this);
+                  //console.log('Select: Hover index is ...', hoverIndex, ' ENTER ', data, this);
                   this.group.value = data.items[hoverIndex];
                 }
 
@@ -43,7 +43,7 @@ module ui.def {
 
                 hoverIndex = hoverIndex < 0 ? data.items.length - 1 : hoverIndex;
 
-                console.log('Select: Hover index is ...', hoverIndex);
+                //console.log('Select: Hover index is ...', hoverIndex);
                 this.group.setState('hoverIndex', hoverIndex < 0 ? data.items.length - 1 : hoverIndex );
                 this.invalidateData();
 

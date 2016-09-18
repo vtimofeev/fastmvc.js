@@ -12,15 +12,17 @@ module ui.def {
 
     export var HSliderDefinition = {
         className: 'ui.HSlider',
-        content: '<div .base="hslider" .value="0" class="{state.base} {state.base}-{state.selected} {state.base}-{state.hover}" >' +
-        '<div ln="bg" class="{state.base}-bg">' +
-            '<div ln="pg" class="{state.base}-pg" style="width: {state.value*100}%;">' +
-                '<ui.ToggleButton ln="dg" .base="{state.base}-button" .stateHandlers="hover"' +
-                ' .onpointerdown="{this.dragStart(e);}" .onaction="draggerClick" ' +
-                '/>' +
-            '</div>' +
-        '</div>' +
-        '</div>',
+        content: `
+
+        <div .base="hslider" .value="0" class="{state.base} {state.base}-{state.selected} {state.base}-{state.hover}">
+        <div ln="bg" class="{state.base}-bg">
+            <div ln="pg" class="{state.base}-pg" style="width: {state.value*100}%;">
+                <ui.ToggleButton ln="dg" .base="{state.base}-button" .stateHandlers="hover"
+                 .onpointerdown="{this.dragStart(e);}" .onaction="draggerClick" 
+                />
+            </div>
+        </div>
+        </div>`,
 
         mixin: {
             dragStart: function dragStart(e:ft.ITreeEvent) {
@@ -36,12 +38,15 @@ module ui.def {
             },
 
             prepareChanges: function prepareChanges(e:fmvc.IEvent) {
+                console.log('Prepare changes', e);
+
                 var newX = e.data.clientX,
                     result = (newX - this.startX) / this.startSize,
                     preValue = ui.def.validateMaxMin(this.startValue + result, 0, 1); // auto invalidate
 
                 var step = this.getState('step');
                 this.value = step?validateStep(preValue, step):preValue;
+
 
                 if (e.data.name === ft.CompositeEvent.PointerUp) {
                     this.globalPointer.unbind(this);
@@ -86,7 +91,7 @@ module ui.def {
                 var step = this.getState('step');
                 this.value = step?validateStep(preValue, step):preValue;
 
-                if (e.data.name === ft.CompositeEvent.PointerUp) {
+                if (e.data.type === ft.CompositeEvent.PointerUp || e.data.type === ft.CompositeEvent.PointerDown) {
                     this.globalPointer.unbind(this);
                     this.globalPointer.enablePointerEventsByClassName(true);
                     this.dg.setState('selected', false);

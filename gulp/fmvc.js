@@ -56,12 +56,21 @@ gulp.task('watch.ft', function () {
     return gulp.watch(['./test/fmvc/*.ts','./test/ft/*.ts'], {interval: 2000}, ['build.ft'])
 });
 
-gulp.task('build.contrib', function () {
-    return gulp.src('./test/contrib/*.js')
-        .pipe(concat('contrib.build.js'))
-        //.pipe(uglify())
+gulp.task('contrib', function () {
+    return gulp.src('./contrib/*.js')
+        .pipe(concat('contrib.min.js'))
+        .pipe(uglify())
         .pipe(gulp.dest('./build'));
 });
+
+gulp.task('all', function () {
+    return gulp.src('./build/all.js')
+        .pipe(concat('all.min.js'))
+        .pipe(uglify())
+        .pipe(gulp.dest('./build'));
+});
+
+
 
 gulp.task('clear', function () {
     return gulp.src([

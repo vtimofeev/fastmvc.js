@@ -29,7 +29,7 @@ module ui.def {
         mixin: {
 
             syncValue: function() {
-                console.log('Sync ...' , this.name,  this.getElement(), this.getElement().value);
+                //console.log('Sync ...' , this.name,  this.getElement(), this.getElement().value);
 
                 this.value = this.getElement().value;
             },
@@ -43,7 +43,7 @@ module ui.def {
             keyboardHandler: function(e:IEvent) {
 
                 if(!this.focused || !e.data) return;
-                console.log('Internal input handler....', name, e);
+                //console.log('Internal input handler....', name, e);
 
                 if(e.data.type === 'keyup') this.syncValue();
                 return;
