@@ -49,24 +49,24 @@ module fmvc
             return this._type;
         }
 
-        // счетчик прямых слушателей
         public get listenerCount():number {
             return this._listeners?this._listeners.length:-1;
         }
 
-        // установка фасада для цепочки вызовов
         public setFacade(facade:fmvc.Facade):Notifier {
             this.facade = facade;
             return this;
         }
 
-        public compose(value:INotifier) {
-            if(!(value && value.name)) throw 'Cant compose ' + value;
+        public compose(value:INotifier):Notifier {
+            if(!(value && value.name)  throw 'Cant compose, argument is ' + value;
             if(typeof this[value.name] !== 'undefined') throw 'Cant compose cause name "' + value.name + '" is used ';
 
             this._composed = this._composed || [];
             this._composed.push(value.name);
             this[value.name] = value;
+
+            return this;
         }
 
         public bind(object:any, handler:any):Notifier
@@ -83,7 +83,7 @@ module fmvc
         public unbind(object:any, handler?:any):Notifier
         {
             var deletedOffset:number = 0;
-            this._listeners.forEach(function(lo:IListener, i:number) {
+            this._listeners && this._listeners.forEach(function(lo:IListener, i:number) {
                 if(lo.target === object && (!handler || handler === lo.handler)) { this.splice(i - deletedOffset, 1); deletedOffset++; }
             }, this._listeners);
 
@@ -93,13 +93,13 @@ module fmvc
         // Послаем сообщение сначала в фасад, потом частным слушателям (для моделей)
         public dispatchEvent(e:IEvent|string):void //name:string, data:any = null, changes:any = null, sub:string = null, error:any = null
         {
-            var event:IEvent = <IEvent> (typeof e === 'string'? {type: e} : e);
-
             if(this._disposed) throw Error('Notifier(Model/View) ' + this.name + ' is disposed and cant send event');
-            if(!this._listeners) return;
+            if(!e || !this._listeners) return;
 
-            // facade, mediators, other is optional
-            event.target = this;
+            var event:IEvent = <IEvent> (typeof e === 'string'? {type: e} : e);
+            !event.target && (event.target = this);
+            event.currentTarget = this;
+
             this.sendToListeners(event);
         }
 
@@ -121,9 +121,11 @@ module fmvc
 
         public hasBind(object:INotifier, handler:Function):boolean {
             var l:number,i:number, ol:IListener;
-            if(!this._listeners) return false;
+            if(!this._listeners) {
+                return false;
+            }
 
-            for(i=0, l=this._listeners.length; i<l;i++) {
+            for(i = 0, l = this._listeners.length; i < l; i++) {
                 ol = this._listeners[i];
                 if(ol.target === object && ol.handler === handler) return true;
             }
@@ -151,10 +153,7 @@ module fmvc
             this.removeAllListeners();
             this._facade = null;
             this._disposed = true;
-
-            if(this._composed) {
-                this._composed.forEach((v)=>(delete this[v]));
-            }
+            this._composed && this._composed.forEach((v:string)=>(delete this[v]));
         }
     }
 
@@ -177,6 +176,7 @@ module fmvc
 
     export interface IEvent {
         target?:INotifier;
+        currentTarget?:INotifier;
         type:string;
         data?:any;
         changes?:any;

@@ -26,7 +26,7 @@ module ui.def {
 
         mixin: {
             dragStart: function dragStart(e:ft.ITreeEvent) {
-                console.log('Drag Start', e);
+
 
                 this.startX = e.pe.clientX;
                 this.startSize = this.bg.offsetWidth;
@@ -38,11 +38,11 @@ module ui.def {
             },
 
             prepareChanges: function prepareChanges(e:fmvc.IEvent) {
-                console.log('Prepare changes', e);
+
 
                 var newX = e.data.clientX,
                     result = (newX - this.startX) / this.startSize,
-                    preValue = ui.def.validateMaxMin(this.startValue + result, 0, 1); // auto invalidate
+                    preValue = ui.def.validateMaxMin(this.startValue + result, 0, 1);
 
                 var step = this.getState('step');
                 this.value = step?validateStep(preValue, step):preValue;
@@ -62,7 +62,7 @@ module ui.def {
         }
     };
 
-    // {state.base}-{state.selected} {state.base}-{state.hover}
+
     export var HSliderDefinition = {
         className: 'ui.HSlider',
         content: '<div .base="hslider" .value="0" class="{state.base}">' +
@@ -86,7 +86,7 @@ module ui.def {
             prepareChanges: function prepareChanges(e:fmvc.IEvent) {
                 var newX = e.data.clientX,
                     result = (newX - this.startX) / this.startSize,
-                    preValue = ui.def.validateMaxMin(this.startValue + result, 0, 1); // auto invalidate
+                    preValue = ui.def.validateMaxMin(this.startValue + result, 0, 1);
 
                 var step = this.getState('step');
                 this.value = step?validateStep(preValue, step):preValue;

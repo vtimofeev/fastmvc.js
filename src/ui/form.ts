@@ -9,9 +9,7 @@ module ui.def {
 
     export var FormDefinition = {
         className: 'ui.Form',
-        content: '<div .base="form" .state.schemaType="insert" class="{state.base}">' +
-        '<h1>Form {model.name} : state-{model.state} : {state.schemaType}</h1>' +
-        '</div>',
+        content: '<div .base="form" .state.schemaType="insert" class="{state.base}"></div>',
         mixin: {
             cleanForm: function () {
 
@@ -26,18 +24,9 @@ module ui.def {
             },
 
             afterValidate: function () {
-                /*
-                console.log('AfterValidate: Create form ',
-                    this.model.data,
-                    this.model.schemas,
-                    this.getState('schemaType'),
-                    this
-                );*/
-
                 if(!this.model || !this.model.schemas || !this.model.schemas[this.getState('schemaType')] || this.model.disposed) return;
-
                 if(this.bindedInstance === this.model && this.bindedSchema === this.getState('schema')) return;
-                console.log('Render form ', this.model.schemas, this.getState('schemaType') );
+
 
                 this.bindedInstance = this.model;
                 this.bindedSchema = this.getState('schema');
@@ -55,10 +44,10 @@ module ui.def {
                         states = {
                             title:  modelProperty,
                             type: type || 'text',
-                            value: this.model.data[modelProperty]
+                            value: this.model.data && this.model.data[modelProperty] || ''
                         };
 
-                    var bindout = 'out.value';// + modelProperty;
+                    var bindout = 'out.value';
                     var params = {
                         model: this.model,
                         setStates: states,
@@ -66,8 +55,9 @@ module ui.def {
 
                     params[bindout] = 'model.data.' + modelProperty;
 
-                    var instance = ft.templateManager.createInstance('ui.Input', this.name + '-field-' + modelProperty, params);
-                    //console.log('Create field ', modelProperty, bindout, this.model, instance);
+
+                    var instance = ft.templateManager.createInstance( (value.type === 'text' ? 'ui.Text' : 'ui.Input') , this.name + '-field-' + modelProperty, params);
+
 
                     instance.render(this.getElement());
                     instance.parent = this;
@@ -80,13 +70,13 @@ module ui.def {
                 this.cancelButton = ft.templateManager.createInstance('ui.Button', this.name + '-field-cancel' , {data:'Cancel', onaction: (e)=>this.internalHandler('cancel',e) });
                 this.cancelButton.render(this.getElement());
 
-                //console.log('Form submit button created ', this.submitButton);
-                //console.log('Form cancel created ', this.cancelButton);
+
+
 
             },
 
             internalHandlerImpl: function (e:IEvent) {
-                //console.log('Handler ', type, e);
+
 
                 if(e.type==='cancel') {
                     if(this.model) this.model.changes = null;
@@ -97,13 +87,13 @@ module ui.def {
                     this.fields.forEach( (v)=>v.syncValue && v.syncValue() );
                     var schemaType = this.getState('schemaType');
 
-                    //console.log('Method to apply ', this.model[schemaType], this.model.changes, this.model.data, this.model);
+
                     var operationPromise = ((schemaType === 'update')?this.model.save():this.model[schemaType](this.model.changes || this.model.data));
 
                     operationPromise.then(
-                            (v)=>( this.model.changes = v && v[0],this.model.applyChanges(), console.log('On form success apply ', v, this.model))
+                            (v:any)=>( this.model.changes = v && v[0],this.model.applyChanges(), console.log('On form success apply ', v, this.model))
                         ).catch(
-                            (e)=>(this.model.state = fmvc.ModelState.Error, console.log('On form error apply ', e))
+                            (e:any)=>(this.model.state = fmvc.ModelState.Error, console.log('On form error apply ', e))
                         );
 
 

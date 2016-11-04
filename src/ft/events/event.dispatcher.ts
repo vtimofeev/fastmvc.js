@@ -39,6 +39,11 @@ module ft {
                 return;
             }
 
+            //fix IOS bug `dublicated mouse events`
+            if(this.pointer.onlyTouch && e.type.indexOf('mouse') > -1) {
+                return;
+            }
+
             var target:HTMLElement = e.target || e.currentTarget;
 
             var pathId:string = target.getAttribute?target.getAttribute(AttributePathId):null;

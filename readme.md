@@ -294,3 +294,25 @@ width="{data.width}px"
 
 
 
+
+v3
+
+var filterModel = model('filter').setData({}).setChanges({enabled: true}, true);
+var dataModel = model('items').setData([ model('item', { enabled: false })]);
+var composedModel = modelMix(filterModel, dataModel)
+.debounce(500)
+.handler(
+    (filterModel:model, dataModel:model, reasons:Array[])=>{
+        var items = dataModel.getData().filter( function(itemModel) {
+            return itemModel.getData().enabled === filterModel.getData().enabled;
+        });
+        
+        this.setData(item);
+    }
+);
+
+app.push(filterModel, dataModel);
+
+
+
+

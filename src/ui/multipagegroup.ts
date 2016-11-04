@@ -8,7 +8,7 @@ module ui.def {
 
         <div .base="multi-page-group" class="{state.base}>" 
             <h3>Items-5</h3> 
-            
+            12
             <ui.Group .model="{model.items}"></ui.Group>  
             <h4>Pages-3</h4> 
             <ui.Group .base="pages" .model="{model.pages}" .value="{model.seletedPage}" .out.value="model.seletedPage"></ui.Group> 
@@ -20,7 +20,7 @@ module ui.def {
                 var data = child.model || child.data,
                     result = this.value && (this.state.multiple ? this.value.indexOf(data) > -1 : this.value === data);
 
-                //console.log('IsSelected ? ', data, result, 'Child is ', child, parent);
+
                 return result;
             },
 

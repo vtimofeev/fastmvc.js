@@ -8,6 +8,7 @@ module fmvc {
          s1.setMapBeforeCompare(m2.name, (v)=>v).setSourceCompareFunc(_.intersection).setResultFunc((v)=>(_.chain(v).filter((r:any)=>(r%2===0)).map((d:any)=>(d*100)).value()));
      */
     export class CompositeModel<T> extends Model<T> {
+
         private _sources:any[];
         private _sourceCompareFunc:any;
         private _mapBeforeCompareFunc:{[id:string]:any};

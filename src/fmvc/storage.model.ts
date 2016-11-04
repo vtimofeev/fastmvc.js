@@ -2,6 +2,7 @@
 
 module fmvc {
 
+
     export class StorageModel<T extends fmvc.Model<any>> extends fmvc.Model<T> {
 
         protected modelClass:any;
@@ -18,18 +19,16 @@ module fmvc {
         }
 
         protected getChildModelClass():any {
-            return this.modelClass;
+            return this.modelClass || fmvc.Model;
         }
 
         protected getChildModelData():any {
-            return this.modelData;
+            return this.modelData || {};
         }
 
         protected getBaseModelInstance():T {
             return new (this.getChildModelClass())(this.name + '_instance_' + this.count, this.getChildModelData());
         }
-
-
 
         save():fmvc.IPromise {
             throw 'Method can not be implemented';
@@ -39,9 +38,8 @@ module fmvc {
             throw 'Method can not be implemented';
         }
 
-
-
     }
+
 
 
     export class DictionaryModel<T extends Model<any>> extends StorageModel<T> {
@@ -65,6 +63,7 @@ module fmvc {
     }
 
     export class ArrayModel<T extends Model<any>> extends StorageModel<T> {
+        public meta:fmvc.Model<any>;
 
         constructor(name:string, data:T[], opts?:IModelOptions) {
             super(name, data || [], opts);
@@ -74,14 +73,24 @@ module fmvc {
         protected getHandler(data:any):any {
             this.state = ModelState.Synced;
 
-            var models = data.map((item)=>{
-               var model = this.getBaseModelInstance();
-               model.data = item;
-               model.state = ModelState.Synced;
-               return model;
-            }, this);
+            var models = data
+                .filter( (item:any)=>{
+                    var found = this.data && item && this.data.find( (v:any)=>v.data._id===item._id );
+                    return !found;
+                }, this)
+                .map((item:any)=>{
+                   var model = this.getBaseModelInstance();
+                   model.data = item;
+                   model.state = ModelState.Synced;
+                   return model;
+                }, this);
+            
+            if(data.meta) {
+                this.meta = this.meta || new Model(this.name + '_meta', {});
+                this.meta.changes = data.meta;
+            }
 
-            this.data = <any> [].concat(this.data?this.data:[], models);
+            this.data = <any> [].concat(this.data || [], models);
             return data;
         }
 

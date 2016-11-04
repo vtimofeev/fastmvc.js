@@ -56,7 +56,7 @@ gulp.task('watch.ft', function () {
     return gulp.watch(['./test/fmvc/*.ts','./test/ft/*.ts'], {interval: 2000}, ['build.ft'])
 });
 
-gulp.task('contrib', function () {
+gulp.task('build.contrib', function () {
     return gulp.src('./contrib/*.js')
         .pipe(concat('contrib.min.js'))
         .pipe(uglify())

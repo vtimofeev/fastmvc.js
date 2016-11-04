@@ -1,24 +1,6 @@
 ///<reference path='./d.ts'/>
 
 module fmvc {
-    export interface IModelOptions {
-        type?:string // типы хранилища StorageModelType, например по ключу (key) или массив элементов (array)
-        state?:boolean;
-        event?:boolean;
-        validate?:boolean;
-        forceApplyChanges?:boolean;
-    }
-
-    export interface IModelData {
-        _id?:string;
-    }
-
-    export interface IPromise {
-        resolve(value:any):IPromise;
-        reject(value?:any):IPromise;
-        then(onSuccess:any, onError?:any):IPromise;
-        catch(onError:any):IPromise;
-    }
 
     export var ModelState = {
         None: 'none',
@@ -28,6 +10,7 @@ module fmvc {
         Error: 'error',
     };
 
+
     export var ModelAction = {
         Get: 'get',
         Insert: 'insert',
@@ -36,8 +19,7 @@ module fmvc {
         Add: 'add',
     };
 
-
-    export class Model<T extends IModelData> extends Notifier {
+    export class Model<T extends any> extends Notifier {
         private _count:number;
         private _data:T;
         private _changedData:T;
@@ -51,17 +33,17 @@ module fmvc {
         // model options
         public opts:IModelOptions = {
             event: true,
-            state: true,
-            validate: false
+            state: true
         };
 
         constructor(name:string, data:any = null, opts?:IModelOptions) {
             super(name, TYPE_MODEL);
 
             opts && _.extend(this.opts, opts);
-            data && this.setData(data);
-
+            var result = data || this.isLocalStorageEnabled() && JSON.parse(window.localStorage.getItem(this.name)) || null;
+            this.setData(result);
             this.schemas = this.getSchemas();
+
         }
 
         protected getSchemas():any {
@@ -73,6 +55,10 @@ module fmvc {
             this._state = ModelState.None;
             this.dispatchEvent({type: Event.Model.Changed});
             return this;
+        }
+
+        public isLocalStorageEnabled() {
+            return this.opts &&  this.opts.localStorage && window.localStorage;
         }
 
         /** states */
@@ -120,7 +106,10 @@ module fmvc {
 
         public setData(value:T):Model<T> {
             if (this._data === value || this.disposed) return;
+
             this._data = value;
+            if (this.isLocalStorageEnabled()) window.localStorage.setItem(this.name, JSON.stringify(this._data));
+
             this.dispatchEvent({type: Event.Model.Changed, data: this._data});
             return this;
         }
@@ -153,7 +142,7 @@ module fmvc {
             return this;
         }
 
-        public applyChanges(remoteData:any = null):void {
+        public applyChanges(remoteData:any = null):T {
             var changes = this._changedData;
 
             if (_.isObject(changes) && _.isObject(this._data))
@@ -166,8 +155,11 @@ module fmvc {
 
             this._changedData = undefined;
             this.state = ModelState.Synced;
+
+            if (this.isLocalStorageEnabled()) window.localStorage.setItem(this.name, JSON.stringify(this._data));
             this.dispatchEvent({type: Event.Model.Changed, data: this._data, changes: changes});
 
+            return this.data;
         }
 
         protected validate():boolean {
@@ -178,14 +170,20 @@ module fmvc {
             return this.get({_ids: [id]});
         }
 
-        get(getQuery:any, sort:any = null, limit:any = null ):IPromise {
+        get(query:any = null, from?:any = null, limit?:any = null, sort?:any = null):IPromise {
+
+            if(this.state === ModelState.Syncing) {
+                return Promise.reject(`Cant execute GET of model, cause it is has state ${this.state}`);
+            }
+
+
             this.state = ModelState.Syncing;
             if(!this.remoteTaskManager) throw 'Cant perform method, remoteTaskManager is not set';
 
             var p = this.remoteTaskManager.insert({
                 model: this.getRemoteModel(),
                 type: 'get',
-                data: { query: getQuery , sort: sort, limit: limit }
+                data: { query: query , from: from, limit: limit, sort: sort }
             });
 
             return p.then(this.getHandler.bind(this)).catch(this.remoteErrorHandler.bind(this));
@@ -195,6 +193,11 @@ module fmvc {
             if(this.opts.validate && !this.validate()) return null;
 
             if(!this.remoteTaskManager) throw 'Cant perform method, remoteTaskManager is not set';
+
+            if(this.state === ModelState.Syncing) {
+                return Promise.reject(`Cant execute GET of model, cause it is has state ${this.state}`);
+            }
+
 
             this.state = ModelState.Syncing;
             var p:IPromise,
@@ -217,18 +220,24 @@ module fmvc {
         }
 
         delete():IPromise {
+            if(this.state === ModelState.Syncing) {
+                return Promise.reject(`Cant execute DELETE of model, cause it is has state ${this.state}`);
+            }
+
             this.state = ModelState.Syncing;
 
             if(!this.remoteTaskManager) throw 'Cant perform method, remoteTaskManager is not set';
 
             var _id = this.data && (<T> this.data)._id,
+                p:IPromise;
 
-                p:IPromise = this.remoteTaskManager.insert({
+            if(!_id) throw `Cant delete ${this.name} cause _id isn't set `;
+
+            p = this.remoteTaskManager.insert({
                 model: this.getRemoteModel(),
                 type: 'delete',
                 data: { query: { _id: _id } }
             });
-
 
             return p.then(this.dispose.bind(this)).catch(this.remoteErrorHandler.bind(this));
         }
@@ -244,7 +253,7 @@ module fmvc {
 
         protected getHandler(data:any):any {
             this.state = ModelState.Synced;
-            this.data = data;
+            this.data = data.length ?( (this instanceof ArrayModel) ? data : data[0] ) : data;
             return data;
         }
 
@@ -273,4 +282,69 @@ module fmvc {
         }
     }
 
+    export interface ILoggerConfig {
+        filter?:string[];
+        length?:number;
+        console?:boolean;
+    }
+
+
+    export class Logger extends fmvc.Model<any> {
+        private _config:any = {filter: [], length: 100000, console: true};
+        private _modules:any = [];
+
+        constructor(name:string, config?:ILoggerConfig) {
+            super(name, []);
+            if(config) this.config = config;
+            //console.log('Construct facade logger ');
+        }
+
+        public set config(value:any) {
+            _.extend(this._config, value);
+        }
+
+        public set console(value:boolean) {
+            this._config.console = value;
+        }
+
+        public set filter(value:string[]) {
+            this._config.filter = value;
+        }
+
+        public get modules():any {
+            return this._modules;
+        }
+
+        public add(name:string, messages:any[] = null, level:number = 0):Logger {
+            var data = {name: name, data: messages, level: level, date: new Date() };
+            var dataArray:any[] = this.data;
+            var config = this._config;
+            dataArray.push(data);
+
+            // add module
+            if (this._modules.indexOf(name) === -1) this._modules.push(name);
+
+            // exit if it has filters and has no the name in the array
+            if (config.filter && config.filter.length && config.filter.indexOf(name) === -1) {
+                return;
+            }
+
+            // console
+            if (config && config.console && ('console' in window)) {
+                console.log('[' + name + '] ' + level + ' ' , messages);
+            }
+
+            // clean: remove part of logs
+            if (dataArray.length > config.length * 2) {
+                dataArray.splice(0, dataArray.length - this._config.length);
+            }
+
+            // send event
+            if(this.opts.event) this.dispatchEvent({type: 'log', data: data});
+            return this;
+        }
+    }
+
+
+    
 }

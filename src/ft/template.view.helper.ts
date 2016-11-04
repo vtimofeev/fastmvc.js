@@ -32,7 +32,8 @@ module ft {
             else {
                 for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
                     var childrenTreeElement:TreeElement = this.createTree(data.children[i], root);
-                    treeDomElement.appendChild(childrenTreeElement instanceof TemplateView ? childrenTreeElement.getElement() : <HTMLElement> childrenTreeElement);
+                    console.log('TreeDom append ', data, root);
+                    treeDomElement.appendChild && treeDomElement.appendChild(childrenTreeElement instanceof TemplateView ? childrenTreeElement.getElement() : <HTMLElement> childrenTreeElement);
                 }
                 return treeElement;
             }
@@ -287,6 +288,7 @@ module ft {
 
 
         applyExpressionToHosts(exObj:IExpression, root:TemplateView):void {
+            //console.log('Apply ex to host ', exObj, root);
             var result;
             var el:HTMLElement;
             var i:number;
@@ -304,6 +306,7 @@ module ft {
         }
 
         applyValueToHost(value:any, el:HTMLElement, host:IExpressionHost, root:TemplateView):any {
+            //console.log('Apply value to host ', value, host.key);
             var key:string = host.key;
 
             switch (host.group) {
@@ -327,13 +330,7 @@ module ft {
                             root.setPathClassValue(host.path, host.keyProperty, value);
                             return;
                         default:
-                            if (this.isSvgNode(el.nodeName)) {
-                                var method = value ? el.setAttributeNS : el.removeAttributeNS;
-                                if (host.key) method.call(el, null, host.key, value);
-                            } else {
-                                var method = value ? el.setAttribute : el.removeAttribute;
-                                if (host.key) method.call(el, host.key, value);
-                            }
+                            if (host.key) this.setElementAttribute(host.key, value, el);
                             return;
                     }
                     return;
@@ -486,21 +483,40 @@ module ft {
         }
 
         setDomElementAttributes(attrs:IObj, object:HTMLElement) {
+            console.log('Set dom attr', attrs);
+            var name:string;
+
             for (name in attrs) {
-                var value = attrs[name];
-                var method:Function = value ? object.setAttribute : object.removeAttribute;
+                this.setDomElementAttribute(name, attrs[name], object)
+            }
+        }
+
+        setSvgElementAttribute(name:string, value:any, object:HTMLElement) {
+            var method:Function = value ? object.setAttributeNS : object.removeAttributeNS;
+            method.call(object, null, name, value);
+        }
+
+        setElementAttribute(name:string, value:any, object:HTMLElement):void {
+            var method = this.isSvgNode(object) ? this.setSvgElementAttribute : this.setDomElementAttribute;
+            method.call(this, name, value, object);
+        }
+
+        setDomElementAttribute(name:string, value:any, object:HTMLElement) {
+
+            if(name === 'innerHTML') {
+                object[name] = value;
+            } else {
+                var method: Function = value ? object.setAttribute : object.removeAttribute;
                 method.call(object, name, value);
             }
+
         }
 
         setSvgElementAttributes(attrs:IObj, object:HTMLElement) {
             for (name in attrs) {
-                var value = attrs[name];
-                var method:Function = value ? object.setAttributeNS : object.removeAttributeNS;
-                method.call(object, null, name, value);
+                this.setSvgElementAttribute(name, attrs[name], object);
             }
         }
-
 
         getDomElement(value:TreeElement):HTMLElement {
             return <HTMLElement> (value instanceof TemplateView ? value.getElement() : value);

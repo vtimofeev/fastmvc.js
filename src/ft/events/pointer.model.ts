@@ -62,6 +62,7 @@ module ft {
     export class PointerModel extends fmvc.Model<IPointerEvent> {
         public static Name:string = 'PointerModel';
 
+        public  onlyTouch:boolean = false;
         private target:HTMLElement;
         private sequence:IPointerEvent[];
         private sequenceLastDownIndex:number;
@@ -90,7 +91,9 @@ module ft {
             var eventData:any;
 
             if(isTouch) {
-                eventData = e.touches?e.touches[0]:null;
+                this.onlyTouch = true;
+                eventData = e.touches?(e.touches[0]||(e.changedTouches && e.changedTouches[0])):null;
+                console.log('Event data', e.type, transformName, eventData, e);
                 if(!eventData) this.log('Incorrect touch event data ', e);
             } else {
                 eventData = e;
@@ -132,6 +135,7 @@ module ft {
         }
 
         protected getSequenceEvent(time:number, diffX:number, diffY:number, e:IPointerEvent):IPointerEvent {
+            console.log('Sequence analyze ', time, diffX, diffY);
             if(time < 1000 && diffX < 10 && diffY < 10 ) return {type: CompositeEvent.Action, sequence: 1, clientX: e.clientX, clientY: e.clientY };
             return null;
         }

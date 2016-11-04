@@ -117,13 +117,13 @@ module fmvc {
             return this;
         }
 
-        public setState(name:string, value:any):IView {
+        public setState(name:string, value:any, direct?:boolean):IView {
             if (this.disposed) return;
 
             var stateValue = this.getStateValue(name, value);
             if (this._states[name] === stateValue) return this;
             this._states[name] = stateValue;
-            this.applyStateBinds(name, stateValue);
+            if(!direct) this.applyStateBinds(name, stateValue);
             this.invalidate(InvalidateType.State);
             return this;
         }
@@ -236,6 +236,7 @@ module fmvc {
             if (this._binds) this._binds.forEach((v)=>v.unbind(this));
         }
 
+        //@todo rename
         public beforeCreate():void {
         }
 

@@ -45,10 +45,9 @@ module fmvc {
     }
 
     export interface IRemoteConnection {
-        isActive:Boolean;
         execute(value:IRemoteTaskRequest):boolean;
+        getConnected():boolean;
         bind(object:any, handler:any):any;
-
     }
 
     export class RemoteTaskManager {
@@ -134,7 +133,7 @@ module fmvc {
             var currentTime = +new Date();
 
             this.remoteConnection
-                && this.remoteConnection.isActive
+                && this.remoteConnection.getConnected()
                 && this.tasks.forEach(function(task:IRemoteTask) {
 
                     if(task.state === TaskState.Executing && (currentTime - task.created) > this.waitingTimeout) {
@@ -150,7 +149,9 @@ module fmvc {
         }
 
         public remoteConnectionMessageHandler(e:IEvent) {
-            var response = <IRemoteTaskResponse> e.data;
+            var response = <IRemoteTaskResponse> e.data.lastResult;
+            //console.log('Message handler: ',!!e.data.lastResult, response, e);
+            e.data.lastResult = null;
 
             if(!(response && response.id)) return;
 
@@ -186,6 +187,7 @@ module fmvc {
 
         protected resolve(task:IRemoteTask):void {
             console.log(RemoteTaskManager.Name, ': Resolve task ', task );
+            if(task.response.data && task.response.meta) task.response.data.meta = task.response.meta;
             task.response.error ? task.promise.reject(task.response.error) : task.promise.resolve(task.response.data);
         }
 

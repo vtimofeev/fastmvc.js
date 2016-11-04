@@ -1,11 +1,11 @@
 ///<reference path='./d.ts'/>
 
+
 module fmvc {
-    export var VERSION:string = '0.9.0';
+    export var VERSION:string = '0.10.4';
     export var TYPE_MEDIATOR:string = 'mediator';
     export var TYPE_MODEL:string = 'model';
     export var TYPE_VIEW:string = 'view';
-
 
     export var FacadeModel = {
         Log:'log'

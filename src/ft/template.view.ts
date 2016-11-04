@@ -380,7 +380,7 @@ module ft {
                     model = this.getModelByPath(ex.vars[0], context);
 
                     if(!model) return console.warn('Model ', ex.vars[0] , ' not found ');
-                    model.bind(this, ()=>this.setState(key, this.getParameterValue(value, key)) );
+                    model.bind(this, ()=>this.setState(key, this.getParameterValue(value, key), true) );
 
                     //console.log('add-state binding of ', this.name, ' of ', key, ex);
                     this._bindedModels = this._bindedModels || [];

@@ -85,7 +85,8 @@ module ft {
             var instance;
 
             try {
-                instance = this._instanceFunc[className](name, params, mixin);
+                var instanceCreateFunction = this._instanceFunc[className];
+                instance = instanceCreateFunction ? instanceCreateFunction(name, params, mixin):new (this.getClassByClassName(className))(name, params, mixin);
             }
             catch (e) {
                 console.error('Cant create instance of ' , className, ' with name, params, mixin ', name, params, mixin );
@@ -93,6 +94,10 @@ module ft {
             }
 
             return instance;
+        }
+
+        private getClassByClassName(value:string) {
+            return value && value.split('.').reduce( (m:any, v:string)=>m && m[v] , window);
         }
 
         /* Регистрируем класс (функцию конструктор), в глобальном скоупе */
@@ -109,6 +114,7 @@ module ft {
                     var instanceParams:any = _.extend({}, baseParams, params); // extend base parameters
                     var instanceMixin:any = _.extend({}, baseMixin, mixin); // extend methods
                     var instance = new ft.TemplateView(name, instanceParams, template);
+                    console.log('Created  ', name, instance);
                     _.each(instanceMixin, (v, k)=>instance[k] = v);
                     return instance;
                 };

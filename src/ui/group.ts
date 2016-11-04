@@ -2,18 +2,18 @@ module ui.def {
     export var Group = {
         className: 'ui.Group',
         content: '<div .base="group" ' +
-        ' class="{state.base}" ' +
+        ' class="{state.base} {state.custom}" ' +
         ' .children.selected="{this.isSelected(this.child)}" ' +
         ' .children.base="button" ' +
         ' .children.class="ui.ToggleButton" ' +
         ' .children.hover="{cc.childIndex===state.hoverIndex}" ' +
-        ' .children.onaction="item"></div>', //' .children.stateHandlers="hover,selected" ' +
+        ' .children.onaction="item"></div>',
         mixin: {
-            isSelected(child, parent) {
+            isSelected(child) {
                 var data = child.model || child.data,
                     result = this.value && (this.state.multiple ? this.value.indexOf(data) > -1 : this.value === data);
 
-                //console.log('IsSelected ? ', data, result, 'Child is ', child, parent);
+
                 return result;
             },
 

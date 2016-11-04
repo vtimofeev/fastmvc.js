@@ -3,21 +3,15 @@ declare var module:any;
 module ft {
 
     export class VirtualClassList {
-        classes = {};
+        classes:{[id:string]:boolean} = {};
+
         toggle(name:string, v:boolean) {
-            //console.log('class toggle ', name, v);
             if(!v) delete this.classes[name];
             else this.classes[name] = v;
         }
     }
 
     export class VirtualElement {
-        constructor(type:number, tag?:string, text?:string) {
-            this._type = type;
-            this._tag = tag;
-            this.textContent = text;
-
-        }
 
         private _type:number;
         private _tag:string;
@@ -25,7 +19,13 @@ module ft {
         private _classList:VirtualClassList = null;
         attribute:{[id:string]:string} = null;
         children:VirtualElement[] = null;
-        textContent = null;
+        textContent:string = null;
+
+        constructor(type:number, tag?:string, text?:string) {
+            this._type = type;
+            this._tag = tag;
+            this.textContent = text;
+        }
 
         public get outerHtml():string {
             var r = '';
@@ -72,12 +72,13 @@ module ft {
         }
 
         private classString() {
-            var r = '';
+            var r:string = '',
+                n:string;
             if(!this._classList) return r;
 
             r += ' class="';
-            var classes = this._classList.classes;
-            for(var n in classes) {
+            var classes:any = this._classList.classes;
+            for(n in classes) {
                 if(classes[n] === true) r +=  n + ' ';
             }
             r += '"';
