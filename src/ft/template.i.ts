@@ -1,6 +1,6 @@
 ///<reference path="./d.ts" />
 
-module ft {
+namespace ft {
     export type TreeElement = TemplateView|Comment|HTMLElement|Text;
     export type ExpressionValue = string|IExpression;
     export type ExpressionNameValue = string|IExpressionName;

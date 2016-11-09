@@ -1,21 +1,23 @@
 ///<reference path='d.ts'/>
 declare var Grapnel:any;
 
-module ft {
-    export interface IRouter  {
-        page:string,
-        pageType?:string,
-        pageName?:string,
-        pageAction?:string,
-        pageData?:string,
+namespace ft {
 
-        overlay?:string,
-        overlayType?:string,
-        overlayName?:string
+    export interface IRoute {
+        id?:string;
+        action?:string;
+        data?:any;
+        seo?:string;
+
     }
 
-    export class Router<IRoute> extends fmvc.Model<IRoute> {
+    export interface IRoutes  {
+        [name:string]:IRoute
+    }
 
+    export class Router<IRoutes> extends fmvc.Model<IRoute> {
+
+        private _navigateHandler:any;
         protected router:any;
         protected re:RegExp;
 
@@ -24,27 +26,30 @@ module ft {
             this.router = new Grapnel({ pushState : true });
             this.init();
         }
-        
+
+        set navigateHandler(value:any) {
+            this._navigateHandler = value;
+        }
+
+        /*
+         Новая регулярка
+         var ;
+
+         Пример маршрутов
+         var route = '/page-id:hash-actionOptional---seo-content/overlay-name:login/user-id---vovka/user-query:eyJmcm9tIjowLCJsaW1pdCI6MTAsIiRnZW8iOltbNTUuNDQ1NCw1NS4zNDMyXSxbMjMuMjMsNTQuMjFdXX0=/';
+
+         Результат
+         Array[6]
+         0 "page-id:hash-actionOptional---seo-content"
+         1 "page" - модель или константый тип (оверлей или виджет)
+         2 "id:hash" - идентификатор - ид или тип:значение
+         3 "actionOptional" - действие
+         4 undefined - данные ддя действия
+         5 "seo-content" - контент сео
+
+         */
         init() {
             this.re = /([^-]+)(?:-([^-]+))?(?:-([^-]+))?(?:-([^-]+))?(?:---(.+))?/;
-
-            /*
-            Новая регулярка
-                var ;
-
-            Пример маршрутов
-            var route = '/page-id:hash-actionOptional---seo-content/overlay-name:login/user-id---vovka/user-query:eyJmcm9tIjowLCJsaW1pdCI6MTAsIiRnZW8iOltbNTUuNDQ1NCw1NS4zNDMyXSxbMjMuMjMsNTQuMjFdXX0=/';
-
-            Результат
-             Array[6]
-             0 "page-id:hash-actionOptional---seo-content"
-             1 "page" - модель или константый тип (оверлей или виджет)
-             2 "id:hash" - идентификатор - ид или тип:значение
-             3 "actionOptional" - действие
-             4 undefined - данные ддя действия
-             5 "seo-content" - контент сео
-
-            */
 
             this.router.get(/.*/, (req:any, e:any)=>{
 
@@ -56,29 +61,36 @@ module ft {
                 routerResults.reduce( (m:any, v:string[])=>{
                     var [full, model, id, action, data, seo] = v;
 
-                    m[model] = {
-                        id,
-                        action,
-                        data: atob(data),
-                        seo
-                    }
-                }, {});
+                    m[model] = { id, action, data: this.tryAtob(data) || data, seo };
 
+                    return m;
+                }, result);
 
                 this.data = result;
-
             });
+        }
+
+        tryAtob(value:any) {
+            try {
+                return value && JSON.parse(atob(value));
+            }
+            catch(e) {
+                return null;
+            }
         }
 
         add(expression:string|RegExp, fnc:(req:any, e:any)=>void) {
             this.router.get(expression, fnc);
         }
 
-        navigate(url:string) {
+        navigate(url:string):Promise<any> {
             this.router.navigate(url);
+            return this._navigateHandler ? this._navigateHandler(this.data) : Promise.resolve(true);
         }
 
-        
+
+
+
     }
 
 

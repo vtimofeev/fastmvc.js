@@ -1,4 +1,4 @@
-module fmvc
+namespace fmvc
 {
     export class Event
     {

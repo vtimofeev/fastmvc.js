@@ -1,6 +1,6 @@
 ///<reference path='./d.ts'/>
 
-module fmvc {
+namespace fmvc {
 
     export var ModelState = {
         None: 'none',
@@ -19,7 +19,7 @@ module fmvc {
         Add: 'add',
     };
 
-    export class Model<T extends any> extends Notifier {
+    export class Model<T extends any> extends fmvc.Notifier {
         private _count:number;
         private _data:T;
         private _changedData:T;
@@ -76,7 +76,7 @@ module fmvc {
 
         public setState(value:string):Model<T> {
             if (!this.opts.state || this._state === value) return this;
-            this._prevState = this._stsate;
+            this._prevState = this._state;
             this._state = value;
             this.dispatchEvent({type: Event.Model.StateChanged, data: this._state});
             return this;

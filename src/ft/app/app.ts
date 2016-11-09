@@ -1,6 +1,6 @@
 ///<reference path='../d.ts'/>
 
-module ft {
+namespace ft {
     import IBowser = ft.helper.IBowser;
 
     export var ModelName = {

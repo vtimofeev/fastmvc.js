@@ -1,6 +1,6 @@
 ///<reference path="./d.ts" />
 
-module ft {
+namespace ft {
     export class Template implements ITemplate {
         name:string;
         extend:string;

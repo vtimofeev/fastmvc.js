@@ -1,5 +1,5 @@
 ///<reference path="./d.ts" />
-module ft {
+namespace ft {
 
     class PopupManager extends fmvc.Model<any> {
     }

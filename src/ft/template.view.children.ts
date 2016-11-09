@@ -1,6 +1,6 @@
 ///<reference path="./d.ts" />
 
-module ft {
+namespace ft {
     export class TemplateChildrenView extends ft.TemplateView {
 
         private _children:TemplateView[]; // active children array

@@ -1,7 +1,17 @@
 ///<reference path="./d.ts" />
+///<reference path="./expression.ts" />
+///<reference path="./events/pointer.model.ts" />
+///<reference path="./events/keyboard.model.ts" />
+///<reference path="./events/event.dispatcher.ts" />
 
-module ft {
+///<reference path="./template.i.ts" />
+///<reference path="./template.ts" />
+///<reference path="./template.parser.ts" />
+
+namespace ft {
     export var AttributePathId:string = 'data-path-id';
+
+
     const SvgNs:string = "http://www.w3.org/2000/svg",
         ComplexDomElementAttributes:string[] = ['style', 'class'],
         DomDefType:any = {
@@ -13,12 +23,12 @@ module ft {
 
     export class TemplateViewHelper {
         private idCounter:number = 0;
-        public domElementPathIds:{[id:string]:TemplateView} = {};
+        public domElementPathIds:{[id:string]:ft.TemplateView} = {};
 
         constructor() {
         }
 
-        public createTree(data:IDomDef, root:TemplateView):TreeElement {
+        public createTree(data:IDomDef, root:ft.TemplateView):TreeElement {
             var treeElement:TreeElement = this.createTreeElement(data, root);
             root.setTreeElementPath(data.path, treeElement);
 
@@ -32,14 +42,14 @@ module ft {
             else {
                 for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
                     var childrenTreeElement:TreeElement = this.createTree(data.children[i], root);
-                    console.log('TreeDom append ', data, root);
-                    treeDomElement.appendChild && treeDomElement.appendChild(childrenTreeElement instanceof TemplateView ? childrenTreeElement.getElement() : <HTMLElement> childrenTreeElement);
+                    //console.log('TreeDom append ', data, root);
+                    treeDomElement.appendChild && treeDomElement.appendChild(childrenTreeElement instanceof ft.TemplateView ? childrenTreeElement.getElement() : <HTMLElement> childrenTreeElement);
                 }
                 return treeElement;
             }
         }
 
-        public validateTree(data:IDomDef, root:TemplateView):void {
+        public validateTree(data:IDomDef, root:ft.TemplateView):void {
             var treeElement:TreeElement = this.getTreeElement(data, root);
             var treeDomElement:HTMLElement|Comment = this.getDomElement(treeElement);
             var included:boolean = this.isTreeObjectIncluded(data, root);
@@ -65,10 +75,10 @@ module ft {
             }
         }
 
-        enterTree(data:IDomDef, root:TemplateView):void {
+        enterTree(data:IDomDef, root:ft.TemplateView):void {
             var treeElement:TreeElement = this.getTreeElement(data, root);
 
-            if (treeElement instanceof TemplateView && treeElement !== root) {
+            if (treeElement instanceof ft.TemplateView && treeElement !== root) {
                 treeElement.enter();
             }
 
@@ -88,7 +98,7 @@ module ft {
             }
         }
 
-        public exitTree(data:IDomDef, root:TemplateView):void {
+        public exitTree(data:IDomDef, root:ft.TemplateView):void {
 
             var treeElement:TreeElement = this.getTreeElement(data, root),
                 i:number,
@@ -103,7 +113,7 @@ module ft {
                 }
             }
 
-            if (treeElement instanceof TemplateView && treeElement !== root) {
+            if (treeElement instanceof ft.TemplateView && treeElement !== root) {
                 treeElement.exit();
             } else {
                 var pathId:string = this.isTagElement(domElement) ? domElement.getAttribute(AttributePathId) : null;
@@ -112,9 +122,9 @@ module ft {
         }
 
         private composeNames_updateDynamicTree = _.compose(_.union, _.compact, _.flatten);
-        updateDynamicTree(root:TemplateView, group?:string, propertyName?:string):void {
+        updateDynamicTree(root:ft.TemplateView, group?:string, propertyName?:string):void {
             var dynamicTree:any = root.getTemplate().dynamicTree;
-            //console.log('Update dynamic tree', group, dynamicTree);
+            console.log('Update dynamic tree', group, dynamicTree);
             if (!dynamicTree) return;
 
             var expressionArrays:any[];
@@ -142,7 +152,7 @@ module ft {
         // Creation
         // -----------------------------------------------------------------------------------------------------------
 
-        private createTreeElement(data:IDomDef, root:TemplateView):TreeElement {
+        private createTreeElement(data:IDomDef, root:ft.TemplateView):TreeElement {
             var isIncluded:boolean = this.isTreeObjectIncluded(data, root);
             var result:TreeElement = null;
 
@@ -173,7 +183,7 @@ module ft {
         }
 
 
-        createComponentElement(data:IDomDef, root:TemplateView):TemplateView {
+        createComponentElement(data:IDomDef, root:ft.TemplateView):ft.TemplateView {
             var dataParams:any = this.applyFirstContextToExpressionParameters(data.params, root);
             var result = templateManager.createInstance(data.name, 'view-' + data.name + '-' + this.getNextId(), dataParams);
             result.parent = root;
@@ -183,7 +193,7 @@ module ft {
         }
 
 
-        createDomElement(type:string, data:IDomDef, root:TemplateView):HTMLElement|Comment|Text {
+        createDomElement(type:string, data:IDomDef, root:ft.TemplateView):HTMLElement|Comment|Text {
             var result:HTMLElement|Comment|Text;
             switch (type) {
                 case DomDefType.Tag:
@@ -205,8 +215,9 @@ module ft {
             }
         }
 
-        createChildrenView(object:TreeElement, data:IDomDef, root:TemplateView):TreeElement {
+        createChildrenView(object:TreeElement, data:IDomDef, root:ft.TemplateView):TreeElement {
             if (this.hasChildrenDef(data)) {
+
                 var childrenView = new TemplateChildrenView(root.name + ':ChildView-' + this.getNextId(), this.applyFirstContextToExpressionParameters(root.getParameters(), root), {});
                 childrenView.domDef = data;
                 childrenView.parent = root;
@@ -216,8 +227,10 @@ module ft {
             }
         }
 
-        private initDomElement(object:TreeElement, data:IDomDef, root:TemplateView) {
+        private initDomElement(object:TreeElement, data:IDomDef, root:ft.TemplateView) {
             var domElement = <HTMLElement> this.getDomElement(object);
+
+            //console.log('Init dom ', object, data);
 
             /* Процесс установки аттрибутов, в том числе с расчетом выражений, для конкретного узла Dom */
             if (this.isTagElement(domElement) && !domElement.getAttribute(AttributePathId)) {
@@ -256,7 +269,7 @@ module ft {
         }
 
         /* Установка контента текстового элемента */
-        private initTextElement(object:Text, data:IDomDef, root:TemplateView) {
+        private initTextElement(object:Text, data:IDomDef, root:ft.TemplateView) {
             if (data.data) {
                 object.textContent = this.getSimpleOrExpressionValue(data.data, root);
             }
@@ -267,14 +280,14 @@ module ft {
         // -----------------------------------------------------------------------------------------------------------
 
 
-        private enterChildrenView(data:IDomDef, root:TemplateView):void {
+        private enterChildrenView(data:IDomDef, root:ft.TemplateView):void {
             if (!this.hasChildrenView(data, root)) return;
 
             var childrenView:TemplateChildrenView = root.getChildrenViewByPath(data.path);
             childrenView.enter();
         }
 
-        private exitChildrenView(data:IDomDef, root:TemplateView):void {
+        private exitChildrenView(data:IDomDef, root:ft.TemplateView):void {
             if (!this.hasChildrenView(data, root)) return;
 
             var childrenView:TemplateChildrenView = root.getChildrenViewByPath(data.path);
@@ -287,7 +300,7 @@ module ft {
         // -----------------------------------------------------------------------------------------------------------
 
 
-        applyExpressionToHosts(exObj:IExpression, root:TemplateView):void {
+        applyExpressionToHosts(exObj:IExpression, root:ft.TemplateView):void {
             //console.log('Apply ex to host ', exObj, root);
             var result;
             var el:HTMLElement;
@@ -305,7 +318,7 @@ module ft {
             }
         }
 
-        applyValueToHost(value:any, el:HTMLElement, host:IExpressionHost, root:TemplateView):any {
+        applyValueToHost(value:any, el:HTMLElement, host:IExpressionHost, root:ft.TemplateView):any {
             //console.log('Apply value to host ', value, host.key);
             var key:string = host.key;
 
@@ -337,14 +350,14 @@ module ft {
                 case 'params':
                     // Default params changed: Data: model, data; states: selected, focused, children, base, custom
 
-                    var view:TemplateView|TemplateChildrenView;
+                    var view:ft.TemplateView|TemplateChildrenView;
                     if (key.indexOf('.') < 0) {
                         view = <TemplateView> root.getTreeElementByPath(host.path);
-                        if (!(view instanceof TemplateView)) {
+                        if (!(view instanceof ft.TemplateView)) {
                             view = <TemplateChildrenView> root.getChildrenViewByPath(host.path);
                         }
 
-                        if(view instanceof TemplateView) view.applyParameter(view.getParameters()[key], key);
+                        if(view instanceof ft.TemplateView) view.applyParameter(view.getParameters()[key], key);
                         else console.warn('Cant apply parameter ', key, 'to', view, 'path', host.path);
                     }
 
@@ -378,7 +391,7 @@ module ft {
         // -----------------------------------------------------------------------------------------------------------
 
 
-        private getTreeElement(data:IDomDef, root:TemplateView):TreeElement {
+        private getTreeElement(data:IDomDef, root:ft.TemplateView):TreeElement {
             return root.getTreeElementByPath(data.path);
         }
 
@@ -386,42 +399,45 @@ module ft {
             return name === 'svg' || name === 'circle' || false;
         }
 
-        getPropertyValues(group:string, attrName:string, data:IDomDef, root:TemplateView):IObj {
+        getPropertyValues(group:string, attrName:string, data:IDomDef, root:ft.TemplateView):IObj {
             var functor = (attrName === 'class') ? this.getClassSimpleOrExpressionValue : this.getSimpleOrExpressionValue;
 
             return _.reduce(data[group][attrName], (result:any, value:ExpressionValue, key:string)=>(
                 result[key] = functor.call(this, value, root), result), {}, this);
         }
 
-        getChangedExpressionNames(group:string, map:IDynamicMap, root:TemplateView):(string|string[])[] {
+        getChangedExpressionNames(group:string, map:IDynamicMap, root:ft.TemplateView):(string|string[])[] {
             return _.map(map, (exNames:string[], propName:string)=>(root.isChangedDynamicProperty(propName) ? exNames : null), this);
         }
 
-        getSimpleOrExpressionValue(value:ExpressionNameValue, root:TemplateView) {
+        getSimpleOrExpressionValue(value:ExpressionNameValue, root:ft.TemplateView) {
             return _.isObject(value) ? this.getExpressionValue(<IExpressionName> value, root) : value;
         }
 
-        getClassSimpleOrExpressionValue(value:ExpressionNameValue, root:TemplateView) {
+        getClassSimpleOrExpressionValue(value:ExpressionNameValue, root:ft.TemplateView) {
             return _.isObject(value) ? root.getCssClassExpressionValue(<IExpressionName> value) : value;
         }
 
 
-        getExpressionValue(value:IExpressionName, root:TemplateView):any {
+        getExpressionValue(value:IExpressionName, root:ft.TemplateView):any {
             return root.getExpressionValue(value);
         }
 
-        registerDomElementId(id:string, data:IDomDef, root:TemplateView):void {
+        registerDomElementId(id:string, data:IDomDef, root:ft.TemplateView):void {
             //console.log('Register dom', id, data.path);
             //@todo fix fast fix
             if(!this.domElementPathIds[id]) this.domElementPathIds[id] = {data: data, root: root};
-            else console.warn('Yet registred at dom ', id, data.path)
+            else {
+                //@todor
+                //console.warn('Yet registred at dom ', id, data.path)
+            }
         }
 
         unregisterDomElementId(id:string):void {
             if (id) delete this.domElementPathIds[id];
         }
 
-        getPathDefinitionByPathId(id:string):{data:IDomDef, root:TemplateView} {
+        getPathDefinitionByPathId(id:string):{data:IDomDef, root:ft.TemplateView} {
             return this.domElementPathIds[id];
         }
 
@@ -429,15 +445,15 @@ module ft {
         // Utilites
         // ------------------------------------------------------------------------------------------------------------
 
-        public applyFirstContextToExpressionParameters(params:any, context:TemplateView):[{id:IExpressionName}] {
+        public applyFirstContextToExpressionParameters(params:any, context:ft.TemplateView):[{id:IExpressionName}] {
             if (!context) return params;
 
             var r:[{id:IExpressionName}] = {};
             _.each(params, (v:IExpressionName|any, k)=> {
-                var isExpression = v instanceof ExpressionName;
+                var isExpression = v instanceof ft.ExpressionName;
 
                 if(isExpression) {
-                    r[k] = !v.context?new ExpressionName(v.name, context): v;
+                    r[k] = !v.context?new ft.ExpressionName(v.name, context): v;
                 } else {
                     r[k] = v;
                 }
@@ -445,15 +461,15 @@ module ft {
             return r;
         }
 
-        private hasDelay(data:IDomDef, root:TemplateView, functorName:string) {
+        private hasDelay(data:IDomDef, root:ft.TemplateView, functorName:string) {
             return data.params && data.params[functorName + 'Delay'] && root.isDelay(data, functorName);
         }
 
-        private isTagElement(e:Element|Comment):Boolean {
+        private isTagElement(e:Element|Comment):boolean {
             return e && e.nodeType === 1;
         }
 
-        private isCommentElement(e:Element|Comment):Boolean {
+        private isCommentElement(e:Element|Comment):boolean {
             return e && e.nodeType === 8;
         }
 
@@ -465,8 +481,10 @@ module ft {
             return ComplexDomElementAttributes;
         }
 
-        setDomElementClasses(vals:IObj, object:HTMLElement, data:IDomDef, root:TemplateView) {
+        setDomElementClasses(vals:IObj, object:HTMLElement, data:IDomDef, root:ft.TemplateView) {
             var previousClassValue:string;
+            //console.log('Setdomclasses', vals);
+
             _.each(vals,
                 (value:any, name:string)=> {
                     if (!object.classList) return;
@@ -478,12 +496,13 @@ module ft {
             );
         }
 
-        setDomElementStyles(vals:IObj, object:HTMLElement, root:TemplateView) {
+        setDomElementStyles(vals:IObj, object:HTMLElement, root:ft.TemplateView) {
+            console.log('Set object styles', vals);
             _.each(vals, (value:any, name:string)=>object.style[name] = (value ? value : ''));
         }
 
         setDomElementAttributes(attrs:IObj, object:HTMLElement) {
-            console.log('Set dom attr', attrs);
+            //console.log('Set dom attr', attrs);
             var name:string;
 
             for (name in attrs) {
@@ -519,16 +538,16 @@ module ft {
         }
 
         getDomElement(value:TreeElement):HTMLElement {
-            return <HTMLElement> (value instanceof TemplateView ? value.getElement() : value);
+            return <HTMLElement> (value instanceof ft.TemplateView ? value.getElement() : value);
         }
 
         isComponentDef(data:IDomDef):boolean {
             return data.type && data.name && (data.name.indexOf('.') > 0);
         }
 
-        isTreeObjectIncluded(data:IDomDef, root:TemplateView):boolean {
-            var ifValue:any = data.params ? data.params[TemplateParams.if] : null;
-            var hasDelay:Boolean = this.hasDelay(data, root, 'create');
+        isTreeObjectIncluded(data:IDomDef, root:ft.TemplateView):boolean {
+            var ifValue:any = data.params ? data.params[ft.TemplateParams.if] : null;
+            var hasDelay:boolean = this.hasDelay(data, root, 'create');
 
             if (hasDelay) root.setDelay(data, 'create');
 
@@ -539,10 +558,10 @@ module ft {
 
 
         hasChildrenDef(data:IDomDef):boolean {
-            return !!(data.params && data.params[TemplateParams.childrenClass] && data.name !== 'ui.Group');
+            return !!(data.params && data.params[ft.TemplateParams.childrenClass] && data.name !== 'ui.Group');
         }
 
-        hasChildrenView(data:IDomDef, root:TemplateView) {
+        hasChildrenView(data:IDomDef, root:ft.TemplateView) {
             return !!root.getChildrenViewByPath(data.path);
         }
 

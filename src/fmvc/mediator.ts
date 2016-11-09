@@ -1,6 +1,6 @@
 ///<reference path='./d.ts'/>
 
-module fmvc {
+namespace fmvc {
     export class Mediator extends fmvc.Notifier implements IMediator {
         private views:IView[];
         private _root:Element;
@@ -84,7 +84,7 @@ module fmvc {
         public mediatorEventHandler(e:IEvent):void {
         }
 
-        public viewEventHandler(e:IViewEvent):void {
+        public viewEventHandler(e:IEvent):void {
         }
     }
 

@@ -3,7 +3,7 @@ declare var SockJS:any;
 
 namespace fmvc {
 
-        export class RemoteConnectionModel extends Model<any> implements IRemoteConnection {
+        export class RemoteConnectionModel extends fmvc.Model<any> implements IRemoteConnection {
 
         public getConnected():boolean {
             return this.data && this.data.connected;

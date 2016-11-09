@@ -33,7 +33,7 @@ if (typeof(module) !== 'undefined' && typeof(module.exports) !== 'undefined') {
     if (this.Tautologistics.NodeHtmlParser) {
         return;
     }
-    this.Tautologistics.NodeHtmlParser = exports;
+    this.htmlparser = this.Tautologistics.NodeHtmlParser = exports;
 }
 
 function inherits (ctor, superCtor) {

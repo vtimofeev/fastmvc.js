@@ -1,21 +1,22 @@
 ///<reference path='./d.ts'/>
-module fmvc
+namespace fmvc
 {
-    export class Notifier implements INotifier{
-        private _facade:fmvc.Facade;
+
+    export class Notifier implements INotifier, IDynamicObject {
+        private _facade:IFacade;
         private _name:string;
-        private _type:string;
+        private _type:number;
         private _listeners:IListener[];
-        private _composed:string[];
+        private _composed:{[name:string]:INotifier};
         private _disposed:boolean = false;
 
-        constructor(name:string, type:string = null)
+        constructor(name:string, type:number = null)
         {
             this._name = name;
             this._type = type;
         }
 
-        public set facade(value:fmvc.Facade)
+        public set facade(value:IFacade)
         {
             if(value) {
                 this._facade = value;
@@ -29,7 +30,7 @@ module fmvc
             }
         }
 
-        public get facade():fmvc.Facade
+        public get facade():IFacade
         {
             return this._facade;
         }
@@ -44,7 +45,12 @@ module fmvc
             return this._disposed;
         }
 
-        public get type():string
+        public get composed():{[name:string]:INotifier}
+        {
+            return this._composed;
+        }
+
+        public get type():number
         {
             return this._type;
         }
@@ -53,21 +59,24 @@ module fmvc
             return this._listeners?this._listeners.length:-1;
         }
 
-        public setFacade(facade:fmvc.Facade):Notifier {
-            this.facade = facade;
-            return this;
+        public compose(value:INotifier):void {
+            var name:string = value && value.name,
+                isComposed:boolean = !!(this._composed && this._composed[name]);
+
+            if(!name) throw 'Cant compose ' + value;
+            if(isComposed) throw 'Cant compose cause name "' + name + '" is used at ' + this.name;
+            !this._composed && (this._composed == {});
+            this._composed[name] = value;
         }
 
-        public compose(value:INotifier):Notifier {
-            if(!(value && value.name)  throw 'Cant compose, argument is ' + value;
-            if(typeof this[value.name] !== 'undefined') throw 'Cant compose cause name "' + value.name + '" is used ';
+        public decompose(value:INotifier|string):void {
+            var name:string = typeof value === 'string' ? value : value && value.name,
+                isComposed:boolean = !!(this._composed && this._composed[name]);
 
-            this._composed = this._composed || [];
-            this._composed.push(value.name);
-            this[value.name] = value;
-
-            return this;
+            if(!name || !isComposed) throw 'Cant decompose ' + value;
+            delete this._composed[name];
         }
+
 
         public bind(object:any, handler:any):Notifier
         {
@@ -99,7 +108,6 @@ module fmvc
             var event:IEvent = <IEvent> (typeof e === 'string'? {type: e} : e);
             !event.target && (event.target = this);
             event.currentTarget = this;
-
             this.sendToListeners(event);
         }
 
@@ -117,7 +125,6 @@ module fmvc
         public removeHandler():void
         {
         }
-
 
         public hasBind(object:INotifier, handler:Function):boolean {
             var l:number,i:number, ol:IListener;
@@ -153,7 +160,7 @@ module fmvc
             this.removeAllListeners();
             this._facade = null;
             this._disposed = true;
-            this._composed && this._composed.forEach((v:string)=>(delete this[v]));
+            this._composed && Object.keys(this._composed).forEach((v:string)=>(delete this._composed[v]));
         }
     }
 
@@ -162,15 +169,31 @@ module fmvc
         handler:Function;
     }
 
+    export interface IDynamicObject {
+        [name:string]: any;
+    }
+
+    export interface IFacade extends INotifier {
+        root:Element;
+        logger:any;
+        eventHandler:any;
+    }
+
     export interface INotifier
     {
         name:string;
-        type:string;
+        type:number;
         disposed:boolean;
-        facade:fmvc.Facade;
-        dispatchEvent(e:IEvent|string):void;
+        facade:INotifier;
+        composed:{[name:string]:INotifier};
+
+        compose(value:INotifier):void;
+        decompose(value:INotifier|string):void;
+
         bind(context:INotifier, handler:Function):INotifier;
         unbind(context:INotifier, handler?:Function):INotifier;
+
+        dispatchEvent(e:IEvent|string):void;
         dispose():void;
     }
 

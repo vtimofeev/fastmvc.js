@@ -26,7 +26,7 @@ var project = {
     date: new Date().toISOString(),
     paths: {
         fmvcSrc: ['./test/fmvc/**/*.ts'],
-        ftSrc: ['./test/ft/**/*.ts' ]
+        ftSrc: ['./test/fmvc/**/*.ts','./test/ft/**/*.ts' ]
     }
 };
 
@@ -62,6 +62,13 @@ gulp.task('build.contrib', function () {
         .pipe(uglify())
         .pipe(gulp.dest('./build'));
 });
+
+gulp.task('build.node', function () {
+    return gulp.src(['./build/module.js','./build/all.js'])
+        .pipe(concat('all-node-result.js'))
+        .pipe(gulp.dest('./build'));
+});
+
 
 gulp.task('all', function () {
     return gulp.src('./build/all.js')

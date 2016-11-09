@@ -1,7 +1,9 @@
 ///<reference path="./d.ts" />
+///<reference path="./template.view.helper.ts" />
 
-module ft {
-    export var templateHelper:TemplateViewHelper = new TemplateViewHelper();
+
+namespace ft {
+    export var templateHelper:TemplateViewHelper = new ft.TemplateViewHelper();
     export var expression = new ft.Expression();
     export var dispatcher = new ft.EventDispatcher(templateHelper);
 

@@ -1,6 +1,6 @@
 ///<reference path='./../d.ts'/>
 
-module ft {
+namespace ft {
     export interface IPointerEvent {
         type:string;
         sequence?:number;

@@ -1,7 +1,7 @@
 ///<reference path='./../d.ts'/>
 // KeyCodes https://github.com/timoxley/keycode/blob/master/index.js
 
-module ft {
+namespace ft {
 
     export const KeyCode =  {
 

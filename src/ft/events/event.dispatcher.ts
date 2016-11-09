@@ -1,6 +1,8 @@
 ///<reference path='./../d.ts'/>
 
-module ft {
+namespace ft {
+    export var AttributePathId:string = 'data-path-id';
+
     export var BrowserEvent = {
         Change: 'change',
         Scroll: 'scroll',

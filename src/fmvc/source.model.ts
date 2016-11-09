@@ -1,5 +1,5 @@
 ///<reference path='./d.ts'/>
-module fmvc {
+namespace fmvc {
 
     /*
          var d1 = ["a", "b",1,2,3,4,5,6,7];
@@ -7,7 +7,7 @@ module fmvc {
          var s1 = new fmvc.CompositeModel('s1', [d1,m2]);
          s1.setMapBeforeCompare(m2.name, (v)=>v).setSourceCompareFunc(_.intersection).setResultFunc((v)=>(_.chain(v).filter((r:any)=>(r%2===0)).map((d:any)=>(d*100)).value()));
      */
-    export class CompositeModel<T> extends Model<T> {
+    export class CompositeModel<T> extends fmvc.Model<T> {
 
         private _sources:any[];
         private _sourceCompareFunc:any;
@@ -52,6 +52,11 @@ module fmvc {
             return this;
         }
 
+
+        get sources(): any[] {
+            return this._sources;
+        }
+
         public removeSource(v:Model<T>):CompositeModel<T> {
             var index:number = -1;
             if (this._sources && (index = this._sources.indexOf(v)) > -1) {
@@ -87,7 +92,7 @@ module fmvc {
             return this;
         }
 
-        public apply() {
+        public apply():any {
             if (this.disposed) return;
             if (!this._sources || !this._sources.length) this.setData(null);
             if (!this._sourceCompareFunc && this._sources.length > 1) {

@@ -1,6 +1,6 @@
 ///<reference path='d.ts'/>
 
-module fmvc {
+namespace fmvc {
     declare var SockJS:any;
 
     export var TaskState = {

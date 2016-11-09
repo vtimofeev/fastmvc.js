@@ -1,3 +1,4 @@
+///<reference path="../ft/module.ts" />
 ///<reference path="../fmvc/d.ts" />
 
 ///<reference path="./expression.ts" />
@@ -17,3 +18,4 @@
 ///<reference path="./app/app.ts" />
 ///<reference path="./helper/browser.ts" />
 ///<reference path="./router.ts" />
+

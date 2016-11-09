@@ -1,4 +1,4 @@
-module ft {
+namespace ft {
     var DataType = {
         Boolean: 'boolean',
         String: 'string',

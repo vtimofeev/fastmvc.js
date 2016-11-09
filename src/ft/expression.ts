@@ -1,6 +1,6 @@
 ///<reference path="./d.ts" />
 
-module ft {
+namespace ft {
     var GetContext = {
         string: 'string',
         model: 'model',
@@ -126,7 +126,7 @@ module ft {
 
                 if(r != undefined) return r;
 
-                counters.expressionCtx++;
+                ft.counters.expressionCtx++;
 
                 if(vs === GetContext.data || v === GetContext.model) {
                     r = context[vs];
@@ -161,7 +161,7 @@ module ft {
                 return this.replaceUndefinedToNull(r);
             }
             else if(_.isObject(v)) {
-                counters.expressionEx++;
+                ft.counters.expressionEx++;
                 return this.executeExpression(<IExpression> v, context);
             }
             else {
@@ -174,7 +174,7 @@ module ft {
         }
 
         private executeExpression(ex:IExpression, context:TemplateView, classes?:boolean):any {
-            counters.expression++;
+            ft.counters.expression++;
             var r:any = ex.args?this.getContextArguments(ex,context):this.getParsedContextValue(ex.expressions[0],context,classes);
             if(!r && classes) return '';// empty class expression
             if(ex.filters) r = this.executeFilters(r, ex.filters, context);

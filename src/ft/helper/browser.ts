@@ -1,6 +1,6 @@
 declare var bowser:any;
 
-module ft.helper {
+namespace ft.helper {
 
     export var browser:IBowser = function() {
         return bowser;

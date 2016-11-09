@@ -1,28 +1,38 @@
 ///<reference path='./d.ts'/>
+///<reference path='./notifier.ts'/>
 
 
-module fmvc {
-    export var VERSION:string = '0.10.4';
-    export var TYPE_MEDIATOR:string = 'mediator';
-    export var TYPE_MODEL:string = 'model';
-    export var TYPE_VIEW:string = 'view';
+
+namespace fmvc {
+    export var VERSION:string = '0.12.06';
+    export var TYPE_MEDIATOR:number = 2;
+    export var TYPE_MODEL:number = 1;
+    export var TYPE_VIEW:number = 3;
 
     export var FacadeModel = {
         Log:'log'
     };
 
-    export class Facade {
-        private _name:string;
-        private _type:string;
+    export class Facade extends fmvc.Notifier implements IFacade {
+
+        private _domain:string;
+        private _mode:number;
         private _events:any = {};
         private _root:any;
-        private _mode:number;
-        private _composed:string[];
 
         public model:{[id:string]:Model<any>} = {};
         public mediator:{[id:string]:Mediator} = {};
 
         public remoteTaskManager:RemoteTaskManager = null;
+
+        constructor(name:string, domain?:string, root?:Element) {
+            super(name);
+            this._domain = domain; // Тип приложения
+            this._root = root; // Контейнер приложения
+            Facade.registerInstance(this); // Регистрируем в синглтоне приложений среды  - в дальнейшем используется для взаимойдействий между приложениями;
+            this.register(new Logger(FacadeModel.Log));  // создание модели логгера, записываем модель в фасад (для глобального доступа и обработки событий из модели)
+            this.init();
+        }
 
         /*
             Mode - тип работы приложения, 0 - дебаг, 1 - продакшн
@@ -39,31 +49,8 @@ module fmvc {
             return this._root;
         }
 
-        public get name():string {
-            return this._name;
-        }
-
-        public get type():string {
-            return this._type;
-        }
-
-        public compose(value:INotifier) {
-            if(!(value && value.name)) throw 'Cant compose ' + value;
-            if(typeof this[value.name] !== 'undefined') throw 'Cant compose cause name "' + value.name + '" is used ';
-
-            this._composed = this._composed || [];
-            this._composed.push(value.name);
-            this[value.name] = value;
-        }
-
-
-        constructor(name:string, type?:string, root?:Element) {
-            this._name = name; // Уникальное имя приложения
-            this._type = type; // Тип приложения
-            this._root = root; // Контейнер приложения
-            Facade.registerInstance(this); // Регистрируем в синглтоне приложений среды  - в дальнейшем используется для взаимойдействий между приложениями;
-            this.register(new Logger(FacadeModel.Log));  // создание модели логгера, записываем модель в фасад (для глобального доступа и обработки событий из модели)
-            this.init();
+        public get domain():string {
+            return this._domain;
         }
 
         public init() {
@@ -159,10 +146,10 @@ module fmvc {
         public log(...args:any[]):Facade {
             var logger = this.logger;
             if(logger) {
-                logger.add(this._name, args, 0);
+                logger.add(this.name, args, 0);
             }
             else {
-                console.log(this._name, args);
+                console.log(this.name, args);
             }
             return this;
         }
@@ -178,13 +165,13 @@ module fmvc {
         public static registerInstance(facade:Facade) {
             Facade.__facadesByName[facade.name] = facade;
             const types = Facade.__facadesByType;
-            const type = facade.type;
+            const type = facade.domain;
             (types[type]?types[type]:types[type] = []).push(facade);
         }
 
         public static unregisterInstance(facade:Facade) {
             delete Facade.__facadesByName[facade.name];
-            Facade.__facadesByType[facade.type] = _.without(Facade.__facadesByType[facade.type], facade);
+            Facade.__facadesByType[facade.domain] = _.without(Facade.__facadesByType[facade.domain], facade);
         }
 
         public static getFacadeByName(name:string):Facade {

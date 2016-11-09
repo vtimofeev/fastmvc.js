@@ -1,6 +1,6 @@
 ///<reference path='./d.ts'/>
 
-module fmvc {
+namespace fmvc {
 
 
     export class StorageModel<T extends fmvc.Model<any>> extends fmvc.Model<T> {
@@ -42,7 +42,7 @@ module fmvc {
 
 
 
-    export class DictionaryModel<T extends Model<any>> extends StorageModel<T> {
+    export class DictionaryModel<T extends fmvc.Model<any>> extends fmvc.StorageModel<T> {
         public getPromises:IPromise[] = [];
 
 
@@ -62,7 +62,7 @@ module fmvc {
 
     }
 
-    export class ArrayModel<T extends Model<any>> extends StorageModel<T> {
+    export class ArrayModel<T extends fmvc.Model<any>> extends fmvc.StorageModel<T> {
         public meta:fmvc.Model<any>;
 
         constructor(name:string, data:T[], opts?:IModelOptions) {

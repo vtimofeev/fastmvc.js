@@ -1,5 +1,5 @@
 ///<reference path='./d.ts'/>
-module fmvc {
+namespace fmvc {
 
     export var InvalidateType = {
         Data: 1,
@@ -45,7 +45,7 @@ module fmvc {
     }
 
 
-    export class View extends Notifier implements IView {
+    export class View extends fmvc.Notifier implements IView {
         protected _parent:IView;
         private _mediator:Mediator;
 

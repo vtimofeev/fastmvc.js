@@ -1,6 +1,5 @@
-declare var module:any;
 
-module ft {
+namespace ft {
 
     export class VirtualClassList {
         classes:{[id:string]:boolean} = {};
@@ -13,7 +12,7 @@ module ft {
 
     export class VirtualElement {
 
-        private _type:number;
+        public nodeType:number;
         private _tag:string;
         private _style:{[id:string]:string} = null;
         private _classList:VirtualClassList = null;
@@ -22,17 +21,17 @@ module ft {
         textContent:string = null;
 
         constructor(type:number, tag?:string, text?:string) {
-            this._type = type;
+            this.nodeType = type;
             this._tag = tag;
             this.textContent = text;
         }
 
         public get outerHtml():string {
             var r = '';
-            if(this._type === 1) r += this.openTag;
+            if(this.nodeType === 1) r += this.openTag;
             if(this.children) r += this.innerHtml;
-            if(this._type !== 1 && this.textContent) r+=this.textContent;
-            if(this._type === 1) r += this.closeTag;
+            if(this.nodeType !== 1 && this.textContent) r+=this.textContent;
+            if(this.nodeType === 1) r += this.closeTag;
             return r;
         }
 
@@ -72,6 +71,8 @@ module ft {
         }
 
         private classString() {
+            //console.log('ClassList is ', this._classList);
+
             var r:string = '',
                 n:string;
             if(!this._classList) return r;
@@ -111,10 +112,15 @@ module ft {
             if(index > -1) this.children.splice(index, 1, n);
         }
 
-        setAttribute(name:string, value:string)
+        setAttribute(name:string, value:string):void
         {
             if(!this.attribute) this.attribute = {};
             this.attribute[name] = value;
+        }
+
+        getAttribute(name:string):string
+        {
+            return this.attribute && this.attribute[name] || '';
         }
     }
 
@@ -132,9 +138,11 @@ module ft {
         }
     }
 
-}
+    if(typeof document === 'undefined') {
+        document = new VirtualDocument();
+        window.document = document;
+        //console.log('Created document', document.createElement);
+    }
 
 
-if(typeof module !== 'undefined') {
-    module.exports = new ft.VirtualDocument();
 }

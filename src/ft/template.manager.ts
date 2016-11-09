@@ -1,8 +1,8 @@
 ///<reference path="./d.ts" />
 
-module ft {
+namespace ft {
     export var globalScope:any = window || {};
-    export var templateParser = new TemplateParser();
+    export var templateParser = new ft.TemplateParser();
 
     /**
      * Менеджер классов,
@@ -67,6 +67,7 @@ module ft {
 
             this._classData[className] = {template: templateData, content: content, params: params, mixin: mixin};
             var result:ITemplateConstructor = this.createInstanceFunc(className, params, mixin);
+            console.log('Register class', className);
             this.registerClass(className, result);
             return result;
         }
@@ -110,11 +111,12 @@ module ft {
             var template = this._classData[className].template;
             if (!this._instanceFunc[className]) {
                 this._instanceFunc[className] = function (name:string, params?:any, mixin?:any):ft.TemplateView {
-                    console.log('CreateInstance  ', name, baseParams,params,  baseMixin,  mixin);
+                    //console.log('CreateInstance  ', name, baseParams,params,  baseMixin,  mixin);
                     var instanceParams:any = _.extend({}, baseParams, params); // extend base parameters
                     var instanceMixin:any = _.extend({}, baseMixin, mixin); // extend methods
                     var instance = new ft.TemplateView(name, instanceParams, template);
-                    console.log('Created  ', name, instance);
+                    //console.log('Created  ', name, instance);
+
                     _.each(instanceMixin, (v, k)=>instance[k] = v);
                     return instance;
                 };

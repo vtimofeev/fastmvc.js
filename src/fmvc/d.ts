@@ -1,6 +1,6 @@
 ///<reference path='../../typings/tsd.d.ts'/>
 
-module fmvc {
+namespace fmvc {
 
     export interface IModelOptions {
         type?: string // типы хранилища StorageModelType, например по ключу (key) или массив элементов (array)

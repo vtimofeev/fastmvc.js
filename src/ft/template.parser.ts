@@ -1,15 +1,16 @@
 ///<reference path="./d.ts" />
-declare var Tautologistics:any;
+///<reference path="./template.i.ts" />
 
-module ft {
-    var htmlparser:any = Tautologistics.NodeHtmlParser;
-    var expression = new Expression();
+declare var htmlparser:any;
+
+namespace ft {
+    var expression = new ft.Expression();
 
     export class TemplateParser implements ITemplateParser {
         private _htmlparserHandler:any;
         private _htmlParser:any;
         private _svgTagNames:string[] = 'circle clipPath defs ellipse g line linearGradient mask path pattern polygon polyline radialGradient rect stop svg text tspan'.split(' ');
-        private _componentParams:string[] = _.values<string>(TemplateParams);
+        private _componentParams:string[] = _.values<string>(ft.TemplateParams);
 
         private _propAttribs:{[name:string]:any} = {
             style: {

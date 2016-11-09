@@ -1,35 +1,15 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
     "target": "es5",
-    "noImplicitAny": true,
-    "removeComments": true,
-    "preserveConstEnums": true,
+    "module": "commonjs",
     "outFile": "./build/all.js",
     "sourceMap": true
   },
 
-
-
-  "files": [
-    "./src/fmvc/d.ts",
-    "./src/fmvc/event.ts",
-    "./src/fmvc/notifier.ts",
-    "./src/fmvc/facade.ts",
-    "./src/fmvc/model.ts",
-    "./src/fmvc/remote.model.ts",
-    "./src/fmvc/source.model.ts",
-    "./src/fmvc/storage.model.ts",
-    "./src/fmvc/remote.task.ts",
-    "./src/fmvc/view.ts",
-    "./src/fmvc/mediator.ts"
-  ],
-
-
   "include":[
+    "./src/fmvc/**/*.ts",
     "./src/ft/**/*.ts",
     "./src/ui/**/*.ts"
   ]
-
 
 }
