@@ -115,7 +115,7 @@ namespace ft {
         private _isChildren:boolean = false;
 
         // Local children stored by path of the container (view or dom element)
-        private _dataChildren:{[path:string]:TemplateChildrenView};
+        private _dataChildren:fmvc.Model<TemplateView>;
 
         // Delays
         private _delays:any;
@@ -419,17 +419,17 @@ namespace ft {
             this._cssClassMap[path + '-' + name] = value;
         }
 
-        getChildrenViewByPath(path:string):TemplateChildrenView {
-            return this._dataChildren ? this._dataChildren[path] : null;
+        get childrenVMData():TemplateView[] {
+            return this._dataChildren && this._dataChildren.data;
         }
 
-        getDefaultChildrenView():TemplateChildrenView {
-            return this._dataChildren ? _.values(this._dataChildren)[0] : null;
+
+        get childrenVM():fmvc.Model<TemplateView[]> {
+            return this._dataChildren;
         }
 
-        setChildrenViewPath(path, childrenView:TemplateChildrenView) {
-            if (!this._dataChildren) this._dataChildren = {};
-            this._dataChildren[path] = childrenView;
+        set childrenVM(value:fmvc.Model<TemplateView[]>) {
+            this._dataChildren = value;
         }
 
         getDomDefinitionByPath(path:string):IDomDef {
@@ -576,12 +576,17 @@ namespace ft {
             this._localHandlers = null;
             this._treeElementMapByPath = null;
 
+            this.childrenVM && this.childrenVM.dispose();
+            delete this.childrenVM;
+
             _.each(this._resultParams, (v, k)=> {
                 v.context = null;
                 delete this._resultParams[k]
             });
             _.each(this._dataChildren, (v, k)=>delete this._dataChildren[k]);
             _.each(this._treeElementMapByPath, (v, k)=>delete this._treeElementMapByPath[k]);
+
+            this._element && (this._element['data-path-id'] = null);
 
             this._resultParams = null;
             this._template = null;
@@ -723,22 +728,6 @@ namespace ft {
             delete this._localHandlers[path][event];
         }
 
-        /*
-        // custom event this.send(name, data), send stateChange event
-        public dispatchTreeEvent(e:ITreeEvent):void {
-            e.target = this;
-            e.def = e.def || this.localDomDef;
-            templateHelper.dispatchTreeEventDown(e);
-        }
-        */
-
-
-        /*
-        public getCustomTreeEvent(name:string, data:any = null, depth:number = 1):ITreeEvent {
-            return dispatcher.getCustomTreeEvent(name, data, this, depth);
-        }
-
-        */
 
         protected internalHandlerImpl(e:fmvc.IEvent):void {
         }
@@ -778,7 +767,7 @@ namespace ft {
             if (this._dynamicPropertiesMap[exName]) return this._dynamicPropertiesMap[exName];
 
             exObject = context.getExpressionByName(exName);
-            result = expression.execute(exObject, context);
+            result = expression.execute(exObject, context, false, this);
             //if( ex.context ) console.log('Get expression value: ', context.name, this.name, exObject.vars, ex);
             return result;
         }
@@ -793,6 +782,7 @@ namespace ft {
 
 
         public getCssClassExpressionValue(ex:IExpressionName):any {
+            //console.log(ex, this._template);
             var exObj:IExpression = this.getExpressionByName(ex.name);
             var result = expression.execute(exObj, ex.context || this, true);
             return result;

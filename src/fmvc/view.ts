@@ -30,6 +30,8 @@ namespace fmvc {
     }
 
     export function nextFrameHandler(handler:Function, context:IView, ...params:any[]) {
+        if(typeof module !== 'undefined' && module.exports) return;
+
         var result = ()=>handler.apply(context, params);
         nextFrameHandlers.push(result);
         requestFrameHandler();

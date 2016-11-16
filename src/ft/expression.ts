@@ -41,8 +41,8 @@ namespace ft {
             return new ExpressionName(value.name);
         }
         
-        public execute(value:IExpression, context:TemplateView, classes?:boolean):any {
-            return this.executeMultiExpression(value, context, classes);
+        public execute(value:IExpression, context:TemplateView, classes?:boolean, current:TemplateView):any {
+            return this.executeMultiExpression(value, context, classes, current);
         }
 
         //----------------------------------------------------------------------------------------------------------------------------------------
@@ -74,11 +74,11 @@ namespace ft {
             }
         }
 
-        private executeMultiExpression(ex:IExpression, context:TemplateView, classes:boolean):any {
+        private executeMultiExpression(ex:IExpression, context:TemplateView, classes:boolean, current?:TemplateView):any {
             var isSimpleExpression:Boolean = (ex.expressions.length === 1);
             var contextValue;
             return isSimpleExpression?
-                this.executeExpression(ex, context, classes):
+                this.executeExpression(ex, context, classes, current):
                 _.reduce(ex.expressions,
                     (memo:string, value:string|IExpression, index:number)=> {
                         contextValue = this.getParsedContextValue(value, context, classes);
@@ -89,8 +89,8 @@ namespace ft {
                     }, ex.result, this);
         }
 
-        private getParsedContextValue(value:ExpressionValue, context:TemplateView, classes:boolean) {
-            return this.parseContextValue(this.getContextValue(value, context), value, classes);
+        private getParsedContextValue(value:ExpressionValue, context:TemplateView, classes:boolean, , current?:TemplateView) {
+            return this.parseContextValue(this.getContextValue(value, context, current), value, classes);
 
         }
 
@@ -114,7 +114,7 @@ namespace ft {
             return v === undefined?null:v;
         }
 
-        public getContextValue(v:string|IExpression, context:TemplateView):any {
+        public getContextValue(v:string|IExpression, context:TemplateView, current:TemplateView):any {
             //console.log('getContextValue', v, context);
             var r:any,
                 rstr:string,
@@ -141,21 +141,22 @@ namespace ft {
                         this.funcMap[vs] = new Function('var v=null; try {v=this.' + vs + ';} catch(e) { v=\'{' + vs.replace(/'/g, '\\\'') + '}\';} return v;');
                     }
 
-                    r = this.funcMap[vs].apply(context);
+                    r = this.funcMap[vs].call(context,current);
                 }
                 else if(vs.indexOf(GetContext.stateField) === 0) {
                     if(!this.funcMap[vs]) {
                         var state = vs.substring(6);
                         this.funcMap[vs] = new Function('return this.getState("' + state + '");');
                     }
-                    r = this.funcMap[vs].apply(context);
+                    r = this.funcMap[vs].call(context,current);
                 }
                 else if(vs.indexOf(GetContext.openBracket) === 0 || vs.indexOf(GetContext.thisDot) >= 0 ) {
                     if(!this.funcMap[vs]) {
                         safeVs = vs.replace(/'/g, '"');
-                        this.funcMap[vs] = new Function('var v=null; try {v=' + vs + ';} catch(e) { v=\'{' + safeVs + '}\';} return v;');
+                        this.funcMap[vs] = new Function('current', 'var v=null; try {v=' + vs + ';} catch(e) { v=\'{' + safeVs + '}\';} return v;');
                     }
-                    r = this.funcMap[vs].apply(context);
+                    //console.log('Execute function ... ', this.funcMap[vs], ' ? current is ', current);
+                    r = this.funcMap[vs].call(context, current);
                 }
 
                 return this.replaceUndefinedToNull(r);
@@ -173,9 +174,9 @@ namespace ft {
             return _.isString(ex.args)?this.getContextValue(ex.args,context):_.reduce(ex.args, (r:any,v:string,k:string)=>(r[k]=this.getContextValue(v,context),r),{},this);
         }
 
-        private executeExpression(ex:IExpression, context:TemplateView, classes?:boolean):any {
+        private executeExpression(ex:IExpression, context:TemplateView, classes?:boolean, current?:TemplateView):any {
             ft.counters.expression++;
-            var r:any = ex.args?this.getContextArguments(ex,context):this.getParsedContextValue(ex.expressions[0],context,classes);
+            var r:any = ex.args?this.getContextArguments(ex,context,current):this.getParsedContextValue(ex.expressions[0],context,classes,current);
             if(!r && classes) return '';// empty class expression
             if(ex.filters) r = this.executeFilters(r, ex.filters, context);
             if(ex.result && ex.result !== this.ExResult) r = ex.result.replace(this.ExResult, r);

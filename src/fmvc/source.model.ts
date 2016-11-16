@@ -42,7 +42,7 @@ namespace fmvc {
                         throw  'SourceModel: Cant set ' + mapBeforeCompareFunc + ' mapBeforeCompareFunc for model ' + m.name;
                     }
                 }
-            } else if(v.length) {
+            } else if(v) {
                 this._sources.push(v);
             }
             else {

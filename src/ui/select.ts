@@ -47,7 +47,8 @@ module ui.def {
                    this.group.value = data.items[hoverIndex];
                     _.defer(()=>this.selected=false);
                 }
-                //https://catalog.api.2gis.ru/2.0/catalog/marker/search?page=1&page_size=10000&q=%D0%BE%D1%81%D1%82%D0%B0%D0%BD%D0%BA%D0%B8%D0%BD%D1%81%D0%BA%D0%B8%D0%B9%20%D0%BF%D0%B0%D1%80%D0%BA&hash=3f3cffc417564cee&region_id=32&key=ruczoy1743
+
+
                 if (keyCode === ft.KeyCode.Esc) {
                     return _.defer(()=>this.selected=false);
                 }

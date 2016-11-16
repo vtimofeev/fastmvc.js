@@ -48,8 +48,8 @@ namespace ft {
 
             var target:HTMLElement = e.target || e.currentTarget;
 
-            var pathId:string = target.getAttribute?target.getAttribute(AttributePathId):null;
-            var pathDefinition = this.viewHelper.getPathDefinitionByPathId(pathId);
+            //var pathId:string = target.getAttribute?target.getAttribute(AttributePathId):null;
+            var pathDefinition = target[AttributePathId];//this.viewHelper.getPathDefinitionByPathId(pathId);
 
             var pointerEvent:IPointerEvent = this.pointer.tryTransformToCompositeEvent(e);
 

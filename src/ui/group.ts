@@ -1,15 +1,19 @@
 module ui.def {
+    import TemplateView = ft.TemplateView;
     export var Group = {
         className: 'ui.Group',
         content: '<div .base="group" ' +
         ' class="{state.base} {state.custom}" ' +
-        ' .children.selected="{this.isSelected(this.child)}" ' +
+        ' .children.selected="{this.isSelected(current)}" ' +
         ' .children.base="button" ' +
         ' .children.class="ui.ToggleButton" ' +
-        ' .children.hover="{cc.childIndex===state.hoverIndex}" ' +
+    //    ' .children.hover="{cc.childIndex===state.hoverIndex}" ' +
         ' .children.onaction="item"></div>',
         mixin: {
+
             isSelected(child) {
+                //console.log('G:Is selected ', child, this.value);
+
                 var data = child.model || child.data,
                     result = this.value && (this.state.multiple ? this.value.indexOf(data) > -1 : this.value === data);
 
@@ -18,12 +22,16 @@ module ui.def {
             },
 
             setGroupItem(data):void {
+                //console.log('Set item data ', data, this.value);
+
                 if(this.state.multiple) {
                     this.value = [].concat(this.value, data);
                 } else {
                     this.value = data;
                 }
-                this.getDefaultChildrenView().applyChildrenParameter(null, 'children.selected');
+                //@todo replace
+                this.childrenVMData && this.childrenVMData.forEach( (v:TemplateView)=>v.setState('selected', this.isSelected(v)) );
+                //this.getDefaultChildrenView().applyChildrenParameter(null, 'children.selected');
             },
 
             removeGroupItem(data):void {
@@ -33,7 +41,10 @@ module ui.def {
                 } else {
                     this.value = null;
                 }
-                this.getDefaultChildrenView().applyChildrenParameter(null, 'children.selected');
+
+                this.childrenVMData && this.childrenVMData.forEach( (v:TemplateView)=>v.setState('selected', this.isSelected(v)) );
+                //@todo replace
+                //this.getDefaultChildrenView().applyChildrenParameter(null, 'children.selected');
             },
 
             internalHandlerImpl: function (e:fmvc.IEvent) {
