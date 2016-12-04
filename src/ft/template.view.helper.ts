@@ -527,12 +527,14 @@ namespace ft {
         //-------------------------------------------------------------------------------------------------
 
         dispatchTreeEventDown(e:ITreeEvent) {
+            e.type === 'action' && console.log('Dispatch tree event down ', e.cancelled, e);
+
             var def:IDomDef = <IDomDef> (e.currentDef || e.def);
             var view = <TemplateView> (e.currentTarget || e.target);
             var template = view.getTemplate();
 
             // Execute current def handler
-            this.triggerDefEvent(e);
+            !e.cancelled && this.triggerDefEvent(e);
 
             while (!e.cancelled && (def = template.pathMap[def.parentPath])) {
                 // Execute on defs tree in view template scope
@@ -552,7 +554,7 @@ namespace ft {
                 this.triggerDefEvent(e);
 
                 // check canceled
-                e.cancelled = !!e.executionHandlersCount && e.type === 'click';
+                e.cancelled = e.executionHandlersCount && (e.type === 'action' || e.type === 'click');
 
                 // exec parent next domDef to root
                 e.currentDef = def && def.parentPath ? (<TemplateView>view.parent).getTemplate().pathMap[def.parentPath] : null;
