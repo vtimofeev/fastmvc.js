@@ -150,7 +150,6 @@ namespace fmvc {
 
         public remoteConnectionMessageHandler(e:IEvent) {
             var response = <IRemoteTaskResponse> e.data.lastResult;
-            //console.log('Message handler: ',!!e.data.lastResult, response, e);
             e.data.lastResult = null;
 
             if(!(response && response.id)) return;

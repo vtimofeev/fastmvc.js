@@ -6,8 +6,8 @@ namespace ft {
     export type ExpressionNameValue = string|IExpressionName;
     export type TemplateViewParams = any[];
 
-    // Params of dom element or component
 
+        //@todo-1 Удалить после
         export var TemplateParams = {
         ln:'ln', // create public field in TemplateView that has name as value
         if:'if', // state when object is created, '{state.selected}'

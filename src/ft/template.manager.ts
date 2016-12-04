@@ -85,6 +85,8 @@ namespace ft {
         public createInstance(className:string, name:string, params?:any, mixin?:any):ft.TemplateView {
             var instance;
 
+            //console.log('CreateInstance ', name, params, mixin);
+
             try {
                 var instanceCreateFunction = this._instanceFunc[className];
                 instance = instanceCreateFunction ? instanceCreateFunction(name, params, mixin):new (this.getClassByClassName(className))(name, params, mixin);

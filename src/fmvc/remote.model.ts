@@ -34,7 +34,6 @@ namespace fmvc {
         }
 
         protected messageHandler(dataStr:string) {
-            //console.log('MessageHandler: ', dataStr);
             var data = JSON.parse(dataStr);
             this.changes = { received: this.data.received + 1 , lastResult: data };
         }
@@ -72,26 +71,45 @@ namespace fmvc {
 
         constructor(name:string, url:string) {
             super(name, {url: url, connected: false, sended: 0, received: 0, errors: 0, sendedItems: [], receivedItems: [] });
-            if(typeof SockJS === 'undefined') throw 'SocketRemoteConnectionModel: SockJS client library required';
 
             this.createConnection(this.data.url);
         }
 
         protected createConnection(url:string):void {
+            var getInstance = function(value) {
+                console.log('Try to connect default', value);
+                return new SockJS(value);
+            };
+
+            if(typeof SockJS === 'undefined') {
+
+                if(typeof module !== 'undefined' && module.exports) {
+                    getInstance = function (value) {
+                        var wsUrl = 'ws:' + value + '/websocket',
+                            WebSocket = require('ws');
+                        console.log('Try to connect', wsUrl);
+                        return new WebSocket('ws:' + value + '/websocket');
+                    }
+                } else {
+                    throw new Error('WebSocket library / SockJS is not defined');
+                }
+
+            }
+
 
             try {
                 if(this.connection) {
                     this.connection.onmessage = this.connection.onclose = this.connection.onopen = null;
                 }
 
-                this.connection = new SockJS(url);
+                this.connection = getInstance(url);
                 this.connection.onopen = this.openHandler.bind(this);
                 this.connection.onmessage = this.messageHandler.bind(this);
                 this.connection.onclose = this.closeHandler.bind(this);
 
             } catch (e) {
 
-                console.log('Error on create ', arguments, this.data);
+                console.log('Error on create ', arguments, this.data, e);
                 this.changes = { errors: (this.data.errors + 1) };
                 setTimeout( ()=>this.createConnection(url) , 1000 * this.data.errors );
             }
@@ -99,6 +117,7 @@ namespace fmvc {
         }
 
         protected openHandler():void {
+            console.log('WS:Connected ', this.data.url);
             this.changes = { connected: true };
         }
 

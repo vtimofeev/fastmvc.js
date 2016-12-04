@@ -1,10 +1,9 @@
 ///<reference path='./d.ts'/>
 ///<reference path='./notifier.ts'/>
 
-
-
 namespace fmvc {
-    export var VERSION:string = '0.12.06';
+    export var VERSION:string = '0.21.0';
+
     export var TYPE_MEDIATOR:number = 2;
     export var TYPE_MODEL:number = 1;
     export var TYPE_VIEW:number = 3;
@@ -54,7 +53,7 @@ namespace fmvc {
         }
 
         public init() {
-            this.log('Старт приложения ' + name + ', fmvc версия ' + fmvc.VERSION);
+            this.log('Старт приложения ' + this.name + ', fmvc версия ' + fmvc.VERSION);
             this.log('Регистрация модулей');
             this.initModels();
             this.initMediators();

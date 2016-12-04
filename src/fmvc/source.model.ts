@@ -31,7 +31,7 @@ namespace fmvc {
 
 
         public addSource(v:any, mapBeforeCompareFunc?:Function):CompositeModel<T> {
-            if (v instanceof Model) {
+            if (v instanceof fmvc.Model) {
                 var m = <Model<T>>v;
                 m.bind(this, this.sourceChangeHandler);
                 this._sources.push(m);

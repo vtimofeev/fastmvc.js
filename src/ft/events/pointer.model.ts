@@ -9,7 +9,7 @@ namespace ft {
         time?:number;
         isComposite?:boolean;
 
-        /*
+        /*@todo: Удалить?
         alt:boolean;
         shift:boolean;
         control:boolean;
@@ -21,7 +21,8 @@ namespace ft {
         MouseOut: 'mouseout',
         MouseDown: 'mousedown',
         MouseUp: 'mouseup',
-        MouseMove: 'mousemove'
+        MouseMove: 'mousemove',
+        Click: 'click'
     };
 
     export var TouchEvent = {
@@ -93,7 +94,6 @@ namespace ft {
             if(isTouch) {
                 this.onlyTouch = true;
                 eventData = e.touches?(e.touches[0]||(e.changedTouches && e.changedTouches[0])):null;
-                console.log('Event data', e.type, transformName, eventData, e);
                 if(!eventData) this.log('Incorrect touch event data ', e);
             } else {
                 eventData = e;
@@ -135,7 +135,6 @@ namespace ft {
         }
 
         protected getSequenceEvent(time:number, diffX:number, diffY:number, e:IPointerEvent):IPointerEvent {
-            console.log('Sequence analyze ', time, diffX, diffY);
             if(time < 1000 && diffX < 10 && diffY < 10 ) return {type: CompositeEvent.Action, sequence: 1, clientX: e.clientX, clientY: e.clientY };
             return null;
         }

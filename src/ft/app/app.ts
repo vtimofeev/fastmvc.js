@@ -9,6 +9,7 @@ namespace ft {
         theme:'theme',
         router:'router',
         bowser: 'info',
+        window: 'window',
         log:'log'
     };
 
@@ -25,10 +26,19 @@ namespace ft {
 
             var bowser:fmvc.Model<IBowser> = new fmvc.Model<IBowser>(ModelName.bowser, bowser);
 
+            var wndModel:fmvc.Model<any> = new fmvc.Model<any>(ModelName.window, { scrollY: 0, scrollX: 0 });
+            window && window.addEventListener && window.addEventListener('scroll', (e)=>{
+                wndModel.changes = {
+                    scrollY: window.scrollY,
+                    scrollX: window.scrollX,
+                    height: window.document.documentElement.clientHeight
+                }
+            });
+
             var router:ft.Router<IRouter> = new ft.Router<IRouter>(ModelName.router);
 
             // Добавляем модели по умолчанию в фасад
-            this.register(localeModel, i18nModel, themeModel, bowser, router);
+            this.register(localeModel, i18nModel, themeModel, bowser, router, wndModel);
         }
 
         init() {

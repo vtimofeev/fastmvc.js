@@ -295,13 +295,15 @@ namespace fmvc {
             if (this._invalidate & InvalidateType.Data) this.validateData();
             if (this._invalidate & InvalidateType.App) this.validateApp();
 
-            //if (this._invalidate & InvalidateType.Parent) this.validateParent();
-            //if (this._invalidate & InvalidateType.Children) this.validateChildren();
-            /*
+            /*@todo: Удаляем
+
+             if (this._invalidate & InvalidateType.Parent) this.validateParent();
+             if (this._invalidate & InvalidateType.Children) this.validateChildren();
              if(this._invalidate & InvalidateType.Template) this.validateTemplate();
              if(this._invalidate & InvalidateType.Theme) this.validateTheme();
              if(this._invalidate & InvalidateType.I18n) this.validateI18n();
              */
+
             this._invalidate = 0;
             this._isWaitingForValidate = false;
             this.afterValidate();
@@ -340,7 +342,7 @@ namespace fmvc {
         public unrender(replace?:Element):IView {
             this.exit();
             this.beforeUnrender();
-            var parentElement = this.getElement().parentNode;
+            var parentElement = this.getElement() && this.getElement().parentNode;
             if (!parentElement) return this;
 
             if (replace) {
@@ -357,7 +359,6 @@ namespace fmvc {
             this.unrender();
             super.dispose();
 
-            // Clean refs
             this._mediator = null;
             this._states = null;
             this._parent = null;
@@ -365,16 +366,6 @@ namespace fmvc {
             this._data = null;
             this._binds = null;
         }
-
-        /*
-        public dispatchEvent(e:IEvent|string):void {
-            const event:IEvent = <IEvent> (typeof e === 'string'? {type: e} : e);
-            event.target = this;
-
-            //var e:IEvent = {name: name, data: data, global: global, target: this};
-            if (this.mediator) this.mediator.internalHandler(event);
-        }
-        */
 
         public log(...messages:any[]):View {
             if (this.mediator && this.mediator.facade) this.mediator.facade.logger.add(this.name, messages);

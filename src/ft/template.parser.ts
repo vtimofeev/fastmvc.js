@@ -58,6 +58,7 @@ namespace ft {
                     result.expressionMap = <IExpressionMap> {};
                     result.name = obj.name;
                     result.pathMap = {};
+
                     // side effect, creates expression map to result, create pathMap
                     result.domTree = this.htmlObjectToDomTree(obj, result, '0');
                     result.dynamicTree = this.getDynamicTreeFromExpressionMap(result.expressionMap);
@@ -119,7 +120,7 @@ namespace ft {
                 return 'bind2';
             }
             else {
-                return (name.indexOf('.') === 0
+                return (name.indexOf('.') === 0 // Сделать и проверить - все параметры начинаются с точки //@todo-1
                 || name.indexOf('children.') === 0 || name.indexOf('c.') === 0
                 || this._componentParams.indexOf(name)>-1)?'params':'attribs';
             }
@@ -138,7 +139,6 @@ namespace ft {
                     <IExpressionMap>{},
                     this);
             }   else if(group === 'handlers') {
-                //console.log('Parse handler ', this.parseJsValue(value));
                 return this.parseJsValue(value);
             }
                 else {

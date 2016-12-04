@@ -51,6 +51,7 @@ namespace ft {
 
             return treeElement;
         }
+        
 
         public validateTree(data:IDomDef, root:ft.TemplateView):void {
             var treeElement:TreeElement = this.getTreeElement(data, root);
@@ -90,8 +91,6 @@ namespace ft {
             var treeDomElement:HTMLElement = this.getDomElement(treeElement);
 
             if (this.isTagElement(treeDomElement)) {
-                //console.log('Enter children tree by ', root.name);
-
                 var i:number;
                 var childrenLength:number;
                 for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
@@ -127,7 +126,6 @@ namespace ft {
         private composeNames_updateDynamicTree = _.compose(_.union, _.compact, _.flatten);
         updateDynamicTree(root:ft.TemplateView, group?:string, propertyName?:string):void {
             var dynamicTree:any = root.getTemplate().dynamicTree;
-            //console.log('Update dynamic tree', group, dynamicTree, root);
             if (!dynamicTree) return;
 
             var expressionArrays:any[];
@@ -228,7 +226,11 @@ namespace ft {
                     sourceModels = [childrenParams['class'] || 'ui.Button', childrenDataModel, {}, bindedParams || {} ],
                     childrenViewModel ;
 
-                //console.log('CV params ', rootParams, childrenParams, sourceModels);
+                if (!childrenDataModel) {
+                    console.warn('Cant create childrenViewModel cause childrenDataModel not exists ', root.name);
+                    return;
+                }
+
                 childrenViewModel = new ft.ChilrenViewModel(chilrenName, sourceModels);
 
                 childrenViewModel.apply();
@@ -245,12 +247,10 @@ namespace ft {
         private initDomElement(object:TreeElement, data:IDomDef, root:ft.TemplateView) {
             var domElement = <HTMLElement> this.getDomElement(object);
 
-            //console.log('Init dom ', object, data, root);
-
             /* Процесс установки аттрибутов, в том числе с расчетом выражений, для конкретного узла Dom */
             if (this.isTagElement(domElement) && !domElement[AttributePathId]) {
 
-                // Установка связей с данными узла
+               // Установка связей с данными узла
                 domElement[AttributePathId] = {data: data, root: root};
 
                 // Вычисление аттрибутов
@@ -295,7 +295,6 @@ namespace ft {
 
 
         applyExpressionToHosts(exObj:IExpression, root:ft.TemplateView):void {
-            //console.log('Apply ex to host ', exObj, root);
             var result;
             var el:HTMLElement;
             var i:number;
@@ -307,14 +306,18 @@ namespace ft {
 
                 result = result || (host.key === 'class' ? root.getCssClassExpressionValue(exObj) : root.getExpressionValue(exObj));
 
-                el = this.getDomElement(root.getTreeElementByPath(host.path));
+                el = root.getTreeElementByPath(host.path);
                 if (el && el.nodeType != 8) this.applyValueToHost(result, el, host, root);
             }
         }
 
-        applyValueToHost(value:any, el:HTMLElement, host:IExpressionHost, root:ft.TemplateView):any {
-            //console.log('Apply value to host ', value, host.key);
-            var key:string = host.key;
+        applyValueToHost(value:any, treeValue:TreeElement, host:IExpressionHost, root:ft.TemplateView):any {
+            //if(host.group === 'params') console.log('Apply value to host ', value, host, root.name, treeValue);
+            var key:string = host.key,
+                el = this.getDomElement(treeValue),
+                view = treeValue instanceof ft.TemplateView && treeValue;
+
+
 
             switch (host.group) {
                 case 'data':
@@ -343,36 +346,14 @@ namespace ft {
                     return;
                 case 'params':
                     // Default params changed: Data: model, data; states: selected, focused, children, base, custom
-
-                    var view:ft.TemplateView
-                    if (key.indexOf('.') < 0) {
-                        view = <TemplateView> root.getTreeElementByPath(host.path);
-                        if(view instanceof ft.TemplateView) view.applyParameter(view.getParameters()[key], key);
-                        else console.warn('Cant apply parameter ', key, 'to', view, 'path', host.path);
+                    if (view) {
+                        view.applyParameter(view.getParameters()[key], key);
                     }
-
-                    // Children.params changed
-                        /*
-                    else if (key.indexOf('children.') === 0) {
-                        view = <TemplateView> root.getTreeElementByPath(host.path);
-                        var childrenView = <TemplateChildrenView> root.getChildrenViewByPath(host.path) || view.getDefaultChildrenView();
-                        if (!childrenView) {
-                            console.warn('Has no ChildrenView instance and cant set hostValue ', host.path, key);
-                            return;
-                        }
-
-                        if (key === 'children.data') {
-                            childrenView.data = value;
-                            //childrenView.validate();
-                        }
-                        else {
-                            childrenView.applyChildrenParameter(value, key, root);
-                        }
-                    }*/
                     else {
-                        console.warn('Not supported host parameter at applyToHost ', key, value, host.path);
+                        console.warn('Cant apply parameter ', key, 'to', view, 'path', host.path);
                     }
                     return;
+
             }
         }
 
@@ -456,7 +437,6 @@ namespace ft {
 
         setDomElementClasses(vals:IObj, object:HTMLElement, data:IDomDef, root:ft.TemplateView) {
             var previousClassValue:string;
-            //console.log('Setdomclasses', vals);
 
             _.each(vals,
                 (value:any, name:string)=> {
@@ -470,12 +450,10 @@ namespace ft {
         }
 
         setDomElementStyles(vals:IObj, object:HTMLElement, root:ft.TemplateView) {
-            //console.log('Set object styles', vals);
             _.each(vals, (value:any, name:string)=>object.style[name] = (value ? value : ''));
         }
 
         setDomElementAttributes(attrs:IObj, object:HTMLElement) {
-            //console.log('Set dom attr', attrs);
             var name:string;
 
             for (name in attrs) {
@@ -484,11 +462,15 @@ namespace ft {
         }
 
         setSvgElementAttribute(name:string, value:any, object:HTMLElement) {
+
+            
             var method:Function = value ? object.setAttributeNS : object.removeAttributeNS;
             method.call(object, null, name, value);
         }
 
         setElementAttribute(name:string, value:any, object:HTMLElement):void {
+
+
             var method = this.isSvgNode(object) ? this.setSvgElementAttribute : this.setDomElementAttribute;
             method.call(this, name, value, object);
         }
@@ -531,6 +513,7 @@ namespace ft {
 
 
         hasChildrenDef(data:IDomDef):boolean {
+            //@todo-check Зачем 3 переменной ui.Group
             return !!(data.params && data.params[ft.TemplateParams.childrenClass] && data.name !== 'ui.Group');
         }
 
@@ -556,8 +539,8 @@ namespace ft {
                 e.currentDef = def;
                 this.triggerDefEvent(e);
             }
-            // Send to parent template defs tree
 
+            // Send to parent template defs tree
             view.handleTreeEvent(e);
 
              if (view.parent && view.domDef) {

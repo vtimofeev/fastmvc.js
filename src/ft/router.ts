@@ -84,12 +84,25 @@ namespace ft {
         }
 
         navigate(url:string):Promise<any> {
+            console.log('Navigate href handler ... ', url);
             this.router.navigate(url);
             return this._navigateHandler ? this._navigateHandler(this.data) : Promise.resolve(true);
         }
 
+        test(v) {
+            return v && v.indexOf('//') === -1;
+        }
 
-
+        hrefHandler(v) {
+            var href = v && v.getAttribute('href');
+            console.log('Href handler prepare... ', href, v);
+            if(v && v.getAttribute && this.test(href)) {
+                href && this.navigate(href);
+                return true;
+            } else {
+                return false;
+            }
+        }
 
     }
 

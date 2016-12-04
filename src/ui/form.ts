@@ -1,6 +1,7 @@
 ///<reference path="../ft/d.ts" />
 
 module ui.def {
+    import TemplateView = ft.TemplateView;
     interface IFormField {
         name:string,
         field?:string,
@@ -24,9 +25,13 @@ module ui.def {
             },
 
             afterValidate: function () {
+                //console.log('Form, after validate --- ', this.getState('schemaType'),
+                    this.model, this.model.schemas, this.bindedInstance);
+
+                var schema = this.getState('schemaType');
+
                 if(!this.model || !this.model.schemas || !this.model.schemas[this.getState('schemaType')] || this.model.disposed) return;
                 if(this.bindedInstance === this.model && this.bindedSchema === this.getState('schema')) return;
-
 
                 this.bindedInstance = this.model;
                 this.bindedSchema = this.getState('schema');
@@ -42,40 +47,54 @@ module ui.def {
                         type = value.settings && (value.settings.indexOf('password') > -1) && 'password',
 
                         states = {
+                            propertyName: modelProperty,
                             title:  modelProperty,
                             type: type || 'text',
                             value: this.model.data && this.model.data[modelProperty] || ''
-                        };
+                        },
 
-                    var bindout = 'out.value';
-                    var params = {
+                        bindout = 'out.value',
+
+                        params = {
                         model: this.model,
                         setStates: states,
                     };
 
                     params[bindout] = 'model.data.' + modelProperty;
-
+                    //console.log('Create field ', value.settings, params);
 
                     var instance = ft.templateManager.createInstance( (value.type === 'text' ? 'ui.Text' : 'ui.Input') , this.name + '-field-' + modelProperty, params);
-
-
                     instance.render(this.getElement());
                     instance.parent = this;
+
+                    var t = this;
+                    value.settings && value.settings.forEach && value.settings.forEach(function(v:string) {
+                        var items = v.split(':'),
+                            act = items[0],
+                            field = items[1] && items[1].split('|') || [],
+
+                            propertyName = field[0],
+                            filters = field.slice(1);
+
+                        if(act === 'copy' && propertyName) {
+                            instance.bindStateFunction('value', (v)=>{
+                                t.fields.filter( (f:TemplateView)=>f.getState('propertyName')===propertyName ).forEach( (f:TemplateView)=>f.setState('value', v) );
+                            }, filters)
+                        }
+
+                    });
+
                     this.fields.push(instance);
                 }, this);
 
-                this.submitButton = ft.templateManager.createInstance('ui.Button', this.name + '-field-submit' , {data:'Submit', type: 'apply', onaction: (e)=>this.internalHandler('apply',e) });
+                this.submitButton = ft.templateManager.createInstance('ui.Button', this.name + '-field-submit' , {data:schema==='insert'?'Save':'Update', type: 'apply', onaction: (e)=>this.internalHandler('apply',e) });
                 this.submitButton.render(this.getElement());
 
-                this.cancelButton = ft.templateManager.createInstance('ui.Button', this.name + '-field-cancel' , {data:'Cancel', onaction: (e)=>this.internalHandler('cancel',e) });
+                this.cancelButton = ft.templateManager.createInstance('ui.Button', this.name + '-field-cancel' , {data:'Cancel', type: 'cancel', onaction: (e)=>this.internalHandler('cancel',e) });
                 this.cancelButton.render(this.getElement());
-
-
-
-
             },
 
-            internalHandlerImpl: function (e:IEvent) {
+            internalHandlerImpl: function (e:fmvc.IEvent) {
 
 
                 if(e.type==='cancel') {
@@ -85,16 +104,28 @@ module ui.def {
 
                 if(e.type==='apply') {
                     this.fields.forEach( (v)=>v.syncValue && v.syncValue() );
+                    //@todo validate and set errors
+
+                    this.submitButton.disabled = true;
                     var schemaType = this.getState('schemaType');
 
-
-                    var operationPromise = ((schemaType === 'update')?this.model.save():this.model[schemaType](this.model.changes || this.model.data));
+                    var operationPromise = ((schemaType === 'update' || schemaType === 'insert')?this.model.save():this.model[schemaType](this.model.changes || this.model.data));
 
                     operationPromise.then(
-                            (v:any)=>( this.model.changes = v && v[0],this.model.applyChanges(), console.log('On form success apply ', v, this.model))
+                            (v:any)=>{
+                                this.model.changes = v && v[0];
+                                this.model.applyChanges();
+                                this.dispatchEvent({ type: schemaType, target: this.model });
+                                console.log('On form success apply ', v, this.model);
+                            }
                         ).catch(
-                            (e:any)=>(this.model.state = fmvc.ModelState.Error, console.log('On form error apply ', e))
-                        );
+                            (e:any)=>{
+                                this.model.state = fmvc.ModelState.Error;
+                                console.log('On form error apply ', e);
+                            }
+                        ).finally(()=>{
+                            this.submitButton.disabled = false;
+                    });
 
 
                 }

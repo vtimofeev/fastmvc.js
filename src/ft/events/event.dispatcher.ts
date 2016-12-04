@@ -22,6 +22,7 @@ namespace ft {
         private viewHelper:TemplateViewHelper;
         private pointer:ft.PointerModel;
         private keyboard:ft.KeyboardModel;
+        private hrefHandler:any;
 
         constructor(viewHelper:TemplateViewHelper) {
             this.viewHelper = viewHelper;
@@ -31,6 +32,10 @@ namespace ft {
             _.bindAll(this, 'browserHandler');
             var listenEvents:string[] = [].concat(_.values(ft.BrowserEvent), _.values(ft.PointerEvent), _.values(ft.KeyboardEvent),  _.values(ft.TouchEvent));
             _.each(listenEvents, this.on, this);
+        }
+
+        setHrefHandler(v) {
+            this.hrefHandler = v;
         }
 
         protected browserHandler(e:any):void {
@@ -48,14 +53,18 @@ namespace ft {
 
             var target:HTMLElement = e.target || e.currentTarget;
 
-            //var pathId:string = target.getAttribute?target.getAttribute(AttributePathId):null;
-            var pathDefinition = target[AttributePathId];//this.viewHelper.getPathDefinitionByPathId(pathId);
+
+            if(target.tagName === 'A' && e.type === 'click') {
+                if (this.hrefHandler && this.hrefHandler(target)) e.preventDefault();
+            }
+
+            var pathDefinition = target[AttributePathId];
 
             var pointerEvent:IPointerEvent = this.pointer.tryTransformToCompositeEvent(e);
 
-            if(pointerEvent.isComposite) { // set global pointer data
+            if(pointerEvent.isComposite) {
+                // set global pointer data
                 this.pointer.setData(pointerEvent);
-                //e.preventDefault();
             }
 
             if (pathDefinition){

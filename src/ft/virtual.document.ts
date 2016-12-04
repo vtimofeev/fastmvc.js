@@ -13,6 +13,7 @@ namespace ft {
     export class VirtualElement {
 
         public nodeType:number;
+        private _innerHTML:string;
         private _tag:string;
         private _style:{[id:string]:string} = null;
         private _classList:VirtualClassList = null;
@@ -29,17 +30,37 @@ namespace ft {
         public get outerHtml():string {
             var r = '';
             if(this.nodeType === 1) r += this.openTag;
-            if(this.children) r += this.innerHtml;
+            if(this.nodeType === 8) r += '<!-- ';
+            if(this.children || this._innerHTML) r += this.innerHtml;
             if(this.nodeType !== 1 && this.textContent) r+=this.textContent;
+            if(this.nodeType === 8) r += ' -->';
             if(this.nodeType === 1) r += this.closeTag;
             return r;
         }
 
+        public get tagName():string {
+            return this._tag;
+        }
+
+
+        public set innerHTML(value:string) {
+            this._innerHTML = value;
+            this.children = null;
+        }
+
+
         public get innerHtml():string {
             var r = '';
-            this.children.forEach((c)=>r +=c.outerHtml);
+
+            if(this._innerHTML) {
+                r += this._innerHTML;
+            } else {
+                this.children.forEach((c)=>r += c.outerHtml);
+            }
+
             return r;
         }
+
 
         public get openTag() {
             return '<' + this._tag + this.attrString() + this.classString() + this.styleString() + '>';
@@ -71,8 +92,6 @@ namespace ft {
         }
 
         private classString() {
-            //console.log('ClassList is ', this._classList);
-
             var r:string = '',
                 n:string;
             if(!this._classList) return r;
@@ -118,6 +137,13 @@ namespace ft {
             this.attribute[name] = value;
         }
 
+        removeAttribute(name:string):void
+        {
+            if(!this.attribute) return;
+            delete this.attribute[name];
+        }
+
+
         getAttribute(name:string):string
         {
             return this.attribute && this.attribute[name] || '';
@@ -141,7 +167,6 @@ namespace ft {
     if(typeof document === 'undefined') {
         document = new VirtualDocument();
         window.document = document;
-        //console.log('Created document', document.createElement);
     }
 
 

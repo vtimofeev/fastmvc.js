@@ -170,7 +170,7 @@ namespace fmvc {
             return this.get({_ids: [id]});
         }
 
-        get(query:any = null, from?:any = null, limit?:any = null, sort?:any = null):IPromise {
+        get(query:any = null, from:any = null, limit:any = null, sort:any = null):IPromise {
 
             if(this.state === ModelState.Syncing) {
                 return Promise.reject(`Cant execute GET of model, cause it is has state ${this.state}`);
@@ -203,7 +203,7 @@ namespace fmvc {
             var p:IPromise,
                 _id = this.data && (<T> this.data)._id;
 
-            if(this.changes)
+            if(_id)
                 p = this.remoteTaskManager.insert({
                     model: this.getRemoteModel(),
                     type: 'update',
@@ -213,7 +213,7 @@ namespace fmvc {
                 p = this.remoteTaskManager.insert({
                     model: this.getRemoteModel(),
                     type: 'insert',
-                    data: this.data
+                    data: { data: _.extend(this.data, this.changes) }
                 });
 
             return p.then(this.applyChanges.bind(this)).catch(this.remoteErrorHandler.bind(this));
@@ -296,7 +296,6 @@ namespace fmvc {
         constructor(name:string, config?:ILoggerConfig) {
             super(name, []);
             if(config) this.config = config;
-            //console.log('Construct facade logger ');
         }
 
         public set config(value:any) {

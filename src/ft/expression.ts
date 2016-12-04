@@ -155,7 +155,6 @@ namespace ft {
                         safeVs = vs.replace(/'/g, '"');
                         this.funcMap[vs] = new Function('current', 'var v=null; try {v=' + vs + ';} catch(e) { v=\'{' + safeVs + '}\';} return v;');
                     }
-                    //console.log('Execute function ... ', this.funcMap[vs], ' ? current is ', current);
                     r = this.funcMap[vs].call(context, current);
                 }
 

@@ -73,7 +73,7 @@ namespace ft {
         validateApp: 0
     };
 
-    setInterval(()=>console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(counters), ' frames ', fmvc.frameExecution), 5000);
+    setInterval(()=>console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(counters), ' frames ', fmvc.frameExecution), 60000);
 
     function getFormatter(value:string, locale:string = 'en') {
         return templateFormatterChache[value] || compileFormatter(value, locale);
@@ -191,17 +191,19 @@ namespace ft {
 
         // Для связывания внутреннего состояния с внешними данными, используется внешний биндинг состояния
         protected applyStateBinds(name:string, value:any):void {
-            //console.log('Apply state binds ', name, value, this._stateBinds , (this._stateBinds && this._stateBinds[name]) );
+            //console.log('Apply state binds ', name, value, (this._stateBinds && this._stateBinds[name]) );
             if (!(this._stateBinds && this._stateBinds[name])) return;
 
-                var bind = this._stateBinds[name],
-                resultValue = bind.filters && bind.filters.length ? bind.filters.reduce( (m,v)=>(this.getFilter(v)(m)), value ) : value;
+            this._stateBinds[name].forEach(  (bind)=>this.applyStateBind(bind, value) );
+        }
 
-
+        protected applyStateBind(bind, value:any):void {
+            var resultValue = bind.filters && bind.filters.length ? bind.filters.reduce( (m,v)=>(this.getFilter(v)(m)), value ) : value;
             bind.applyValue = bind.applyValue || this.getApplyValueFunctionOf(bind.model);
-            //console.log('Prepare execution apply state value function ', bind.applyValue, this);
+            //console.log('Prepare execution apply state value function ', this.model);
             bind.applyValue.call(this, resultValue);
         }
+
 
         // Проверяем типы данных приходящие в значении, если есть функция
         protected getStateValue(name:string, value:any):any {
@@ -318,6 +320,28 @@ namespace ft {
             _.each(this._resultParams, this.applyParameter, this);
         }
 
+        bindState(state:string, value:string) {
+            var binds = this._stateBinds || {},
+                valuePaths = value.split('|'),
+                result = { model: valuePaths.shift(), filters: valuePaths };
+
+            binds[state] = binds[state] || [];
+            binds[state].push(result);
+
+            this._stateBinds = binds;
+        }
+
+        bindStateFunction(state:string, fnc:Function, filters:any[] = null) {
+            var binds = this._stateBinds || {},
+                result = { applyValue: fnc, filters: filters };
+
+            binds[state] = binds[state] || [];
+            binds[state].push(result);
+
+            this._stateBinds = binds;
+        }
+
+
         applyParameter(value:any, key:string):void {
             switch (key) {
                 case TmplDict.if: // internal "include" parameters, used at createTree and validateTree
@@ -334,12 +358,7 @@ namespace ft {
                         return;
                     }
                     else if (key.indexOf(TmplDict.outDot) === 0) {
-                        var binds = this._stateBinds || {},
-                            state = key.substr(4),
-                            valuePaths = value.split('|');
-
-                        binds[state] = { model: valuePaths.shift(), filters: valuePaths };
-                        this._stateBinds = binds;
+                        return this.bindState(key.substr(4), value);
                     }
                     else if (key.indexOf(TmplDict.stateDot) === 0) {
                         var state = key.substr(6);
@@ -430,6 +449,22 @@ namespace ft {
 
         set childrenVM(value:fmvc.Model<TemplateView[]>) {
             this._dataChildren = value;
+
+            this._dataChildren.bind( this, this.recreateChildrenViews );
+        }
+
+        recreateChildrenViews(e:fmvc.IEvent) {
+            //console.log('Recreate children view', this.childrenVM);
+
+            if(!this.inDocument) return;
+
+            this.childrenVMData && this.childrenVMData.forEach( (v:ft.TemplateView)=>{
+                v.createDom();
+                v.parent = this;
+                this.getElement().appendChild(v.getElement());
+                v.enter();
+            });
+
         }
 
         getDomDefinitionByPath(path:string):IDomDef {
@@ -438,6 +473,7 @@ namespace ft {
 
         getTemplate():ITemplate {
             return this._template;
+
         }
 
 
@@ -468,6 +504,7 @@ namespace ft {
 
         bindAppModelsFromExpressions():void {
             var name:string;
+            //console.log('OnBind ', this.name, this._template.expressionMap);
 
             for (name in this._template.expressionMap) {
                 var ex:IExpression = this._template.expressionMap[name];
@@ -476,15 +513,19 @@ namespace ft {
         }
 
         getModelPath(value) {
-            var modelPath = value.replace('facade.', 'app.').split('.');
+            var modelPath = value.replace('facade.', 'app.').split('.'),
+                result;
 
-            if(modelPath[modelPath.length-2] === 'data') modelPath.splice(modelPath.length-2,2);
+            if(modelPath[3] === 'data') modelPath.splice(3);
+            else if(modelPath[modelPath.length-2] === 'data') modelPath.splice(modelPath.length-2,2);
             else if(modelPath[modelPath.length-1] === 'data') modelPath.splice(modelPath.length-1,1);
             else if(modelPath[modelPath.length-1] === 'count') modelPath.splice(modelPath.length-1,1);
             else if(modelPath[modelPath.length-1] === 'state') modelPath.splice(modelPath.length-1,1);
             else ;
 
-            return modelPath.join('.')
+            result = modelPath.join('.');
+            //console.log('Result of model is ' , result);
+            return result;
         }
 
         getModelByPath(value, context?:any):fmvc.Model<any> {
@@ -498,7 +539,10 @@ namespace ft {
             var model = this.getModelByPath(value);
 
             if(model instanceof fmvc.Model) {
-                model.bind(this, this.invalidateApp);
+                model.bind(this, (e)=>{
+                    //console.log('Handled at ', this.name, model.name );
+                    this.invalidateApp();
+                });
                 this._bindedModels = this._bindedModels || [];
                 if(this._bindedModels.indexOf(model) === -1) this._bindedModels.push(model);
             }
@@ -521,6 +565,9 @@ namespace ft {
 
         protected createDomImpl():void {
             if (this._element) return;
+
+            //console.log('CreateDom ', this.name, this._template.expressionMap);
+
             var e = <TreeElement> templateHelper.createTree(this._template.domTree, this);
             var element:HTMLElement = e instanceof TemplateView ? (<TemplateView>e).getElement() : <HTMLElement>e;
             this.setElement(element);
@@ -576,8 +623,10 @@ namespace ft {
             this._localHandlers = null;
             this._treeElementMapByPath = null;
 
+
             this.childrenVM && this.childrenVM.dispose();
             delete this.childrenVM;
+
 
             _.each(this._resultParams, (v, k)=> {
                 v.context = null;
@@ -847,6 +896,26 @@ namespace ft {
         cleanDelays():void {
             _.each(this._delays, (v, k)=>clearTimeout(v));
         }
+
+
+        getUrl (dataModel) {
+            if(dataModel instanceof fmvc.Model) {
+                return '/' + (dataModel.getRemoteModel()||'page') + '-' + dataModel.data._id + '---' + dataModel.data.url + '/';
+            } else if(typeof  dataModel === 'object') {
+                return '/page-' + dataModel._id + '---' + dataModel.url;
+            } else {
+                return dataModel;
+            }
+        }
+
+        getBaseUrl() {
+
+        }
+
+        getAdvancedUrl() {
+        }
+
+
     }
 }
 

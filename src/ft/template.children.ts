@@ -15,9 +15,9 @@ namespace ft {
         }
 
         public apply():any {
-            var items:TemplateView[] = this.data,
+            var items:TemplateView[] = this.data || [],
                 dataModel:any[]|fmvc.Model<any> = this.sources[1],
-                itemsData:any[] = dataModel instanceof fmvc.Model ? dataModel.data : dataModel,
+                itemsData:any[] = dataModel instanceof fmvc.Model ? dataModel.data : dataModel ,
                 templateClassName = this.sources[0],
                 mixin = this.sources[2],
                 params = this.sources[3],
@@ -26,7 +26,10 @@ namespace ft {
             delete params.data;
             delete params.model;
 
-            result = itemsData.map( (v:any|fmvc.Model<any>, i:number)=>getTemplateByData(templateClassName, this.name + ':' + templateClassName + i, itemsData[i], mixin, params, items) );
+
+            items.forEach( (v:TemplateView)=>v.unrender() );
+
+            result = (itemsData || []).map( (v:any|fmvc.Model<any>, i:number)=>getTemplateByData(templateClassName, this.name + ':' + templateClassName + i, itemsData[i], mixin, params, items) );
 
             this.reset().setData(result);
             return result;

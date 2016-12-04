@@ -63,6 +63,14 @@ gulp.task('build.contrib', function () {
         .pipe(gulp.dest('./build'));
 });
 
+
+gulp.task('min.all', function () {
+    return gulp.src('./build/all.js')
+        .pipe(concat('all.min.js'))
+        .pipe(uglify())
+        .pipe(gulp.dest('./build'));
+});
+
 gulp.task('build.node', function () {
     return gulp.src(['./build/module.js','./build/all.js'])
         .pipe(concat('all-node-result.js'))

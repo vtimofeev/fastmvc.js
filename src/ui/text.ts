@@ -32,7 +32,11 @@ module ui.def {
 
             initInternal: function () {
 
-                const editor = this[CKEDITOR] = (window[CKEDITOR] && window[CKEDITOR].replace(this.getElement()));
+                const editor = this[CKEDITOR] = (window[CKEDITOR] && window[CKEDITOR].replace(this.getElement(), {
+                    filebrowserBrowseUrl: '/browse',
+                    filebrowserUploadUrl: '/upload'
+                }));
+
                 editor.setData(this.value);
 
                 var t = this;

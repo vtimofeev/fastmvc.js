@@ -73,18 +73,23 @@ namespace fmvc {
         protected getHandler(data:any):any {
             this.state = ModelState.Synced;
 
+            this.appendData(data);
+        }
+
+        protected appendData(data:any):any {
+
             var models = data
                 .filter( (item:any)=>{
-                    var found = this.data && item && this.data.find( (v:any)=>v.data._id===item._id );
-                    return !found;
+                    var found = item && this.data && this.data.find( (v:any)=>(v.data && v.data._id===item._id) );
+                    return item && !found;
                 }, this)
                 .map((item:any)=>{
-                   var model = this.getBaseModelInstance();
-                   model.data = item;
-                   model.state = ModelState.Synced;
-                   return model;
+                    var model = this.getBaseModelInstance();
+                    model.data = item;
+                    model.state = ModelState.Synced;
+                    return model;
                 }, this);
-            
+
             if(data.meta) {
                 this.meta = this.meta || new Model(this.name + '_meta', {});
                 this.meta.changes = data.meta;

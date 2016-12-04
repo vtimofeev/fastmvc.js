@@ -3,7 +3,9 @@
     "target": "es5",
     "module": "commonjs",
     "outFile": "./build/all.js",
-    "sourceMap": true
+    "sourceMap": true,
+    "declaration": true
+
   },
 
   "include":[
