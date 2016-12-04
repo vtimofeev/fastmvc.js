@@ -36,6 +36,7 @@ namespace ft {
             });
 
             var router:ft.Router<IRouter> = new ft.Router<IRouter>(ModelName.router);
+            ft.dispatcher.setHrefHandler( router.hrefHandler.bind(router) );
 
             // Добавляем модели по умолчанию в фасад
             this.register(localeModel, i18nModel, themeModel, bowser, router, wndModel);
