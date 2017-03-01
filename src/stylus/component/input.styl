@@ -1,6 +1,6 @@
 @import '../core/base';
 
-.input {
+.input, .textarea {
   @extends .core;
 
   display: block;
@@ -8,4 +8,13 @@
 
   border-radius: $c.radius.element;
   border: 1px solid $c.borderColor.default;
+}
+
+.textarea {
+  line-height: 1.8rem;
+  min-height: 3.8rem;
+}
+
+.input-error, .textarea-error {
+  border: 1px solid red;
 }

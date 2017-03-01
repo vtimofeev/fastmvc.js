@@ -45,8 +45,6 @@ namespace ft {
                 }
 
                 this.createChildrenView(treeDomElement, data, root);
-
-
             }
 
             return treeElement;
@@ -120,6 +118,29 @@ namespace ft {
             if (treeElement instanceof ft.TemplateView && treeElement !== root) {
                 treeElement.exit();
             } else {
+            }
+        }
+
+        public disposeTree(data:IDomDef, root:ft.TemplateView):void {
+
+            var treeElement:TreeElement = this.getTreeElement(data, root),
+                i:number,
+                childrenLength:number,
+                domElement:HTMLElement = this.getDomElement(treeElement),
+                isComment:boolean = this.isCommentElement(domElement);
+
+            if (!isComment) {
+                for (i = 0, childrenLength = (data.children ? data.children.length : 0); i < childrenLength; i++) {
+                    this.disposeTree(data.children[i], root);
+                }
+
+                root.childrenVM && root.childrenVM.dispose();
+            }
+
+            if (treeElement instanceof ft.TemplateView && treeElement !== root) {
+                treeElement.dispose();
+            } else {
+
             }
         }
 
@@ -232,7 +253,7 @@ namespace ft {
                 }
 
                 childrenViewModel = new ft.ChilrenViewModel(chilrenName, sourceModels);
-
+                childrenViewModel.viewParent = root;
                 childrenViewModel.apply();
 
                 root.childrenVM = childrenViewModel;

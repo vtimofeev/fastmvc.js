@@ -14,6 +14,9 @@ namespace ft {
     };
 
     export class App extends fmvc.Facade {
+
+        public transliterateUrl:(v:string)=>string;
+
         constructor(name:string, root:Element, type:string = '', theme:string = '', locale:string = 'ru', i18nDict:any = {}){
             super(name,type, root);
 
@@ -37,6 +40,8 @@ namespace ft {
 
             var router:ft.Router<IRouter> = new ft.Router<IRouter>(ModelName.router);
             ft.dispatcher.setHrefHandler( router.hrefHandler.bind(router) );
+
+            this.transliterateUrl = ft.transliterateUrl;
 
             // Добавляем модели по умолчанию в фасад
             this.register(localeModel, i18nModel, themeModel, bowser, router, wndModel);

@@ -13,6 +13,7 @@ namespace ft {
     export class VirtualElement {
 
         public nodeType:number;
+        public parentNode:VirtualElement;
         private _innerHTML:string;
         private _tag:string;
         private _style:{[id:string]:string} = null;
@@ -117,18 +118,27 @@ namespace ft {
 
         appendChild(v:VirtualElement) {
             if(!this.children) this.children = [];
-            if(this.children.indexOf(v) === -1) this.children.push(v);
+            if(this.children.indexOf(v) === -1) {
+                this.children.push(v);
+                v.parentNode = this;
+            }
         }
 
         removeChild(v:VirtualElement) {
             var index = this.children.indexOf(v);
-            if(index > -1) this.children.splice(index, 1);
+            if(index > -1) {
+                this.children.splice(index, 1);
+                v.parentNode = null;
+            }
         }
 
         replaceChild(n:VirtualElement, o:VirtualElement)
         {
             var index = this.children.indexOf(o);
-            if(index > -1) this.children.splice(index, 1, n);
+            if(index > -1) {
+                this.children.splice(index, 1, n);
+                n.parentNode = this;
+            }
         }
 
         setAttribute(name:string, value:string):void
@@ -148,6 +158,14 @@ namespace ft {
         {
             return this.attribute && this.attribute[name] || '';
         }
+
+        dispose() {
+            this.children && this.children.forEach( (v)=>this.removeChild(v) );
+            this._style = this._classList = this.attribute = this.children = null;
+            this.parentNode = null;
+        }
+
+
     }
 
     export class VirtualDocument {

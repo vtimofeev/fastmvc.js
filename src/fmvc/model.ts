@@ -123,6 +123,8 @@ namespace fmvc {
         }
 
         public setChanges(value:T|any):Model<T> {
+           // console.log('Set changes ', value);
+
             if (this._data === value || this.disposed) return;
 
             if (!this.getRemoteModel()  || this.opts.forceApplyChanges) {
@@ -156,10 +158,14 @@ namespace fmvc {
             this._changedData = undefined;
             this.state = ModelState.Synced;
 
-            if (this.isLocalStorageEnabled()) window.localStorage.setItem(this.name, JSON.stringify(this._data));
+            this.saveLocal();
             this.dispatchEvent({type: Event.Model.Changed, data: this._data, changes: changes});
 
             return this.data;
+        }
+
+        public saveLocal() {
+            if (this.isLocalStorageEnabled())  window.localStorage.setItem(this.name, JSON.stringify(this._data));
         }
 
         protected validate():boolean {
@@ -202,6 +208,8 @@ namespace fmvc {
             this.state = ModelState.Syncing;
             var p:IPromise,
                 _id = this.data && (<T> this.data)._id;
+
+            //console.log('Save ... ', this.changes, this.data);
 
             if(_id)
                 p = this.remoteTaskManager.insert({

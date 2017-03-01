@@ -55,6 +55,7 @@ namespace ft {
 
 
             if(target.tagName === 'A' && e.type === 'click') {
+                //console.log('A click! ', e);
                 if (this.hrefHandler && this.hrefHandler(target)) e.preventDefault();
             }
 

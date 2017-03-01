@@ -3,10 +3,12 @@
     "target": "es5",
     "module": "commonjs",
     "outFile": "./build/all.js",
+    "declarationDir": "./build",
     "sourceMap": true,
     "declaration": true
-
   },
+
+  "definitions": true,
 
   "include":[
     "./src/fmvc/**/*.ts",

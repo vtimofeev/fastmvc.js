@@ -62,7 +62,7 @@ namespace fmvc {
             if (this._sources && (index = this._sources.indexOf(v)) > -1) {
                 this._sources.splice(index, 1);
                 if(v instanceof Model) v.unbind(v);
-                if(this._mapBeforeCompareFunc[v.name]) delete this._mapBeforeCompareFunc[v.name];
+                if(this._mapBeforeCompareFunc && this._mapBeforeCompareFunc[v.name]) delete this._mapBeforeCompareFunc[v.name];
             } else {
                 throw  'SourceModel: Can remove source ' + v;
             }
@@ -126,7 +126,9 @@ namespace fmvc {
         }
 
         dispose():void {
-            _.each(this._sources, v=>this.removeSource(v), this);
+            if (this.disposed) return;
+
+            _.each(this._sources, v=>(v && this.removeSource(v)), this);
             _.each(this._mapBeforeCompareFunc, (v,k:string)=>delete this._mapBeforeCompareFunc[k], this);
             this._mapBeforeCompareFunc = null;
             this._sources = null;

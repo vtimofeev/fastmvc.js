@@ -60,6 +60,8 @@ namespace ft {
     };
 
     export var counters = {
+        created: 0,
+        disposed: 0,
         expression: 0,
         expressionEx: 0,
         expressionCtx: 0,
@@ -73,7 +75,7 @@ namespace ft {
         validateApp: 0
     };
 
-    setInterval(()=>console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(counters), ' frames ', fmvc.frameExecution), 60000);
+    setInterval(()=>console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(counters), ' frames ', fmvc.frameExecution), 5000);
 
     function getFormatter(value:string, locale:string = 'en') {
         return templateFormatterChache[value] || compileFormatter(value, locale);
@@ -126,6 +128,7 @@ namespace ft {
             this._constructorParams = params;
             this.getFilter.bind(this);
             this.life = LifeState.Init;
+            counters.created++;
         }
 
 
@@ -159,7 +162,7 @@ namespace ft {
         }
 
         get i18n():any {
-            return this._i18n;
+            return this._i18n || (this.mediator && this.mediator.facade  && this.mediator.facade.i18n);
         }
 
         get isChildren():boolean {
@@ -327,6 +330,7 @@ namespace ft {
 
             binds[state] = binds[state] || [];
             binds[state].push(result);
+            //console.log(this.name, ' is bind2 state ', state, result);
 
             this._stateBinds = binds;
         }
@@ -343,6 +347,7 @@ namespace ft {
 
 
         applyParameter(value:any, key:string):void {
+
             switch (key) {
                 case TmplDict.if: // internal "include" parameters, used at createTree and validateTree
                 case TmplDict.createDelay: // delay create dom
@@ -390,18 +395,24 @@ namespace ft {
         }
 
         bindParamStateExpression(value:IExpressionName|any, key:string ):any {
+
             if( value instanceof ExpressionName ) {
                 var name = value.name,
                     context = value.context,
                     ex:IExpression = context.getExpressionByName(name),
-                    model:fmvc.Model<any>;
+                    model:fmvc.Model<any>,
+                    bindHandlerName:string;
+
 
                 if(context !== this && ex.vars && ex.vars[0].indexOf('model') > -1) {
 
                     model = this.getModelByPath(ex.vars[0], context);
+                    bindHandlerName = 'bind' + (model && model.name) + '-' + key;
 
-                    if(!model) return console.warn('Model ', ex.vars[0] , ' not found ');
-                    model.bind(this, ()=>this.setState(key, this.getParameterValue(value, key), true) );
+                    if(!model || this[bindHandlerName]) return console.warn('Model ', ex.vars[0] , ' not found or has bind');
+
+                    this[bindHandlerName] = ()=>this.setState(key, this.getParameterValue(value, key), true);
+                    model.bind(this, this[bindHandlerName]);
 
                     //console.log('add-state binding of ', this.name, ' of ', key, ex);
                     this._bindedModels = this._bindedModels || [];
@@ -614,32 +625,46 @@ namespace ft {
         // Lifecycle: Dispose
         ////////////////////////////////////////////////////////////////
         dispose() {
+            console.log('Start dispose: ', this.name);
+            if(!this._template) return;
+
+            templateHelper.disposeTree(this._template.domTree, this);
+            if(this.getElement() && this.getElement().dispose) this.getElement().dispose();
+
             super.dispose();
 
-            this._domDef = null;
-            this._cssClassMap = null;
-            this._dynamicPropertiesMap = null;
-            this._prevDynamicProperiesMap = null;
-            this._localHandlers = null;
-            this._treeElementMapByPath = null;
-
-
+            this._bindedModels && this._bindedModels.forEach( (v)=>v.unbind(this) );
+            _.each(this._treeElementMapByPath, (v, k)=>delete this._treeElementMapByPath[k]);
+            this.childrenVMData && this.childrenVMData.forEach( (v, k)=>v.dispose() );
             this.childrenVM && this.childrenVM.dispose();
             delete this.childrenVM;
 
+            _.each(this._constructorParams, (v, k)=> {
+                v.context = null;
+                delete this._constructorParams[k]
+            });
 
             _.each(this._resultParams, (v, k)=> {
                 v.context = null;
                 delete this._resultParams[k]
             });
-            _.each(this._dataChildren, (v, k)=>delete this._dataChildren[k]);
-            _.each(this._treeElementMapByPath, (v, k)=>delete this._treeElementMapByPath[k]);
 
+            this._resultParams = this._constructorParams = null;
+
+            this._domDef = null;
+            this._cssClassMap = null;
+            this._dynamicPropertiesMap = null;
+            this._prevDynamicProperiesMap = null;
+            this._treeElementMapByPath = null;
+            this._localHandlers = null;
             this._element && (this._element['data-path-id'] = null);
-
+            this._element = null;
+            this._dataChildren = null;
             this._resultParams = null;
             this._template = null;
             this._i18n = null;
+            counters.disposed++;
+            console.log('Disposed: ', this.name);
         }
 
         ////////////////////////////////////////////////////////////////
@@ -826,7 +851,10 @@ namespace ft {
         public getFilter(filter:string) {
             // filter can contain points 'i18n.common.text';
             var fnc = new Function('return this.' + filter + ';');
-            return fnc.call(this) || (this.parent && this.parent.getFilter ? (<TemplateView>this.parent).getFilter(filter) : null);
+            var r = fnc.call(this) || (this.parent && this.parent.getFilter ? (<TemplateView>this.parent).getFilter(filter) : null) || (this.mediator && this.mediator[filter]? this.mediator[filter].bind(this.mediator) : null);
+            //console.log('get filter ', this.name,  filter, !!r );
+            return r;
+
         }
 
 
@@ -897,15 +925,18 @@ namespace ft {
             _.each(this._delays, (v, k)=>clearTimeout(v));
         }
 
-
         getUrl (dataModel) {
-            if(dataModel instanceof fmvc.Model) {
-                return '/' + (dataModel.getRemoteModel()||'page') + '-' + dataModel.data._id + '---' + dataModel.data.url + '/';
-            } else if(typeof  dataModel === 'object') {
-                return '/page-' + dataModel._id + '---' + dataModel.url;
+
+            if(this.mediator && this.mediator.getUrl) return this.mediator.getUrl(dataModel);
+
+            if(dataModel instanceof fmvc.Model && dataModel.data) {
+                return this.getUrl(dataModel.data.parent).slice(0, -1) + '/' + dataModel.data.url + '/';
+            } else if(dataModel && typeof dataModel === 'object') {
+                return this.getUrl(dataModel.parent).slice(0, -1) + '/' + dataModel.url + '/';
             } else {
-                return dataModel;
+                return '';
             }
+
         }
 
         getBaseUrl() {

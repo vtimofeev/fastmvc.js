@@ -56,7 +56,7 @@ namespace fmvc {
         private uid:string;
         protected interval:number;
         protected intervalTime:number = 100;
-        protected waitingTimeout:number = 1500;
+        protected waitingTimeout:number = 15000;
         protected remoteConnection:IRemoteConnection = null;
         private tasks:IRemoteTask[] = [];
 
@@ -88,7 +88,7 @@ namespace fmvc {
         insert(value:IRemoteTaskRequest):IPromise {
             if(value.id) throw 'Cant insert task, that has id';
 
-            console.log(RemoteTaskManager.Name, ': Add task ', value);
+            //console.log(RemoteTaskManager.Name, ': Add task ', value);
             value.id = this.uid + '.' + this.random();
 
             var task:IRemoteTask = {

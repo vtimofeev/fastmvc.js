@@ -20,7 +20,7 @@ namespace fmvc {
 
         constructor(name:string, url:string) {
             super(name, {connected: false, received: 0, lastResult: null});
-            console.log('Create remote connection model ', name, url);
+            //console.log('Create remote connection model ', name, url);
             this.connection = {url: url};
             setTimeout(this.openHandler.bind(this), 0);
         }
@@ -77,7 +77,7 @@ namespace fmvc {
 
         protected createConnection(url:string):void {
             var getInstance = function(value) {
-                console.log('Try to connect default', value);
+                //console.log('Try to connect default', value);
                 return new SockJS(value);
             };
 
@@ -109,7 +109,7 @@ namespace fmvc {
 
             } catch (e) {
 
-                console.log('Error on create ', arguments, this.data, e);
+                //console.log('Error on create ', arguments, this.data, e);
                 this.changes = { errors: (this.data.errors + 1) };
                 setTimeout( ()=>this.createConnection(url) , 1000 * this.data.errors );
             }

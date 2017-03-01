@@ -15,7 +15,6 @@ module ui.def {
 
             syncValue: function(value:string) {
                 this.value = value || this.getElement().value;
-
             },
 
             afterEnter: function() {
@@ -31,19 +30,28 @@ module ui.def {
             },
 
             initInternal: function () {
+                window.CKEDITOR.editorConfig = function(config) {
+                    config.allowedContent = true;
+                    return config;
+                };
 
                 const editor = this[CKEDITOR] = (window[CKEDITOR] && window[CKEDITOR].replace(this.getElement(), {
                     filebrowserBrowseUrl: '/browse',
-                    filebrowserUploadUrl: '/upload'
+                    filebrowserUploadUrl: '/upload',
+
                 }));
 
                 editor.setData(this.value);
 
                 var t = this;
-                editor.on('change', function () {
+                function sync() {
                     t.getElement().value = t[CKEDITOR].getData();
                     t.syncValue();
-                });
+                }
+                var ds =  _.debounce(sync, 50);
+
+                editor.on('change', ds);
+                editor.on('key', ds);
             },
 
             beforeExit: function () {

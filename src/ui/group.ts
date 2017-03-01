@@ -15,10 +15,12 @@ module ui.def {
                 var data = child.model || child.data,
                     result = this.value && (this.state.multiple ? this.value.indexOf(data) > -1 : this.value === data);
 
+
                 return result;
             },
 
             setGroupItem(data):void {
+
                 if(this.state.multiple) {
                     this.value = [].concat(this.value, data);
                 } else {

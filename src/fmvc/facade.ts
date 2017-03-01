@@ -2,7 +2,7 @@
 ///<reference path='./notifier.ts'/>
 
 namespace fmvc {
-    export var VERSION:string = '0.21.0';
+    export var VERSION:string = '0.24.0';
 
     export var TYPE_MEDIATOR:number = 2;
     export var TYPE_MODEL:number = 1;

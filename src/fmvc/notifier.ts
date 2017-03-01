@@ -80,6 +80,9 @@ namespace fmvc
 
         public bind(object:any, handler:any):Notifier
         {
+            //console.log('Model ', this.name, ' add bind ', object, handler, ' Total on model: ', this.listenerCount, ' binded:', object.listenerCount );
+            //if(window.break) throw 'Break error';
+
             var hasBind:boolean = this.hasBind(object, handler);
             if(!this._listeners) this._listeners = [];
 

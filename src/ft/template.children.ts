@@ -10,6 +10,8 @@ namespace ft {
 
     export class ChilrenViewModel extends fmvc.CompositeModel<any> {
 
+        public viewParent:TemplateView;
+
         constructor(name: string, source: any[], opts?: fmvc.IModelOptions) {
             super(name, source, opts);
         }
@@ -29,7 +31,13 @@ namespace ft {
 
             items.forEach( (v:TemplateView)=>v.unrender() );
 
-            result = (itemsData || []).map( (v:any|fmvc.Model<any>, i:number)=>getTemplateByData(templateClassName, this.name + ':' + templateClassName + i, itemsData[i], mixin, params, items) );
+            result = (itemsData || []).map(
+                (v:any|fmvc.Model<any>, i:number)=>{
+                    var t = getTemplateByData(templateClassName, this.name + ':' + templateClassName + i, itemsData[i], mixin, params, items)
+                    t.parent = this.viewParent;
+                    return t;
+                }
+            );
 
             this.reset().setData(result);
             return result;

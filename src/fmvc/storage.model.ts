@@ -2,7 +2,6 @@
 
 namespace fmvc {
 
-
     export class StorageModel<T extends fmvc.Model<any>> extends fmvc.Model<T> {
 
         protected modelClass:any;

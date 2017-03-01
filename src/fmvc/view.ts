@@ -88,6 +88,8 @@ namespace fmvc {
 
         public setMediator(value:Mediator):IView {
 
+            if(this.mediator === value) return;
+
             if(value) {
                 this.facade = value.facade;
                 this.bind(value, value.internalHandler);
@@ -221,6 +223,7 @@ namespace fmvc {
         }
 
         public exit():void {
+            if(!this._inDocument) return;
             this.beforeExit();
             this.exitImpl();
             this._inDocument = false;

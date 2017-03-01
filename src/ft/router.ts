@@ -19,7 +19,7 @@ namespace ft {
 
         private _navigateHandler:any;
         protected router:any;
-        protected re:RegExp;
+        protected advancedRe:RegExp;
 
         constructor(name:string, data:any = {page: '', overlay: ''}, opts?:fmvc.IModelOptions) {
             super(name, data, opts);
@@ -49,26 +49,49 @@ namespace ft {
 
          */
         init() {
-            this.re = /([^-]+)(?:-([^-]+))?(?:-([^-]+))?(?:-([^-]+))?(?:---(.+))?/;
+            this.advancedRe = /([^-]+)(?:-([^-]+))?(?:-([^-]+))?(?:-([^-]+))?(?:---(.+))?/;
 
             this.router.get(/.*/, (req:any, e:any)=>{
 
                 var result:any = {},
                     path:string = req.match[0] || '',
                     routerParts:string[] = path.split('/').filter( v=>!!v ),
-                    routerResults = routerParts.map( v=>this.re.exec(v) );
+                    matches;
 
-                routerResults.reduce( (m:any, v:string[])=>{
-                    var [full, model, id, action, data, seo] = v;
-
-                    m[model] = { id, action, data: this.tryAtob(data) || data, seo };
-
-                    return m;
-                }, result);
+                if(path.search(/(\/page-|\/map-|\/user-|\/object-|\/company-|\/catalog-)/) > -1) {
+                    matches = routerParts.map( v=>this.advancedRe.exec(v) );
+                    result = this.parseAdvancedRe(matches);
+                } else if (routerParts && routerParts.length) {
+                    matches = routerParts;
+                    result = {
+                        page: {
+                            url: matches[matches.length-1]
+                        }
+                    }
+                } else {
+                    result = {
+                        page: {
+                            url: ''
+                        }
+                    }
+                }
 
                 this.data = result;
             });
         }
+
+        parseAdvancedRe(matches) {
+
+            return matches.reduce( (m:any, v:string[])=>{
+                var [full, model, id, action, data, seo] = v;
+
+                m[model] = { id, action, data: this.tryAtob(data) || data, seo };
+
+                return m;
+            }, {});
+
+        }
+
 
         tryAtob(value:any) {
             try {
@@ -84,7 +107,6 @@ namespace ft {
         }
 
         navigate(url:string):Promise<any> {
-            console.log('Navigate href handler ... ', url);
             this.router.navigate(url);
             return this._navigateHandler ? this._navigateHandler(this.data) : Promise.resolve(true);
         }
@@ -95,7 +117,6 @@ namespace ft {
 
         hrefHandler(v) {
             var href = v && v.getAttribute('href');
-            console.log('Href handler prepare... ', href, v);
             if(v && v.getAttribute && this.test(href)) {
                 href && this.navigate(href);
                 return true;
