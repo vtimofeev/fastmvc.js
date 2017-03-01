@@ -26,6 +26,7 @@ namespace ft {
             this.nodeType = type;
             this._tag = tag;
             this.textContent = text;
+            ft.counters.virtualCreated++;
         }
 
         public get outerHtml():string {
@@ -121,6 +122,7 @@ namespace ft {
             if(this.children.indexOf(v) === -1) {
                 this.children.push(v);
                 v.parentNode = this;
+                ft.counters.virtualAppend++;
             }
         }
 
@@ -129,6 +131,7 @@ namespace ft {
             if(index > -1) {
                 this.children.splice(index, 1);
                 v.parentNode = null;
+                ft.counters.virtualRemoved++;
             }
         }
 
@@ -160,9 +163,10 @@ namespace ft {
         }
 
         dispose() {
-            this.children && this.children.forEach( (v)=>this.removeChild(v) );
+            this.children && this.children.forEach( (v)=>v.dispose() );
             this._style = this._classList = this.attribute = this.children = null;
             this.parentNode = null;
+            ft.counters.virtualDisposed++;
         }
 
 

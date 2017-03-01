@@ -17,6 +17,9 @@ namespace ft {
         }
 
         public apply():any {
+            if(this.disposed) return;
+
+
             var items:TemplateView[] = this.data || [],
                 dataModel:any[]|fmvc.Model<any> = this.sources[1],
                 itemsData:any[] = dataModel instanceof fmvc.Model ? dataModel.data : dataModel ,
@@ -45,8 +48,9 @@ namespace ft {
 
 
         dispose(): void {
-            super.dispose();
+            //console.log('Dispose TC ', this.name);
             this.data && this.data.forEach( (v:TemplateView)=>v.dispose() );
+            super.dispose();
         }
     }
 

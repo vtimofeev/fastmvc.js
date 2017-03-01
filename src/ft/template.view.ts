@@ -72,7 +72,11 @@ namespace ft {
         validate: 0,
         validateState: 0,
         validateData: 0,
-        validateApp: 0
+        validateApp: 0,
+        virtualCreated: 0,
+        virtualAppend: 0,
+        virtualRemoved: 0,
+        virtualDisposed: 0
     };
 
     setInterval(()=>console.log('Statistic timers', JSON.stringify(timers), ' counters ', JSON.stringify(counters), ' frames ', fmvc.frameExecution), 5000);
@@ -461,17 +465,18 @@ namespace ft {
         set childrenVM(value:fmvc.Model<TemplateView[]>) {
             this._dataChildren = value;
 
-            this._dataChildren.bind( this, this.recreateChildrenViews );
+            this._dataChildren.bind(
+                this, this.recreateChildrenViews );
         }
 
         recreateChildrenViews(e:fmvc.IEvent) {
-            //console.log('Recreate children view', this.childrenVM);
-
-            if(!this.inDocument) return;
+            //console.log('Recreate children view', this.childrenVM.disposed);
+            if( this.disposed || !this.inDocument) return;
 
             this.childrenVMData && this.childrenVMData.forEach( (v:ft.TemplateView)=>{
                 v.createDom();
                 v.parent = this;
+                if(!v.getElement()) return;
                 this.getElement().appendChild(v.getElement());
                 v.enter();
             });
@@ -576,6 +581,7 @@ namespace ft {
 
         protected createDomImpl():void {
             if (this._element) return;
+            if (this.disposed) throw 'Element was disposed ' + this.name;
 
             //console.log('CreateDom ', this.name, this._template.expressionMap);
 
@@ -625,8 +631,8 @@ namespace ft {
         // Lifecycle: Dispose
         ////////////////////////////////////////////////////////////////
         dispose() {
-            console.log('Start dispose: ', this.name);
-            if(!this._template) return;
+            //console.log('Start dispose: ', this.name);
+            if(this.disposed) return;
 
             templateHelper.disposeTree(this._template.domTree, this);
             if(this.getElement() && this.getElement().dispose) this.getElement().dispose();
@@ -664,7 +670,6 @@ namespace ft {
             this._template = null;
             this._i18n = null;
             counters.disposed++;
-            console.log('Disposed: ', this.name);
         }
 
         ////////////////////////////////////////////////////////////////

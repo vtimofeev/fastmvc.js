@@ -210,6 +210,7 @@ namespace fmvc {
 
         public enter():void {
             if (this._inDocument) {
+                return; //@todor
                 throw new Error('Cant enter, it is in document');
             }
             this.enterImpl();
